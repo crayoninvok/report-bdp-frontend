@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
+@theme {
+  --color-batara-orange: #e95623;
+  --color-batara-orange-hover: #d44415;
+  --color-batara-orange-dark: #b3340d;
+  --color-batara-orange-50: #fff5f1;
+  --color-batara-orange-100: #ffe8df;
+  --color-batara-orange-200: #ffd2c2;
+  --color-batara-orange-500: #e95623;
+  --color-batara-orange-600: #d44415;
+  --color-batara-orange-700: #b3340d;
+
+  --color-batara-teal: #18bebc;
+  --color-batara-teal-hover: #0e9f9d;
+  --color-batara-teal-dark: #0d7f7d;
+  --color-batara-teal-50: #f0fdfd;
+  --color-batara-teal-100: #ccfbf9;
+  --color-batara-teal-500: #18bebc;
+  --color-batara-teal-600: #0e9f9d;
+  --color-batara-teal-700: #0d7f7d;
+
+  --color-batara-charcoal: #595f6b;
+  --color-batara-charcoal-dark: #1e232b;
+  --color-batara-charcoal-50: #f7f8f9;
+  --color-batara-charcoal-100: #eceef1;
+  --color-batara-charcoal-500: #595f6b;
+  --color-batara-charcoal-800: #292c32;
+  --color-batara-charcoal-900: #1e232b;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f8fafc;
+  --foreground: #1e232b;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Custom modern scrollbar with subtle Batara orange hover */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e95623;
 }
