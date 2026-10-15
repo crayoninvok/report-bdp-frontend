@@ -583,19 +583,17 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
                         <Bar
                           dataKey="realisasi"
                           name="Realisasi Aktual"
+                          fill="#e95623"
                           radius={[4, 4, 0, 0]}
                           maxBarSize={32}
                         >
-                          {top5ComparisonData.map((entry, idx) => (
-                            <Cell key={`cell-${idx}`} fill={entry.color} />
-                          ))}
                           <LabelList
                             dataKey="realisasi"
                             position="top"
                             formatter={(val: any) =>
                               val ? `Rp ${(Number(val) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}M` : ""
                             }
-                            style={{ fontSize: "8px", fontWeight: 800, fill: "#0F172A" }}
+                            style={{ fontSize: "8px", fontWeight: 800, fill: "#e95623" }}
                           />
                         </Bar>
                       </BarChart>

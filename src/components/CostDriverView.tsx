@@ -966,19 +966,17 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                   <Bar
                     dataKey="realisasi"
                     name="Realisasi Aktual"
+                    fill="#e95623"
                     radius={[6, 6, 0, 0]}
                     maxBarSize={40}
                   >
-                    {top5ComparisonData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
                     <LabelList
                       dataKey="realisasi"
                       position="top"
                       formatter={(val: any) =>
                         val ? `Rp ${(Number(val) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}M` : ""
                       }
-                      style={{ fontSize: "9px", fontWeight: 800, fill: "#0F172A" }}
+                      style={{ fontSize: "9px", fontWeight: 800, fill: "#e95623" }}
                     />
                   </Bar>
                 </BarChart>
@@ -1403,7 +1401,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                         >
                           <Bar
                             dataKey="v"
-                            fill={TOP5_BEBAN_META[driver.bebanKey]?.color || "#e95623"}
+                            fill="#e95623"
                             radius={[2, 2, 0, 0]}
                             opacity={0.85}
                           />
@@ -1912,7 +1910,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <Bar
                         dataKey="v"
                         name="v"
-                        fill={TOP5_BEBAN_META[selectedDriverDetail.bebanKey]?.color || "#e95623"}
+                        fill="#e95623"
                         radius={[4, 4, 0, 0]}
                         opacity={0.88}
                       />
