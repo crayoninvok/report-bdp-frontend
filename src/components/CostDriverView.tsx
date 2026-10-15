@@ -65,8 +65,8 @@ export const TOP5_BEBAN_META: Record<
   { label: string; shortLabel: string; color: string; lightBg: string; borderCol: string; textCol: string }
 > = {
   comp: {
-    label: "Beban Compensation & Benefit",
-    shortLabel: "Comp & Benefit",
+    label: "Beban Gaji, Incentive dan Benefit Karyawan",
+    shortLabel: "Gaji & Benefit",
     color: "#059669",
     lightBg: "bg-emerald-50",
     borderCol: "border-emerald-200",
@@ -340,11 +340,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     return [
       {
         id: `${selectedSite}-comp-1`,
-        name: "05110101 - BEBAN GAJI & INCENTIVE / LEMBUR",
+        name: "05110101 - BEBAN GAJI, INCENTIVE DAN BENEFIT KARYAWAN",
         bebanKey: "comp",
-        bebanLabel: "Beban Compensation & Benefit",
+        bebanLabel: "Beban Gaji, Incentive dan Benefit Karyawan",
         accountCode: "05110101",
-        accountName: "BEBAN GAJI & INCENTIVE / LEMBUR",
+        accountName: "BEBAN GAJI, INCENTIVE DAN BENEFIT KARYAWAN",
         costBehavior: "VC",
         budgetCost: categorySums.comp.budget,
         realisasiCost: categorySums.comp.realisasi,
@@ -1578,7 +1578,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               }`}
             >
               <Users size={13} />
-              <span>Compensation & Benefit</span>
+              <span>Gaji & Benefit</span>
             </button>
             <button
               onClick={() => setActiveBebanFilter("fuel")}

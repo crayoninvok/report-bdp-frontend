@@ -73,8 +73,8 @@ export const COST_CATEGORIES: CostCategoryMeta[] = [
   },
   {
     key: "comp",
-    label: "Beban Compensation & Benefit",
-    shortLabel: "Compensation",
+    label: "Beban Gaji, Incentive dan Benefit Karyawan",
+    shortLabel: "Gaji & Benefit",
     icon: Users,
     color: "#059669",
     lightBg: "bg-emerald-50",
