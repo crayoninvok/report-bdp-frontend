@@ -26,7 +26,8 @@ import {
   Calendar,
   X,
   BarChart3,
-  PieChart,
+  FileDown,
+  Download,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -51,6 +52,7 @@ import {
   formatYAxisTick,
   computeYTDDataset,
 } from "./CostTrendCharts";
+import { CostDriverPdfExportModal } from "./CostDriverPdfExportModal";
 
 // =========================================================================
 // DEFINISI KATEGORI BEBAN UTAMA
@@ -148,6 +150,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
   const [activeStatusFilter, setActiveStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedDriverDetail, setSelectedDriverDetail] = useState<CostDriverItem | null>(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Chart Mode
   const [top5ChartMode, setTop5ChartMode] = useState<"comparison" | "trend">("comparison");
@@ -617,6 +620,50 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     return `Minggu ${selectedPeriod}`;
   }, [timeframe, selectedPeriod]);
 
+  // Export CSV Data
+  const handleExportCsv = () => {
+    const headers = [
+      "RANK",
+      "KODE_AKUN",
+      "NAMA_AKUN",
+      "KATEGORI_BEBAN",
+      "PERILAKU_BIAYA",
+      "BUDGET_TARGET_IDR",
+      "REALISASI_AKTUAL_IDR",
+      "DEVIASI_VARIANCE_IDR",
+      "PERSEN_DEVIASI",
+      "PERSEN_SERAPAN",
+      "STATUS",
+    ];
+
+    const rows = filteredDrivers.map((item, idx) => [
+      idx + 1,
+      `"${item.accountCode}"`,
+      `"${item.accountName}"`,
+      `"${item.bebanLabel}"`,
+      item.costBehavior,
+      item.budgetCost * 1_000_000,
+      item.realisasiCost * 1_000_000,
+      item.varianceCost * 1_000_000,
+      `${item.variancePercent}%`,
+      `${item.serapanPercent}%`,
+      item.status,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `Cost_Driver_${selectedSite}_${activePeriodLabel.replace(/[\s\(\)\-\.]+/g, "_")}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* 1. Header Banner & Filter Terpadu (Site + Timeframe + Periode) */}
@@ -751,6 +798,29 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                 </select>
               </div>
             )}
+
+            {/* Export Actions (Sync dengan Dashboard Utama) */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-white/15 transition-all cursor-pointer shadow-sm active:scale-95"
+                title="Download data Cost Driver format CSV"
+              >
+                <Download size={13} />
+                <span>Export CSV</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsPdfModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-linear-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95 border border-blue-400/30"
+                title="Download slide presentasi PDF landscape A4"
+              >
+                <FileDown size={14} className="text-white" />
+                <span>Export PDF Presentasi</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1887,6 +1957,23 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* PDF Presentasi Export Modal */}
+      {isPdfModalOpen && (
+        <CostDriverPdfExportModal
+          isOpen={isPdfModalOpen}
+          onClose={() => setIsPdfModalOpen(false)}
+          selectedSite={selectedSite}
+          timeframe={timeframe}
+          selectedPeriod={selectedPeriod}
+          categorySums={categorySums}
+          top5ComparisonData={top5ComparisonData}
+          top5Drivers={top5Drivers}
+          allDrivers={filteredDrivers}
+          activePeriodLabel={activePeriodLabel}
+          user={user}
+        />
       )}
     </div>
   );
