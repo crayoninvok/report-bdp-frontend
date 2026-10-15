@@ -60,7 +60,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       {/* ========================================================
           LEFT / HERO SECTION (Cinematic Mining Imagery)
           ======================================================== */}
-      <div className="relative w-full lg:w-[58%] xl:w-[62%] h-72 sm:h-96 lg:h-auto min-h-[300px] overflow-hidden bg-slate-950 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
+      <div className="relative w-full lg:w-[58%] xl:w-[62%] h-72 sm:h-96 lg:h-auto min-h-75 overflow-hidden bg-slate-950 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
         {/* Background Image with Smooth Crossfade */}
         <div className="absolute inset-0">
           <img
@@ -198,7 +198,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nama@bataramining.com"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white py-3 pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#e95623] focus:border-[#e95623] transition-all shadow-xs"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623] focus:border-transparent transition-all shadow-xs"
                 />
               </div>
             </div>
@@ -221,7 +221,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan password Anda"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white py-3 pl-11 pr-11 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#e95623] focus:border-[#e95623] transition-all shadow-xs"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-11 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623] focus:border-transparent transition-all shadow-xs"
                 />
                 <button
                   type="button"
@@ -259,7 +259,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#e95623] to-[#d44415] hover:from-[#d44415] hover:to-[#b3340d] text-white font-bold py-3.5 text-sm shadow-lg shadow-[#e95623]/25 hover:shadow-[#e95623]/40 focus:outline-none focus:ring-3 focus:ring-[#e95623]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#e95623] to-[#d44415] hover:from-[#d44415] hover:to-[#b3340d] text-white font-bold py-3.5 text-sm shadow-lg shadow-[#e95623]/25 hover:shadow-[#e95623]/40 focus:outline-none focus:ring-3 focus:ring-[#e95623]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.99]"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">

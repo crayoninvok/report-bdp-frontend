@@ -139,7 +139,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
           ======================================================== */}
       <div
         aria-live="polite"
-        className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none p-2 sm:p-0"
+        className="fixed top-4 right-4 z-9999 flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none p-2 sm:p-0"
       >
         {toasts.map((toast) => {
           const isSuccess = toast.type === "success";
@@ -218,7 +218,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
           GLOBAL CONFIRMATION DIALOG MODAL
           ======================================================== */}
       {confirmDialog && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-7 animate-in zoom-in-95 duration-200 overflow-hidden">
             {/* Top Decorative accent */}
             <div
