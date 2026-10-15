@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   Cell,
+  LabelList,
 } from "recharts";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
@@ -539,7 +540,7 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={top5ComparisonData}
-                        margin={{ top: 10, right: 15, left: 0, bottom: 5 }}
+                        margin={{ top: 20, right: 15, left: 0, bottom: 5 }}
                         barGap={6}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
@@ -548,6 +549,7 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
                           tick={{ fontSize: 10, fontWeight: 700, fill: "#334155" }}
                         />
                         <YAxis
+                          domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15)]}
                           tick={{ fontSize: 10, fill: "#64748B" }}
                           tickFormatter={(v) => `Rp ${(v / 1000).toFixed(0)}M`}
                         />
@@ -568,7 +570,16 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
                           fill="#94A3B8"
                           radius={[4, 4, 0, 0]}
                           maxBarSize={32}
-                        />
+                        >
+                          <LabelList
+                            dataKey="budget"
+                            position="top"
+                            formatter={(val: any) =>
+                              val ? `Rp ${(Number(val) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}M` : ""
+                            }
+                            style={{ fontSize: "8px", fontWeight: 700, fill: "#64748B" }}
+                          />
+                        </Bar>
                         <Bar
                           dataKey="realisasi"
                           name="Realisasi Aktual"
@@ -578,6 +589,14 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
                           {top5ComparisonData.map((entry, idx) => (
                             <Cell key={`cell-${idx}`} fill={entry.color} />
                           ))}
+                          <LabelList
+                            dataKey="realisasi"
+                            position="top"
+                            formatter={(val: any) =>
+                              val ? `Rp ${(Number(val) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}M` : ""
+                            }
+                            style={{ fontSize: "8px", fontWeight: 800, fill: "#0F172A" }}
+                          />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>

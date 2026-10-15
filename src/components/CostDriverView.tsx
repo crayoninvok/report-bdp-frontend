@@ -42,6 +42,7 @@ import {
   Tooltip,
   Legend,
   Cell,
+  LabelList,
 } from "recharts";
 import {
   RAW_MONTHLY_SENYIUR,
@@ -878,7 +879,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={top5ComparisonData}
-                  margin={{ top: 20, right: 20, left: 0, bottom: 10 }}
+                  margin={{ top: 25, right: 20, left: 0, bottom: 10 }}
                   barGap={6}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
@@ -889,6 +890,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     axisLine={{ stroke: "#E2E8F0" }}
                   />
                   <YAxis
+                    domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15)]}
                     tickFormatter={formatYAxisTick}
                     tick={{ fontSize: 10, fill: "#64748B" }}
                     tickLine={false}
@@ -951,7 +953,16 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     fill="#94A3B8"
                     radius={[6, 6, 0, 0]}
                     maxBarSize={40}
-                  />
+                  >
+                    <LabelList
+                      dataKey="budget"
+                      position="top"
+                      formatter={(val: any) =>
+                        val ? `Rp ${(Number(val) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}M` : ""
+                      }
+                      style={{ fontSize: "9px", fontWeight: 700, fill: "#64748B" }}
+                    />
+                  </Bar>
                   <Bar
                     dataKey="realisasi"
                     name="Realisasi Aktual"
@@ -961,6 +972,14 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     {top5ComparisonData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
+                    <LabelList
+                      dataKey="realisasi"
+                      position="top"
+                      formatter={(val: any) =>
+                        val ? `Rp ${(Number(val) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}M` : ""
+                      }
+                      style={{ fontSize: "9px", fontWeight: 800, fill: "#0F172A" }}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
