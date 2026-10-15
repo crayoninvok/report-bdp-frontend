@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: "Cost Analytics",
       items: [
-        { id: "dashboard", label: "Dashboard Utama", icon: LayoutDashboard },
+        { id: "dashboard", label: "Dashboard Cost", icon: LayoutDashboard },
         { id: "cost-drivers", label: "Cost Driver", icon: Gauge },
         { id: "input-cost", label: "Input Cost", icon: FileEdit },
         { id: "reports", label: "Laporan Cost", icon: FileText },

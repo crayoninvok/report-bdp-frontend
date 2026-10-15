@@ -138,7 +138,7 @@ export default function Home() {
                     ? "Cost Driver"
                     : activeMenu === "river-journal"
                     ? "River Journal • Kedalaman Sungai Project Tabang"
-                    : "Dashboard Utama"}
+                    : "Dashboard Cost"}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
                   Cost Analytics &bull; PT Batara Dharma Persada
