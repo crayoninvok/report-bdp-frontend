@@ -31,7 +31,6 @@ import {
   Plus,
   FileDown,
   RefreshCw,
-  Printer,
   Calendar,
   AlertTriangle,
   CheckCircle2,
@@ -341,14 +340,6 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
             >
               <RefreshCw size={14} className={isSyncing ? "animate-spin text-teal-400" : ""} />
               <span>{isSyncing ? "Menyinkronkan..." : "Sync Sheets"}</span>
-            </button>
-
-            <button
-              onClick={() => window.print()}
-              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/15 text-xs font-bold transition-all cursor-pointer"
-              title="Cetak Halaman Analisis"
-            >
-              <Printer size={15} />
             </button>
           </div>
         </div>
