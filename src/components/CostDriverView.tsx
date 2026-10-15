@@ -644,12 +644,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               <span>Cost Driver Intelligence &bull; Biaya Operasional Tambang</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Analisis Cost Driver (Pemicu Biaya Produksi)
+              Cost Driver
             </h1>
-            <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">
-              Struktur perbandingan Budget vs Realisasi aktual untuk 5 kelompok beban biaya utama PT Batara Dharma Persada.
-              Data tersinkronisasi 100% dengan Dashboard Utama sesuai filter site dan periode aktif.
-            </p>
 
             {/* Quick Summary Metrics Banner */}
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">

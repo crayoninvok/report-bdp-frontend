@@ -118,7 +118,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white font-bold text-xs transition-all border border-[#e95623]/60 active:scale-95 cursor-pointer shadow-md hover:border-[#e95623]"
                 >
                   <Gauge size={15} className="text-[#e95623]" />
-                  <span>Analisis Cost Driver (Top 5 Over)</span>
+                  <span>Cost Driver</span>
                 </button>
               )}
             </div>

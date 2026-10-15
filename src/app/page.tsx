@@ -131,7 +131,7 @@ export default function Home() {
                     : activeMenu === "users"
                     ? "Manajemen Pengguna (Super Admin)"
                     : activeMenu === "cost-drivers"
-                    ? "Analisis Cost Driver (Pemicu Biaya Produksi)"
+                    ? "Cost Driver"
                     : "Dashboard Utama"}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">

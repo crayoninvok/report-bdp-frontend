@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "dashboard", label: "Dashboard Utama", icon: LayoutDashboard },
     {
       id: "cost-drivers",
-      label: "Cost Drivers",
+      label: "Cost Driver",
       icon: Gauge,
     },
     { id: "reports", label: "Laporan Cost", icon: FileText },
