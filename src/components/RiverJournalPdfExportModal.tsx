@@ -219,8 +219,8 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
         {/* SLIDE 1: RINGKASAN EKSEKUTIF & HIDROGRAF GELOMBANG */}
         <div
           ref={slide1Ref}
-          className="w-[1122px] min-h-[793px] max-h-[793px] bg-white p-7 text-slate-800 flex flex-col justify-between"
-          style={{ width: "1122px", height: "793px" }}
+          className="bg-white p-7 text-slate-800 flex flex-col justify-between"
+          style={{ width: "1122px", height: "793px", minHeight: "793px", maxHeight: "793px" }}
         >
           {/* Header Slide 1 */}
           <div>
@@ -484,8 +484,8 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
         {/* SLIDE 2: MATRIKS SINKRONISASI HARIAN & TABEL RINCIAN LENGKAP */}
         <div
           ref={slide2Ref}
-          className="w-[1122px] min-h-[793px] max-h-[793px] bg-white p-7 text-slate-800 flex flex-col justify-between"
-          style={{ width: "1122px", height: "793px" }}
+          className="bg-white p-7 text-slate-800 flex flex-col justify-between"
+          style={{ width: "1122px", height: "793px", minHeight: "793px", maxHeight: "793px" }}
         >
           {/* Header Slide 2 */}
           <div>
@@ -913,7 +913,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
             <button
               onClick={handleExportPdf}
               disabled={isExporting || totalSlidesIncluded === 0}
-              className="px-5 py-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-black shadow-md shadow-teal-600/30 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-black shadow-md shadow-teal-600/30 flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed enabled:cursor-pointer"
             >
               {isExporting ? (
                 <>
