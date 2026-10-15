@@ -1255,7 +1255,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <Bar
                         dataKey="realisasi"
                         name={`Realisasi ${singleBebanMetrics.meta.shortLabel}`}
-                        fill={singleBebanMetrics.meta.color}
+                        fill="#e95623"
                         radius={[4, 4, 0, 0]}
                         maxBarSize={36}
                       />
@@ -1894,17 +1894,56 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                         axisLine={false}
                       />
                       <Tooltip
-                        formatter={(val: any, name: any) => [
-                          `Rp ${(Number(val) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`,
-                          name === "v" ? "Realisasi" : "Budget Target",
-                        ]}
-                        labelFormatter={(label) => `Periode: ${label}`}
-                        contentStyle={{
-                          backgroundColor: "#0F172A",
-                          borderColor: "#334155",
-                          borderRadius: "12px",
-                          fontSize: "11px",
-                          color: "#fff",
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            const d = payload[0].payload;
+                            const realisasi = Number(d.v || 0);
+                            const budget = Number(d.b || 0);
+                            const diff = realisasi - budget;
+                            const isOver = diff > 0;
+                            return (
+                              <div className="bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl border border-slate-700/80 shadow-2xl text-xs space-y-2 min-w-52">
+                                <div className="font-extrabold text-xs text-white border-b border-slate-700/60 pb-1.5 flex items-center justify-between gap-2">
+                                  <span>Periode: {label}</span>
+                                  <span className="text-[10px] text-slate-400 font-semibold font-mono">
+                                    {selectedDriverDetail.accountCode}
+                                  </span>
+                                </div>
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+                                      <span>Target Budget:</span>
+                                    </span>
+                                    <span className="font-mono font-bold text-slate-100">
+                                      Rp {(budget / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-slate-300">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-[#e95623] shrink-0" />
+                                      <span>Realisasi:</span>
+                                    </span>
+                                    <span className="font-mono font-bold text-[#f97316]">
+                                      Rp {(realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
+                                    </span>
+                                  </div>
+                                  <div
+                                    className={`flex justify-between items-center font-bold pt-1.5 border-t border-slate-800 ${
+                                      isOver ? "text-rose-400" : "text-emerald-400"
+                                    }`}
+                                  >
+                                    <span>{isOver ? "Over Budget:" : "Efisiensi:"}</span>
+                                    <span className="font-mono">
+                                      {isOver ? "+" : ""}
+                                      {(diff / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
                         }}
                       />
                       <Bar
