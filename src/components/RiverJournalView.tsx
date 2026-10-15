@@ -1114,7 +1114,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">
-                        {item.senyiurDeficit} m (Kurang)
+                        {item.senyiurDeficit.toFixed(2)} m (Kurang)
                       </td>
                     </tr>
                   );
