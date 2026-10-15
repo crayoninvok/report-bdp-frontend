@@ -21,7 +21,6 @@ import {
   ArrowDownRight,
   Layers,
   ChevronRight,
-  Gauge,
   SlidersHorizontal,
   Sliders,
   Calendar,
@@ -121,15 +120,12 @@ export interface CostDriverItem {
   accountCode: string;
   accountName: string;
   costBehavior: "VC" | "FC";
-  driverMetric: string;
   budgetCost: number; // Juta Rupiah (M)
   realisasiCost: number; // Juta Rupiah (M)
   varianceCost: number; // Deviasi: Positif = Over Budget, Negatif = Efisien
   variancePercent: number; // % deviasi
   serapanPercent: number; // % serapan realisasi terhadap budget
   status: "critical" | "warning" | "efficiency";
-  pic: string;
-  notes: string;
   trend: "worsening" | "stable" | "improving";
 }
 
@@ -340,13 +336,12 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     return [
       {
         id: `${selectedSite}-comp-1`,
-        name: "Beban Gaji, Tunjangan & Jam Lembur Operasional",
+        name: "05110101 - BEBAN GAJI & INCENTIVE / LEMBUR",
         bebanKey: "comp",
         bebanLabel: "Beban Compensation & Benefit",
         accountCode: "05110101",
         accountName: "BEBAN GAJI & INCENTIVE / LEMBUR",
         costBehavior: "VC",
-        driverMetric: "Jam Kerja Lembur & Insentif Ritase Produksi",
         budgetCost: categorySums.comp.budget,
         realisasiCost: categorySums.comp.realisasi,
         varianceCost: categorySums.comp.variance,
@@ -358,19 +353,16 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             : categorySums.comp.variance > 0
             ? "warning"
             : "efficiency",
-        pic: "Manager HR-GA & Superintendent Operasi",
-        notes: "Biaya kompensasi tenaga kerja tambang, lembur operasional catch-up target, dan insentif ritase lapangan.",
         trend: categorySums.comp.variance > 0 ? "worsening" : "improving",
       },
       {
         id: `${selectedSite}-fuel-1`,
-        name: "Konsumsi Solar Armada Produksi & Hauling",
+        name: "05110201 - BEBAN FUEL - PRODUCTION",
         bebanKey: "fuel",
         bebanLabel: "Beban Fuel (Solar Production)",
         accountCode: "05110201",
         accountName: "BEBAN FUEL - PRODUCTION",
         costBehavior: "VC",
-        driverMetric: "Konsumsi Solar Alat Berat & Jarak Angkut Hauling",
         budgetCost: categorySums.fuel.budget,
         realisasiCost: categorySums.fuel.realisasi,
         varianceCost: categorySums.fuel.variance,
@@ -382,19 +374,16 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             : categorySums.fuel.variance > 0
             ? "warning"
             : "efficiency",
-        pic: "Superintendent Operasi & Dispatch Tambang",
-        notes: "Konsumsi solar unit gali-muat (excavator), dump truck hauling ke disposal/port, dan genset operasional.",
         trend: categorySums.fuel.variance > 0 ? "worsening" : "improving",
       },
       {
         id: `${selectedSite}-tyre-1`,
-        name: "Penggantian Ban & Wear Lifetime Alat Berat",
+        name: "05110203 - BEBAN TYRE & RIM",
         bebanKey: "tyre",
         bebanLabel: "Beban Tyre (Ban Alat Berat)",
         accountCode: "05110203",
         accountName: "BEBAN TYRE & RIM",
         costBehavior: "VC",
-        driverMetric: "Lifetime Jam Kerja Ban & Beban Muatan (TKPH)",
         budgetCost: categorySums.tyre.budget,
         realisasiCost: categorySums.tyre.realisasi,
         varianceCost: categorySums.tyre.variance,
@@ -406,19 +395,16 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             : categorySums.tyre.variance > 0
             ? "warning"
             : "efficiency",
-        pic: "Superintendent Maintenance & Tyre Engineer",
-        notes: "Pengadaan ban dump truck, rim velg roda, dan keausan ban akibat beban tonase serta kondisi jalur angkut.",
         trend: categorySums.tyre.variance > 0 ? "worsening" : "improving",
       },
       {
         id: `${selectedSite}-ovh-1`,
-        name: "Sewa Sarana Non-Produksi & Fasilitas Mess",
+        name: "05110401 - RENTAL ALAT NON PRODUKSI & KANTOR SITE",
         bebanKey: "ovh",
         bebanLabel: "Beban Overhead Cost - Site",
         accountCode: "05110401",
         accountName: "RENTAL ALAT NON PRODUKSI & KANTOR SITE",
         costBehavior: "FC",
-        driverMetric: "Jumlah Armada Rental LV, Mess & Operasional Kantor",
         budgetCost: categorySums.ovh.budget,
         realisasiCost: categorySums.ovh.realisasi,
         varianceCost: categorySums.ovh.variance,
@@ -430,19 +416,16 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             : categorySums.ovh.variance > 0
             ? "warning"
             : "efficiency",
-        pic: "Head of General Affairs & Logistic Site",
-        notes: "Sewa mobil operasional LV, fasilitas akomodasi mess karyawan, listrik genset kantor, katering, dan perizinan.",
         trend: categorySums.ovh.variance > 0 ? "worsening" : "improving",
       },
       {
         id: `${selectedSite}-rep-1`,
-        name: "Penggantian Sparepart & Perawatan Alat Berat",
+        name: "05110301 - BEBAN SPAREPART & SERVICE EKSTERNAL",
         bebanKey: "rep",
         bebanLabel: "Beban Repair & Maintenance",
         accountCode: "05110301",
         accountName: "BEBAN SPAREPART & SERVICE EKSTERNAL",
         costBehavior: "VC",
-        driverMetric: "Frekuensi Perbaikan & Service Berkala Alat",
         budgetCost: categorySums.rep.budget,
         realisasiCost: categorySums.rep.realisasi,
         varianceCost: categorySums.rep.variance,
@@ -454,8 +437,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             : categorySums.rep.variance > 0
             ? "warning"
             : "efficiency",
-        pic: "Plant & Maintenance Manager",
-        notes: "Suku cadang komponen kritis (undercarriage, filter, oli, hidrolik) dan perbaikan berkala unit tambang.",
         trend: categorySums.rep.variance > 0 ? "worsening" : "improving",
       },
     ];
@@ -616,8 +597,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
         const q = searchQuery.toLowerCase();
         const matchName = item.name.toLowerCase().includes(q);
         const matchAccount = item.accountName.toLowerCase().includes(q) || item.accountCode.includes(q);
-        const matchMetric = item.driverMetric.toLowerCase().includes(q);
-        if (!matchName && !matchAccount && !matchMetric) return false;
+        const matchBeban = item.bebanLabel.toLowerCase().includes(q);
+        if (!matchName && !matchAccount && !matchBeban) return false;
       }
       return true;
     });
@@ -1482,8 +1463,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     <span className="truncate">{driver.bebanLabel}</span>
                   </div>
 
-                  <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-[#e95623] transition-colors leading-snug">
-                    {driver.name}
+                  <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-[#e95623] transition-colors leading-snug font-mono">
+                    {driver.accountCode} - {driver.accountName}
                   </h3>
 
                   {/* Financial Breakdown Box */}
@@ -1755,8 +1736,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               <thead>
                 <tr className="bg-slate-900 text-white font-bold text-[11px] uppercase tracking-wider">
                   <th className="py-3 px-4 border-r border-slate-800 w-12 text-center">Rank</th>
-                  <th className="py-3 px-4 border-r border-slate-800">Cost Driver & Deskripsi</th>
-                  <th className="py-3 px-4 border-r border-slate-800">Kategori Beban (Akun COA)</th>
+                  <th className="py-3 px-4 border-r border-slate-800">Akun Beban (COA)</th>
                   <th className="py-3 px-4 border-r border-slate-800 text-center">Sifat</th>
                   <th className="py-3 px-4 border-r border-slate-800 text-right">Target Budget (M)</th>
                   <th className="py-3 px-4 border-r border-slate-800 text-right">Realisasi (M)</th>
@@ -1792,29 +1772,21 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                         </span>
                       </td>
 
-                      {/* Driver Name */}
-                      <td className="py-3.5 px-4 border-r border-slate-100 font-extrabold text-slate-900">
-                        <div className="flex flex-col gap-0.5">
-                          <span
-                            className="text-slate-900 text-xs hover:text-[#e95623] cursor-pointer"
-                            onClick={() => setSelectedDriverDetail(item)}
-                          >
-                            {item.name}
-                          </span>
-                          <span className="text-[10px] font-normal text-slate-400">
-                            PIC: {item.pic}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Beban Category */}
+                      {/* Akun Beban (COA) */}
                       <td className="py-3.5 px-4 border-r border-slate-100">
-                        <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                          {getBebanIcon(item.bebanKey)}
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-xl bg-slate-100 text-slate-700 shrink-0">
+                            {getBebanIcon(item.bebanKey)}
+                          </div>
                           <div className="flex flex-col">
-                            <span className="text-[11px] font-bold text-slate-800">{item.bebanLabel}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">
+                            <span
+                              className="text-xs font-black text-slate-900 font-mono hover:text-[#e95623] cursor-pointer"
+                              onClick={() => setSelectedDriverDetail(item)}
+                            >
                               {item.accountCode} - {item.accountName}
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-500">
+                              {item.bebanLabel}
                             </span>
                           </div>
                         </div>
@@ -1903,7 +1875,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
 
                 {filteredDrivers.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="py-10 text-center text-slate-400">
+                    <td colSpan={9} className="py-10 text-center text-slate-400">
                       <div className="flex flex-col items-center gap-2">
                         <Search size={24} className="text-slate-300" />
                         <span className="text-xs font-bold text-slate-500">
@@ -1939,11 +1911,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     {selectedDriverDetail.accountCode}
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-extrabold text-white">
-                  {selectedDriverDetail.name}
+                <h3 className="text-lg sm:text-xl font-extrabold text-white font-mono">
+                  {selectedDriverDetail.accountCode} - {selectedDriverDetail.accountName}
                 </h3>
                 <p className="text-xs text-slate-300">
-                  {selectedDriverDetail.bebanLabel} &bull; {selectedDriverDetail.accountName}
+                  Kategori Beban: {selectedDriverDetail.bebanLabel}
                 </p>
               </div>
 
@@ -2058,32 +2030,32 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                 </div>
               </div>
 
-              {/* Karakteristik & Satuan Pemicu Operasional */}
+              {/* Informasi Akun Beban (COA) */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Gauge size={14} className="text-[#18bebc]" />
-                  <span>Karakteristik & Pemicu Operasional Biaya</span>
+                  <Layers size={14} className="text-[#18bebc]" />
+                  <span>Informasi Akun Beban (COA)</span>
                 </h4>
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">Parameter Pemicu Utama:</span>
-                    <strong className="text-slate-900">{selectedDriverDetail.driverMetric}</strong>
+                    <span className="text-slate-600 font-medium">Kode Akun COA:</span>
+                    <strong className="text-slate-900 font-mono font-bold">{selectedDriverDetail.accountCode}</strong>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">Penanggung Jawab (PIC):</span>
-                    <strong className="text-slate-800">{selectedDriverDetail.pic}</strong>
+                    <span className="text-slate-600 font-medium">Nama Akun Beban:</span>
+                    <strong className="text-slate-900 font-mono font-bold">{selectedDriverDetail.accountName}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-600 font-medium">Kategori Beban:</span>
+                    <strong className="text-slate-800">{selectedDriverDetail.bebanLabel}</strong>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-600 font-medium">Sifat Biaya:</span>
                     <span className="font-semibold text-slate-800">
                       {selectedDriverDetail.costBehavior === "VC"
-                        ? "Variable Cost (Dipengaruhi volume tonnase/jam)"
-                        : "Fixed Cost (Biaya Tetap/Periodik)"}
+                        ? "Variable Cost (VC) - Dipengaruhi volume produksi tonnase / jam operasional"
+                        : "Fixed Cost (FC) - Biaya Tetap / Operasional Periodik"}
                     </span>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100 text-slate-600 text-[11px] leading-relaxed">
-                    <strong className="text-slate-800">Catatan Operasional: </strong>
-                    {selectedDriverDetail.notes}
                   </div>
                 </div>
               </div>
