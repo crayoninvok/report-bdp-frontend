@@ -646,39 +646,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               Cost Driver
             </h1>
-
-            {/* Quick Summary Metrics Banner */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-              <span className="px-2.5 py-1 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-200 font-bold">
-                Periode: <strong>{activePeriodLabel}</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-200">
-                Budget Target:{" "}
-                <strong className="text-white font-mono">
-                  Rp {(categorySums.total.budget / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
-                </strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-200">
-                Realisasi Aktual:{" "}
-                <strong className="text-white font-mono">
-                  Rp {(categorySums.total.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
-                </strong>
-              </span>
-              <span
-                className={`px-2.5 py-1 rounded-lg border font-semibold ${
-                  categorySums.total.variance > 0
-                    ? "bg-rose-500/20 border-rose-500/30 text-rose-200"
-                    : "bg-emerald-500/20 border-emerald-500/30 text-emerald-200"
-                }`}
-              >
-                Deviasi:{" "}
-                <strong>
-                  {categorySums.total.variance > 0 ? "+" : ""}
-                  Rp {(categorySums.total.variance / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M (
-                  {categorySums.total.serapanPercent}% Serapan)
-                </strong>
-              </span>
-            </div>
           </div>
 
           {/* Controls: Site Selector + Timeframe Switcher */}
