@@ -124,7 +124,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
-        <div className="px-6 py-4.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-b border-slate-800 text-white flex items-center justify-between">
+        <div className="px-6 py-4.5 bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 border-b border-slate-800 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-linear-to-br from-[#18bebc] to-teal-600 flex items-center justify-center shadow-md shadow-teal-500/20 text-white">
               <Waves size={20} />
@@ -203,7 +203,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
                   onChange={(e) => setLocation(e.target.value)}
                   required
                   placeholder="e.g. Dermaga Senyiur KM 0"
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
                 />
               </div>
             </div>
@@ -222,7 +222,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
                 />
               </div>
             </div>
@@ -238,7 +238,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
                   value={inputTime}
                   onChange={(e) => setInputTime(e.target.value)}
                   required
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
                 />
               </div>
             </div>
@@ -247,7 +247,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
           {/* 3. Kedalaman Air Sungai & Batas Minimum */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
             <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-800 flex items-center justify-between">
+              <label className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-800">
                 <span>Kedalaman Air Sungai</span>
                 <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
                   Satuan: Meter (m)
@@ -262,7 +262,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
                   value={waterDepth}
                   onChange={(e) => setWaterDepth(e.target.value)}
                   required
-                  className="w-full text-lg font-black font-mono text-slate-900 bg-white border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full text-lg font-black font-mono text-slate-900 bg-white border border-slate-300 rounded-xl px-3 py-2 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
                   placeholder="0.00"
                 />
               </div>
@@ -272,7 +272,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
             </div>
 
             <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-800 flex items-center justify-between">
+              <label className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-800">
                 <span>Batas Minimum Tongkang</span>
                 <span className="text-[10px] font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-md">
                   Pagu Draft: 4.0 m
@@ -287,7 +287,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
                   value={minThreshold}
                   onChange={(e) => setMinThreshold(e.target.value)}
                   required
-                  className="w-full text-lg font-black font-mono text-slate-900 bg-white border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full text-lg font-black font-mono text-slate-900 bg-white border border-slate-300 rounded-xl px-3 py-2 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
                   placeholder="4.00"
                 />
               </div>
@@ -374,18 +374,18 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
                   onChange={(e) => setUserInput(e.target.value)}
                   required
                   placeholder="Nama Petugas"
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
                 />
               </div>
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+              <label className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 <span>Kesimpulan Data (Kolom I)</span>
                 <button
                   type="button"
                   onClick={() => setConclusion(defaultConclusion)}
-                  className="text-[10px] text-blue-600 hover:underline font-bold"
+                  className="text-[10px] text-blue-600 hover:underline font-bold cursor-pointer"
                 >
                   Gunakan Teks Rekomendasi
                 </button>
@@ -395,7 +395,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
                 value={conclusion}
                 onChange={(e) => setConclusion(e.target.value)}
                 placeholder={defaultConclusion}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
               />
             </div>
           </div>
@@ -413,7 +413,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black tracking-wide shadow-md shadow-blue-500/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black tracking-wide shadow-md shadow-blue-500/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
             >
               <span>{isSubmitting ? "Menyimpan Data..." : "Simpan Data Jurnal"}</span>
               <ArrowRight size={14} />

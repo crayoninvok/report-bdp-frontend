@@ -297,7 +297,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-300">
       {/* 1. TOP HEADER & HERO SECTION */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         {/* Subtle decorative background water wave */}
         <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
           <Waves size={280} className="text-teal-400" />
@@ -602,7 +602,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
       </div>
 
       {/* 3. GEMINI AI RIVER OPERATIONAL ANALYSIS BOX */}
-      <div className="bg-gradient-to-br from-slate-900 to-indigo-950 border border-slate-800 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
+      <div className="bg-linear-to-br from-slate-900 to-indigo-950 border border-slate-800 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
         <div className="flex items-start gap-4">
           <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-2xl shrink-0 border border-blue-500/30 flex flex-col items-center gap-1">
             <Sparkles size={20} className="text-teal-400" />
@@ -951,14 +951,14 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
           {/* Search & Filters */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Search */}
-            <div className="relative min-w-[200px]">
+            <div className="relative min-w-50">
               <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari user, tanggal, lokasi..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
               />
             </div>
 
@@ -995,12 +995,12 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                 <th className="py-3 px-3 w-12 text-center">A &bull; ID</th>
                 <th className="py-3 px-3 w-28">B &bull; Tanggal</th>
                 <th className="py-3 px-3 w-24 text-center">C &bull; Waktu</th>
-                <th className="py-3 px-3 min-w-[160px]">D &bull; Lokasi Pengukuran</th>
+                <th className="py-3 px-3 min-w-40">D &bull; Lokasi Pengukuran</th>
                 <th className="py-3 px-3 w-32 text-right">E &bull; Kedalaman (m)</th>
                 <th className="py-3 px-3 w-32 text-right">F &bull; Batas Min (m)</th>
-                <th className="py-3 px-3 min-w-[200px]">G &bull; Deskripsi Otomatis</th>
+                <th className="py-3 px-3 min-w-50">G &bull; Deskripsi Otomatis</th>
                 <th className="py-3 px-3 w-28">H &bull; Petugas</th>
-                <th className="py-3 px-4 min-w-[240px]">I &bull; Kesimpulan Data</th>
+                <th className="py-3 px-4 min-w-60">I &bull; Kesimpulan Data</th>
                 <th className="py-3 px-3 w-16 text-center">Aksi</th>
               </tr>
             </thead>
@@ -1045,7 +1045,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
 
                       {/* Kolom D: Lokasi Pengukuran */}
                       <td className="py-2.5 px-3">
-                        <span className="font-bold text-slate-800 block truncate max-w-[180px]" title={item.location}>
+                        <span className="font-bold text-slate-800 block truncate max-w-45" title={item.location}>
                           {item.location}
                         </span>
                         <span
@@ -1135,7 +1135,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
             <button
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer"
               aria-label="Halaman Sebelumnya"
             >
               <ChevronLeft size={16} />
@@ -1146,7 +1146,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
             <button
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer"
               aria-label="Halaman Berikutnya"
             >
               <ChevronRight size={16} />
