@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -43,7 +43,14 @@ import {
   FileSpreadsheet,
   Scale,
   BarChart3,
+  RefreshCw,
 } from "lucide-react";
+import {
+  fetchAiChartAnalysis,
+  generateLocalAiChartAnalysis,
+  ChartAnalysisParams,
+  ChartAiAnalysisResult,
+} from "@/lib/chartAiAnalysis";
 import { JobSite, User } from "../types/auth";
 import {
   COST_CATEGORIES,
@@ -368,6 +375,83 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     month: "long",
     year: "numeric",
   });
+
+  // AI Chart Analysis State & Runner
+  const [aiAnalysis, setAiAnalysis] = useState<ChartAiAnalysisResult>(() =>
+    generateLocalAiChartAnalysis({
+      site: siteLabel,
+      categoryKey: selectedCategory,
+      categoryLabel: activeMeta.label,
+      timeframe: timeframe === "week" ? "Mingguan" : timeframe === "month" ? "Bulanan" : "Kumulatif YTD",
+      periodRange: periodLabel,
+      totalBudget: kpiSummary.totalB,
+      totalRealisasi: kpiSummary.totalR,
+      netVariance: kpiSummary.netDev,
+      efficiency: kpiSummary.efficiency,
+      peakPeriod: kpiSummary.peakPeriod,
+      peakValue: kpiSummary.peakR,
+      minPeriod: kpiSummary.minPeriod,
+      minValue: kpiSummary.minR,
+      dataPoints: slide1TrendData.map((d) => ({
+        label: d.label,
+        budget: d.budget,
+        realisasi: d.realisasi,
+        deviasi: d.deviasi,
+      })),
+    })
+  );
+  const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
+
+  const runAiAnalysis = useCallback(async () => {
+    setIsAnalyzingAi(true);
+    const params: ChartAnalysisParams = {
+      site: siteLabel,
+      categoryKey: selectedCategory,
+      categoryLabel: activeMeta.label,
+      timeframe: timeframe === "week" ? "Mingguan" : timeframe === "month" ? "Bulanan" : "Kumulatif YTD",
+      periodRange: periodLabel,
+      totalBudget: kpiSummary.totalB,
+      totalRealisasi: kpiSummary.totalR,
+      netVariance: kpiSummary.netDev,
+      efficiency: kpiSummary.efficiency,
+      peakPeriod: kpiSummary.peakPeriod,
+      peakValue: kpiSummary.peakR,
+      minPeriod: kpiSummary.minPeriod,
+      minValue: kpiSummary.minR,
+      dataPoints: slide1TrendData.map((d) => ({
+        label: d.label,
+        budget: d.budget,
+        realisasi: d.realisasi,
+        deviasi: d.deviasi,
+      })),
+    };
+
+    const local = generateLocalAiChartAnalysis(params);
+    setAiAnalysis(local);
+
+    try {
+      const res = await fetchAiChartAnalysis(params);
+      if (res && res.polaTren) {
+        setAiAnalysis(res);
+      }
+    } catch {
+      // keep local
+    } finally {
+      setIsAnalyzingAi(false);
+    }
+  }, [
+    siteLabel,
+    selectedCategory,
+    activeMeta,
+    timeframe,
+    periodLabel,
+    kpiSummary,
+    slide1TrendData,
+  ]);
+
+  useEffect(() => {
+    runAiAnalysis();
+  }, [selectedCategory, timeframe, selectedSite, startWeek, endWeek, startMonth, endMonth]);
 
   // 3. EXPORT TO PDF ENGINE
   const handleExportPdf = async () => {
@@ -781,33 +865,52 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
 
       {/* Bottom Executive Insights & Sign-off Footer */}
       <div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-3 flex items-start gap-4">
-          <div className="p-2 bg-blue-100 text-blue-800 rounded-lg shrink-0 mt-0.5">
+        <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-3 mb-3 flex items-start gap-3.5 shadow-2xs">
+          <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0 mt-0.5 flex flex-col items-center gap-0.5">
             <Sparkles size={16} />
+            <span className="text-[8px] font-black uppercase tracking-wider text-blue-700">AI</span>
           </div>
-          <div className="flex-1 grid grid-cols-3 gap-3 text-xs">
-            <div>
-              <span className="font-bold text-slate-800 block">Pola Tren Operasional:</span>
-              <p className="text-[11px] text-slate-600 mt-0.5">
-                Garis tren realisasi menunjukkan arah pergerakan biaya dengan titik minimum di{" "}
-                <strong>{kpiSummary.minPeriod}</strong> dan titik puncak di{" "}
-                <strong>{kpiSummary.peakPeriod}</strong>.
-              </p>
+          <div className="flex-1 space-y-1.5">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  Analisis Eksekutif AI (Smart Chart Reader)
+                </span>
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  {aiAnalysis.source === "gemini" ? "Gemini AI Model" : "Algorithmic AI Engine"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={runAiAnalysis}
+                disabled={isAnalyzingAi}
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-blue-600 transition-colors cursor-pointer disabled:opacity-50"
+                title="Muat ulang analisis AI membaca data grafik terkini"
+              >
+                <RefreshCw size={11} className={isAnalyzingAi ? "animate-spin text-blue-600" : ""} />
+                <span>{isAnalyzingAi ? "Membaca Grafik..." : "Analisis Ulang"}</span>
+              </button>
             </div>
-            <div>
-              <span className="font-bold text-slate-800 block">Evaluasi Anggaran:</span>
-              <p className="text-[11px] text-slate-600 mt-0.5">
-                Rata-rata realisasi serapan biaya berada pada rasio{" "}
-                <strong>{kpiSummary.efficiency.toFixed(1)}%</strong> terhadap alokasi pagu
-                anggaran yang disetujui.
-              </p>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 block">Tindakan Korektif Site:</span>
-              <p className="text-[11px] text-slate-600 mt-0.5">
-                Prioritas pengawasan pada akun dengan varian negatif guna menjaga disiplin
-                anggaran pada minggu/bulan berikutnya.
-              </p>
+
+            <div className="grid grid-cols-3 gap-3 text-xs pt-0.5">
+              <div>
+                <span className="font-bold text-slate-800 block text-[11px]">Pola Tren Operasional:</span>
+                <p className="text-[10px] text-slate-600 mt-0.5 leading-relaxed">
+                  {aiAnalysis.polaTren}
+                </p>
+              </div>
+              <div>
+                <span className="font-bold text-slate-800 block text-[11px]">Evaluasi Anggaran:</span>
+                <p className="text-[10px] text-slate-600 mt-0.5 leading-relaxed">
+                  {aiAnalysis.evaluasiAnggaran}
+                </p>
+              </div>
+              <div>
+                <span className="font-bold text-slate-800 block text-[11px]">Tindakan Korektif Site:</span>
+                <p className="text-[10px] text-slate-600 mt-0.5 leading-relaxed">
+                  {aiAnalysis.tindakanKorektif}
+                </p>
+              </div>
             </div>
           </div>
         </div>
