@@ -54,3 +54,24 @@ export interface DailyPairedPoint {
   senyiurDeficit: number;
 }
 
+export interface SiteTrendPoint {
+  date: string;
+  label: string;
+  inputTime: string;
+  waterDepth: number;
+  plan: number;
+  trendDepth: number;
+  diffToPlan: number;
+  location: string;
+}
+
+export interface SiteTrendSummary {
+  data: SiteTrendPoint[];
+  slope: number;
+  avg: number;
+  min: number;
+  max: number;
+  latest: RiverJournalEntry | null;
+}
+
+

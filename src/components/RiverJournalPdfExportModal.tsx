@@ -18,30 +18,31 @@ import {
   FileDown,
   Printer,
   X,
-  Calendar,
   Waves,
   Ship,
   TrendingUp,
   TrendingDown,
-  CheckCircle2,
-  AlertTriangle,
   Loader2,
   Download,
   SlidersHorizontal,
   GitCompare,
-  ArrowUpRight,
-  ArrowDownRight,
-  Activity,
   FileSpreadsheet,
-  Info,
+  Activity,
+  Check,
 } from "lucide-react";
 import { User } from "../types/auth";
-import { DailyPairedPoint, RiverJournalStats } from "../types/riverJournal";
+import {
+  DailyPairedPoint,
+  RiverJournalStats,
+  SiteTrendSummary,
+} from "../types/riverJournal";
 
 interface RiverJournalPdfExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   pairedData: DailyPairedPoint[];
+  senyiurSiteData: SiteTrendSummary;
+  muaraPahuSiteData: SiteTrendSummary;
   pearsonCorrelation: number;
   agreementRate: number;
   bothUpCount: number;
@@ -60,6 +61,8 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
   isOpen,
   onClose,
   pairedData,
+  senyiurSiteData,
+  muaraPahuSiteData,
   pearsonCorrelation,
   agreementRate,
   bothUpCount,
@@ -73,12 +76,13 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
   statsMuaraPahu,
   user,
 }) => {
-  // Slide selection toggles
+  // Slide selection toggles (Now 3 slides: Slide 1 Komparasi, Slide 2 Per Site Trendline, Slide 3 Matriks)
   const [includeSlide1, setIncludeSlide1] = useState(true);
   const [includeSlide2, setIncludeSlide2] = useState(true);
+  const [includeSlide3, setIncludeSlide3] = useState(true);
 
-  // Active preview tab (1 or 2)
-  const [activePreviewSlide, setActivePreviewSlide] = useState<1 | 2>(1);
+  // Active preview tab (1, 2, or 3)
+  const [activePreviewSlide, setActivePreviewSlide] = useState<1 | 2 | 3>(1);
 
   // Export progress state
   const [isExporting, setIsExporting] = useState(false);
@@ -87,6 +91,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
   // Slide DOM refs
   const slide1Ref = useRef<HTMLDivElement>(null);
   const slide2Ref = useRef<HTMLDivElement>(null);
+  const slide3Ref = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
 
@@ -96,7 +101,8 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
     year: "numeric",
   });
 
-  const totalSlidesIncluded = (includeSlide1 ? 1 : 0) + (includeSlide2 ? 1 : 0);
+  const totalSlidesIncluded =
+    (includeSlide1 ? 1 : 0) + (includeSlide2 ? 1 : 0) + (includeSlide3 ? 1 : 0);
 
   // Handler: Generate PDF
   const handleExportPdf = async () => {
@@ -117,7 +123,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
 
       // 1. Render Slide 1
       if (includeSlide1 && slide1Ref.current) {
-        setExportProgressText("Merender Slide 1: Ringkasan Analisis & Tren Hidrograf...");
+        setExportProgressText("Merender Slide 1: Ringkasan Analisis & Hidrograf Komparasi...");
         const canvas1 = await html2canvas(slide1Ref.current, {
           scale: 2,
           useCORS: true,
@@ -135,7 +141,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
 
       // 2. Render Slide 2
       if (includeSlide2 && slide2Ref.current) {
-        setExportProgressText("Merender Slide 2: Matriks Sinkronisasi Harian & Detail Data...");
+        setExportProgressText("Merender Slide 2: Analisis Tren Masing-Masing Site & Plan 4.0m...");
         const canvas2 = await html2canvas(slide2Ref.current, {
           scale: 2,
           useCORS: true,
@@ -151,9 +157,27 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
         pageCount++;
       }
 
-      setExportProgressText("Menyimpan file laporan PDF...");
+      // 3. Render Slide 3
+      if (includeSlide3 && slide3Ref.current) {
+        setExportProgressText("Merender Slide 3: Matriks Sinkronisasi Harian & SOP Navigasi...");
+        const canvas3 = await html2canvas(slide3Ref.current, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: 1122,
+          windowHeight: 793,
+        });
+
+        const img3 = canvas3.toDataURL("image/png");
+        if (pageCount > 0) pdf.addPage("a4", "landscape");
+        pdf.addImage(img3, "PNG", 0, 0, 297, 210, undefined, "FAST");
+        pageCount++;
+      }
+
+      setExportProgressText("Menyimpan file presentasi PDF...");
       const todayStr = new Date().toISOString().slice(0, 10);
-      const fileName = `BDP_River_Journal_Report_Senyiur_vs_MuaraPahu_${todayStr}.pdf`;
+      const fileName = `BDP_River_Journal_Executive_Presentation_${todayStr}.pdf`;
 
       pdf.save(fileName);
       setExportProgressText("Selesai! PDF berhasil diunduh.");
@@ -216,7 +240,9 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
         className="fixed top-0 left-0 pointer-events-none opacity-0 z-[-9999]"
         style={{ width: "1122px" }}
       >
-        {/* SLIDE 1: RINGKASAN EKSEKUTIF & HIDROGRAF GELOMBANG */}
+        {/* ============================================================== */}
+        {/* SLIDE 1: RINGKASAN EKSEKUTIF & HIDROGRAF KOMPARASI             */}
+        {/* ============================================================== */}
         <div
           ref={slide1Ref}
           className="bg-white p-7 text-slate-800 flex flex-col justify-between"
@@ -437,7 +463,6 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                       fill="#f59e0b"
                       dot={{ r: 2.5, fill: "#f59e0b" }}
                     >
-                      {/* Exact numbers printed on chart as requested by user */}
                       <LabelList
                         dataKey="senyiur"
                         position="top"
@@ -457,7 +482,6 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                       strokeWidth={2}
                       dot={{ r: 2.5, fill: "#10b981" }}
                     >
-                      {/* Exact numbers printed on chart as requested by user */}
                       <LabelList
                         dataKey="muaraPahu"
                         position="top"
@@ -481,13 +505,337 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
           </div>
         </div>
 
-        {/* SLIDE 2: MATRIKS SINKRONISASI HARIAN & TABEL RINCIAN LENGKAP */}
+        {/* ============================================================== */}
+        {/* SLIDE 2: GRAFIK MASING-MASING SITE + PLAN KETINGGIAN & TREN    */}
+        {/* ============================================================== */}
         <div
           ref={slide2Ref}
           className="bg-white p-7 text-slate-800 flex flex-col justify-between"
           style={{ width: "1122px", height: "793px", minHeight: "793px", maxHeight: "793px" }}
         >
           {/* Header Slide 2 */}
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-200">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 rounded-xl bg-white p-1 border border-slate-200 shadow-xs flex items-center justify-center">
+                  <img
+                    src="/coa-logo-bdp.png"
+                    alt="PT Batara Dharma Persada"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black tracking-wider uppercase text-[#e95623]">
+                      PT BATARA DHARMA PERSADA
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold">&bull;</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">
+                      Report Management Portal
+                    </span>
+                  </div>
+                  <h1 className="text-lg font-black text-slate-900 tracking-tight">
+                    GRAFIK INDIVIDUAL KEDALAMAN AIR PER SITE &bull; PLAN 4.0M & GARIS TREN
+                  </h1>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Evaluasi Elevasi Air Aktual Terhadap Plan Batas Minimum Draft Tongkang (4.0m) Beserta Garis Tren Regresi Linier
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right space-y-0.5">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-extrabold">
+                  <Activity size={12} className="text-indigo-600" />
+                  <span>Tren Linier Least Squares</span>
+                </div>
+                <p className="text-[10px] font-medium text-slate-400">
+                  Tanggal: <strong className="text-slate-700 font-mono">{currentDateString}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* 2 Site Charts Side-by-Side */}
+            <div className="grid grid-cols-2 gap-4 mt-3.5">
+              {/* Site 1: Dermaga Senyiur KM 0 */}
+              <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 block">
+                        Dermaga Senyiur KM 0 (Hulu)
+                      </span>
+                      <h3 className="text-xs font-black text-slate-900">
+                        Kedalaman Aktual vs Plan 4.0m
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[8.5px] font-extrabold">
+                        Plan: 4.00m
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[8.5px] font-extrabold">
+                        Terkini: {senyiurSiteData.latest?.waterDepth.toFixed(2)}m
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[8.5px] font-extrabold">
+                        Tren: {senyiurSiteData.slope >= 0 ? "+" : ""}{senyiurSiteData.slope}m/hari
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Legend bar */}
+                  <div className="flex items-center gap-3 mt-2 text-[8.5px] font-semibold text-slate-600">
+                    <span className="flex items-center gap-1 text-amber-700">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      Aktual Air
+                    </span>
+                    <span className="flex items-center gap-1 text-rose-600 font-mono">
+                      <span className="w-3 border-t-2 border-dashed border-rose-500" />
+                      Plan Pagu 4.0m
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-800 font-mono">
+                      <span className="w-3 border-t-2 border-dashed border-slate-800" />
+                      Garis Tren Linier
+                    </span>
+                  </div>
+
+                  {/* Senyiur Chart */}
+                  <div className="h-56 w-full mt-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        data={senyiurSiteData.data}
+                        margin={{ top: 16, right: 10, left: -15, bottom: 15 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 7, fill: "#475569" }}
+                          angle={-25}
+                          textAnchor="end"
+                        />
+                        <YAxis
+                          domain={[0, 4.5]}
+                          tick={{ fontSize: 8, fill: "#d97706" }}
+                          tickFormatter={(v) => `${v}m`}
+                        />
+                        <ReferenceLine
+                          y={4.0}
+                          stroke="#ef4444"
+                          strokeDasharray="4 4"
+                          strokeWidth={1.5}
+                          label={{
+                            value: "Plan 4.0m",
+                            position: "right",
+                            fill: "#ef4444",
+                            fontSize: 7.5,
+                            fontWeight: 700,
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="waterDepth"
+                          name="Kedalaman Air"
+                          stroke="#f59e0b"
+                          strokeWidth={2}
+                          fill="#f59e0b"
+                          fillOpacity={0.15}
+                          dot={{ r: 2.5, fill: "#f59e0b" }}
+                        >
+                          <LabelList
+                            dataKey="waterDepth"
+                            position="top"
+                            offset={5}
+                            style={{ fontSize: "6.5px", fill: "#b45309", fontWeight: 700 }}
+                            formatter={(v: any) => (typeof v === "number" ? v.toFixed(2) : v)}
+                          />
+                        </Area>
+                        <Line
+                          type="monotone"
+                          dataKey="trendDepth"
+                          name="Garis Tren"
+                          stroke="#0F172A"
+                          strokeWidth={2}
+                          strokeDasharray="4 4"
+                          dot={false}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Quick stats footer for Senyiur */}
+                <div className="pt-2 border-t border-slate-200 grid grid-cols-4 gap-2 text-center text-[8.5px]">
+                  <div className="p-1 rounded-md bg-white border border-slate-100">
+                    <span className="text-slate-400 block">Min</span>
+                    <strong className="text-slate-800 font-mono">{senyiurSiteData.min.toFixed(2)}m</strong>
+                  </div>
+                  <div className="p-1 rounded-md bg-white border border-slate-100">
+                    <span className="text-slate-400 block">Rata-rata</span>
+                    <strong className="text-slate-800 font-mono">{senyiurSiteData.avg.toFixed(2)}m</strong>
+                  </div>
+                  <div className="p-1 rounded-md bg-white border border-slate-100">
+                    <span className="text-slate-400 block">Maksimum</span>
+                    <strong className="text-slate-800 font-mono">{senyiurSiteData.max.toFixed(2)}m</strong>
+                  </div>
+                  <div className="p-1 rounded-md bg-rose-50 text-rose-700 font-bold border border-rose-100">
+                    <span className="block text-[8px]">Status</span>
+                    <span>Defisit (&lt; 4.0m)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Site 2: Jetty Muara Pahu */}
+              <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 block">
+                        Jetty Muara Pahu (Hilir)
+                      </span>
+                      <h3 className="text-xs font-black text-slate-900">
+                        Kedalaman Aktual vs Plan 4.0m
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[8.5px] font-extrabold">
+                        Plan: 4.00m
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[8.5px] font-extrabold">
+                        Terkini: {muaraPahuSiteData.latest?.waterDepth.toFixed(2)}m
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[8.5px] font-extrabold">
+                        Tren: {muaraPahuSiteData.slope >= 0 ? "+" : ""}{muaraPahuSiteData.slope}m/hari
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Legend bar */}
+                  <div className="flex items-center gap-3 mt-2 text-[8.5px] font-semibold text-slate-600">
+                    <span className="flex items-center gap-1 text-emerald-700">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Aktual Air
+                    </span>
+                    <span className="flex items-center gap-1 text-rose-600 font-mono">
+                      <span className="w-3 border-t-2 border-dashed border-rose-500" />
+                      Plan Pagu 4.0m
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-800 font-mono">
+                      <span className="w-3 border-t-2 border-dashed border-slate-800" />
+                      Garis Tren Linier
+                    </span>
+                  </div>
+
+                  {/* Muara Pahu Chart */}
+                  <div className="h-56 w-full mt-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        data={muaraPahuSiteData.data}
+                        margin={{ top: 16, right: 10, left: -15, bottom: 15 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 7, fill: "#475569" }}
+                          angle={-25}
+                          textAnchor="end"
+                        />
+                        <YAxis
+                          domain={[0, 11]}
+                          tick={{ fontSize: 8, fill: "#059669" }}
+                          tickFormatter={(v) => `${v}m`}
+                        />
+                        <ReferenceLine
+                          y={4.0}
+                          stroke="#ef4444"
+                          strokeDasharray="4 4"
+                          strokeWidth={1.5}
+                          label={{
+                            value: "Plan 4.0m",
+                            position: "right",
+                            fill: "#ef4444",
+                            fontSize: 7.5,
+                            fontWeight: 700,
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="waterDepth"
+                          name="Kedalaman Air"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          fill="#10b981"
+                          fillOpacity={0.15}
+                          dot={{ r: 2.5, fill: "#10b981" }}
+                        >
+                          <LabelList
+                            dataKey="waterDepth"
+                            position="top"
+                            offset={5}
+                            style={{ fontSize: "6.5px", fill: "#047857", fontWeight: 700 }}
+                            formatter={(v: any) => (typeof v === "number" ? v.toFixed(2) : v)}
+                          />
+                        </Area>
+                        <Line
+                          type="monotone"
+                          dataKey="trendDepth"
+                          name="Garis Tren"
+                          stroke="#0F172A"
+                          strokeWidth={2}
+                          strokeDasharray="4 4"
+                          dot={false}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Quick stats footer for Muara Pahu */}
+                <div className="pt-2 border-t border-slate-200 grid grid-cols-4 gap-2 text-center text-[8.5px]">
+                  <div className="p-1 rounded-md bg-white border border-slate-100">
+                    <span className="text-slate-400 block">Min</span>
+                    <strong className="text-slate-800 font-mono">{muaraPahuSiteData.min.toFixed(2)}m</strong>
+                  </div>
+                  <div className="p-1 rounded-md bg-white border border-slate-100">
+                    <span className="text-slate-400 block">Rata-rata</span>
+                    <strong className="text-slate-800 font-mono">{muaraPahuSiteData.avg.toFixed(2)}m</strong>
+                  </div>
+                  <div className="p-1 rounded-md bg-white border border-slate-100">
+                    <span className="text-slate-400 block">Maksimum</span>
+                    <strong className="text-slate-800 font-mono">{muaraPahuSiteData.max.toFixed(2)}m</strong>
+                  </div>
+                  <div className="p-1 rounded-md bg-emerald-50 text-emerald-800 font-bold border border-emerald-100">
+                    <span className="block text-[8px]">Status</span>
+                    <span>100% Aman (&ge;4m)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Takeaway Note */}
+            <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[8.5px] text-slate-600 flex items-center justify-between">
+              <span>
+                <strong>Kesimpulan Tren:</strong> Arah tren linier kedua site menunjukkan keselarasan positif searah aliran air hulu-ke-hilir. Garis putus-putus hitam merepresentasikan regresi linier Ordinary Least Squares (OLS).
+              </span>
+              <span className="font-bold text-slate-800 font-mono text-[9px] shrink-0 ml-4">
+                Pagu Draft: 4.00m (Batas Minimum Tongkang)
+              </span>
+            </div>
+          </div>
+
+          {/* Footer Slide 2 */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[9px] font-semibold text-slate-400">
+            <span>Dokumen Resmi Internal PT Batara Dharma Persada &bull; Strictly Confidential</span>
+            <span>Report Management Portal &bull; Halaman 2 dari {totalSlidesIncluded}</span>
+          </div>
+        </div>
+
+        {/* ============================================================== */}
+        {/* SLIDE 3: MATRIKS SINKRONISASI HARIAN & TABEL RINCIAN LENGKAP   */}
+        {/* ============================================================== */}
+        <div
+          ref={slide3Ref}
+          className="bg-white p-7 text-slate-800 flex flex-col justify-between"
+          style={{ width: "1122px", height: "793px", minHeight: "793px", maxHeight: "793px" }}
+        >
+          {/* Header Slide 3 */}
           <div>
             <div className="flex items-center justify-between pb-3 border-b-2 border-slate-200">
               <div className="flex items-center gap-3.5">
@@ -682,10 +1030,10 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
             </div>
           </div>
 
-          {/* Footer Slide 2 */}
+          {/* Footer Slide 3 */}
           <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[9px] font-semibold text-slate-400">
             <span>Dokumen Resmi Internal PT Batara Dharma Persada &bull; Strictly Confidential</span>
-            <span>Report Management Portal &bull; Halaman 2 dari {totalSlidesIncluded}</span>
+            <span>Report Management Portal &bull; Halaman 3 dari {totalSlidesIncluded}</span>
           </div>
         </div>
       </div>
@@ -702,10 +1050,10 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-900">
-                Export Laporan PDF River Journal
+                Export Laporan Presentasi River Journal
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Download slide presentasi eksekutif &bull; Komparasi Senyiur vs Muara Pahu
+                Download slide presentasi eksekutif &bull; Analisis Komparasi, Tren Per Site & Matriks Sinkronisasi
               </p>
             </div>
           </div>
@@ -730,7 +1078,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                 onChange={(e) => setIncludeSlide1(e.target.checked)}
                 className="rounded text-[#e95623] focus:ring-[#e95623] h-4 w-4"
               />
-              <span>Slide 1 (Tren & Analisis)</span>
+              <span>Slide 1 (Komparasi)</span>
             </label>
             <label className="flex items-center gap-1.5 cursor-pointer hover:text-slate-900">
               <input
@@ -739,7 +1087,16 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                 onChange={(e) => setIncludeSlide2(e.target.checked)}
                 className="rounded text-[#e95623] focus:ring-[#e95623] h-4 w-4"
               />
-              <span>Slide 2 (Matriks Data Lengkap)</span>
+              <span>Slide 2 (Tren Per Site & Plan)</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer hover:text-slate-900">
+              <input
+                type="checkbox"
+                checked={includeSlide3}
+                onChange={(e) => setIncludeSlide3(e.target.checked)}
+                className="rounded text-[#e95623] focus:ring-[#e95623] h-4 w-4"
+              />
+              <span>Slide 3 (Matriks Harian)</span>
             </label>
           </div>
 
@@ -753,7 +1110,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Preview Slide 1
+              Slide 1 (Komparasi)
             </button>
             <button
               onClick={() => setActivePreviewSlide(2)}
@@ -763,7 +1120,17 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Preview Slide 2
+              Slide 2 (Tren Site)
+            </button>
+            <button
+              onClick={() => setActivePreviewSlide(3)}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                activePreviewSlide === 3
+                  ? "bg-teal-50 text-teal-800 font-extrabold shadow-2xs border border-teal-200"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Slide 3 (Matriks)
             </button>
           </div>
         </div>
@@ -787,7 +1154,6 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                   </span>
                 </div>
 
-                {/* Mini representation of Slide 1 */}
                 <div className="grid grid-cols-4 gap-2 text-[10px]">
                   <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
                     <span className="text-teal-700 font-bold block">Keselarasan</span>
@@ -825,12 +1191,72 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                   </ResponsiveContainer>
                 </div>
               </div>
-            ) : (
+            ) : activePreviewSlide === 2 ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-xs">
                   <div>
                     <span className="font-bold text-[#e95623] uppercase text-[10px]">
                       Slide 2 Preview
+                    </span>
+                    <h3 className="font-extrabold text-slate-900 text-sm">
+                      Grafik Individual Kedalaman Per Site, Plan 4.0m & Garis Tren Regresi
+                    </h3>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    2 Panel Analisis Site Berdampingan
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-black text-amber-800">Dermaga Senyiur KM 0</span>
+                      <span className="text-[10px] text-slate-600 font-mono">Tren: {senyiurSiteData.slope >= 0 ? "+" : ""}{senyiurSiteData.slope}m/hari</span>
+                    </div>
+                    <div className="h-36 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={senyiurSiteData.data}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                          <XAxis dataKey="label" tick={{ fontSize: 7 }} />
+                          <YAxis domain={[0, 4.5]} tick={{ fontSize: 7 }} />
+                          <ReferenceLine y={4.0} stroke="#ef4444" strokeDasharray="3 3" />
+                          <Area type="monotone" dataKey="waterDepth" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.15}>
+                            <LabelList dataKey="waterDepth" position="top" style={{ fontSize: "6px", fill: "#b45309" }} formatter={(v: any) => typeof v === "number" ? v.toFixed(2) : v} />
+                          </Area>
+                          <Line type="monotone" dataKey="trendDepth" stroke="#0F172A" strokeDasharray="3 3" dot={false} strokeWidth={1.5} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-black text-emerald-800">Jetty Muara Pahu</span>
+                      <span className="text-[10px] text-slate-600 font-mono">Tren: {muaraPahuSiteData.slope >= 0 ? "+" : ""}{muaraPahuSiteData.slope}m/hari</span>
+                    </div>
+                    <div className="h-36 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={muaraPahuSiteData.data}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                          <XAxis dataKey="label" tick={{ fontSize: 7 }} />
+                          <YAxis domain={[0, 11]} tick={{ fontSize: 7 }} />
+                          <ReferenceLine y={4.0} stroke="#ef4444" strokeDasharray="3 3" />
+                          <Area type="monotone" dataKey="waterDepth" stroke="#10b981" fill="#10b981" fillOpacity={0.15}>
+                            <LabelList dataKey="waterDepth" position="top" style={{ fontSize: "6px", fill: "#047857" }} formatter={(v: any) => typeof v === "number" ? v.toFixed(2) : v} />
+                          </Area>
+                          <Line type="monotone" dataKey="trendDepth" stroke="#0F172A" strokeDasharray="3 3" dot={false} strokeWidth={1.5} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-xs">
+                  <div>
+                    <span className="font-bold text-[#e95623] uppercase text-[10px]">
+                      Slide 3 Preview
                     </span>
                     <h3 className="font-extrabold text-slate-900 text-sm">
                       Matriks Angka Kedalaman Harian & Defisit Draft Tongkang
@@ -868,7 +1294,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                   </table>
                 </div>
                 <p className="text-[10px] text-slate-400 text-center italic">
-                  (Seluruh {pairedData.length} baris data akan tercetak rapi secara penuh pada lembar PDF Slide 2)
+                  (Seluruh baris data pengukuran akan tercetak rapi secara penuh pada lembar PDF Slide 3)
                 </p>
               </div>
             )}

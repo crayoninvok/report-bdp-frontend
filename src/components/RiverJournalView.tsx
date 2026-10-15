@@ -7,6 +7,8 @@ import {
   RiverJournalStats,
   CreateRiverJournalPayload,
   DailyPairedPoint,
+  SiteTrendPoint,
+  SiteTrendSummary,
 } from "../types/riverJournal";
 import { riverJournalService } from "../services/riverJournalService";
 import { InputRiverJournalModal } from "./InputRiverJournalModal";
@@ -24,6 +26,7 @@ import {
   Tooltip,
   Legend,
   ReferenceLine,
+  LabelList,
 } from "recharts";
 import {
   Waves,
@@ -48,6 +51,91 @@ import {
   Info,
 } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
+
+// =========================================================================
+// SITE-SPECIFIC TRENDLINE ENGINE (OLS LINEAR REGRESSION: y = mx + b)
+// =========================================================================
+function computeSiteTrendData(
+  entries: RiverJournalEntry[],
+  siteName: "Senyiur" | "MuaraPahu"
+): SiteTrendSummary {
+  const siteEntries = entries.filter((e) => e.site === siteName);
+
+  // Group by date keeping latest measurement of the day
+  const dateMap = new Map<string, RiverJournalEntry>();
+  siteEntries.forEach((e) => {
+    const existing = dateMap.get(e.date);
+    if (!existing || e.inputTime >= existing.inputTime) {
+      dateMap.set(e.date, e);
+    }
+  });
+
+  const sortedList = Array.from(dateMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+
+  if (sortedList.length === 0) {
+    return {
+      data: [],
+      slope: 0,
+      avg: 0,
+      min: 0,
+      max: 0,
+      latest: null,
+    };
+  }
+
+  // OLS Linear Regression: y = m*x + b
+  const n = sortedList.length;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    const y = sortedList[i].waterDepth;
+    sumX += i;
+    sumY += y;
+    sumXY += i * y;
+    sumX2 += i * i;
+  }
+
+  const denom = n * sumX2 - sumX * sumX;
+  const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
+  const intercept = (sumY - slope * sumX) / n;
+
+  const depths = sortedList.map((e) => e.waterDepth);
+  const min = Math.min(...depths);
+  const max = Math.max(...depths);
+  const avg = depths.reduce((a, b) => a + b, 0) / n;
+
+  const points: SiteTrendPoint[] = sortedList.map((e, i) => {
+    const trendVal = slope * i + intercept;
+    const planVal = e.minThreshold || 4.0;
+    return {
+      date: e.date,
+      label: new Date(e.date).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+      }),
+      inputTime: e.inputTime,
+      waterDepth: e.waterDepth,
+      plan: planVal,
+      trendDepth: Number(trendVal.toFixed(2)),
+      diffToPlan: Number((e.waterDepth - planVal).toFixed(2)),
+      location: e.location,
+    };
+  });
+
+  return {
+    data: points,
+    slope: Number(slope.toFixed(3)),
+    avg: Number(avg.toFixed(2)),
+    min: Number(min.toFixed(2)),
+    max: Number(max.toFixed(2)),
+    latest: sortedList[sortedList.length - 1],
+  };
+}
 
 interface RiverJournalViewProps {
   user: User;
@@ -271,6 +359,15 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
       amplificationRatio: ampRatio,
       latestComparison: latest,
     };
+  }, [entries]);
+
+  // Site-specific trend data with Plan 4.0m & OLS regression lines
+  const senyiurSiteData = useMemo(() => {
+    return computeSiteTrendData(entries, "Senyiur");
+  }, [entries]);
+
+  const muaraPahuSiteData = useMemo(() => {
+    return computeSiteTrendData(entries, "MuaraPahu");
   }, [entries]);
 
   return (
@@ -850,6 +947,513 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
         )}
       </div>
 
+      {/* 4B. GRAFIK INDIVIDUAL MASING-MASING SITE & GARIS TREN */}
+      <div className="space-y-4">
+        {/* Section Header Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-orange-50 text-[#e95623] border border-orange-200 flex items-center justify-center font-bold shrink-0">
+              <BarChart3 size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-100 text-[#e95623]">
+                  Site Specific Hydrographs
+                </span>
+                <span className="text-[10px] text-slate-300 font-bold">&bull;</span>
+                <span className="text-[10px] font-bold text-slate-500">
+                  Plan Ambang Batas 4.0m
+                </span>
+              </div>
+              <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900">
+                GRAFIK ELEVASI & TREN PER SITE &bull; PLAN PAGU 4.0M & GARIS TREN LINIER
+              </h2>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Evaluasi kedalaman harian riil terhadap batas minimum draft tongkang (Plan 4.0m) disertai garis tren regresi linier OLS dan angka terukur
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-[11px]">
+              <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
+              <span>Plan Pagu Tongkang: 4.0m</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 font-extrabold text-[11px]">
+              <span className="w-3 border-t-2 border-dashed border-slate-700 inline-block" />
+              <span>Garis Tren (OLS)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2-Column Responsive Grid for Site Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* ============================================================== */}
+          {/* SITE 1: DERMAGA SENYIUR KM 0 (HULU)                            */}
+          {/* ============================================================== */}
+          <div className="bg-white border border-amber-200/90 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+            <div>
+              {/* Header Card Site 1 */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-amber-100">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-800 border border-amber-500/30">
+                      Hulu &bull; Loading Point
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium font-mono">
+                      KM 0 Tabang
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 mt-0.5">
+                    Dermaga Senyiur KM 0
+                  </h3>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Titik awal muat tongkang batu bara &bull; Pagu Batas Draft: 4.00 Meter
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-black">
+                    Plan: 4.00m
+                  </span>
+                  <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-black">
+                    Terkini: {senyiurSiteData.latest?.waterDepth.toFixed(2)}m
+                  </span>
+                  <span
+                    className={`px-2.5 py-1 rounded-xl border text-xs font-black flex items-center gap-1 ${
+                      senyiurSiteData.slope >= 0
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200"
+                    }`}
+                  >
+                    {senyiurSiteData.slope >= 0 ? (
+                      <TrendingUp size={13} />
+                    ) : (
+                      <TrendingDown size={13} />
+                    )}
+                    <span>
+                      {senyiurSiteData.slope >= 0 ? "+" : ""}
+                      {senyiurSiteData.slope} m/hari
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {/* KPI Mini Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3.5">
+                <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-amber-800 uppercase block">
+                    Rata-rata Air
+                  </span>
+                  <span className="text-sm font-black font-mono text-amber-950">
+                    {senyiurSiteData.avg.toFixed(2)} m
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block">
+                    Terendah (Min)
+                  </span>
+                  <span className="text-sm font-black font-mono text-rose-600">
+                    {senyiurSiteData.min.toFixed(2)} m
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block">
+                    Tertinggi (Max)
+                  </span>
+                  <span className="text-sm font-black font-mono text-emerald-600">
+                    {senyiurSiteData.max.toFixed(2)} m
+                  </span>
+                </div>
+                <div className="bg-rose-50/80 border border-rose-200 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-rose-700 uppercase block">
+                    Status Navigasi
+                  </span>
+                  <span className="text-[11px] font-black text-rose-800">
+                    STAND-BY (SURUT)
+                  </span>
+                </div>
+              </div>
+
+              {/* Chart Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2 text-[10px] text-slate-600">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5 font-bold text-amber-700">
+                    <span className="w-2.5 h-2.5 bg-amber-500 rounded-full" />
+                    <span>Kedalaman Aktual (m)</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 font-bold text-slate-700">
+                    <span className="w-3 border-t-2 border-dashed border-slate-700 inline-block" />
+                    <span>Garis Tren (OLS)</span>
+                  </span>
+                </div>
+                <span className="flex items-center gap-1.5 font-bold text-rose-600 font-mono">
+                  <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
+                  <span>Batas Pagu Navigasi: 4.0m</span>
+                </span>
+              </div>
+
+              {/* Chart Visual */}
+              <div className="h-72 w-full mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={senyiurSiteData.data}
+                    margin={{ top: 20, right: 15, left: -10, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 9, fill: "#64748b" }}
+                      angle={-25}
+                      textAnchor="end"
+                    />
+                    <YAxis
+                      domain={[0, 4.5]}
+                      ticks={[0, 1.0, 2.0, 3.0, 4.0, 4.5]}
+                      tick={{ fontSize: 9, fill: "#d97706" }}
+                      tickFormatter={(v) => `${v}m`}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const p = payload[0].payload as SiteTrendPoint;
+                          return (
+                            <div className="bg-slate-900 text-white rounded-xl p-3 shadow-xl border border-slate-700 text-xs space-y-1.5">
+                              <div className="flex items-center justify-between gap-4 border-b border-slate-700 pb-1">
+                                <span className="font-extrabold text-amber-400">
+                                  {p.date} ({p.label})
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {p.inputTime} WITA
+                                </span>
+                              </div>
+                              <div className="space-y-1 pt-0.5">
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-slate-300">Kedalaman Aktual:</span>
+                                  <span className="font-mono font-black text-amber-400">
+                                    {p.waterDepth.toFixed(2)} m
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-slate-300">Plan Ambang Batas:</span>
+                                  <span className="font-mono font-bold text-rose-400">
+                                    {p.plan.toFixed(2)} m
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-slate-300">Garis Tren (OLS):</span>
+                                  <span className="font-mono font-bold text-slate-300">
+                                    {p.trendDepth.toFixed(2)} m
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4 border-t border-slate-800 pt-1 text-[11px]">
+                                  <span className="text-slate-400">Defisit ke Plan 4.0m:</span>
+                                  <span className="font-mono font-black text-rose-400">
+                                    {p.diffToPlan.toFixed(2)} m (Kurang)
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <ReferenceLine
+                      y={4.0}
+                      stroke="#ef4444"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.75}
+                      label={{
+                        value: "Pagu 4.0m",
+                        position: "insideTopRight",
+                        fill: "#ef4444",
+                        fontSize: 9,
+                        fontWeight: 700,
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="trendDepth"
+                      name="Garis Tren (OLS)"
+                      stroke="#334155"
+                      strokeDasharray="3 3"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="waterDepth"
+                      name="Kedalaman Aktual"
+                      stroke="#f59e0b"
+                      strokeWidth={2.5}
+                      fillOpacity={0.16}
+                      fill="#f59e0b"
+                      dot={{ r: 3, fill: "#f59e0b", strokeWidth: 1.5, stroke: "#ffffff" }}
+                    >
+                      <LabelList
+                        dataKey="waterDepth"
+                        position="top"
+                        offset={6}
+                        style={{ fontSize: "8px", fill: "#b45309", fontWeight: 700 }}
+                        formatter={(val: any) =>
+                          typeof val === "number" ? val.toFixed(2) : val
+                        }
+                      />
+                    </Area>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Insight Footnote Site 1 */}
+            <div className="bg-amber-50/70 border border-amber-200/70 rounded-2xl p-3 text-xs text-amber-900 flex items-start gap-2.5">
+              <ShieldAlert size={16} className="text-amber-700 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-black text-[11px] uppercase tracking-wider block">
+                  Analisis Pagu Kedalaman Senyiur:
+                </span>
+                <p className="text-[10px] text-amber-950 leading-relaxed font-medium">
+                  Seluruh elevasi pengukuran di Senyiur berada di bawah batas ambang 4.0m (rentang {senyiurSiteData.min.toFixed(2)}m s/d {senyiurSiteData.max.toFixed(2)}m). Kemiringan tren tercatat <strong>{senyiurSiteData.slope >= 0 ? "+" : ""}{senyiurSiteData.slope}m/hari</strong>. Tugboat dan ponton 300ft membutuhkan koordinasi elevasi kiriman hulu sebelum manuver keluar.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ============================================================== */}
+          {/* SITE 2: JETTY MUARA PAHU (HILIR)                               */}
+          {/* ============================================================== */}
+          <div className="bg-white border border-emerald-200/90 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+            <div>
+              {/* Header Card Site 2 */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-emerald-100">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-800 border border-emerald-500/30">
+                      Hilir &bull; Muara Mahakam
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium font-mono">
+                      Titik Pantau Estuari
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 mt-0.5">
+                    Jetty Muara Pahu
+                  </h3>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Jalur utama transshipment sungai &bull; Pagu Batas Draft: 4.00 Meter
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-black">
+                    Plan: 4.00m
+                  </span>
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-black">
+                    Terkini: {muaraPahuSiteData.latest?.waterDepth.toFixed(2)}m
+                  </span>
+                  <span
+                    className={`px-2.5 py-1 rounded-xl border text-xs font-black flex items-center gap-1 ${
+                      muaraPahuSiteData.slope >= 0
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200"
+                    }`}
+                  >
+                    {muaraPahuSiteData.slope >= 0 ? (
+                      <TrendingUp size={13} />
+                    ) : (
+                      <TrendingDown size={13} />
+                    )}
+                    <span>
+                      {muaraPahuSiteData.slope >= 0 ? "+" : ""}
+                      {muaraPahuSiteData.slope} m/hari
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {/* KPI Mini Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3.5">
+                <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-emerald-800 uppercase block">
+                    Rata-rata Air
+                  </span>
+                  <span className="text-sm font-black font-mono text-emerald-950">
+                    {muaraPahuSiteData.avg.toFixed(2)} m
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block">
+                    Terendah (Min)
+                  </span>
+                  <span className="text-sm font-black font-mono text-amber-600">
+                    {muaraPahuSiteData.min.toFixed(2)} m
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase block">
+                    Tertinggi (Max)
+                  </span>
+                  <span className="text-sm font-black font-mono text-emerald-600">
+                    {muaraPahuSiteData.max.toFixed(2)} m
+                  </span>
+                </div>
+                <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-2.5 text-center">
+                  <span className="text-[9px] font-bold text-emerald-700 uppercase block">
+                    Status Navigasi
+                  </span>
+                  <span className="text-[11px] font-black text-emerald-800">
+                    100% AMAN MELINTAS
+                  </span>
+                </div>
+              </div>
+
+              {/* Chart Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2 text-[10px] text-slate-600">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
+                    <span>Kedalaman Aktual (m)</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 font-bold text-slate-700">
+                    <span className="w-3 border-t-2 border-dashed border-slate-700 inline-block" />
+                    <span>Garis Tren (OLS)</span>
+                  </span>
+                </div>
+                <span className="flex items-center gap-1.5 font-bold text-rose-600 font-mono">
+                  <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
+                  <span>Batas Pagu Navigasi: 4.0m</span>
+                </span>
+              </div>
+
+              {/* Chart Visual */}
+              <div className="h-72 w-full mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={muaraPahuSiteData.data}
+                    margin={{ top: 20, right: 15, left: -10, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 9, fill: "#64748b" }}
+                      angle={-25}
+                      textAnchor="end"
+                    />
+                    <YAxis
+                      domain={[5.5, 11]}
+                      ticks={[6.0, 7.0, 8.0, 9.0, 10.0, 11.0]}
+                      tick={{ fontSize: 9, fill: "#059669" }}
+                      tickFormatter={(v) => `${v}m`}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const p = payload[0].payload as SiteTrendPoint;
+                          return (
+                            <div className="bg-slate-900 text-white rounded-xl p-3 shadow-xl border border-slate-700 text-xs space-y-1.5">
+                              <div className="flex items-center justify-between gap-4 border-b border-slate-700 pb-1">
+                                <span className="font-extrabold text-emerald-400">
+                                  {p.date} ({p.label})
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {p.inputTime} WITA
+                                </span>
+                              </div>
+                              <div className="space-y-1 pt-0.5">
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-slate-300">Kedalaman Aktual:</span>
+                                  <span className="font-mono font-black text-emerald-400">
+                                    {p.waterDepth.toFixed(2)} m
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-slate-300">Plan Ambang Batas:</span>
+                                  <span className="font-mono font-bold text-rose-400">
+                                    {p.plan.toFixed(2)} m
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-slate-300">Garis Tren (OLS):</span>
+                                  <span className="font-mono font-bold text-slate-300">
+                                    {p.trendDepth.toFixed(2)} m
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4 border-t border-slate-800 pt-1 text-[11px]">
+                                  <span className="text-slate-400">Surplus vs Plan 4.0m:</span>
+                                  <span className="font-mono font-black text-emerald-400">
+                                    +{p.diffToPlan.toFixed(2)} m (Surplus Aman)
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <ReferenceLine
+                      y={4.0}
+                      stroke="#ef4444"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.75}
+                      label={{
+                        value: "Pagu 4.0m",
+                        position: "insideBottomRight",
+                        fill: "#ef4444",
+                        fontSize: 9,
+                        fontWeight: 700,
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="trendDepth"
+                      name="Garis Tren (OLS)"
+                      stroke="#1e293b"
+                      strokeDasharray="3 3"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="waterDepth"
+                      name="Kedalaman Aktual"
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      fillOpacity={0.16}
+                      fill="#10b981"
+                      dot={{ r: 3, fill: "#10b981", strokeWidth: 1.5, stroke: "#ffffff" }}
+                    >
+                      <LabelList
+                        dataKey="waterDepth"
+                        position="top"
+                        offset={6}
+                        style={{ fontSize: "8px", fill: "#047857", fontWeight: 700 }}
+                        formatter={(val: any) =>
+                          typeof val === "number" ? val.toFixed(2) : val
+                        }
+                      />
+                    </Area>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Insight Footnote Site 2 */}
+            <div className="bg-emerald-50/70 border border-emerald-200/70 rounded-2xl p-3 text-xs text-emerald-900 flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-700 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-black text-[11px] uppercase tracking-wider block">
+                  Analisis Pagu Kedalaman Muara Pahu:
+                </span>
+                <p className="text-[10px] text-emerald-950 leading-relaxed font-medium">
+                  Elevasi Muara Pahu sangat prima dengan rentang {muaraPahuSiteData.min.toFixed(2)}m s/d {muaraPahuSiteData.max.toFixed(2)}m (surplus {">"}+3.0m di atas pagu 4.0m). Kemiringan tren tercatat <strong>{muaraPahuSiteData.slope >= 0 ? "+" : ""}{muaraPahuSiteData.slope}m/hari</strong>, mengonfirmasi tidak ada hambatan draft tongkang di muara.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 5. MATRIKS SINKRONISASI & PERUBAHAN HARIAN (MODERN COMPARISON TABLE) */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
@@ -1013,6 +1617,8 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
           isOpen={isPdfModalOpen}
           onClose={() => setIsPdfModalOpen(false)}
           pairedData={pairedData}
+          senyiurSiteData={senyiurSiteData}
+          muaraPahuSiteData={muaraPahuSiteData}
           pearsonCorrelation={pearsonCorrelation}
           agreementRate={agreementRate}
           bothUpCount={bothUpCount}
