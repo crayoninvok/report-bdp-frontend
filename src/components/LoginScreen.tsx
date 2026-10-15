@@ -10,10 +10,6 @@ import {
   EyeOff,
   ArrowRight,
   AlertCircle,
-  TrendingUp,
-  ShieldCheck,
-  HardHat,
-  SlidersHorizontal,
 } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -106,39 +102,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             >
               Operations Review
             </button>
-          </div>
-        </div>
-
-        {/* Bottom Hero Card: Clean, Minimalist Executive Highlights */}
-        <div className="relative z-10 max-w-xl">
-          <div className="p-6 rounded-2xl bg-slate-900/85 backdrop-blur-xl border border-white/10 shadow-2xl text-white">
-            <div className="flex items-center gap-2 text-[#e95623] text-xs font-bold uppercase tracking-wider mb-2">
-              <HardHat size={16} />
-              <span>PT Batara Dharma Persada</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-snug">
-              Cost Analytics & Executive Reporting Platform
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-              Monitoring biaya operasional, rasio anggaran produksi, dan analisis varians real-time
-              untuk Site Muara Pahu, Site Senyiur, dan Head Office.
-            </p>
-
-            {/* Micro Highlights (No Text Clutter) */}
-            <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/10">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-emerald-400 shrink-0" />
-                <span className="text-xs font-medium text-slate-200">Cost Variance</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal size={16} className="text-amber-400 shrink-0" />
-                <span className="text-xs font-medium text-slate-200">MTD & YTD</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-blue-400 shrink-0" />
-                <span className="text-xs font-medium text-slate-200">Audited Data</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
