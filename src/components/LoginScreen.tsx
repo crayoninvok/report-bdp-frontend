@@ -198,7 +198,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nama@bataramining.com"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623] focus:border-transparent transition-all shadow-xs"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#e95623] transition-all shadow-xs"
                 />
               </div>
             </div>
@@ -221,7 +221,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan password Anda"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-11 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623] focus:border-transparent transition-all shadow-xs"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-11 text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#e95623] transition-all shadow-xs"
                 />
                 <button
                   type="button"
