@@ -136,16 +136,9 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
   // =========================================================================
   const {
     pairedData,
-    pearsonCorrelation,
-    agreementRate,
     bothUpCount,
     bothDownCount,
     divergentCount,
-    totalTransitions,
-    mpTotalSwing,
-    snyTotalSwing,
-    amplificationRatio,
-    latestComparison,
   } = useMemo(() => {
     // 1. Group latest depth per date for Senyiur & Muara Pahu
     const dateMap = new Map<string, { senyiur?: number; muaraPahu?: number }>();
@@ -353,57 +346,6 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
             >
               <Printer size={15} />
             </button>
-          </div>
-        </div>
-
-        {/* Highlight Ribbon: Core Answer to User Question */}
-        <div className="mt-6 pt-5 border-t border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400 block">
-              1. Keselarasan Arah Fluktuasi
-            </span>
-            <div className="text-xl font-black text-white mt-1 font-mono">
-              {agreementRate}% Searah
-            </div>
-            <span className="text-[11px] text-slate-300">
-              Kenaikan/penurunan di MP dan SNY selaras pada <strong>{pairedData.length > 1 ? agreementRate : "83.3"}%</strong> waktu.
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400 block">
-              2. Koefisien Korelasi Pearson (r)
-            </span>
-            <div className="text-xl font-black text-white mt-1 font-mono">
-              r = +{pearsonCorrelation}
-            </div>
-            <span className="text-[11px] text-slate-300">
-              Korelasi positif sangat kuat (&gt; 0.80) karena berbagi sumber hulu DAS yang sama.
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400 block">
-              3. Rasio Skala Fluktuasi
-            </span>
-            <div className="text-xl font-black text-white mt-1 font-mono">
-              {amplificationRatio}x Lebih Lebar di MP
-            </div>
-            <span className="text-[11px] text-slate-300">
-              Kenaikan 1.0m di Muara Pahu berkorelasi dengan kenaikan ~0.42m di Senyiur.
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">
-              4. Status Tongkang Senyiur (Pagu 4.0m)
-            </span>
-            <div className="text-xl font-black text-rose-400 mt-1 font-mono">
-              Tetap &lt; 4.0m (Defisit)
-            </div>
-            <span className="text-[11px] text-slate-300">
-              Meskipun air naik saat MP naik, Senyiur belum pernah tembus 4.0m (puncak 2.74m).
-            </span>
           </div>
         </div>
       </div>
