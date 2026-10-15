@@ -117,19 +117,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <div className="h-20 w-20 rounded-2xl bg-white p-2.5 border border-slate-200/90 shadow-lg shadow-slate-200/50">
                 <img
                   src="/coa-logo-bdp.png"
-                  alt="Cost Analytics PT Batara Dharma Persada"
+                  alt="Report Management Portal PT Batara Dharma Persada"
                   className="h-full w-full object-contain"
                 />
               </div>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              COST ANALYTICS
+              REPORT MANAGEMENT PORTAL
             </h1>
             <p className="text-xs sm:text-sm font-bold text-[#e95623] mt-1 tracking-wide">
               PT BATARA DHARMA PERSADA
             </p>
             <p className="text-xs text-slate-500 mt-2">
-              Sistem Pelaporan & Manajemen Biaya Operasional Tambang
+              Sistem Pelaporan & Manajemen Operasional Terpadu
             </p>
           </div>
 

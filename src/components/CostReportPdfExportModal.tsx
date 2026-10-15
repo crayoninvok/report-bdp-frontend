@@ -1130,7 +1130,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       {/* Footer text */}
       <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-200 pt-2 mt-2">
         <span>
-          Portal Cost Analytics &bull; PT Batara Dharma Persada
+          Report Management Portal &bull; PT Batara Dharma Persada
         </span>
         <span className="font-bold text-slate-600">Slide 2 / 2</span>
       </div>

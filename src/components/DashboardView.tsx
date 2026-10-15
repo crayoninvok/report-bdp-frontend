@@ -86,7 +86,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-orange-200 mb-3 border border-white/20">
               <span className="h-2 w-2 rounded-full bg-[#18bebc] animate-pulse" />
-              <span>Cost Analytics &bull; PT Batara Dharma Persada</span>
+              <span>Report Management Portal &bull; PT Batara Dharma Persada</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
               Selamat Datang, {user.name}
@@ -142,7 +142,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="h-20 w-20 rounded-xl bg-white p-2 flex items-center justify-center shadow-inner">
               <img
                 src="/coa-logo-bdp.png"
-                alt="Cost Analytics PT Batara Dharma Persada"
+                alt="Report Management Portal PT Batara Dharma Persada"
                 className="h-full w-full object-contain"
               />
             </div>

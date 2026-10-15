@@ -657,7 +657,7 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
               {/* Footer Slide 1 */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[10px] font-semibold text-slate-400">
                 <span>Dokumen Resmi Internal PT Batara Dharma Persada &bull; Strictly Confidential</span>
-                <span>Cost Analytics Platform &bull; Halaman 1 dari {totalSlidesIncluded}</span>
+                <span>Report Management Portal &bull; Halaman 1 dari {totalSlidesIncluded}</span>
               </div>
             </div>
 
@@ -831,7 +831,7 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
               {/* Footer Slide 2 */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[10px] font-semibold text-slate-400">
                 <span>Dokumen Resmi Internal PT Batara Dharma Persada &bull; Strictly Confidential</span>
-                <span>Cost Analytics Platform &bull; Halaman 2 dari {totalSlidesIncluded}</span>
+                <span>Report Management Portal &bull; Halaman 2 dari {totalSlidesIncluded}</span>
               </div>
             </div>
 
@@ -962,7 +962,7 @@ export const CostDriverPdfExportModal: React.FC<CostDriverPdfExportModalProps> =
               {/* Footer Slide 3 */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[10px] font-semibold text-slate-400">
                 <span>Dokumen Resmi Internal PT Batara Dharma Persada &bull; Strictly Confidential</span>
-                <span>Cost Analytics Platform &bull; Halaman 3 dari {totalSlidesIncluded}</span>
+                <span>Report Management Portal &bull; Halaman 3 dari {totalSlidesIncluded}</span>
               </div>
             </div>
           </div>

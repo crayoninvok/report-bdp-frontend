@@ -40,7 +40,7 @@ export default function Home() {
   const handleLogout = () => {
     confirm({
       title: "Konfirmasi Keluar Akun",
-      message: `Apakah Anda yakin ingin keluar dari sistem Cost Analytics PT Batara Dharma Persada? Sesi login ${currentUser?.name || ""} akan diakhiri.`,
+      message: `Apakah Anda yakin ingin keluar dari sistem Report Management Portal PT Batara Dharma Persada? Sesi login ${currentUser?.name || ""} akan diakhiri.`,
       confirmText: "Ya, Keluar Akun",
       cancelText: "Batal",
       type: "danger",
@@ -122,7 +122,7 @@ export default function Home() {
             <div className="flex items-center gap-2.5">
               <img
                 src="/coa-logo-bdp.png"
-                alt="Cost Analytics PT Batara Dharma Persada"
+                alt="Report Management Portal PT Batara Dharma Persada"
                 className="h-8 w-8 object-contain md:hidden"
               />
               <div className="flex flex-col">
@@ -148,7 +148,7 @@ export default function Home() {
                     : "Dashboard Cost"}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
-                  Cost Analytics &bull; PT Batara Dharma Persada
+                  Report Management Portal &bull; PT Batara Dharma Persada
                 </span>
               </div>
             </div>

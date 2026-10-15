@@ -142,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={`relative flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out z-30 select-none shadow-sm ${
-        isCollapsed ? "w-20" : "w-64"
+        isCollapsed ? "w-20" : "w-72"
       }`}
     >
       {/* Toggle button on the sidebar edge */}
@@ -161,14 +161,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 border border-slate-200 shadow-2xs">
             <img
               src="/coa-logo-bdp.png"
-              alt="Cost Analytics PT Batara Dharma Persada"
+              alt="Report Management Portal PT Batara Dharma Persada"
               className="h-full w-full object-contain"
             />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-extrabold tracking-tight text-slate-900 truncate">
-                COST ANALYTICS
+              <span className="text-xs font-black tracking-tight text-slate-900 truncate">
+                REPORT MANAGEMENT PORTAL
               </span>
               <span className="text-[10px] font-bold text-[#e95623] tracking-wide truncate">
                 PT Batara Dharma Persada
