@@ -626,7 +626,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 >
                   {availableMonths.map((m) => (
                     <option key={m} value={m}>
-                      Bulan {m} ({monthsMap.get(m)?.length || 0} Minggu)
+                      Bulan {m}
                     </option>
                   ))}
                 </select>
@@ -819,57 +819,38 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </div>
           </div>
 
-          {/* Card 4: YTD atau Ringkasan Periode */}
+          {/* Card 4: YTD Cost Under / (Over) */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-xs font-bold uppercase tracking-wider">
-                {viewMode === "month"
-                  ? "Cakupan Minggu Terangkum"
-                  : "YTD Cost Under / (Over)"}
+                YTD Cost Under / (Over)
               </span>
               <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
                 <Calendar size={16} />
               </div>
             </div>
             <div className="mt-2">
-              {viewMode === "month" ? (
-                <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xl font-extrabold text-slate-900">
-                      {monthsMap.get(selectedMonthKey)?.length || 0}
-                    </span>
-                    <span className="text-xs text-slate-500 font-semibold">Minggu Laporan</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Bulan Aktif:{" "}
-                    <span className="font-semibold text-slate-700">
-                      {selectedMonthKey}
-                    </span>
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-2">
-                    <span
-                      className={`text-xl font-extrabold ${
-                        activeData.biayaProduksi.ytdCostUnderOver >= 0
-                          ? "text-emerald-700"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {activeData.biayaProduksi.ytdCostUnderOver < 0
-                        ? `(Rp ${Math.abs(Math.round(activeData.biayaProduksi.ytdCostUnderOver)).toLocaleString("id-ID")})`
-                        : `Rp ${Math.round(activeData.biayaProduksi.ytdCostUnderOver).toLocaleString("id-ID")}`}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Kumulatif YTD hingga{" "}
-                    <span className="font-semibold text-slate-700">
-                      {activeData.report.periodName.split("-")[1] || activeData.report.periodName}
-                    </span>
-                  </p>
-                </>
-              )}
+              <div className="flex items-baseline gap-2">
+                <span
+                  className={`text-xl font-extrabold ${
+                    activeData.biayaProduksi.ytdCostUnderOver >= 0
+                      ? "text-emerald-700"
+                      : "text-red-600"
+                  }`}
+                >
+                  {activeData.biayaProduksi.ytdCostUnderOver < 0
+                    ? `(Rp ${Math.abs(Math.round(activeData.biayaProduksi.ytdCostUnderOver)).toLocaleString("id-ID")})`
+                    : `Rp ${Math.round(activeData.biayaProduksi.ytdCostUnderOver).toLocaleString("id-ID")}`}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Kumulatif YTD hingga{" "}
+                <span className="font-semibold text-slate-700">
+                  {viewMode === "month"
+                    ? selectedMonthKey
+                    : activeData.report.periodName.split("-")[1] || activeData.report.periodName}
+                </span>
+              </p>
             </div>
           </div>
         </div>
@@ -891,7 +872,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           viewMode={viewMode}
           customPeriodLabel={
             viewMode === "month"
-              ? `Akumulasi Bulan ${selectedMonthKey} (${monthsMap.get(selectedMonthKey)?.length || 0} Minggu)`
+              ? `Akumulasi Bulan ${selectedMonthKey}`
               : undefined
           }
         />
