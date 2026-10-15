@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: "Logistik Sungai",
+      title: "Water Depth",
       items: [
         {
           id: "river-journal",
