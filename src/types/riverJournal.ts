@@ -40,3 +40,17 @@ export interface CreateRiverJournalPayload {
   userInput: string;
   conclusion?: string;
 }
+
+export interface DailyPairedPoint {
+  date: string;
+  label: string;
+  senyiur: number;
+  muaraPahu: number;
+  deltaSenyiur: number;
+  deltaMuaraPahu: number;
+  isSameDirection: boolean;
+  statusLabel: string;
+  statusType: "both_up" | "both_down" | "divergent" | "flat";
+  senyiurDeficit: number;
+}
+

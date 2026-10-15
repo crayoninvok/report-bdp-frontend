@@ -6,9 +6,11 @@ import {
   RiverJournalEntry,
   RiverJournalStats,
   CreateRiverJournalPayload,
+  DailyPairedPoint,
 } from "../types/riverJournal";
 import { riverJournalService } from "../services/riverJournalService";
 import { InputRiverJournalModal } from "./InputRiverJournalModal";
+import { RiverJournalPdfExportModal } from "./RiverJournalPdfExportModal";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -27,6 +29,7 @@ import {
   Waves,
   Ship,
   Plus,
+  FileDown,
   RefreshCw,
   Printer,
   Calendar,
@@ -51,19 +54,6 @@ interface RiverJournalViewProps {
   user: User;
 }
 
-interface DailyPairedPoint {
-  date: string;
-  label: string;
-  senyiur: number;
-  muaraPahu: number;
-  deltaSenyiur: number;
-  deltaMuaraPahu: number;
-  isSameDirection: boolean;
-  statusLabel: string;
-  statusType: "both_up" | "both_down" | "divergent" | "flat";
-  senyiurDeficit: number;
-}
-
 export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
   const { showSuccess, showError } = useNotification();
 
@@ -73,6 +63,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Active Chart View Mode: "dual_axis" | "daily_delta" | "absolute_depth"
   const [chartViewMode, setChartViewMode] = useState<"dual_axis" | "daily_delta" | "absolute_depth">("dual_axis");
@@ -136,9 +127,15 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
   // =========================================================================
   const {
     pairedData,
+    pearsonCorrelation,
+    agreementRate,
     bothUpCount,
     bothDownCount,
     divergentCount,
+    totalTransitions,
+    mpTotalSwing,
+    snyTotalSwing,
+    amplificationRatio,
   } = useMemo(() => {
     // 1. Group latest depth per date for Senyiur & Muara Pahu
     const dateMap = new Map<string, { senyiur?: number; muaraPahu?: number }>();
@@ -325,6 +322,15 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
             >
               <Plus size={16} />
               <span>Input Kedalaman Sungai</span>
+            </button>
+
+            <button
+              onClick={() => setIsPdfModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-black tracking-wide shadow-lg shadow-teal-600/30 flex items-center gap-2 transition-all cursor-pointer"
+              title="Download Laporan PDF Presentasi River Journal"
+            >
+              <FileDown size={16} />
+              <span>Export PDF Laporan</span>
             </button>
 
             <button
@@ -1007,6 +1013,27 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
           user={user}
           onClose={() => setIsInputModalOpen(false)}
           onSubmit={handleCreateEntry}
+        />
+      )}
+
+      {/* Export PDF Modal */}
+      {isPdfModalOpen && (
+        <RiverJournalPdfExportModal
+          isOpen={isPdfModalOpen}
+          onClose={() => setIsPdfModalOpen(false)}
+          pairedData={pairedData}
+          pearsonCorrelation={pearsonCorrelation}
+          agreementRate={agreementRate}
+          bothUpCount={bothUpCount}
+          bothDownCount={bothDownCount}
+          divergentCount={divergentCount}
+          totalTransitions={totalTransitions}
+          amplificationRatio={amplificationRatio}
+          mpTotalSwing={mpTotalSwing}
+          snyTotalSwing={snyTotalSwing}
+          statsSenyiur={statsSenyiur}
+          statsMuaraPahu={statsMuaraPahu}
+          user={user}
         />
       )}
     </div>
