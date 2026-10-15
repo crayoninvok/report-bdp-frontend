@@ -79,13 +79,13 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({
       : report.periodName);
 
   return (
-    <div className="w-full overflow-x-auto bg-white rounded-xl shadow-md border border-slate-200">
+    <div className="w-full overflow-auto max-h-[calc(100vh-210px)] min-h-[480px] bg-white rounded-xl shadow-md border border-slate-200 relative">
       <table className="w-full text-xs text-left border-collapse select-text">
         {/* Tier 1 Header: AKUN | Weekly / Monthly Period | YTD Period */}
-        <thead>
-          <tr className="text-white text-xs font-bold uppercase tracking-wider text-center">
+        <thead className="sticky top-0 z-30 shadow-xs">
+          <tr className="text-white text-xs font-bold uppercase tracking-wider text-center h-10">
             {/* AKUN column header */}
-            <th className="bg-[#8B0000] px-4 py-3 border border-slate-300 min-w-70 text-center align-middle sticky left-0 z-20 shadow-xs">
+            <th className="bg-[#8B0000] px-4 py-2.5 border border-slate-300 min-w-70 text-center align-middle sticky top-0 left-0 z-40 shadow-xs">
               AKUN
             </th>
 
@@ -94,7 +94,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({
               colSpan={8}
               className={`${
                 isMonthlyOnly ? "bg-[#05605d]" : "bg-[#0F4C81]"
-              } px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center`}
+              } px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center sticky top-0 z-30`}
             >
               {periodHeaderLabel}
             </th>
@@ -103,7 +103,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({
             {isFull && (
               <th
                 colSpan={8}
-                className="bg-[#991B1B] px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center"
+                className="bg-[#991B1B] px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center sticky top-0 z-30"
               >
                 YTD {report.periodName.split("-")[1] || report.periodName}
               </th>
@@ -111,49 +111,49 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({
           </tr>
 
           {/* Tier 2 Header: Column Names */}
-          <tr className="text-[11px] font-bold text-white text-center">
+          <tr className="text-[11px] font-bold text-white text-center h-9">
             {/* AKUN subheader placeholder */}
-            <th className="bg-[#8B0000] px-4 py-2 border border-slate-300 sticky left-0 z-20"></th>
+            <th className="bg-[#8B0000] px-4 py-2 border border-slate-300 sticky top-10 left-0 z-40"></th>
 
             {/* Period Subheaders */}
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-25`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-25 sticky top-10 z-30`}>
               {isMonthlyOnly ? "BUDGET BULAN" : "BUDGET"}
             </th>
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-16.25`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-16.25 sticky top-10 z-30`}>
               % TC
             </th>
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-18.75`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-18.75 sticky top-10 z-30`}>
               IDR/Ton
             </th>
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-25`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-25 sticky top-10 z-30`}>
               {isMonthlyOnly ? "REALISASI BULAN" : "REALISASI"}
             </th>
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-16.25`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-16.25 sticky top-10 z-30`}>
               % TC
             </th>
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-18.75`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-18.75 sticky top-10 z-30`}>
               IDR/Ton
             </th>
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-27.5 leading-tight`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-27.5 leading-tight sticky top-10 z-30`}>
               Cost Under/(Over)<br />per Ton
             </th>
-            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-27.5 leading-tight`}>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-27.5 leading-tight sticky top-10 z-30`}>
               Cost Under/(Over)
             </th>
 
             {/* YTD Subheaders (only in full mode) */}
             {isFull && (
               <>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5">BUDGET</th>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5">REALISASI</th>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5 leading-tight">
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5 sticky top-10 z-30">BUDGET</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25 sticky top-10 z-30">% TC</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75 sticky top-10 z-30">IDR/Ton</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5 sticky top-10 z-30">REALISASI</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25 sticky top-10 z-30">% TC</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75 sticky top-10 z-30">IDR/Ton</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5 leading-tight sticky top-10 z-30">
                   Cost Under/(Over)<br />per Ton
                 </th>
-                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-30 leading-tight">
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-30 leading-tight sticky top-10 z-30">
                   Cost Under/(Over)
                 </th>
               </>
