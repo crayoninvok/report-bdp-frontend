@@ -1966,36 +1966,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                   </ResponsiveContainer>
                 </div>
               </div>
-
-              {/* Informasi Akun Beban (COA) */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers size={14} className="text-[#18bebc]" />
-                  <span>Informasi Akun Beban (COA)</span>
-                </h4>
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">Kode Akun COA:</span>
-                    <strong className="text-slate-900 font-mono font-bold">{selectedDriverDetail.accountCode}</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">Nama Akun Beban:</span>
-                    <strong className="text-slate-900 font-mono font-bold">{selectedDriverDetail.accountName}</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">Kategori Beban:</span>
-                    <strong className="text-slate-800">{selectedDriverDetail.bebanLabel}</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">Sifat Biaya:</span>
-                    <span className="font-semibold text-slate-800">
-                      {selectedDriverDetail.costBehavior === "VC"
-                        ? "Variable Cost (VC) - Dipengaruhi volume produksi tonnase / jam operasional"
-                        : "Fixed Cost (FC) - Biaya Tetap / Operasional Periodik"}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Modal Footer */}
