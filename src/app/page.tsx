@@ -11,6 +11,7 @@ import { InputCostView } from "../components/InputCostView";
 import { SummaryOpsView } from "../components/SummaryOpsView";
 import { UserManagementView } from "../components/UserManagementView";
 import { CostDriverView } from "../components/CostDriverView";
+import { RiverJournalView } from "../components/RiverJournalView";
 import { Menu, Bell, MapPin } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -135,6 +136,8 @@ export default function Home() {
                     ? "Manajemen Pengguna (Super Admin)"
                     : activeMenu === "cost-drivers"
                     ? "Cost Driver"
+                    : activeMenu === "river-journal"
+                    ? "River Journal • Kedalaman Sungai Project Tabang"
                     : "Dashboard Utama"}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
@@ -202,11 +205,14 @@ export default function Home() {
             <UserManagementView user={currentUser} />
           ) : activeMenu === "cost-drivers" ? (
             <CostDriverView user={currentUser} />
+          ) : activeMenu === "river-journal" ? (
+            <RiverJournalView user={currentUser} />
           ) : (
             <DashboardView
               user={currentUser}
               onNavigateToReports={() => setActiveMenu("reports")}
               onNavigateToCostDrivers={() => setActiveMenu("cost-drivers")}
+              onNavigateToRiverJournal={() => setActiveMenu("river-journal")}
             />
           )}
         </main>

@@ -15,6 +15,7 @@ import {
   Clock,
   Gauge,
   FileSpreadsheet,
+  Waves,
 } from "lucide-react";
 import { CostTrendCharts } from "./CostTrendCharts";
 import { UploadExcelModal } from "./UploadExcelModal";
@@ -23,12 +24,14 @@ interface DashboardViewProps {
   user: User;
   onNavigateToReports?: () => void;
   onNavigateToCostDrivers?: () => void;
+  onNavigateToRiverJournal?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   user,
   onNavigateToReports,
   onNavigateToCostDrivers,
+  onNavigateToRiverJournal,
 }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [muaraPahuReports, setMuaraPahuReports] = useState<ReportSummary[]>([]);
@@ -119,6 +122,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   <Gauge size={15} className="text-[#e95623]" />
                   <span>Cost Driver</span>
+                </button>
+              )}
+
+              {onNavigateToRiverJournal && (
+                <button
+                  onClick={onNavigateToRiverJournal}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600/90 hover:bg-teal-700 text-white font-bold text-xs transition-all shadow-md shadow-teal-600/30 border border-teal-400/30 active:scale-95 cursor-pointer"
+                >
+                  <Waves size={15} />
+                  <span>River Journal Tabang</span>
                 </button>
               )}
             </div>

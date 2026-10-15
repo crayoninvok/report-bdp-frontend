@@ -13,6 +13,7 @@ import {
   Users,
   Gauge,
   FileEdit,
+  Waves,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -49,6 +50,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "summary",
       label: "Laporan Summary",
       icon: TableProperties,
+    },
+    {
+      id: "river-journal",
+      label: "River Journal",
+      icon: Waves,
+      badge: "Tabang",
     },
     ...(isSuperAdmin
       ? [
