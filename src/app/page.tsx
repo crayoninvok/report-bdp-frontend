@@ -7,6 +7,7 @@ import { LoginScreen } from "../components/LoginScreen";
 import { Sidebar } from "../components/Sidebar";
 import { DashboardView } from "../components/DashboardView";
 import { ReportsView } from "../components/ReportsView";
+import { InputCostView } from "../components/InputCostView";
 import { SummaryOpsView } from "../components/SummaryOpsView";
 import { UserManagementView } from "../components/UserManagementView";
 import { CostDriverView } from "../components/CostDriverView";
@@ -124,7 +125,9 @@ export default function Home() {
               />
               <div className="flex flex-col">
                 <span className="text-sm font-extrabold text-slate-800">
-                  {activeMenu === "reports"
+                  {activeMenu === "input-cost"
+                    ? "Input Cost"
+                    : activeMenu === "reports"
                     ? "Laporan Cost"
                     : activeMenu === "summary"
                     ? "Laporan Summary Operasional (PL Summary 1 OPS)"
@@ -183,8 +186,16 @@ export default function Home() {
 
         {/* Scrollable View Container */}
         <main className="flex-1 overflow-y-auto bg-slate-50">
-          {activeMenu === "reports" ? (
-            <ReportsView user={currentUser} />
+          {activeMenu === "input-cost" ? (
+            <InputCostView
+              user={currentUser}
+              onNavigateToReports={() => setActiveMenu("reports")}
+            />
+          ) : activeMenu === "reports" ? (
+            <ReportsView
+              user={currentUser}
+              onNavigateToInput={() => setActiveMenu("input-cost")}
+            />
           ) : activeMenu === "summary" ? (
             <SummaryOpsView user={currentUser} />
           ) : activeMenu === "users" ? (

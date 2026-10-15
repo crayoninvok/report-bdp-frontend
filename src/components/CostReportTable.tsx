@@ -5,10 +5,20 @@ import { ReportDetails } from "../types/report";
 
 interface CostReportTableProps {
   data: ReportDetails;
+  viewMode?: "week" | "month" | "full";
+  customPeriodLabel?: string;
 }
 
-export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
+export const CostReportTable: React.FC<CostReportTableProps> = ({
+  data,
+  viewMode = "full",
+  customPeriodLabel,
+}) => {
   const { report, produksi, biayaProduksi, items } = data;
+
+  const isWeeklyOnly = viewMode === "week";
+  const isMonthlyOnly = viewMode === "month";
+  const isFull = viewMode === "full";
 
   // Format currency with standard Indonesian thousand separator (dot)
   const formatIDR = (val: number | null | undefined, isParenthesisForNegative = true) => {
@@ -62,10 +72,16 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
     );
   };
 
+  const periodHeaderLabel =
+    customPeriodLabel ||
+    (isMonthlyOnly
+      ? `Bulan ${report.periodName.split("-")[1]?.trim() || report.periodName}`
+      : report.periodName);
+
   return (
     <div className="w-full overflow-x-auto bg-white rounded-xl shadow-md border border-slate-200">
       <table className="w-full text-xs text-left border-collapse select-text">
-        {/* Tier 1 Header: AKUN | Weekly Period | YTD Period */}
+        {/* Tier 1 Header: AKUN | Weekly / Monthly Period | YTD Period */}
         <thead>
           <tr className="text-white text-xs font-bold uppercase tracking-wider text-center">
             {/* AKUN column header */}
@@ -73,21 +89,25 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
               AKUN
             </th>
 
-            {/* Weekly Header (Navy Blue) */}
+            {/* Weekly / Monthly Header */}
             <th
               colSpan={8}
-              className="bg-[#0F4C81] px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center"
+              className={`${
+                isMonthlyOnly ? "bg-[#05605d]" : "bg-[#0F4C81]"
+              } px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center`}
             >
-              {report.periodName}
+              {periodHeaderLabel}
             </th>
 
-            {/* YTD Header (Dark Crimson Red) */}
-            <th
-              colSpan={8}
-              className="bg-[#991B1B] px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center"
-            >
-              YTD {report.periodName.split("-")[1] || report.periodName}
-            </th>
+            {/* YTD Header (only in full mode) */}
+            {isFull && (
+              <th
+                colSpan={8}
+                className="bg-[#991B1B] px-4 py-2.5 border border-slate-300 tracking-wide text-sm font-bold text-center"
+              >
+                YTD {report.periodName.split("-")[1] || report.periodName}
+              </th>
+            )}
           </tr>
 
           {/* Tier 2 Header: Column Names */}
@@ -95,33 +115,49 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
             {/* AKUN subheader placeholder */}
             <th className="bg-[#8B0000] px-4 py-2 border border-slate-300 sticky left-0 z-20"></th>
 
-            {/* Weekly Subheaders (Navy Blue shade) */}
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-25">BUDGET</th>
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-25">REALISASI</th>
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-27.5 leading-tight">
+            {/* Period Subheaders */}
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-25`}>
+              {isMonthlyOnly ? "BUDGET BULAN" : "BUDGET"}
+            </th>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-16.25`}>
+              % TC
+            </th>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-18.75`}>
+              IDR/Ton
+            </th>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-25`}>
+              {isMonthlyOnly ? "REALISASI BULAN" : "REALISASI"}
+            </th>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-16.25`}>
+              % TC
+            </th>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-18.75`}>
+              IDR/Ton
+            </th>
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-27.5 leading-tight`}>
               Cost Under/(Over)<br />per Ton
             </th>
-            <th className="bg-[#17568F] px-2 py-2 border border-slate-300 min-w-27.5 leading-tight">
+            <th className={`${isMonthlyOnly ? "bg-[#0b7470]" : "bg-[#17568F]"} px-2 py-2 border border-slate-300 min-w-27.5 leading-tight`}>
               Cost Under/(Over)
             </th>
 
-            {/* YTD Subheaders (Red shade) */}
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5">BUDGET</th>
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5">REALISASI</th>
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5 leading-tight">
-              Cost Under/(Over)<br />per Ton
-            </th>
-            <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-30 leading-tight">
-              Cost Under/(Over)
-            </th>
+            {/* YTD Subheaders (only in full mode) */}
+            {isFull && (
+              <>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5">BUDGET</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5">REALISASI</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-16.25">% TC</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-18.75">IDR/Ton</th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-27.5 leading-tight">
+                  Cost Under/(Over)<br />per Ton
+                </th>
+                <th className="bg-[#B91C1C] px-2 py-2 border border-slate-300 min-w-30 leading-tight">
+                  Cost Under/(Over)
+                </th>
+              </>
+            )}
           </tr>
         </thead>
 
@@ -132,7 +168,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
               PRODUKSI
             </td>
 
-            {/* Weekly Produksi */}
+            {/* Weekly / Monthly Produksi */}
             <td className="px-3 py-2 border border-slate-300 text-right font-bold">
               {formatTon(produksi.weeklyBudget)}
             </td>
@@ -156,27 +192,31 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
                 : "-"}
             </td>
 
-            {/* YTD Produksi */}
-            <td className="px-3 py-2 border border-slate-300 text-right font-bold">
-              {formatTon(produksi.ytdBudget)}
-            </td>
-            <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
-            <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
-            <td className="px-3 py-2 border border-slate-300 text-right font-bold">
-              {formatTon(produksi.ytdRealisasi)}
-            </td>
-            <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
-            <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
-            <td className="px-3 py-2 border border-slate-300 text-right">
-              <span className={produksi.ytdVariance > 0 ? "text-red-600 font-bold" : "text-emerald-700 font-bold"}>
-                {produksi.ytdVariance !== 0 ? `(${formatTon(produksi.ytdVariance)})` : "-"}
-              </span>
-            </td>
-            <td className="px-3 py-2 border border-slate-300 text-center font-bold">
-              {produksi.ytdBudget > 0 && produksi.ytdRealisasi > 0
-                ? `${Math.round((produksi.ytdRealisasi / produksi.ytdBudget) * 100)}%`
-                : "-"}
-            </td>
+            {/* YTD Produksi (only in full mode) */}
+            {isFull && (
+              <>
+                <td className="px-3 py-2 border border-slate-300 text-right font-bold">
+                  {formatTon(produksi.ytdBudget)}
+                </td>
+                <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
+                <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
+                <td className="px-3 py-2 border border-slate-300 text-right font-bold">
+                  {formatTon(produksi.ytdRealisasi)}
+                </td>
+                <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
+                <td className="px-2 py-2 border border-slate-300 text-center text-slate-400">-</td>
+                <td className="px-3 py-2 border border-slate-300 text-right">
+                  <span className={produksi.ytdVariance > 0 ? "text-red-600 font-bold" : "text-emerald-700 font-bold"}>
+                    {produksi.ytdVariance !== 0 ? `(${formatTon(produksi.ytdVariance)})` : "-"}
+                  </span>
+                </td>
+                <td className="px-3 py-2 border border-slate-300 text-center font-bold">
+                  {produksi.ytdBudget > 0 && produksi.ytdRealisasi > 0
+                    ? `${Math.round((produksi.ytdRealisasi / produksi.ytdBudget) * 100)}%`
+                    : "-"}
+                </td>
+              </>
+            )}
           </tr>
 
           {/* 2. BIAYA PRODUKSI ROW (Lime Green Highlight) */}
@@ -185,7 +225,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
               BIAYA PRODUKSI
             </td>
 
-            {/* Weekly Biaya Produksi */}
+            {/* Weekly / Monthly Biaya Produksi */}
             <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
               {formatIDR(biayaProduksi.weeklyBudget)}
             </td>
@@ -211,31 +251,35 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
               {renderVariance(biayaProduksi.weeklyCostUnderOver)}
             </td>
 
-            {/* YTD Biaya Produksi */}
-            <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
-              {formatIDR(biayaProduksi.ytdBudget)}
-            </td>
-            <td className="px-2 py-2.5 border border-slate-300 text-center font-bold">
-              {formatPercent(biayaProduksi.ytdPercentTCBudget)}
-            </td>
-            <td className="px-2 py-2.5 border border-slate-300 text-right font-bold">
-              {formatPerTon(biayaProduksi.ytdIdrPerTonBudget)}
-            </td>
-            <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
-              {formatIDR(biayaProduksi.ytdRealisasi)}
-            </td>
-            <td className="px-2 py-2.5 border border-slate-300 text-center font-bold">
-              {formatPercent(biayaProduksi.ytdPercentTCRealisasi)}
-            </td>
-            <td className="px-2 py-2.5 border border-slate-300 text-right font-bold">
-              {formatPerTon(biayaProduksi.ytdIdrPerTonRealisasi)}
-            </td>
-            <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
-              {renderVariancePerTon(biayaProduksi.ytdCostUnderOverPerTon)}
-            </td>
-            <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
-              {renderVariance(biayaProduksi.ytdCostUnderOver)}
-            </td>
+            {/* YTD Biaya Produksi (only in full mode) */}
+            {isFull && (
+              <>
+                <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
+                  {formatIDR(biayaProduksi.ytdBudget)}
+                </td>
+                <td className="px-2 py-2.5 border border-slate-300 text-center font-bold">
+                  {formatPercent(biayaProduksi.ytdPercentTCBudget)}
+                </td>
+                <td className="px-2 py-2.5 border border-slate-300 text-right font-bold">
+                  {formatPerTon(biayaProduksi.ytdIdrPerTonBudget)}
+                </td>
+                <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
+                  {formatIDR(biayaProduksi.ytdRealisasi)}
+                </td>
+                <td className="px-2 py-2.5 border border-slate-300 text-center font-bold">
+                  {formatPercent(biayaProduksi.ytdPercentTCRealisasi)}
+                </td>
+                <td className="px-2 py-2.5 border border-slate-300 text-right font-bold">
+                  {formatPerTon(biayaProduksi.ytdIdrPerTonRealisasi)}
+                </td>
+                <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
+                  {renderVariancePerTon(biayaProduksi.ytdCostUnderOverPerTon)}
+                </td>
+                <td className="px-3 py-2.5 border border-slate-300 text-right font-bold">
+                  {renderVariance(biayaProduksi.ytdCostUnderOver)}
+                </td>
+              </>
+            )}
           </tr>
 
           {/* 3. 13 AKUN BEBAN ROWS */}
@@ -268,7 +312,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
                   </div>
                 </td>
 
-                {/* Weekly Budget */}
+                {/* Weekly / Monthly Budget */}
                 <td className="px-3 py-2 border border-slate-300 text-right font-mono">
                   {formatIDR(item.weeklyBudget)}
                 </td>
@@ -279,7 +323,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
                   {formatPerTon(item.weeklyIdrPerTonBudget)}
                 </td>
 
-                {/* Weekly Realisasi */}
+                {/* Weekly / Monthly Realisasi */}
                 <td className="px-3 py-2 border border-slate-300 text-right font-mono">
                   {formatIDR(item.weeklyRealisasi)}
                 </td>
@@ -290,7 +334,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
                   {formatPerTon(item.weeklyIdrPerTonRealisasi)}
                 </td>
 
-                {/* Weekly Variances */}
+                {/* Weekly / Monthly Variances */}
                 <td className="px-3 py-2 border border-slate-300 text-right font-mono">
                   {renderVariancePerTon(item.weeklyCostUnderOverPerTon)}
                 </td>
@@ -298,35 +342,37 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({ data }) => {
                   {renderVariance(item.weeklyCostUnderOver)}
                 </td>
 
-                {/* YTD Budget */}
-                <td className="px-3 py-2 border border-slate-300 text-right font-mono">
-                  {formatIDR(item.ytdBudget)}
-                </td>
-                <td className="px-2 py-2 border border-slate-300 text-right font-mono">
-                  {formatPercent(item.ytdPercentTCBudget)}
-                </td>
-                <td className="px-2 py-2 border border-slate-300 text-right font-mono">
-                  {formatPerTon(item.ytdIdrPerTonBudget)}
-                </td>
+                {/* YTD Budget & Realisasi (only in full mode) */}
+                {isFull && (
+                  <>
+                    <td className="px-3 py-2 border border-slate-300 text-right font-mono">
+                      {formatIDR(item.ytdBudget)}
+                    </td>
+                    <td className="px-2 py-2 border border-slate-300 text-right font-mono">
+                      {formatPercent(item.ytdPercentTCBudget)}
+                    </td>
+                    <td className="px-2 py-2 border border-slate-300 text-right font-mono">
+                      {formatPerTon(item.ytdIdrPerTonBudget)}
+                    </td>
 
-                {/* YTD Realisasi */}
-                <td className="px-3 py-2 border border-slate-300 text-right font-mono">
-                  {formatIDR(item.ytdRealisasi)}
-                </td>
-                <td className="px-2 py-2 border border-slate-300 text-right font-mono">
-                  {formatPercent(item.ytdPercentTCRealisasi)}
-                </td>
-                <td className="px-2 py-2 border border-slate-300 text-right font-mono">
-                  {formatPerTon(item.ytdIdrPerTonRealisasi)}
-                </td>
+                    <td className="px-3 py-2 border border-slate-300 text-right font-mono">
+                      {formatIDR(item.ytdRealisasi)}
+                    </td>
+                    <td className="px-2 py-2 border border-slate-300 text-right font-mono">
+                      {formatPercent(item.ytdPercentTCRealisasi)}
+                    </td>
+                    <td className="px-2 py-2 border border-slate-300 text-right font-mono">
+                      {formatPerTon(item.ytdIdrPerTonRealisasi)}
+                    </td>
 
-                {/* YTD Variances */}
-                <td className="px-3 py-2 border border-slate-300 text-right font-mono">
-                  {renderVariancePerTon(item.ytdCostUnderOverPerTon)}
-                </td>
-                <td className="px-3 py-2 border border-slate-300 text-right font-mono">
-                  {renderVariance(item.ytdCostUnderOver)}
-                </td>
+                    <td className="px-3 py-2 border border-slate-300 text-right font-mono">
+                      {renderVariancePerTon(item.ytdCostUnderOverPerTon)}
+                    </td>
+                    <td className="px-3 py-2 border border-slate-300 text-right font-mono">
+                      {renderVariance(item.ytdCostUnderOver)}
+                    </td>
+                  </>
+                )}
               </tr>
             );
           })}

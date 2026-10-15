@@ -12,6 +12,7 @@ import {
   Building2,
   Users,
   Gauge,
+  FileEdit,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -37,6 +38,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "cost-drivers",
       label: "Cost Driver",
       icon: Gauge,
+    },
+    {
+      id: "input-cost",
+      label: "Input Cost",
+      icon: FileEdit,
     },
     { id: "reports", label: "Laporan Cost", icon: FileText },
     {
