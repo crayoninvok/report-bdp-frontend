@@ -150,7 +150,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
   const [selectedDriverDetail, setSelectedDriverDetail] = useState<CostDriverItem | null>(null);
 
   // Chart Mode
-  const [top5ChartMode, setTop5ChartMode] = useState<"comparison" | "trend" | "pareto">("comparison");
+  const [top5ChartMode, setTop5ChartMode] = useState<"comparison" | "trend">("comparison");
   const [activeTop5Beban, setActiveTop5Beban] = useState<BebanGroupKey | "all">("all");
 
   // Reset periode spesifik jika timeframe berganti
@@ -559,22 +559,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     };
   }, [activeTop5Beban, baseDataset, categorySums]);
 
-  // Pareto / Share Data
-  const top5ParetoData = useMemo(() => {
-    const totalOver =
-      top5ComparisonData.reduce((acc, c) => acc + c.overAmount, 0) || 1;
-    return [...top5ComparisonData]
-      .filter((item) => item.overAmount > 0)
-      .map((item) => {
-        const sharePct = (item.overAmount / totalOver) * 100;
-        return {
-          ...item,
-          sharePct: Number(sharePct.toFixed(1)),
-        };
-      })
-      .sort((a, b) => b.overAmount - a.overAmount);
-  }, [top5ComparisonData]);
-
   // Sparkline Bulanan / Mingguan
   const getBebanSparkline = (key: BebanGroupKey) => {
     return baseDataset.map((row) => {
@@ -813,18 +797,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             >
               <TrendingUp size={14} className={top5ChartMode === "trend" ? "text-[#e95623]" : ""} />
               <span>Tren {timeframe === "week" ? "Mingguan" : "Bulanan"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTop5ChartMode("pareto")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                top5ChartMode === "pareto"
-                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <PieChart size={14} className={top5ChartMode === "pareto" ? "text-[#e95623]" : ""} />
-              <span>Pangsa Kontribusi Over</span>
             </button>
           </div>
         </div>
@@ -1214,68 +1186,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* MODE 3: PANGSA KONTRIBUSI OVER (PARETO SHARE) */}
-        {top5ChartMode === "pareto" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-xs">
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={16} className="text-amber-600 shrink-0" />
-                <span>
-                  Total deviasi over budget kategori beban utama:{" "}
-                  <strong>
-                    +Rp {(top5TotalVariance / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
-                  </strong>
-                </span>
-              </div>
-              <span className="font-bold text-amber-800">
-                Pangsa Kontribusi Terhadap Total Over
-              </span>
-            </div>
-
-            {/* Ranked Progress Bars */}
-            <div className="space-y-3 pt-2">
-              {top5ParetoData.map((item, idx) => (
-                <div
-                  key={item.key}
-                  className="p-3.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 transition-all space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-900 text-white font-black text-xs">
-                        #{idx + 1}
-                      </span>
-                      {getBebanIcon(item.key)}
-                      <span className="text-xs font-bold text-slate-900">{item.name}</span>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs font-black text-rose-700">
-                        +Rp {(item.overAmount / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
-                      </span>
-                      <span
-                        className="px-2.5 py-0.5 rounded-full text-xs font-extrabold text-white"
-                        style={{ backgroundColor: item.color }}
-                      >
-                        {item.sharePct}%
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/60">
-                    <div
-                      className="h-full rounded-full transition-all duration-700 ease-out"
-                      style={{
-                        width: `${Math.max(item.sharePct, 4)}%`,
-                        backgroundColor: item.color,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
