@@ -79,7 +79,7 @@ export const CostReportTable: React.FC<CostReportTableProps> = ({
       : report.periodName);
 
   return (
-    <div className="w-full overflow-auto max-h-[calc(100vh-210px)] min-h-[480px] bg-white rounded-xl shadow-md border border-slate-200 relative">
+    <div className="w-full overflow-auto max-h-[calc(100vh-210px)] min-h-120 bg-white rounded-xl shadow-md border border-slate-200 relative">
       <table className="w-full text-xs text-left border-collapse select-text">
         {/* Tier 1 Header: AKUN | Weekly / Monthly Period | YTD Period */}
         <thead className="sticky top-0 z-30 shadow-xs">
