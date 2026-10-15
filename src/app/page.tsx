@@ -12,6 +12,7 @@ import { SummaryOpsView } from "../components/SummaryOpsView";
 import { UserManagementView } from "../components/UserManagementView";
 import { CostDriverView } from "../components/CostDriverView";
 import { RiverJournalView } from "../components/RiverJournalView";
+import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
 import { Menu, Bell, MapPin } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -138,6 +139,12 @@ export default function Home() {
                     ? "Cost Driver"
                     : activeMenu === "river-journal"
                     ? "River Journal • Kedalaman Sungai Project Tabang"
+                    : activeMenu === "coal-dashboard"
+                    ? "Coal Hauling • Dashboard Produksi"
+                    : activeMenu === "coal-input"
+                    ? "Coal Hauling • Input Data Produksi"
+                    : activeMenu === "coal-reports"
+                    ? "Coal Hauling • Laporan Produksi"
                     : "Dashboard Cost"}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
@@ -207,6 +214,27 @@ export default function Home() {
             <CostDriverView user={currentUser} />
           ) : activeMenu === "river-journal" ? (
             <RiverJournalView user={currentUser} />
+          ) : activeMenu === "coal-dashboard" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Dashboard Produksi"
+              moduleCategory="Coal Hauling"
+              onBackToDashboard={() => setActiveMenu("dashboard")}
+            />
+          ) : activeMenu === "coal-input" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Input Data Produksi"
+              moduleCategory="Coal Hauling"
+              onBackToDashboard={() => setActiveMenu("dashboard")}
+            />
+          ) : activeMenu === "coal-reports" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Laporan Produksi"
+              moduleCategory="Coal Hauling"
+              onBackToDashboard={() => setActiveMenu("dashboard")}
+            />
           ) : (
             <DashboardView
               user={currentUser}

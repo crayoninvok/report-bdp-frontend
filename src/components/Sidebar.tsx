@@ -14,6 +14,9 @@ import {
   Gauge,
   FileEdit,
   Waves,
+  Truck,
+  FileSpreadsheet,
+  ClipboardList,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -57,13 +60,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
+      title: "Coal Hauling",
+      items: [
+        {
+          id: "coal-dashboard",
+          label: "Dashboard Produksi",
+          icon: Truck,
+          badge: "Under Development",
+        },
+        {
+          id: "coal-input",
+          label: "Input Data Produksi",
+          icon: FileSpreadsheet,
+          badge: "Under Development",
+        },
+        {
+          id: "coal-reports",
+          label: "Laporan Produksi",
+          icon: ClipboardList,
+          badge: "Under Development",
+        },
+      ],
+    },
+    {
       title: "Water Depth",
       items: [
         {
           id: "river-journal",
           label: "River Journal",
           icon: Waves,
-          badge: "Tabang",
         },
       ],
     },
@@ -221,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       ? "bg-batara-orange-50 text-[#e95623] font-bold shadow-xs border-r-2 border-[#e95623]"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                   } ${isCollapsed ? "justify-center px-0" : ""}`}
-                  title={isCollapsed ? item.label : undefined}
+                  title={isCollapsed ? `${item.label}${item.badge ? ` (${item.badge})` : ""}` : undefined}
                 >
                   <Icon
                     size={18}
@@ -236,7 +261,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <>
                       <span className="flex-1 text-left truncate">{item.label}</span>
                       {item.badge && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-batara-orange-50 text-[#e95623] border border-batara-orange-200 shrink-0">
+                        <span
+                          className={`text-[8px] font-extrabold uppercase tracking-tight px-1.5 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
+                            item.badge === "Under Development"
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
+                              : "bg-batara-orange-50 text-[#e95623] border border-batara-orange-200"
+                          }`}
+                        >
                           {item.badge}
                         </span>
                       )}
