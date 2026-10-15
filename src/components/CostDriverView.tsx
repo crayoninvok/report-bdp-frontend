@@ -956,68 +956,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-
-            {/* Bottom Cards per Beban */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
-              {top5ComparisonData.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => {
-                    setTop5ChartMode("trend");
-                    setActiveTop5Beban(item.key);
-                  }}
-                  className={`p-3.5 rounded-2xl border text-left transition-all hover:shadow-md hover:-translate-y-0.5 group cursor-pointer ${item.lightBg} ${item.borderCol}`}
-                >
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
-                    <div className="flex items-center gap-1.5 text-xs font-black" style={{ color: item.color }}>
-                      {getBebanIcon(item.key)}
-                      <span className="truncate">{item.shortLabel}</span>
-                    </div>
-                    <span
-                      className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shadow-2xs ${
-                        item.isOver
-                          ? "bg-rose-50 text-rose-700 border border-rose-200"
-                          : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      }`}
-                    >
-                      {item.isOver ? `+${item.varPct}%` : `${item.varPct}%`}
-                    </span>
-                  </div>
-
-                  <div className="pt-2 space-y-1 text-[11px]">
-                    <div className="flex justify-between text-slate-500">
-                      <span>Target:</span>
-                      <span className="font-semibold text-slate-700">
-                        Rp {(item.budget / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-slate-500">
-                      <span>Realisasi:</span>
-                      <span className="font-bold text-slate-900">
-                        Rp {(item.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
-                      </span>
-                    </div>
-                    <div
-                      className={`flex justify-between font-extrabold pt-1 border-t border-slate-200/50 ${
-                        item.isOver ? "text-rose-700" : "text-emerald-700"
-                      }`}
-                    >
-                      <span>{item.isOver ? "Over:" : "Efisien:"}</span>
-                      <span>
-                        {item.isOver ? "+" : ""}
-                        {(item.variance / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] font-bold text-slate-500 group-hover:text-slate-900">
-                    <span>Lihat Tren Seri</span>
-                    <ArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
