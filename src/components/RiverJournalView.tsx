@@ -312,10 +312,8 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
               RIVER JOURNAL &bull; ANALISIS KOMPARASI SENYIUR VS MUARA PAHU
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
-              Analisis hidrologis perbandingan kedalaman air antara <strong>Dermaga Senyiur KM 0 (Hulu)</strong> dan{" "}
-              <strong>Jetty Muara Pahu (Hilir)</strong> yang berada pada satu kesatuan Daerah Aliran Sungai (DAS).
-              Mengevaluasi apakah kenaikan/penurunan di Muara Pahu diikuti oleh Senyiur serta dampaknya terhadap izin draft tongkang (4.0m).
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Komparasi fluktuasi kedalaman air Senyiur (Hulu) vs Muara Pahu (Hilir) dalam satu DAS Mahakam.
             </p>
           </div>
 
