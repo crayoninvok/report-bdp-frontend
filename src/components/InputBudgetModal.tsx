@@ -5,6 +5,7 @@ import { User } from "../types/auth";
 import { ReportDetails } from "../types/report";
 import { reportService } from "../services/reportService";
 import { X, Save, AlertCircle, Calculator } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 interface InputBudgetModalProps {
   user: User;
@@ -21,6 +22,7 @@ export const InputBudgetModal: React.FC<InputBudgetModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { showSuccess, showError } = useNotification();
   const [budgetProduksi, setBudgetProduksi] = useState<number>(0);
   const [itemBudgets, setItemBudgets] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,10 +87,16 @@ export const InputBudgetModal: React.FC<InputBudgetModalProps> = ({
         itemsPayload
       );
 
+      showSuccess(
+        `Anggaran (Budget) periode ${reportDetails.report.periodName} berhasil disimpan!`,
+        "Budget Disimpan"
+      );
       onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menyimpan data budget");
+      const msg = err.message || "Gagal menyimpan data budget";
+      setErrorMsg(msg);
+      showError(msg, "Simpan Budget Gagal");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { NotificationProvider } from "../context/NotificationContext";
 
 export const metadata: Metadata = {
   title: "Cost Analytics - PT Batara Dharma Persada",
@@ -16,7 +17,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className="h-full bg-slate-50 antialiased">
-      <body className="min-h-full flex flex-col text-slate-800 bg-slate-50">{children}</body>
+      <body className="min-h-full flex flex-col text-slate-800 bg-slate-50">
+        <NotificationProvider>{children}</NotificationProvider>
+      </body>
     </html>
   );
 }

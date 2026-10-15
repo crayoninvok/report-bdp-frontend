@@ -15,6 +15,7 @@ import {
   HardHat,
   SlidersHorizontal,
 } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 interface LoginScreenProps {
   onLoginSuccess: (user: User) => void;
@@ -27,11 +28,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeHero, setActiveHero] = useState<"pit" | "boardroom">("pit");
+  const { showSuccess, showError } = useNotification();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMessage("Silakan masukkan email dan password");
+      const msg = "Silakan masukkan email dan password";
+      setErrorMessage(msg);
+      showError(msg, "Login Diperlukan");
       return;
     }
 
@@ -40,9 +44,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
     try {
       const user = await authService.login(email, password);
+      showSuccess(`Selamat datang, ${user.name}! Berhasil masuk ke sistem.`, "Login Berhasil");
       onLoginSuccess(user);
     } catch (err: any) {
-      setErrorMessage(err.message || "Login gagal. Periksa kembali email dan password Anda.");
+      const msg = err.message || "Login gagal. Periksa kembali email dan password Anda.";
+      setErrorMessage(msg);
+      showError(msg, "Login Gagal");
     } finally {
       setIsLoading(false);
     }

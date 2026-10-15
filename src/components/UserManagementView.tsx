@@ -21,12 +21,14 @@ import {
   Mail,
   User as UserIcon,
 } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 interface UserManagementViewProps {
   user: User;
 }
 
 export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: currentUser }) => {
+  const { showSuccess, showError } = useNotification();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,7 +148,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
           jobSite: formData.jobSite,
           role: formData.jobSite === "HeadOffice" ? "SuperAdmin" : formData.role,
         });
-        setSuccessMsg(`Data pengguna ${formData.name} berhasil diperbarui.`);
+        const msg = `Data pengguna ${formData.name} berhasil diperbarui.`;
+        setSuccessMsg(msg);
+        showSuccess(msg, "Pengguna Diperbarui");
       } else {
         await userService.createUser({
           name: formData.name,
@@ -155,14 +159,18 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
           jobSite: formData.jobSite,
           role: formData.jobSite === "HeadOffice" ? "SuperAdmin" : formData.role,
         });
-        setSuccessMsg(`Pengguna baru ${formData.name} berhasil ditambahkan.`);
+        const msg = `Pengguna baru ${formData.name} berhasil ditambahkan.`;
+        setSuccessMsg(msg);
+        showSuccess(msg, "Pengguna Ditambahkan");
       }
 
       setIsFormModalOpen(false);
       await fetchUsers();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
-      setFormError(err.message || "Gagal menyimpan data pengguna");
+      const errMsg = err.message || "Gagal menyimpan data pengguna";
+      setFormError(errMsg);
+      showError(errMsg, "Simpan Pengguna Gagal");
     } finally {
       setIsSubmitting(false);
     }
@@ -180,13 +188,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
     setIsDeleting(true);
     try {
       await userService.deleteUser(userToDelete.id);
-      setSuccessMsg(`Pengguna ${userToDelete.name} berhasil dihapus.`);
+      const msg = `Pengguna ${userToDelete.name} berhasil dihapus.`;
+      setSuccessMsg(msg);
+      showSuccess(msg, "Pengguna Dihapus");
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
       await fetchUsers();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menghapus pengguna");
+      const errMsg = err.message || "Gagal menghapus pengguna";
+      setErrorMsg(errMsg);
+      showError(errMsg, "Hapus Pengguna Gagal");
     } finally {
       setIsDeleting(false);
     }

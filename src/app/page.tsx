@@ -11,12 +11,14 @@ import { SummaryOpsView } from "../components/SummaryOpsView";
 import { UserManagementView } from "../components/UserManagementView";
 import { CostDriverView } from "../components/CostDriverView";
 import { Menu, Bell, MapPin } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 export default function Home() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { confirm, showInfo } = useNotification();
 
   useEffect(() => {
     // Check if user session exists in localStorage
@@ -33,8 +35,19 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    authService.logout();
-    setCurrentUser(null);
+    confirm({
+      title: "Konfirmasi Keluar Akun",
+      message: `Apakah Anda yakin ingin keluar dari sistem Cost Analytics PT Batara Dharma Persada? Sesi login ${currentUser?.name || ""} akan diakhiri.`,
+      confirmText: "Ya, Keluar Akun",
+      cancelText: "Batal",
+      type: "danger",
+      icon: "logout",
+      onConfirm: () => {
+        authService.logout();
+        setCurrentUser(null);
+        showInfo("Anda telah berhasil keluar dari akun.", "Sesi Berakhir");
+      },
+    });
   };
 
   if (isLoadingAuth) {

@@ -5,6 +5,7 @@ import { User } from "../types/auth";
 import { ReportDetails } from "../types/report";
 import { reportService } from "../services/reportService";
 import { X, Save, AlertCircle } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 interface InputRealisasiModalProps {
   user: User;
@@ -21,6 +22,7 @@ export const InputRealisasiModal: React.FC<InputRealisasiModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { showSuccess, showError } = useNotification();
   const [realisasiProduksi, setRealisasiProduksi] = useState<number>(0);
   const [itemRealisasi, setItemRealisasi] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,10 +87,16 @@ export const InputRealisasiModal: React.FC<InputRealisasiModalProps> = ({
         itemsPayload
       );
 
+      showSuccess(
+        `Data Realisasi operasional periode ${reportDetails.report.periodName} berhasil disimpan!`,
+        "Realisasi Disimpan"
+      );
       onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menyimpan data realisasi");
+      const msg = err.message || "Gagal menyimpan data realisasi";
+      setErrorMsg(msg);
+      showError(msg, "Simpan Realisasi Gagal");
     } finally {
       setIsSubmitting(false);
     }

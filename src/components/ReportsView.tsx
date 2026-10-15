@@ -26,12 +26,14 @@ import {
   CheckCircle2,
   FileSpreadsheet,
 } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 interface ReportsViewProps {
   user: User;
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({ user }) => {
+  const { showSuccess, showError } = useNotification();
   const [selectedSite, setSelectedSite] = useState<JobSite>(
     user.jobSite === "HeadOffice" ? "MuaraPahu" : user.jobSite
   );
@@ -113,12 +115,16 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ user }) => {
     setErrorMsg(null);
     try {
       await reportService.deleteReport(reportDetails.report.id);
-      setSuccessMsg(`Laporan periode ${reportDetails.report.periodName} (${reportDetails.report.jobSite}) berhasil dihapus.`);
+      const msg = `Laporan periode ${reportDetails.report.periodName} (${reportDetails.report.jobSite}) berhasil dihapus.`;
+      setSuccessMsg(msg);
+      showSuccess(msg, "Laporan Dihapus");
       setIsDeleteConfirmOpen(false);
       await loadReportsList(selectedSite);
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menghapus laporan");
+      const msg = err.message || "Gagal menghapus laporan";
+      setErrorMsg(msg);
+      showError(msg, "Hapus Laporan Gagal");
     } finally {
       setIsDeleting(false);
     }
@@ -232,6 +238,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ user }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showSuccess(
+      `Laporan CSV periode "${reportDetails.report.periodName}" berhasil diunduh!`,
+      "Ekspor CSV Selesai"
+    );
   };
 
   return (

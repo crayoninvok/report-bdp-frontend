@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { User, JobSite } from "../types/auth";
 import { reportService } from "../services/reportService";
 import { X, Calendar, Plus, AlertCircle } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 interface CreatePeriodModalProps {
   user: User;
@@ -18,6 +19,7 @@ export const CreatePeriodModal: React.FC<CreatePeriodModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { showSuccess, showError } = useNotification();
   const isHeadOffice = user.role === "SuperAdmin" || user.jobSite === "HeadOffice";
   const [jobSite, setJobSite] = useState<JobSite>(
     isHeadOffice ? "MuaraPahu" : user.jobSite
@@ -52,10 +54,16 @@ export const CreatePeriodModal: React.FC<CreatePeriodModalProps> = ({
         weekNumber,
       });
 
+      showSuccess(
+        `Periode baru "${periodName}" (${jobSite}) berhasil dibuat!`,
+        "Periode Baru Dibuat"
+      );
       onSuccess(result.id);
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || "Gagal membuat periode baru");
+      const msg = err.message || "Gagal membuat periode baru";
+      setErrorMsg(msg);
+      showError(msg, "Buat Periode Gagal");
     } finally {
       setIsSubmitting(false);
     }

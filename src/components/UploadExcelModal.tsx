@@ -21,6 +21,7 @@ import {
   Sparkles,
   Info,
 } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 
 interface UploadExcelModalProps {
   user: User;
@@ -35,6 +36,7 @@ export const UploadExcelModal: React.FC<UploadExcelModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { showSuccess, showError, showWarning, confirm } = useNotification();
   const isHeadOffice = user.role === "SuperAdmin" || user.jobSite === "HeadOffice";
   const [selectedSite, setSelectedSite] = useState<JobSite | "ALL">(
     isHeadOffice ? "ALL" : user.jobSite
@@ -150,30 +152,45 @@ export const UploadExcelModal: React.FC<UploadExcelModalProps> = ({
       .map((r) => r.periodName);
 
     if (periodsToImport.length === 0) {
-      setErrorMsg("Harap pilih setidaknya satu periode untuk diimpor");
+      const msg = "Harap pilih setidaknya satu periode untuk diimpor";
+      setErrorMsg(msg);
+      showWarning(msg, "Pilihan Diperlukan");
       return;
     }
 
-    setIsSubmitting(true);
-    setErrorMsg(null);
-    try {
-      const targetSiteParam = selectedSite === "ALL" ? undefined : selectedSite;
-      const res = await reportService.commitExcelUpload(
-        file,
-        periodsToImport,
-        targetSiteParam
-      );
+    confirm({
+      title: "Konfirmasi Impor Data Excel",
+      message: `Anda akan menyimpan ${periodsToImport.length} periode data mingguan dari file "${file.name}" ke database. Sistem akan memperbarui angka biaya dan produksi secara otomatis. Lanjutkan?`,
+      confirmText: "Ya, Simpan ke Database",
+      cancelText: "Periksa Kembali",
+      type: "info",
+      onConfirm: async () => {
+        setIsSubmitting(true);
+        setErrorMsg(null);
+        try {
+          const targetSiteParam = selectedSite === "ALL" ? undefined : selectedSite;
+          const res = await reportService.commitExcelUpload(
+            file,
+            periodsToImport,
+            targetSiteParam
+          );
 
-      setSuccessMsg(res.message || "Data mingguan berhasil disimpan ke database!");
-      setTimeout(() => {
-        onSuccess(res.importedReports?.[0]?.id);
-        onClose();
-      }, 1500);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menyimpan data ke database");
-    } finally {
-      setIsSubmitting(false);
-    }
+          const successText = res.message || "Data mingguan berhasil disimpan ke database!";
+          setSuccessMsg(successText);
+          showSuccess(successText, "Upload Excel Sukses");
+          setTimeout(() => {
+            onSuccess(res.importedReports?.[0]?.id);
+            onClose();
+          }, 1200);
+        } catch (err: any) {
+          const errMsg = err.message || "Gagal menyimpan data ke database";
+          setErrorMsg(errMsg);
+          showError(errMsg, "Upload Gagal");
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+    });
   };
 
   const selectedCount = Object.values(selectedPeriods).filter(Boolean).length;
