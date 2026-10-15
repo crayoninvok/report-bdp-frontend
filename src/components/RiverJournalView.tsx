@@ -34,7 +34,6 @@ import {
   CheckCircle2,
   TrendingDown,
   TrendingUp,
-  Sparkles,
   ExternalLink,
   ShieldAlert,
   SlidersHorizontal,
@@ -527,70 +526,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
           </div>
         </div>
       </div>
-
-      {/* 3. GEMINI AI COMPARATIVE RIVER HYDRODYNAMICS INSIGHT */}
-      <div className="bg-linear-to-br from-slate-900 to-indigo-950 border border-slate-800 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
-        <div className="flex items-start gap-4">
-          <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-2xl shrink-0 border border-blue-500/30 flex flex-col items-center gap-1">
-            <Sparkles size={20} className="text-teal-400" />
-            <span className="text-[8px] font-black uppercase tracking-wider text-teal-300">AI</span>
-          </div>
-
-          <div className="flex-1 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-white">
-                  Gemini AI Hydrodynamic Analysis &bull; Senyiur vs Muara Pahu
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                  DAS Terpadu
-                </span>
-              </div>
-              <span className="text-[10px] font-semibold text-slate-400">
-                Korelasi Alur Sungai & Strategi Operasional Armada Batubara
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
-              <div className="space-y-1">
-                <span className="font-extrabold text-teal-300 block text-[11px]">
-                  1. Hubungan Hulu-Hilir & Keselarasan Fluktuasi:
-                </span>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Data empiris membuktikan korelasi kuat (r = +0.84, keselarasan arah 83.3%). Setiap terjadi hujan lebat di hulu DAS Tabang,
-                  massa air melewati Dermaga Senyiur KM 0 sebelum mengalir dan menumpuk di badan utama Mahakam di Jetty Muara Pahu.
-                  Oleh karena itu, <strong>kenaikan di Muara Pahu merupakan bukti tak terbantahkan bahwa Senyiur juga mengalami peningkatan ketinggian air</strong>.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-extrabold text-teal-300 block text-[11px]">
-                  2. Dinamika Naik & Turun (Skala dan Kecepatan Respon):
-                </span>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Kenaikan di Muara Pahu terjadi dengan magnitudo sekitar <strong>2.37 kali lebih tajam</strong> dibanding Senyiur.
-                  Ketika Muara Pahu melonjak +1.00m (14 Oktober), Senyiur naik +0.74m. Saat Muara Pahu surut -1.12m (05 Oktober),
-                  Senyiur surut -0.34m. Kecepatan respon perambatan air berkisar antara 6 hingga 18 jam tergantung intensitas curah hujan di hulu.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-extrabold text-teal-300 block text-[11px]">
-                  3. Keputusan Taktis Armada Tongkang PT Batara Dharma Persada:
-                </span>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Meskipun air Senyiur naik, <strong>kedalaman puncaknya (2.74m) belum memenuhi batas draft minimum 4.0m</strong>.
-                  Rekomendasi: Jangan memaksakan tongkang 300ft memasuki Dermaga Senyiur KM 0 secara langsung.
-                  Gunakan Jetty Muara Pahu (kedalaman 7.08m – 9.40m) sebagai titik muat utama, serta gunakan kenaikan di Muara Pahu
-                  sebagai indikator aman untuk pergerakan kapal kecil / tugboat pembantu di alur Senyiur.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. INTERACTIVE COMPARATIVE HYDROGRAPH CHARTS */}
+      {/* 3. INTERACTIVE COMPARATIVE HYDROGRAPH CHARTS */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
         {/* Chart View Mode Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
