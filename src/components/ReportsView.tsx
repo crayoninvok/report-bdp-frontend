@@ -8,6 +8,7 @@ import { CostReportTable } from "./CostReportTable";
 import { InputBudgetModal } from "./InputBudgetModal";
 import { InputRealisasiModal } from "./InputRealisasiModal";
 import { CreatePeriodModal } from "./CreatePeriodModal";
+import { UploadExcelModal } from "./UploadExcelModal";
 import {
   Calendar,
   Building2,
@@ -23,6 +24,7 @@ import {
   AlertCircle,
   Trash2,
   CheckCircle2,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface ReportsViewProps {
@@ -44,6 +46,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ user }) => {
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isRealisasiModalOpen, setIsRealisasiModalOpen] = useState(false);
   const [isCreatePeriodModalOpen, setIsCreatePeriodModalOpen] = useState(false);
+  const [isUploadExcelModalOpen, setIsUploadExcelModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -311,8 +314,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ user }) => {
             </button>
           </div>
 
-          {/* Right: Actions (Input Budget, Input Realisasi, Create Period, Export) */}
+          {/* Right: Actions (Upload Excel, Create Period, Input Budget, Input Realisasi, Export) */}
           <div className="flex flex-wrap items-center gap-2.5">
+            {/* Upload Excel */}
+            <button
+              onClick={() => setIsUploadExcelModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-xs shadow-emerald-600/20 transition-all cursor-pointer"
+              title="Upload file Excel mingguan (Hitung otomatis delta dengan pengurang kumulatif)"
+            >
+              <FileSpreadsheet size={15} />
+              <span>Upload Excel</span>
+            </button>
+
             {/* Create Period */}
             <button
               onClick={() => setIsCreatePeriodModalOpen(true)}
@@ -598,6 +611,20 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ user }) => {
           onSuccess={(newId) => {
             loadReportsList(selectedSite);
             setSelectedReportId(newId);
+          }}
+        />
+      )}
+
+      {isUploadExcelModalOpen && (
+        <UploadExcelModal
+          user={user}
+          isOpen={isUploadExcelModalOpen}
+          onClose={() => setIsUploadExcelModalOpen(false)}
+          onSuccess={(updatedReportId) => {
+            loadReportsList(selectedSite);
+            if (updatedReportId) {
+              setSelectedReportId(updatedReportId);
+            }
           }}
         />
       )}

@@ -14,8 +14,10 @@ import {
   CheckCircle2,
   Clock,
   Gauge,
+  FileSpreadsheet,
 } from "lucide-react";
 import { CostTrendCharts } from "./CostTrendCharts";
+import { UploadExcelModal } from "./UploadExcelModal";
 
 interface DashboardViewProps {
   user: User;
@@ -28,6 +30,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateToReports,
   onNavigateToCostDrivers,
 }) => {
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [muaraPahuReports, setMuaraPahuReports] = useState<ReportSummary[]>([]);
   const [senyiurReports, setSenyiurReports] = useState<ReportSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +93,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
+              {/* Upload Excel Button */}
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/30 border border-emerald-400/30 active:scale-95 cursor-pointer"
+              >
+                <FileSpreadsheet size={15} />
+                <span>Upload Excel Mingguan</span>
+              </button>
+
               {onNavigateToReports && (
                 <button
                   onClick={onNavigateToReports}
@@ -296,6 +308,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {isUploadModalOpen && (
+        <UploadExcelModal
+          user={user}
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          onSuccess={() => {
+            // Refresh data
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };

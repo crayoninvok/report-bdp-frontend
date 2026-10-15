@@ -1,7 +1,6 @@
 import { User, JobSite, UserRole } from "../types/auth";
 import { authService } from "./authService";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL } from "./apiConfig";
 const LOCAL_USERS_KEY = "batara_managed_users_cache";
 
 function getAuthHeaders(): Record<string, string> {

@@ -122,3 +122,69 @@ export interface PLSummaryOpsData {
   updatedAt: string;
 }
 
+export interface ParsedItemData {
+  accountName: string;
+  accountCode: string | null;
+  costBehavior: string | null;
+  accountGroup: string | null;
+  subCategory: string | null;
+  isParent: boolean;
+  parentName: string | null;
+  orderIndex: number;
+  rawBudgetCost: number;
+  rawRealisasiCost: number;
+  pengurangBudgetCost: number;
+  pengurangRealisasiCost: number;
+  weeklyBudgetCost: number;
+  weeklyRealisasiCost: number;
+  ytdBudgetCost: number | null;
+  ytdRealisasiCost: number | null;
+}
+
+export interface ParsedPeriodReport {
+  jobSite: JobSite;
+  periodName: string;
+  year: number;
+  month: number;
+  startDay: number;
+  endDay: number;
+  startDate: string;
+  endDate: string;
+  weekNumber: number;
+  isExistingInDb: boolean;
+  existingReportId?: string;
+  pengurangPeriodName: string | null;
+  produksi: {
+    rawBudget: number;
+    rawRealisasi: number;
+    pengurangBudget: number;
+    pengurangRealisasi: number;
+    weeklyBudget: number;
+    weeklyRealisasi: number;
+    ytdBudget: number | null;
+    ytdRealisasi: number | null;
+  };
+  biayaProduksi: {
+    rawBudget: number;
+    rawRealisasi: number;
+    pengurangBudget: number;
+    pengurangRealisasi: number;
+    weeklyBudget: number;
+    weeklyRealisasi: number;
+    ytdBudget: number | null;
+    ytdRealisasi: number | null;
+  };
+  items: ParsedItemData[];
+}
+
+export interface ExcelParseResult {
+  fileName: string;
+  detectedSites: JobSite[];
+  reports: ParsedPeriodReport[];
+  summary: {
+    totalPeriodsFound: number;
+    newPeriodsCount: number;
+    updatePeriodsCount: number;
+  };
+}
+

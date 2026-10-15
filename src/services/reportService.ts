@@ -1,8 +1,7 @@
 import { JobSite, User } from "../types/auth";
 import { ReportSummary, ReportDetails } from "../types/report";
 import { authService } from "./authService";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL } from "./apiConfig";
 
 function getAuthHeaders(): Record<string, string> {
   const user = authService.getCurrentUser();
@@ -161,4 +160,71 @@ export const reportService = {
     }
     return data;
   },
+
+  async previewExcelUpload(
+    file: File,
+    targetJobSite?: JobSite
+  ): Promise<import("../types/report").ExcelParseResult> {
+    const user = authService.getCurrentUser();
+    const formData = new FormData();
+    formData.append("file", file);
+    if (targetJobSite) {
+      formData.append("targetJobSite", targetJobSite);
+    }
+
+    const headers: Record<string, string> = {};
+    if (user) {
+      headers["x-user-role"] = user.role;
+      headers["x-user-jobsite"] = user.jobSite;
+      headers["x-user-id"] = user.id;
+      headers["x-user-email"] = user.email;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/reports/upload/preview`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || "Gagal memproses file Excel");
+    }
+    return data.data;
+  },
+
+  async commitExcelUpload(
+    file: File,
+    periodsToImport?: string[],
+    targetJobSite?: JobSite
+  ): Promise<{ message: string; importedReports: any[] }> {
+    const user = authService.getCurrentUser();
+    const formData = new FormData();
+    formData.append("file", file);
+    if (targetJobSite) {
+      formData.append("targetJobSite", targetJobSite);
+    }
+    if (periodsToImport && periodsToImport.length > 0) {
+      formData.append("periodsToImport", JSON.stringify(periodsToImport));
+    }
+
+    const headers: Record<string, string> = {};
+    if (user) {
+      headers["x-user-role"] = user.role;
+      headers["x-user-jobsite"] = user.jobSite;
+      headers["x-user-id"] = user.id;
+      headers["x-user-email"] = user.email;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/reports/upload/commit`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || "Gagal mengimpor data ke database");
+    }
+    return data;
+  },
 };
+

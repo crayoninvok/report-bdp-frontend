@@ -1,6 +1,5 @@
 import { User, AuthResponse } from "../types/auth";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL } from "./apiConfig";
 const STORAGE_KEY = "batara_report_user";
 
 // Seed users fallback for instant standalone demo availability
