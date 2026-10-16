@@ -1339,7 +1339,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
             <button
               onClick={handleExportPdf}
               disabled={isExporting || totalSlidesIncluded === 0}
-              className="px-5 py-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-black shadow-md shadow-teal-600/30 flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed enabled:cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-black shadow-md shadow-teal-600/30 flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isExporting ? (
                 <>
