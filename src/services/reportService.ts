@@ -252,8 +252,14 @@ export const reportService = {
   },
 
   async getCostTrends(jobSite?: JobSite, year?: number): Promise<{
-    Senyiur: { weekly: import("../components/CostTrendCharts").FullPeriodRecord[] };
-    MuaraPahu: { weekly: import("../components/CostTrendCharts").FullPeriodRecord[] };
+    Senyiur: {
+      weekly: import("../components/CostTrendCharts").FullPeriodRecord[];
+      monthly?: import("../components/CostTrendCharts").FullPeriodRecord[];
+    };
+    MuaraPahu: {
+      weekly: import("../components/CostTrendCharts").FullPeriodRecord[];
+      monthly?: import("../components/CostTrendCharts").FullPeriodRecord[];
+    };
   }> {
     const params = new URLSearchParams();
     if (jobSite) params.append("jobSite", jobSite);

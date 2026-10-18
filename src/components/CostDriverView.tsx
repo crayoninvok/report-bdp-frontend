@@ -166,8 +166,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
 
   // Dynamic Weekly Trends from Backend
   const [dynamicWeekly, setDynamicWeekly] = useState<{
-    Senyiur: { weekly: FullPeriodRecord[] };
-    MuaraPahu: { weekly: FullPeriodRecord[] };
+    Senyiur: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
+    MuaraPahu: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
   } | null>(null);
 
   useEffect(() => {
@@ -197,24 +197,34 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     return RAW_WEEKLY_MUARAPAHU;
   }, [dynamicWeekly]);
 
+  const monthlySenyiur = useMemo(() => {
+    if (dynamicWeekly?.Senyiur?.monthly?.length) return dynamicWeekly.Senyiur.monthly;
+    return RAW_MONTHLY_SENYIUR;
+  }, [dynamicWeekly]);
+
+  const monthlyMuaraPahu = useMemo(() => {
+    if (dynamicWeekly?.MuaraPahu?.monthly?.length) return dynamicWeekly.MuaraPahu.monthly;
+    return RAW_MONTHLY_MUARAPAHU;
+  }, [dynamicWeekly]);
+
   // 1. DATASET DASAR (Sesuai Site & Timeframe yang dipilih)
   const baseDataset: FullPeriodRecord[] = useMemo(() => {
     if (selectedSite === "Senyiur") {
-      if (timeframe === "ytd") return computeYTDDataset(RAW_MONTHLY_SENYIUR);
-      if (timeframe === "month") return RAW_MONTHLY_SENYIUR;
+      if (timeframe === "ytd") return computeYTDDataset(monthlySenyiur);
+      if (timeframe === "month") return monthlySenyiur;
       return weeklySenyiur;
     }
 
     if (selectedSite === "MuaraPahu") {
-      if (timeframe === "ytd") return computeYTDDataset(RAW_MONTHLY_MUARAPAHU);
-      if (timeframe === "month") return RAW_MONTHLY_MUARAPAHU;
+      if (timeframe === "ytd") return computeYTDDataset(monthlyMuaraPahu);
+      if (timeframe === "month") return monthlyMuaraPahu;
       return weeklyMuaraPahu;
     }
 
     // Konsolidasi: Gabungan Senyiur + Muara Pahu
     if (timeframe === "ytd") {
-      const combinedMonthly = RAW_MONTHLY_SENYIUR.map((sRec, idx) => {
-        const mRec = RAW_MONTHLY_MUARAPAHU[idx] || {
+      const combinedMonthly = monthlySenyiur.map((sRec, idx) => {
+        const mRec = monthlyMuaraPahu[idx] || {
           label: sRec.label,
           total: { budget: 0, realisasi: 0, deviasi: 0 },
           comp: { budget: 0, realisasi: 0, deviasi: 0 },
@@ -242,8 +252,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     }
 
     if (timeframe === "month") {
-      return RAW_MONTHLY_SENYIUR.map((sRec, idx) => {
-        const mRec = RAW_MONTHLY_MUARAPAHU[idx] || {
+      return monthlySenyiur.map((sRec, idx) => {
+        const mRec = monthlyMuaraPahu[idx] || {
           label: sRec.label,
           total: { budget: 0, realisasi: 0, deviasi: 0 },
           comp: { budget: 0, realisasi: 0, deviasi: 0 },

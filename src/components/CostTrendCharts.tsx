@@ -477,11 +477,11 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
   {
     label: "Oct",
     total: { budget: 2694, realisasi: 2541, deviasi: 153 },
-    comp: { budget: 780, realisasi: 788, deviasi: -8 },
-    fuel: { budget: 109, realisasi: 75, deviasi: 34 },
+    comp: { budget: 781, realisasi: 774, deviasi: 7 },
+    fuel: { budget: 109, realisasi: 74, deviasi: 35 },
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 5, realisasi: 2, deviasi: 3 },
-    ovh: { budget: 163, realisasi: 147, deviasi: 16 },
+    ovh: { budget: 163, realisasi: 131, deviasi: 32 },
   },
 ];
 
@@ -569,12 +569,12 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
   },
   {
     label: "Oct",
-    total: { budget: 8606, realisasi: 14799, deviasi: -6193 },
-    comp: { budget: 697, realisasi: 2222, deviasi: -1525 },
-    fuel: { budget: 4782, realisasi: 5349, deviasi: -567 },
-    tyre: { budget: 504, realisasi: 1104, deviasi: -600 },
-    rep: { budget: 504, realisasi: 419, deviasi: 85 },
-    ovh: { budget: 376, realisasi: 90, deviasi: 286 },
+    total: { budget: 16339, realisasi: 14799, deviasi: 1540 },
+    comp: { budget: 1510, realisasi: 2221, deviasi: -711 },
+    fuel: { budget: 8945, realisasi: 5349, deviasi: 3596 },
+    tyre: { budget: 946, realisasi: 1104, deviasi: -158 },
+    rep: { budget: 946, realisasi: 419, deviasi: 527 },
+    ovh: { budget: 705, realisasi: 90, deviasi: 615 },
   },
 ];
 
@@ -730,19 +730,19 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
   const [viewMode, setViewMode] = useState<"both" | "focused" | "grid">("both");
   const [showTrendlines, setShowTrendlines] = useState(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [dynamicWeekly, setDynamicWeekly] = useState<{
-    Senyiur: { weekly: FullPeriodRecord[] };
-    MuaraPahu: { weekly: FullPeriodRecord[] };
+  const [dynamicTrends, setDynamicTrends] = useState<{
+    Senyiur: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
+    MuaraPahu: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
   } | null>(null);
 
-  // Fetch dynamic trends from backend on mount so new weeks (W41, W42, etc.) appear automatically
+  // Fetch dynamic trends from backend on mount so new weeks and months appear automatically
   useEffect(() => {
     let isMounted = true;
     reportService
       .getCostTrends(undefined, 2026)
       .then((data) => {
         if (isMounted && data) {
-          setDynamicWeekly(data);
+          setDynamicTrends(data);
         }
       })
       .catch((err) => {
@@ -761,19 +761,25 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
 
   // Raw period data selection
   const rawDataset: FullPeriodRecord[] = useMemo(() => {
-    const monthlyBase = activeSite === "MuaraPahu" ? RAW_MONTHLY_MUARAPAHU : RAW_MONTHLY_SENYIUR;
+    const siteKey = activeSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
+    const dynamicMonthly =
+      dynamicTrends && dynamicTrends[siteKey]?.monthly && dynamicTrends[siteKey].monthly!.length > 0
+        ? dynamicTrends[siteKey].monthly!
+        : null;
+    const fallbackMonthly = activeSite === "MuaraPahu" ? RAW_MONTHLY_MUARAPAHU : RAW_MONTHLY_SENYIUR;
+    const monthlyBase = dynamicMonthly || fallbackMonthly;
+
     if (timeframe === "ytd") {
       return computeYTDDataset(monthlyBase);
     } else if (timeframe === "month") {
       return monthlyBase;
     } else {
-      const siteKey = activeSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
-      if (dynamicWeekly && dynamicWeekly[siteKey]?.weekly?.length > 0) {
-        return dynamicWeekly[siteKey].weekly;
+      if (dynamicTrends && dynamicTrends[siteKey]?.weekly?.length > 0) {
+        return dynamicTrends[siteKey].weekly;
       }
       return activeSite === "MuaraPahu" ? RAW_WEEKLY_MUARAPAHU : RAW_WEEKLY_SENYIUR;
     }
-  }, [timeframe, activeSite, dynamicWeekly]);
+  }, [timeframe, activeSite, dynamicTrends]);
 
   // Extract focused category data & add trendlines
   const processedFocusedData = useMemo(() => {
