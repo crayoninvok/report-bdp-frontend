@@ -617,9 +617,12 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
       if (selectedPeriod === "all") return "Bulanan (Jan - Okt 2026)";
       return `Bulan ${selectedPeriod} 2026`;
     }
-    if (selectedPeriod === "all") return "Mingguan (W29 - W40 2026)";
+    if (selectedPeriod === "all") {
+      const lastLabel = baseDataset[baseDataset.length - 1]?.label || "W41";
+      return `Mingguan (W29 - ${lastLabel} 2026)`;
+    }
     return `Minggu ${selectedPeriod}`;
-  }, [timeframe, selectedPeriod]);
+  }, [timeframe, selectedPeriod, baseDataset]);
 
   // Export CSV Data
   const handleExportCsv = () => {
@@ -788,10 +791,12 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     </>
                   ) : (
                     <>
-                      <option value="all">Semua Minggu (W29 - W40)</option>
-                      {baseDataset.map((item) => (
+                      <option value="all">
+                        Semua Minggu (W29 - {baseDataset[baseDataset.length - 1]?.label || "W41"})
+                      </option>
+                      {baseDataset.map((item, idx) => (
                         <option key={item.label} value={item.label}>
-                          Minggu {item.label} {item.label === "W40" ? "(Terbaru)" : ""}
+                          Minggu {item.label} {idx === baseDataset.length - 1 ? "(Terbaru)" : ""}
                         </option>
                       ))}
                     </>
@@ -1871,7 +1876,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     </span>
                   </h4>
                   <span className="text-[10px] text-slate-500 font-medium">
-                    Realisasi vs Target Budget ({timeframe === "week" ? "W29 - W40" : "Jan - Okt 2026"})
+                    Realisasi vs Target Budget ({timeframe === "week" ? `W29 - ${baseDataset[baseDataset.length - 1]?.label || "W41"}` : "Jan - Okt 2026"})
                   </span>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 h-48">

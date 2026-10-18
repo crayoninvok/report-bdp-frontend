@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -17,6 +17,7 @@ import {
   LabelList,
 } from "recharts";
 import { JobSite, User } from "../types/auth";
+import { reportService } from "../services/reportService";
 import {
   TrendingUp,
   TrendingDown,
@@ -257,6 +258,15 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     rep: { budget: 3, realisasi: 1, deviasi: 2 },
     ovh: { budget: 87, realisasi: 147, deviasi: -60 },
   },
+  {
+    label: "W41",
+    total: { budget: 1257, realisasi: 755, deviasi: 502 },
+    comp: { budget: 364, realisasi: 0, deviasi: 364 },
+    fuel: { budget: 51, realisasi: 41, deviasi: 10 },
+    tyre: { budget: 0, realisasi: 0, deviasi: 0 },
+    rep: { budget: 2, realisasi: 1, deviasi: 1 },
+    ovh: { budget: 76, realisasi: 0, deviasi: 76 },
+  },
 ];
 
 export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
@@ -367,6 +377,15 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 504, realisasi: 372, deviasi: 132 },
     rep: { budget: 504, realisasi: 106, deviasi: 398 },
     ovh: { budget: 376, realisasi: 26, deviasi: 350 },
+  },
+  {
+    label: "W41",
+    total: { budget: 0, realisasi: 9850, deviasi: -9850 },
+    comp: { budget: 0, realisasi: 1489, deviasi: -1489 },
+    fuel: { budget: 0, realisasi: 4137, deviasi: -4137 },
+    tyre: { budget: 0, realisasi: 732, deviasi: -732 },
+    rep: { budget: 0, realisasi: 313, deviasi: -313 },
+    ovh: { budget: 0, realisasi: 64, deviasi: -64 },
   },
 ];
 
@@ -711,6 +730,28 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
   const [viewMode, setViewMode] = useState<"both" | "focused" | "grid">("both");
   const [showTrendlines, setShowTrendlines] = useState(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [dynamicWeekly, setDynamicWeekly] = useState<{
+    Senyiur: { weekly: FullPeriodRecord[] };
+    MuaraPahu: { weekly: FullPeriodRecord[] };
+  } | null>(null);
+
+  // Fetch dynamic trends from backend on mount so new weeks (W41, W42, etc.) appear automatically
+  useEffect(() => {
+    let isMounted = true;
+    reportService
+      .getCostTrends(undefined, 2026)
+      .then((data) => {
+        if (isMounted && data) {
+          setDynamicWeekly(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Using static fallback for cost trends:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Active category metadata
   const activeMeta = useMemo(
@@ -726,9 +767,13 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     } else if (timeframe === "month") {
       return monthlyBase;
     } else {
+      const siteKey = activeSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
+      if (dynamicWeekly && dynamicWeekly[siteKey]?.weekly?.length > 0) {
+        return dynamicWeekly[siteKey].weekly;
+      }
       return activeSite === "MuaraPahu" ? RAW_WEEKLY_MUARAPAHU : RAW_WEEKLY_SENYIUR;
     }
-  }, [timeframe, activeSite]);
+  }, [timeframe, activeSite, dynamicWeekly]);
 
   // Extract focused category data & add trendlines
   const processedFocusedData = useMemo(() => {

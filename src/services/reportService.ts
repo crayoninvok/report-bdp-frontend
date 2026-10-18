@@ -226,5 +226,23 @@ export const reportService = {
     }
     return data;
   },
+
+  async getCostTrends(jobSite?: JobSite, year?: number): Promise<{
+    Senyiur: { weekly: import("../components/CostTrendCharts").FullPeriodRecord[] };
+    MuaraPahu: { weekly: import("../components/CostTrendCharts").FullPeriodRecord[] };
+  }> {
+    const params = new URLSearchParams();
+    if (jobSite) params.append("jobSite", jobSite);
+    if (year) params.append("year", year.toString());
+
+    const res = await fetch(`${API_BASE_URL}/reports/trend?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || "Gagal mengambil data tren biaya");
+    }
+    return data.data;
+  },
 };
 

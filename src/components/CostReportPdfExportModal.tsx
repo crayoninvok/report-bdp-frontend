@@ -97,8 +97,9 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   const [selectedCategory, setSelectedCategory] = useState<CostCategoryKey>(defaultCategory);
 
   // Range filters for Weeks
+  const latestWeek = RAW_WEEKLY_SENYIUR[RAW_WEEKLY_SENYIUR.length - 1]?.label || "W41";
   const [startWeek, setStartWeek] = useState<string>("W29");
-  const [endWeek, setEndWeek] = useState<string>("W40");
+  const [endWeek, setEndWeek] = useState<string>(latestWeek);
 
   // Range filters for Months
   const [startMonth, setStartMonth] = useState<string>("Jan");
@@ -1337,11 +1338,11 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                     type="button"
                     onClick={() => {
                       setStartWeek("W29");
-                      setEndWeek("W40");
+                      setEndWeek(latestWeek);
                     }}
                     className="px-2 py-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                   >
-                    Reset (Semua W29-W40)
+                    Reset (Semua W29-{latestWeek})
                   </button>
                 </div>
               ) : (
