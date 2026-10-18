@@ -5,6 +5,7 @@ import { User, JobSite } from "../types/auth";
 import { ReportSummary, ReportDetails, EnrichedReportItem } from "../types/report";
 import { reportService } from "../services/reportService";
 import { CostReportTable } from "./CostReportTable";
+import { EditPeriodModal } from "./EditPeriodModal";
 import {
   Calendar,
   Building2,
@@ -20,6 +21,7 @@ import {
   CheckCircle,
   FileEdit,
   Eye,
+  Pencil,
 } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -54,8 +56,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isEditPeriodModalOpen, setIsEditPeriodModalOpen] = useState(false);
 
   const isHeadOffice = user.role === "SuperAdmin" || user.jobSite === "HeadOffice";
+  const canEditPeriod = isHeadOffice || user.jobSite === selectedSite;
 
   // Helper to extract clean month label from periodName or startDate
   const getMonthKey = (report: ReportSummary) => {
@@ -654,6 +658,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </div>
           )}
 
+          {/* Edit Period Button */}
+          {viewMode === "week" && reportDetails && canEditPeriod && (
+            <button
+              onClick={() => setIsEditPeriodModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 bg-slate-50 hover:bg-blue-50/80 border border-slate-200 hover:border-blue-300 rounded-xl transition-all cursor-pointer shadow-2xs"
+              title="Edit Informasi Periode ini (Nama, Minggu, Tanggal, dan Target Produksi)"
+            >
+              <Pencil size={13} className="text-blue-600" />
+              <span>Edit Periode</span>
+            </button>
+          )}
+
           {/* Refresh Button */}
           <button
             onClick={() => {
@@ -891,6 +907,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </button>
           )}
         </div>
+      )}
+
+      {isEditPeriodModalOpen && reportDetails && (
+        <EditPeriodModal
+          user={user}
+          isOpen={isEditPeriodModalOpen}
+          onClose={() => setIsEditPeriodModalOpen(false)}
+          reportDetails={reportDetails}
+          onSuccess={async () => {
+            await loadReportsList(selectedSite);
+            if (selectedReportId) {
+              await loadReportDetails(selectedReportId);
+            }
+          }}
+        />
       )}
     </div>
   );

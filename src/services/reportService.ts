@@ -80,6 +80,30 @@ export const reportService = {
     return data.data;
   },
 
+  async updatePeriod(
+    id: string,
+    payload: {
+      periodName?: string;
+      weekNumber?: number;
+      year?: number;
+      startDate?: string;
+      endDate?: string;
+      budgetProduksi?: number;
+      realisasiProduksi?: number;
+    }
+  ): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/reports/${id}/period`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || "Gagal memperbarui informasi periode");
+    }
+    return data.data;
+  },
+
   async updateBudget(
     id: string,
     user: User,

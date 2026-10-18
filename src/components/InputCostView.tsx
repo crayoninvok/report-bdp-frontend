@@ -8,12 +8,14 @@ import { CostReportTable } from "./CostReportTable";
 import { InputBudgetModal } from "./InputBudgetModal";
 import { InputRealisasiModal } from "./InputRealisasiModal";
 import { CreatePeriodModal } from "./CreatePeriodModal";
+import { EditPeriodModal } from "./EditPeriodModal";
 import { UploadExcelModal } from "./UploadExcelModal";
 import {
   Calendar,
   Building2,
   Lock,
   Edit3,
+  Pencil,
   Plus,
   Download,
   RefreshCw,
@@ -53,6 +55,7 @@ export const InputCostView: React.FC<InputCostViewProps> = ({
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isRealisasiModalOpen, setIsRealisasiModalOpen] = useState(false);
   const [isCreatePeriodModalOpen, setIsCreatePeriodModalOpen] = useState(false);
+  const [isEditPeriodModalOpen, setIsEditPeriodModalOpen] = useState(false);
   const [isUploadExcelModalOpen, setIsUploadExcelModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -349,6 +352,18 @@ export const InputCostView: React.FC<InputCostViewProps> = ({
               </select>
             </div>
           </div>
+
+          {/* Edit Period Button */}
+          {reportDetails && (canEditBudget || canEditRealisasi) && (
+            <button
+              onClick={() => setIsEditPeriodModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 hover:text-[#e95623] bg-slate-50 hover:bg-orange-50/80 border border-slate-200 hover:border-orange-300 rounded-xl transition-all cursor-pointer shadow-2xs"
+              title="Edit Informasi Periode ini (Nama, Minggu, Tanggal, dan Target Produksi)"
+            >
+              <Pencil size={13} className="text-[#e95623]" />
+              <span>Edit Periode</span>
+            </button>
+          )}
 
           {/* Refresh Button */}
           <button
@@ -657,6 +672,21 @@ export const InputCostView: React.FC<InputCostViewProps> = ({
           onSuccess={(newId) => {
             loadReportsList(selectedSite);
             setSelectedReportId(newId);
+          }}
+        />
+      )}
+
+      {isEditPeriodModalOpen && reportDetails && (
+        <EditPeriodModal
+          user={user}
+          isOpen={isEditPeriodModalOpen}
+          onClose={() => setIsEditPeriodModalOpen(false)}
+          reportDetails={reportDetails}
+          onSuccess={async () => {
+            await loadReportsList(selectedSite);
+            if (selectedReportId) {
+              await loadReportDetails(selectedReportId);
+            }
           }}
         />
       )}
