@@ -74,6 +74,10 @@ interface CostReportPdfExportModalProps {
   defaultTimeframe?: "month" | "week" | "ytd";
   defaultCategory?: CostCategoryKey;
   user?: User;
+  dynamicData?: {
+    Senyiur: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
+    MuaraPahu: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
+  } | null;
 }
 
 export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> = ({
@@ -83,6 +87,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   defaultTimeframe = "week",
   defaultCategory = "total",
   user,
+  dynamicData,
 }) => {
   const isHeadOffice = user ? user.role === "SuperAdmin" || user.jobSite === "HeadOffice" : true;
   const initialResolvedSite: PdfSiteSelection = !isHeadOffice && user
@@ -133,21 +138,31 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   // Build filtered raw dataset
   const filteredDataset: FullPeriodRecord[] = useMemo(() => {
     let sourceData: FullPeriodRecord[] = [];
+    const weeklySen = dynamicData?.Senyiur?.weekly?.length ? dynamicData.Senyiur.weekly : RAW_WEEKLY_SENYIUR;
+    const weeklyMua = dynamicData?.MuaraPahu?.weekly?.length ? dynamicData.MuaraPahu.weekly : RAW_WEEKLY_MUARAPAHU;
+    const monthlySen = dynamicData?.Senyiur?.monthly?.length ? dynamicData.Senyiur.monthly : RAW_MONTHLY_SENYIUR;
+    const monthlyMua = dynamicData?.MuaraPahu?.monthly?.length ? dynamicData.MuaraPahu.monthly : RAW_MONTHLY_MUARAPAHU;
 
     if (timeframe === "week") {
       if (selectedSite === "Senyiur") {
-        sourceData = RAW_WEEKLY_SENYIUR;
+        sourceData = weeklySen;
       } else if (selectedSite === "MuaraPahu") {
-        sourceData = RAW_WEEKLY_MUARAPAHU;
+        sourceData = weeklyMua;
       } else {
         // Konsolidasi (AllSites): Sum Senyiur + Muara Pahu
-        sourceData = RAW_WEEKLY_SENYIUR.map((senItem, idx) => {
-          const muaraItem = RAW_WEEKLY_MUARAPAHU[idx] || senItem;
+        sourceData = weeklySen.map((senItem, idx) => {
+          const muaraItem = weeklyMua[idx] || senItem;
+          const totB = senItem.total.budget + muaraItem.total.budget;
+          const totR = senItem.total.realisasi + muaraItem.total.realisasi;
+          const prodB = (senItem.produksi?.budget || 0) + (muaraItem.produksi?.budget || 0);
+          const prodR = (senItem.produksi?.realisasi || 0) + (muaraItem.produksi?.realisasi || 0);
+          const idrTonB = prodB > 0 ? Math.round((totB * 1e6) / prodB) : 0;
+          const idrTonR = prodR > 0 ? Math.round((totR * 1e6) / prodR) : 0;
           return {
             label: senItem.label,
             total: {
-              budget: senItem.total.budget + muaraItem.total.budget,
-              realisasi: senItem.total.realisasi + muaraItem.total.realisasi,
+              budget: totB,
+              realisasi: totR,
               deviasi: senItem.total.deviasi + muaraItem.total.deviasi,
             },
             comp: {
@@ -175,6 +190,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
               realisasi: senItem.ovh.realisasi + muaraItem.ovh.realisasi,
               deviasi: senItem.ovh.deviasi + muaraItem.ovh.deviasi,
             },
+            produksi: { budget: prodB, realisasi: prodR },
+            idrPerTon: { budget: idrTonB, realisasi: idrTonR, deviasi: idrTonB - idrTonR },
           };
         });
       }
@@ -188,18 +205,24 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     } else {
       // Monthly
       if (selectedSite === "Senyiur") {
-        sourceData = RAW_MONTHLY_SENYIUR;
+        sourceData = monthlySen;
       } else if (selectedSite === "MuaraPahu") {
-        sourceData = RAW_MONTHLY_MUARAPAHU;
+        sourceData = monthlyMua;
       } else {
         // Konsolidasi (AllSites)
-        sourceData = RAW_MONTHLY_SENYIUR.map((senItem, idx) => {
-          const muaraItem = RAW_MONTHLY_MUARAPAHU[idx] || senItem;
+        sourceData = monthlySen.map((senItem, idx) => {
+          const muaraItem = monthlyMua[idx] || senItem;
+          const totB = senItem.total.budget + muaraItem.total.budget;
+          const totR = senItem.total.realisasi + muaraItem.total.realisasi;
+          const prodB = (senItem.produksi?.budget || 0) + (muaraItem.produksi?.budget || 0);
+          const prodR = (senItem.produksi?.realisasi || 0) + (muaraItem.produksi?.realisasi || 0);
+          const idrTonB = prodB > 0 ? Math.round((totB * 1e6) / prodB) : 0;
+          const idrTonR = prodR > 0 ? Math.round((totR * 1e6) / prodR) : 0;
           return {
             label: senItem.label,
             total: {
-              budget: senItem.total.budget + muaraItem.total.budget,
-              realisasi: senItem.total.realisasi + muaraItem.total.realisasi,
+              budget: totB,
+              realisasi: totR,
               deviasi: senItem.total.deviasi + muaraItem.total.deviasi,
             },
             comp: {
@@ -227,6 +250,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
               realisasi: senItem.ovh.realisasi + muaraItem.ovh.realisasi,
               deviasi: senItem.ovh.deviasi + muaraItem.ovh.deviasi,
             },
+            produksi: { budget: prodB, realisasi: prodR },
+            idrPerTon: { budget: idrTonB, realisasi: idrTonR, deviasi: idrTonB - idrTonR },
           };
         });
       }
@@ -293,6 +318,12 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       }
     });
 
+    const totalProdB = filteredDataset.reduce((acc, curr) => acc + (curr.produksi?.budget || 0), 0);
+    const totalProdR = filteredDataset.reduce((acc, curr) => acc + (curr.produksi?.realisasi || 0), 0);
+    const idrTonB = totalProdB > 0 ? Math.round((totalB * 1e6) / totalProdB) : 0;
+    const idrTonR = totalProdR > 0 ? Math.round((totalR * 1e6) / totalProdR) : 0;
+    const idrTonDev = idrTonB - idrTonR;
+
     return {
       totalB,
       totalR,
@@ -303,6 +334,11 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       peakPeriod,
       minR,
       minPeriod,
+      idrTonB,
+      idrTonR,
+      idrTonDev,
+      totalProdB,
+      totalProdR,
     };
   }, [filteredDataset, selectedCategory, timeframe]);
 
@@ -593,25 +629,25 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
           </span>
         </div>
 
-        {/* 4 KPI Highlight Cards Banner */}
-        <div className="grid grid-cols-4 gap-4 mt-2">
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+        {/* 5 KPI Highlight Cards Banner */}
+        <div className="grid grid-cols-5 gap-3 mt-2">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-              Total Anggaran (Budget)
+              Total Budget
             </span>
-            <div className="text-xl font-black text-slate-900 mt-1">
+            <div className="text-lg font-black text-slate-900 mt-1">
               Rp {(kpiSummary.totalB / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
             </div>
             <span className="text-[10px] font-medium text-slate-500">
-              Target plafon periode terpilih
+              Plafon {periodLabel}
             </span>
           </div>
 
-          <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5">
+          <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3">
             <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block">
-              Total Realisasi (Aktual)
+              Total Realisasi
             </span>
-            <div className="text-xl font-black text-blue-900 mt-1">
+            <div className="text-lg font-black text-blue-900 mt-1">
               Rp {(kpiSummary.totalR / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
             </div>
             <span className="text-[10px] font-medium text-blue-600">
@@ -619,8 +655,25 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
             </span>
           </div>
 
+          <div className="bg-teal-50/70 border border-teal-200 rounded-xl p-3">
+            <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
+              Biaya per Ton (Rp/Ton)
+            </span>
+            <div className="text-lg font-black text-teal-950 mt-1">
+              {kpiSummary.idrTonR > 0 ? `Rp ${kpiSummary.idrTonR.toLocaleString("id-ID")}` : "-"}
+            </div>
+            <span className="text-[10px] font-medium text-teal-700 truncate block">
+              {kpiSummary.idrTonB > 0 ? `Target: Rp ${kpiSummary.idrTonB.toLocaleString("id-ID")}` : "Biaya per Tonase"}
+              {kpiSummary.idrTonB > 0 && kpiSummary.idrTonR > 0 && (
+                <span className={kpiSummary.idrTonDev >= 0 ? " font-bold text-emerald-700" : " font-bold text-rose-700"}>
+                  {" "}({kpiSummary.idrTonDev >= 0 ? `Hemat` : `Over`})
+                </span>
+              )}
+            </span>
+          </div>
+
           <div
-            className={`border rounded-xl p-3.5 ${
+            className={`border rounded-xl p-3 ${
               kpiSummary.isEfficient
                 ? "bg-emerald-50/70 border-emerald-200"
                 : "bg-rose-50/70 border-rose-200"
@@ -631,10 +684,10 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                 kpiSummary.isEfficient ? "text-emerald-700" : "text-rose-700"
               }`}
             >
-              Varian / Deviasi Bersih
+              Varian Bersih
             </span>
             <div
-              className={`text-xl font-black mt-1 flex items-center gap-1.5 ${
+              className={`text-lg font-black mt-1 flex items-center gap-1 ${
                 kpiSummary.isEfficient ? "text-emerald-800" : "text-rose-800"
               }`}
             >
@@ -642,7 +695,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                 {kpiSummary.netDev >= 0 ? "+" : "-"}
                 {(Math.abs(kpiSummary.netDev) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wide bg-white border">
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-white border">
                 {kpiSummary.isEfficient ? "Hemat" : "Over"}
               </span>
             </div>
@@ -651,21 +704,19 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                 kpiSummary.isEfficient ? "text-emerald-600" : "text-rose-600"
               }`}
             >
-              {kpiSummary.isEfficient
-                ? "Realisasi di bawah plafon budget"
-                : "Realisasi melebihi alokasi budget"}
+              {kpiSummary.isEfficient ? "Di bawah plafon budget" : "Melebihi alokasi budget"}
             </span>
           </div>
 
-          <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5">
+          <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3">
             <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">
-              Rasio Efisiensi Biaya
+              Rasio Efisiensi
             </span>
-            <div className="text-xl font-black text-indigo-950 mt-1">
+            <div className="text-lg font-black text-indigo-950 mt-1">
               {kpiSummary.efficiency.toFixed(1)}%
             </div>
             <span className="text-[10px] font-medium text-indigo-600">
-              Persentase serapan terhadap budget
+              Serapan anggaran
             </span>
           </div>
         </div>
@@ -1018,58 +1069,80 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-900 text-white font-bold text-[10px] uppercase tracking-wider">
-                <th className="py-2.5 px-3 border-r border-slate-800">Periode</th>
-                <th className="py-2.5 px-3 border-r border-slate-800 text-right">
-                  Biaya Produksi (Total)
+                <th className="py-2.5 px-2 border-r border-slate-800">Periode</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">
+                  Biaya Total
                 </th>
-                <th className="py-2.5 px-3 border-r border-slate-800 text-right">
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">
                   Comp & Benefit
                 </th>
-                <th className="py-2.5 px-3 border-r border-slate-800 text-right">Fuel Solar</th>
-                <th className="py-2.5 px-3 border-r border-slate-800 text-right">Tyre (Ban)</th>
-                <th className="py-2.5 px-3 border-r border-slate-800 text-right">
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Fuel Solar</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Tyre (Ban)</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">
                   Repair & Maint
                 </th>
-                <th className="py-2.5 px-3 border-r border-slate-800 text-right">Overhead</th>
-                <th className="py-2.5 px-3 text-right">Varian Total (M)</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Overhead</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Varian (M)</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right text-emerald-400">
+                  IDR/Ton Real
+                </th>
+                <th className="py-2.5 px-2 text-right text-teal-400">
+                  Efisiensi/Ton
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {filteredDataset.map((row, idx) => {
                 const netDev = row.total.deviasi;
+                const tonDev = row.idrPerTon?.deviasi ?? 0;
                 return (
                   <tr
                     key={row.label}
                     className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/70"}
                   >
-                    <td className="py-2 px-3 font-black text-slate-800 border-r border-slate-200">
+                    <td className="py-2 px-2 font-black text-slate-800 border-r border-slate-200">
                       {row.label}
                     </td>
-                    <td className="py-2 px-3 text-right border-r border-slate-200 font-semibold text-slate-900">
+                    <td className="py-2 px-2 text-right border-r border-slate-200 font-semibold text-slate-900">
                       {(row.total.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
                     </td>
-                    <td className="py-2 px-3 text-right border-r border-slate-200 text-slate-700">
+                    <td className="py-2 px-2 text-right border-r border-slate-200 text-slate-700">
                       {(row.comp.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
                     </td>
-                    <td className="py-2 px-3 text-right border-r border-slate-200 text-slate-700">
+                    <td className="py-2 px-2 text-right border-r border-slate-200 text-slate-700">
                       {(row.fuel.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
                     </td>
-                    <td className="py-2 px-3 text-right border-r border-slate-200 text-slate-700">
+                    <td className="py-2 px-2 text-right border-r border-slate-200 text-slate-700">
                       {(row.tyre.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
                     </td>
-                    <td className="py-2 px-3 text-right border-r border-slate-200 text-slate-700">
+                    <td className="py-2 px-2 text-right border-r border-slate-200 text-slate-700">
                       {(row.rep.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
                     </td>
-                    <td className="py-2 px-3 text-right border-r border-slate-200 text-slate-700">
+                    <td className="py-2 px-2 text-right border-r border-slate-200 text-slate-700">
                       {(row.ovh.realisasi / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
                     </td>
                     <td
-                      className={`py-2 px-3 text-right font-black ${
+                      className={`py-2 px-2 text-right font-black border-r border-slate-200 ${
                         netDev >= 0 ? "text-emerald-700" : "text-rose-700"
                       }`}
                     >
                       {netDev >= 0 ? "+" : "-"}
                       {(Math.abs(netDev) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
+                    </td>
+                    <td className="py-2 px-2 text-right border-r border-slate-200 font-mono font-bold text-slate-900 bg-slate-50/50">
+                      {row.idrPerTon?.realisasi ? `Rp ${row.idrPerTon.realisasi.toLocaleString("id-ID")}` : "-"}
+                    </td>
+                    <td
+                      className={`py-2 px-2 text-right font-black font-mono bg-slate-50/50 ${
+                        tonDev >= 0 ? "text-emerald-700" : "text-rose-700"
+                      }`}
+                    >
+                      {row.idrPerTon?.realisasi && row.idrPerTon?.budget ? (
+                        <>
+                          {tonDev >= 0 ? "+" : "-"}
+                          Rp {Math.abs(tonDev).toLocaleString("id-ID")}
+                        </>
+                      ) : "-"}
                     </td>
                   </tr>
                 );
@@ -1077,50 +1150,68 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
 
               {/* Total Row */}
               <tr className="bg-slate-100 font-black border-t-2 border-slate-400 text-slate-900">
-                <td className="py-2.5 px-3 border-r border-slate-300">TOTAL PERIODE</td>
-                <td className="py-2.5 px-3 text-right border-r border-slate-300 text-blue-900">
+                <td className="py-2.5 px-2 border-r border-slate-300">TOTAL PERIODE</td>
+                <td className="py-2.5 px-2 text-right border-r border-slate-300 text-blue-900">
                   {(filteredDataset
                     .reduce((acc, curr) => acc + curr.total.realisasi, 0) / 1000)
                     .toLocaleString("id-ID", { maximumFractionDigits: 1 })}{" "}
                   M
                 </td>
-                <td className="py-2.5 px-3 text-right border-r border-slate-300">
+                <td className="py-2.5 px-2 text-right border-r border-slate-300">
                   {(filteredDataset
                     .reduce((acc, curr) => acc + curr.comp.realisasi, 0) / 1000)
                     .toLocaleString("id-ID", { maximumFractionDigits: 1 })}{" "}
                   M
                 </td>
-                <td className="py-2.5 px-3 text-right border-r border-slate-300">
+                <td className="py-2.5 px-2 text-right border-r border-slate-300">
                   {(filteredDataset
                     .reduce((acc, curr) => acc + curr.fuel.realisasi, 0) / 1000)
                     .toLocaleString("id-ID", { maximumFractionDigits: 1 })}{" "}
                   M
                 </td>
-                <td className="py-2.5 px-3 text-right border-r border-slate-300">
+                <td className="py-2.5 px-2 text-right border-r border-slate-300">
                   {(filteredDataset
                     .reduce((acc, curr) => acc + curr.tyre.realisasi, 0) / 1000)
                     .toLocaleString("id-ID", { maximumFractionDigits: 1 })}{" "}
                   M
                 </td>
-                <td className="py-2.5 px-3 text-right border-r border-slate-300">
+                <td className="py-2.5 px-2 text-right border-r border-slate-300">
                   {(filteredDataset
                     .reduce((acc, curr) => acc + curr.rep.realisasi, 0) / 1000)
                     .toLocaleString("id-ID", { maximumFractionDigits: 1 })}{" "}
                   M
                 </td>
-                <td className="py-2.5 px-3 text-right border-r border-slate-300">
+                <td className="py-2.5 px-2 text-right border-r border-slate-300">
                   {(filteredDataset
                     .reduce((acc, curr) => acc + curr.ovh.realisasi, 0) / 1000)
                     .toLocaleString("id-ID", { maximumFractionDigits: 1 })}{" "}
                   M
                 </td>
                 <td
-                  className={`py-2.5 px-3 text-right ${
-                    kpiSummary.netDev >= 0 ? "text-emerald-800" : "text-rose-800"
+                  className={`py-2.5 px-2 text-right border-r border-slate-300 font-black ${
+                    kpiSummary.isEfficient ? "text-emerald-700" : "text-rose-700"
                   }`}
                 >
-                  {kpiSummary.netDev >= 0 ? "+" : "-"}
-                  {(Math.abs(kpiSummary.netDev) / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
+                  {kpiSummary.isEfficient ? "+" : "-"}
+                  {(Math.abs(kpiSummary.netDev) / 1000).toLocaleString("id-ID", {
+                    maximumFractionDigits: 1,
+                  })}{" "}
+                  M
+                </td>
+                <td className="py-2.5 px-2 text-right border-r border-slate-300 text-slate-900 font-mono font-bold bg-slate-200/60">
+                  {kpiSummary.idrTonR > 0 ? `Rp ${kpiSummary.idrTonR.toLocaleString("id-ID")}` : "-"}
+                </td>
+                <td
+                  className={`py-2.5 px-2 text-right font-mono font-black bg-slate-200/60 ${
+                    kpiSummary.idrTonDev >= 0 ? "text-emerald-800" : "text-rose-800"
+                  }`}
+                >
+                  {kpiSummary.idrTonR > 0 && kpiSummary.idrTonB > 0 ? (
+                    <>
+                      {kpiSummary.idrTonDev >= 0 ? "+" : "-"}
+                      Rp {Math.abs(kpiSummary.idrTonDev).toLocaleString("id-ID")}
+                    </>
+                  ) : "-"}
                 </td>
               </tr>
             </tbody>

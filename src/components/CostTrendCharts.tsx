@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
   ResponsiveContainer,
+  ComposedChart,
   LineChart,
   Line,
   XAxis,
@@ -40,6 +41,7 @@ import {
   FileDown,
   Presentation,
   Scale,
+  Coins,
 } from "lucide-react";
 import { CostReportPdfExportModal } from "./CostReportPdfExportModal";
 
@@ -135,6 +137,17 @@ export interface CostRecordDetail {
   deviasi: number;
 }
 
+export interface ProductionDetail {
+  budget: number;
+  realisasi: number;
+}
+
+export interface IdrPerTonDetail {
+  budget: number;
+  realisasi: number;
+  deviasi: number;
+}
+
 export interface FullPeriodRecord {
   label: string;
   isToday?: boolean;
@@ -144,6 +157,8 @@ export interface FullPeriodRecord {
   tyre: CostRecordDetail;
   rep: CostRecordDetail;
   ovh: CostRecordDetail;
+  produksi?: ProductionDetail;
+  idrPerTon?: IdrPerTonDetail;
 }
 
 // =========================================================================
@@ -633,6 +648,7 @@ export function computeYTDDataset(base: FullPeriodRecord[]): FullPeriodRecord[] 
   let cumTyre = { budget: 0, realisasi: 0, deviasi: 0 };
   let cumRep = { budget: 0, realisasi: 0, deviasi: 0 };
   let cumOvh = { budget: 0, realisasi: 0, deviasi: 0 };
+  let cumProd = { budget: 0, realisasi: 0 };
 
   const list: FullPeriodRecord[] = base.map((item) => {
     cumTotal = {
@@ -666,6 +682,20 @@ export function computeYTDDataset(base: FullPeriodRecord[]): FullPeriodRecord[] 
       deviasi: cumOvh.deviasi + item.ovh.deviasi,
     };
 
+    if (item.produksi) {
+      cumProd = {
+        budget: cumProd.budget + (item.produksi.budget || 0),
+        realisasi: cumProd.realisasi + (item.produksi.realisasi || 0),
+      };
+    }
+
+    const idrTonBudget = cumProd.budget > 0
+      ? Math.round((cumTotal.budget * 1e6) / cumProd.budget)
+      : (item.idrPerTon?.budget || 0);
+    const idrTonReal = cumProd.realisasi > 0
+      ? Math.round((cumTotal.realisasi * 1e6) / cumProd.realisasi)
+      : (item.idrPerTon?.realisasi || 0);
+
     return {
       label: item.label,
       total: { ...cumTotal },
@@ -674,6 +704,12 @@ export function computeYTDDataset(base: FullPeriodRecord[]): FullPeriodRecord[] 
       tyre: { ...cumTyre },
       rep: { ...cumRep },
       ovh: { ...cumOvh },
+      produksi: { ...cumProd },
+      idrPerTon: {
+        budget: idrTonBudget,
+        realisasi: idrTonReal,
+        deviasi: idrTonBudget - idrTonReal,
+      },
     };
   });
 
@@ -691,6 +727,8 @@ export function computeYTDDataset(base: FullPeriodRecord[]): FullPeriodRecord[] 
     const lastItem = list[list.length - 1];
     // Hanya append jika label terakhir berbeda dari label hari ini
     if (lastItem.label !== todayLabel) {
+      const idrTonBudget = cumProd.budget > 0 ? Math.round((cumTotal.budget * 1e6) / cumProd.budget) : 0;
+      const idrTonReal = cumProd.realisasi > 0 ? Math.round((cumTotal.realisasi * 1e6) / cumProd.realisasi) : 0;
       list.push({
         label: todayLabel,
         isToday: true,
@@ -700,6 +738,12 @@ export function computeYTDDataset(base: FullPeriodRecord[]): FullPeriodRecord[] 
         tyre: { ...cumTyre },
         rep: { ...cumRep },
         ovh: { ...cumOvh },
+        produksi: { ...cumProd },
+        idrPerTon: {
+          budget: idrTonBudget,
+          realisasi: idrTonReal,
+          deviasi: idrTonBudget - idrTonReal,
+        },
       });
     }
   }
@@ -796,6 +840,41 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     data = addLinearTrendline(data, "deviasi", "trendDeviasi");
     return data;
   }, [rawDataset, selectedCategory]);
+
+  // Processed Rupiah per Ton Data & Trendline
+  const processedIdrTonData = useMemo(() => {
+    const extracted = rawDataset.map((item) => {
+      let b = 0;
+      let r = 0;
+      if (selectedCategory === "total") {
+        b = item.idrPerTon?.budget ?? (item.produksi?.budget ? Math.round((item.total.budget * 1e6) / item.produksi.budget) : 0);
+        r = item.idrPerTon?.realisasi ?? (item.produksi?.realisasi ? Math.round((item.total.realisasi * 1e6) / item.produksi.realisasi) : 0);
+      } else {
+        b = item.produksi?.budget ? Math.round((item[selectedCategory].budget * 1e6) / item.produksi.budget) : 0;
+        r = item.produksi?.realisasi ? Math.round((item[selectedCategory].realisasi * 1e6) / item.produksi.realisasi) : 0;
+      }
+      return {
+        label: item.label,
+        isToday: item.isToday,
+        idrTonBudget: b,
+        idrTonReal: r,
+        idrTonDeviasi: b - r,
+      };
+    });
+
+    let data = addLinearTrendline(extracted, "idrTonReal", "trendIdrTonReal");
+    data = addLinearTrendline(data, "idrTonBudget", "trendIdrTonBudget");
+    return data;
+  }, [rawDataset, selectedCategory]);
+
+  const idrTonSummary = useMemo(() => {
+    const validB = processedIdrTonData.filter((d) => d.idrTonBudget > 0);
+    const validR = processedIdrTonData.filter((d) => d.idrTonReal > 0);
+    const avgB = validB.length > 0 ? Math.round(validB.reduce((s, c) => s + c.idrTonBudget, 0) / validB.length) : 0;
+    const avgR = validR.length > 0 ? Math.round(validR.reduce((s, c) => s + c.idrTonReal, 0) / validR.length) : 0;
+    const netDev = avgB - avgR;
+    return { avgB, avgR, netDev };
+  }, [processedIdrTonData]);
 
   // Calculate summary metrics for focused category
   const focusedSummary = useMemo(() => {
@@ -1623,6 +1702,180 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* Rupiah per Ton Chart: BIAYA PER TON (IDR / TON) (BUDGET vs REALISASI) */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Coins size={18} className="text-[#0e9f9d]" />
+                  <span>
+                    BIAYA PER TON {activeMeta.label.toUpperCase()} (IDR / TON)
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Perbandingan target budget vs realisasi biaya per tonase produksi batubara (Rp / Ton)
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+                <div className="flex items-center gap-1.5 text-slate-600 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                  <span>Target Budget</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[#e95623] bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#e95623]" />
+                  <span>Aktual Realisasi</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#0e9f9d]" />
+                  <span>Tren Realisasi</span>
+                </div>
+                {showTrendlines && (
+                  <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                    <span className="border-b-2 border-dashed border-amber-500 w-3" />
+                    <span>Garis Regresi</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Rupiah per Ton Canvas */}
+            <div className="w-full h-76 pt-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={processedIdrTonData}
+                  margin={{ top: 25, right: 30, left: 20, bottom: 10 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#64748B"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#94A3B8" }}
+                  />
+                  <YAxis
+                    stroke="#64748B"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#94A3B8" }}
+                    tickFormatter={(val) => `Rp ${(Number(val) / 1000).toFixed(0)}k`}
+                    width={70}
+                    label={{
+                      value: "IDR / Ton",
+                      angle: -90,
+                      position: "insideLeft",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fill: "#475569",
+                    }}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload || payload.length === 0) return null;
+                      const d = payload[0]?.payload;
+                      const bVal = d?.idrTonBudget || 0;
+                      const rVal = d?.idrTonReal || 0;
+                      const dev = bVal - rVal;
+                      const isHemat = dev >= 0;
+                      return (
+                        <div className="bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 min-w-50">
+                          <div className="font-extrabold text-slate-800 pb-1 border-b border-slate-100 flex items-center justify-between">
+                            <span>Periode {label}</span>
+                            <span className="text-[10px] text-slate-400 font-semibold">{activeSite}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-slate-600">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-slate-400" />
+                              Budget IDR/Ton:
+                            </span>
+                            <span className="font-mono font-bold text-slate-800">
+                              {bVal > 0 ? `Rp ${bVal.toLocaleString("id-ID")} / Ton` : "-"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-slate-600">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-[#e95623]" />
+                              Realisasi IDR/Ton:
+                            </span>
+                            <span className="font-mono font-bold text-[#e95623]">
+                              {rVal > 0 ? `Rp ${rVal.toLocaleString("id-ID")} / Ton` : "-"}
+                            </span>
+                          </div>
+                          {bVal > 0 && rVal > 0 && (
+                            <div className={`flex justify-between items-center pt-1 border-t border-slate-100 font-bold ${isHemat ? "text-emerald-600" : "text-rose-600"}`}>
+                              <span>Efisiensi:</span>
+                              <span className="font-mono">
+                                {isHemat ? "+" : "-"}Rp {Math.abs(dev).toLocaleString("id-ID")} / Ton ({isHemat ? "Hemat" : "Over"})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
+                  <Bar
+                    dataKey="idrTonBudget"
+                    name="Budget (Rp/Ton)"
+                    fill="#94A3B8"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={36}
+                  />
+                  <Bar
+                    dataKey="idrTonReal"
+                    name="Realisasi (Rp/Ton)"
+                    fill="#e95623"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={36}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="idrTonReal"
+                    name="Garis Tren Realisasi"
+                    stroke="#0e9f9d"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: "#0e9f9d", stroke: "#FFFFFF", strokeWidth: 1.5 }}
+                  />
+                  {showTrendlines && (
+                    <Line
+                      type="monotone"
+                      dataKey="trendIdrTonReal"
+                      name="Regresi Linier"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Quick summary cards for Rupiah/Ton */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100 text-xs">
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                <span className="text-[11px] text-slate-500 block font-medium">Rata-rata Target Budget</span>
+                <span className="text-sm font-bold text-slate-800 font-mono">
+                  {idrTonSummary.avgB > 0 ? `Rp ${idrTonSummary.avgB.toLocaleString("id-ID")} / Ton` : "-"}
+                </span>
+              </div>
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                <span className="text-[11px] text-slate-500 block font-medium">Rata-rata Aktual Realisasi</span>
+                <span className="text-sm font-bold text-[#e95623] font-mono">
+                  {idrTonSummary.avgR > 0 ? `Rp ${idrTonSummary.avgR.toLocaleString("id-ID")} / Ton` : "-"}
+                </span>
+              </div>
+              <div className={`p-2.5 rounded-xl border ${idrTonSummary.netDev >= 0 ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800"}`}>
+                <span className="text-[11px] font-medium block">Efisiensi Rata-rata</span>
+                <span className="text-sm font-black font-mono">
+                  {idrTonSummary.netDev >= 0 ? "+" : "-"}Rp {Math.abs(idrTonSummary.netDev).toLocaleString("id-ID")} / Ton ({idrTonSummary.netDev >= 0 ? "Efisien" : "Over"})
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1852,6 +2105,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
         defaultTimeframe={timeframe}
         defaultCategory={selectedCategory}
         user={user}
+        dynamicData={dynamicTrends}
       />
     </div>
   );
