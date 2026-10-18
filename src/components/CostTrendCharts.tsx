@@ -476,12 +476,12 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
   },
   {
     label: "Oct",
-    total: { budget: 1437, realisasi: 1786, deviasi: -349 },
-    comp: { budget: 416, realisasi: 788, deviasi: -372 },
-    fuel: { budget: 58, realisasi: 34, deviasi: 24 },
+    total: { budget: 2694, realisasi: 2541, deviasi: 153 },
+    comp: { budget: 780, realisasi: 788, deviasi: -8 },
+    fuel: { budget: 109, realisasi: 75, deviasi: 34 },
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
-    rep: { budget: 3, realisasi: 1, deviasi: 2 },
-    ovh: { budget: 87, realisasi: 147, deviasi: -60 },
+    rep: { budget: 5, realisasi: 2, deviasi: 3 },
+    ovh: { budget: 163, realisasi: 147, deviasi: 16 },
   },
 ];
 
@@ -569,12 +569,12 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
   },
   {
     label: "Oct",
-    total: { budget: 8606, realisasi: 4949, deviasi: 3657 },
-    comp: { budget: 697, realisasi: 733, deviasi: -36 },
-    fuel: { budget: 4782, realisasi: 1212, deviasi: 3570 },
-    tyre: { budget: 504, realisasi: 372, deviasi: 132 },
-    rep: { budget: 504, realisasi: 106, deviasi: 398 },
-    ovh: { budget: 376, realisasi: 26, deviasi: 350 },
+    total: { budget: 8606, realisasi: 14799, deviasi: -6193 },
+    comp: { budget: 697, realisasi: 2222, deviasi: -1525 },
+    fuel: { budget: 4782, realisasi: 5349, deviasi: -567 },
+    tyre: { budget: 504, realisasi: 1104, deviasi: -600 },
+    rep: { budget: 504, realisasi: 419, deviasi: 85 },
+    ovh: { budget: 376, realisasi: 90, deviasi: 286 },
   },
 ];
 

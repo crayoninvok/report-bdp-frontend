@@ -166,7 +166,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Site Muara Pahu</h3>
                 <p className="text-[11px] text-slate-500">
-                  Periode Aktif: {latestMP ? latestMP.periodName : "01-08 Okt 2026"}
+                  Periode Aktif: {latestMP ? latestMP.periodName : "09-15 Okt 2026"}
                 </p>
               </div>
             </div>
@@ -225,7 +225,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Site Senyiur</h3>
                 <p className="text-[11px] text-slate-500">
-                  Periode Aktif: {latestSNY ? latestSNY.periodName : "01-08 Okt 2026"}
+                  Periode Aktif: {latestSNY ? latestSNY.periodName : "09-15 Okt 2026"}
                 </p>
               </div>
             </div>

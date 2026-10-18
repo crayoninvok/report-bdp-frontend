@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { User, JobSite } from "../types/auth";
 import {
   TrendingUp,
@@ -54,6 +54,7 @@ import {
   computeYTDDataset,
 } from "./CostTrendCharts";
 import { CostDriverPdfExportModal } from "./CostDriverPdfExportModal";
+import { reportService } from "../services/reportService";
 
 // =========================================================================
 // DEFINISI KATEGORI BEBAN UTAMA
@@ -163,18 +164,51 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     setSelectedPeriod("all");
   };
 
+  // Dynamic Weekly Trends from Backend
+  const [dynamicWeekly, setDynamicWeekly] = useState<{
+    Senyiur: { weekly: FullPeriodRecord[] };
+    MuaraPahu: { weekly: FullPeriodRecord[] };
+  } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    reportService
+      .getCostTrends(undefined, 2026)
+      .then((data) => {
+        if (isMounted && data) {
+          setDynamicWeekly(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Using static fallback for cost driver trends:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const weeklySenyiur = useMemo(() => {
+    if (dynamicWeekly?.Senyiur?.weekly?.length) return dynamicWeekly.Senyiur.weekly;
+    return RAW_WEEKLY_SENYIUR;
+  }, [dynamicWeekly]);
+
+  const weeklyMuaraPahu = useMemo(() => {
+    if (dynamicWeekly?.MuaraPahu?.weekly?.length) return dynamicWeekly.MuaraPahu.weekly;
+    return RAW_WEEKLY_MUARAPAHU;
+  }, [dynamicWeekly]);
+
   // 1. DATASET DASAR (Sesuai Site & Timeframe yang dipilih)
   const baseDataset: FullPeriodRecord[] = useMemo(() => {
     if (selectedSite === "Senyiur") {
       if (timeframe === "ytd") return computeYTDDataset(RAW_MONTHLY_SENYIUR);
       if (timeframe === "month") return RAW_MONTHLY_SENYIUR;
-      return RAW_WEEKLY_SENYIUR;
+      return weeklySenyiur;
     }
 
     if (selectedSite === "MuaraPahu") {
       if (timeframe === "ytd") return computeYTDDataset(RAW_MONTHLY_MUARAPAHU);
       if (timeframe === "month") return RAW_MONTHLY_MUARAPAHU;
-      return RAW_WEEKLY_MUARAPAHU;
+      return weeklyMuaraPahu;
     }
 
     // Konsolidasi: Gabungan Senyiur + Muara Pahu
@@ -236,8 +270,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     }
 
     // Konsolidasi Mingguan
-    return RAW_WEEKLY_SENYIUR.map((sRec, idx) => {
-      const mRec = RAW_WEEKLY_MUARAPAHU[idx] || {
+    return weeklySenyiur.map((sRec, idx) => {
+      const mRec = weeklyMuaraPahu[idx] || {
         label: sRec.label,
         total: { budget: 0, realisasi: 0, deviasi: 0 },
         comp: { budget: 0, realisasi: 0, deviasi: 0 },
@@ -261,7 +295,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
         ovh: sumCost("ovh"),
       };
     });
-  }, [selectedSite, timeframe]);
+  }, [selectedSite, timeframe, weeklySenyiur, weeklyMuaraPahu]);
 
   // 2. DATASET AKTIF BERDASARKAN FILTER PERIODE SPESIFIK
   const activeDataset: FullPeriodRecord[] = useMemo(() => {
@@ -612,7 +646,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
 
   // Label Periode Aktif
   const activePeriodLabel = useMemo(() => {
-    if (timeframe === "ytd") return "Kumulatif YTD 2026 (Jan - 14 Okt)";
+    if (timeframe === "ytd") return "Kumulatif YTD 2026 (Jan - 15 Okt)";
     if (timeframe === "month") {
       if (selectedPeriod === "all") return "Bulanan (Jan - Okt 2026)";
       return `Bulan ${selectedPeriod} 2026`;
