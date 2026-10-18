@@ -98,10 +98,9 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
     return Math.round(val).toLocaleString("id-ID");
   };
 
-  const formatPercent = (val: number | null | undefined, isRawDecimal = false) => {
+  const formatPercent = (val: number | null | undefined) => {
     if (val === null || val === undefined || val === 0) return "-";
-    const pct = isRawDecimal ? val * 100 : val;
-    return `${pct.toFixed(2).replace(".", ",")}%`;
+    return `${val.toFixed(2).replace(".", ",")}%`;
   };
 
   const formatPerTon = (val: number | null | undefined) => {
@@ -179,7 +178,7 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
           costRealM: bp ? Math.round((bp.realisasiCost || 0) / 1000000) / 1000 : 0,
           idrTonBudget: s.budgetProduksi > 0 && bp && bp.budgetIdrPerTon > 0 ? Math.round(bp.budgetIdrPerTon) : null,
           idrTonReal: s.realisasiProduksi > 0 && bp && bp.realisasiIdrPerTon > 0 ? Math.round(bp.realisasiIdrPerTon) : null,
-          achProd: s.achProduksiPercent ? s.achProduksiPercent * 100 : 0,
+          achProd: s.achProduksiPercent ? s.achProduksiPercent : 0,
         };
       });
   }, [summaries]);
@@ -211,7 +210,7 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
       currentSummary.realisasiProduksi ? currentSummary.realisasiProduksi.toString() : "-",
       "-",
       "-",
-      currentSummary.achProduksiPercent ? (currentSummary.achProduksiPercent * 100).toFixed(2) + "%" : "-",
+      currentSummary.achProduksiPercent ? currentSummary.achProduksiPercent.toFixed(2) + "%" : "-",
       "-",
       "-",
     ]);
@@ -221,12 +220,12 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
       rows.push([
         `"${it.accountName.trim()}"`,
         it.budgetCost ? it.budgetCost.toString() : "-",
-        it.budgetPercentNS ? (it.budgetPercentNS * 100).toFixed(2) + "%" : "-",
+        it.budgetPercentNS ? it.budgetPercentNS.toFixed(2) + "%" : "-",
         it.budgetIdrPerTon ? it.budgetIdrPerTon.toFixed(2) : "-",
         it.realisasiCost ? it.realisasiCost.toString() : "-",
-        it.realisasiPercentNS ? (it.realisasiPercentNS * 100).toFixed(2) + "%" : "-",
+        it.realisasiPercentNS ? it.realisasiPercentNS.toFixed(2) + "%" : "-",
         it.realisasiIdrPerTon ? it.realisasiIdrPerTon.toFixed(2) : "-",
-        it.achPercent ? (it.achPercent * 100).toFixed(2) + "%" : "-",
+        it.achPercent ? it.achPercent.toFixed(2) + "%" : "-",
         it.costUnderOverPerTon ? it.costUnderOverPerTon.toFixed(2) : "-",
         it.costUnderOver ? it.costUnderOver.toString() : "-",
       ]);
@@ -413,14 +412,14 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                 <span
                   className={`font-bold ${
                     currentSummary.budgetProduksi > 0 && currentSummary.realisasiProduksi > 0
-                      ? currentSummary.achProduksiPercent >= 1
+                      ? currentSummary.achProduksiPercent >= 100
                         ? "text-emerald-600"
                         : "text-amber-600"
                       : "text-slate-400"
                   }`}
                 >
                   {currentSummary.budgetProduksi > 0 && currentSummary.realisasiProduksi > 0
-                    ? `${formatPercent(currentSummary.achProduksiPercent, true)} ACH`
+                    ? `${formatPercent(currentSummary.achProduksiPercent)} ACH`
                     : currentSummary.realisasiProduksi === 0
                     ? "(Tidak Ada Produksi)"
                     : "-"}
@@ -458,14 +457,14 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                 <span
                   className={`font-bold ${
                     biayaProduksiItem && biayaProduksiItem.budgetCost > 0 && biayaProduksiItem.realisasiCost > 0
-                      ? biayaProduksiItem.achPercent <= 1
+                      ? biayaProduksiItem.achPercent <= 100
                         ? "text-emerald-600"
                         : "text-rose-600"
                       : "text-slate-400"
                   }`}
                 >
                   {biayaProduksiItem && biayaProduksiItem.budgetCost > 0
-                    ? `${formatPercent(biayaProduksiItem.achPercent, true)} ACH`
+                    ? `${formatPercent(biayaProduksiItem.achPercent)} ACH`
                     : "-"}
                 </span>
               </div>
@@ -717,8 +716,8 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                   <td className="px-2 py-2.5 border border-slate-300 text-center text-slate-400 font-mono">-</td>
                   <td className="px-2 py-2.5 border border-slate-300 text-right font-mono">
                     {currentSummary.budgetProduksi > 0 && currentSummary.realisasiProduksi > 0 ? (
-                      <span className={currentSummary.achProduksiPercent >= 1 ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
-                        {formatPercent(currentSummary.achProduksiPercent, true)}
+                      <span className={currentSummary.achProduksiPercent >= 100 ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
+                        {formatPercent(currentSummary.achProduksiPercent)}
                       </span>
                     ) : (
                       <span className="text-slate-400 font-normal">-</span>
@@ -762,7 +761,7 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                         {formatIDR(item.budgetCost)}
                       </td>
                       <td className="px-2 py-2 border border-slate-300 text-right font-mono">
-                        {item.budgetCost > 0 ? formatPercent(item.budgetPercentNS, true) : "-"}
+                        {item.budgetCost > 0 ? formatPercent(item.budgetPercentNS) : "-"}
                       </td>
                       <td className="px-2 py-2 border border-slate-300 text-right font-mono">
                         {currentSummary.budgetProduksi > 0 && item.budgetIdrPerTon > 0
@@ -775,7 +774,7 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                         {formatIDR(item.realisasiCost)}
                       </td>
                       <td className="px-2 py-2 border border-slate-300 text-right font-mono">
-                        {item.realisasiCost > 0 ? formatPercent(item.realisasiPercentNS, true) : "-"}
+                        {item.realisasiCost > 0 ? formatPercent(item.realisasiPercentNS) : "-"}
                       </td>
                       <td className="px-2 py-2 border border-slate-300 text-right font-mono">
                         {currentSummary.realisasiProduksi > 0 && item.realisasiIdrPerTon > 0
@@ -786,8 +785,8 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                       {/* Kinerja */}
                       <td className="px-2 py-2 border border-slate-300 text-right font-mono font-bold">
                         {item.budgetCost > 0 ? (
-                          <span className={item.achPercent <= 1 ? "text-emerald-700" : "text-rose-700"}>
-                            {formatPercent(item.achPercent, true)}
+                          <span className={item.achPercent <= 100 ? "text-emerald-700" : "text-rose-700"}>
+                            {formatPercent(item.achPercent)}
                           </span>
                         ) : (
                           <span className="text-slate-400 font-normal">-</span>
@@ -972,8 +971,8 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                             </td>
                             <td className="px-2 py-2 border border-slate-300 text-right font-mono">
                               {s.budgetProduksi > 0 && s.realisasiProduksi > 0 ? (
-                                <span className={s.achProduksiPercent >= 1 ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
-                                  {formatPercent(s.achProduksiPercent, true)}
+                                <span className={s.achProduksiPercent >= 100 ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
+                                  {formatPercent(s.achProduksiPercent)}
                                 </span>
                               ) : (
                                 <span className="text-slate-400 font-normal">-</span>
@@ -1098,8 +1097,8 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                                     </td>
                                     <td className="px-2 py-2 border border-slate-300 text-right font-mono">
                                       {bCost > 0 ? (
-                                        <span className={ach <= 1 ? "text-emerald-700 font-bold" : "text-rose-700 font-bold"}>
-                                          {formatPercent(ach, true)}
+                                        <span className={ach <= 100 ? "text-emerald-700 font-bold" : "text-rose-700 font-bold"}>
+                                          {formatPercent(ach)}
                                         </span>
                                       ) : (
                                         <span className="text-slate-400 font-normal">-</span>
