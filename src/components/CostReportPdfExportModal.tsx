@@ -740,19 +740,21 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={slide1TrendData}
-                margin={{ top: 22, right: 24, left: -10, bottom: 0 }}
+                margin={{ top: 22, right: 24, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fontWeight: "bold", fill: "#475569" }}
                   axisLine={{ stroke: "#CBD5E1" }}
+                  padding={{ left: 28, right: 20 }}
                 />
                 <YAxis
                   tickFormatter={formatYAxisTick}
                   tick={{ fontSize: 11, fill: "#64748B" }}
                   axisLine={false}
                   tickLine={false}
+                  width={46}
                 />
                 <Tooltip />
                 <Legend

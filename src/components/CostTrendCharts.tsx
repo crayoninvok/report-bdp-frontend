@@ -1362,7 +1362,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={processedFocusedData}
-                    margin={{ top: 25, right: 35, left: 10, bottom: 10 }}
+                    margin={{ top: 25, right: 35, left: 15, bottom: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis
@@ -1371,6 +1371,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                       fontSize={11}
                       tickLine={false}
                       axisLine={{ stroke: "#94A3B8" }}
+                      padding={{ left: 38, right: 30 }}
                     />
                     <YAxis
                       stroke="#64748B"
@@ -1378,7 +1379,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                       tickLine={false}
                       axisLine={{ stroke: "#94A3B8" }}
                       tickFormatter={formatYAxisTick}
-                      width={52}
+                      width={56}
                       label={{
                         value: "Rp",
                         angle: -90,
@@ -1626,7 +1627,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={processedFocusedData}
-                  margin={{ top: 25, right: 30, left: 10, bottom: 10 }}
+                  margin={{ top: 25, right: 30, left: 15, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis
@@ -1635,6 +1636,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     fontSize={11}
                     tickLine={false}
                     axisLine={{ stroke: "#94A3B8" }}
+                    padding={{ left: 38, right: 30 }}
                   />
                   <YAxis
                     stroke="#64748B"
@@ -1642,7 +1644,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     tickLine={false}
                     axisLine={{ stroke: "#94A3B8" }}
                     tickFormatter={formatYAxisTick}
-                    width={52}
+                    width={56}
                     label={{
                       value: "Rp",
                       angle: -90,
@@ -1754,6 +1756,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     fontSize={11}
                     tickLine={false}
                     axisLine={{ stroke: "#94A3B8" }}
+                    padding={{ left: 28, right: 24 }}
                   />
                   <YAxis
                     stroke="#64748B"
@@ -2015,7 +2018,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
                         data={data}
-                        margin={{ top: 10, right: 15, left: -10, bottom: 0 }}
+                        margin={{ top: 10, right: 15, left: -5, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                         <XAxis
@@ -2024,13 +2027,14 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                           fontSize={9}
                           tickLine={false}
                           interval={timeframe === "week" ? 2 : 1}
+                          padding={{ left: 16, right: 16 }}
                         />
                         <YAxis
                           stroke="#94A3B8"
                           fontSize={9}
                           tickLine={false}
                           tickFormatter={formatYAxisTick}
-                          width={40}
+                          width={42}
                         />
                         <Tooltip content={<CustomTooltip />} />
 
