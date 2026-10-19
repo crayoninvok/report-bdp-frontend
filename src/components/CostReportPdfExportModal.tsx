@@ -1382,18 +1382,6 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   <Calendar size={13} />
                   <span>Bulanan</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeframe("ytd")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    timeframe === "ytd"
-                      ? "bg-[#e95623] text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <TrendingUp size={13} />
-                  <span>Kumulatif YTD</span>
-                </button>
               </div>
             </div>
 

@@ -802,17 +802,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                 <Sliders size={13} className={timeframe === "week" ? "text-blue-600" : "text-slate-400"} />
                 <span>Mingguan</span>
               </button>
-              <button
-                onClick={() => handleTimeframeChange("ytd")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  timeframe === "ytd"
-                    ? "bg-white text-[#e95623] shadow-sm"
-                    : "text-slate-300 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <TrendingUp size={13} className={timeframe === "ytd" ? "text-[#e95623]" : "text-slate-400"} />
-                <span>Kumulatif YTD</span>
-              </button>
             </div>
 
             {/* Sub-Filter Periode Spesifik (Bulan Tertentu / Minggu Tertentu) */}

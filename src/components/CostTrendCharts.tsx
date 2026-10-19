@@ -1192,17 +1192,6 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               <Sliders size={13} className="text-blue-600" />
               <span>Mingguan</span>
             </button>
-            <button
-              onClick={() => setTimeframe("ytd")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                timeframe === "ytd"
-                  ? "bg-white text-[#e95623] shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <TrendingUp size={13} className={timeframe === "ytd" ? "text-[#e95623]" : "text-slate-500"} />
-              <span>Kumulatif YTD</span>
-            </button>
           </div>
         </div>
 
