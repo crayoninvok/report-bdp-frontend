@@ -1729,10 +1729,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                   <span className="h-2.5 w-2.5 rounded-full bg-[#e95623]" />
                   <span>Aktual Realisasi</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#0e9f9d]" />
-                  <span>Tren Realisasi</span>
-                </div>
+
                 {showTrendlines && (
                   <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
                     <span className="border-b-2 border-dashed border-amber-500 w-3" />
@@ -1833,14 +1830,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     radius={[4, 4, 0, 0]}
                     maxBarSize={36}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="idrTonReal"
-                    name="Garis Tren Realisasi"
-                    stroke="#0e9f9d"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: "#0e9f9d", stroke: "#FFFFFF", strokeWidth: 1.5 }}
-                  />
+
                   {showTrendlines && (
                     <Line
                       type="monotone"
