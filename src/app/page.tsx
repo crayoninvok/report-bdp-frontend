@@ -12,7 +12,11 @@ import { SummaryOpsView } from "../components/SummaryOpsView";
 import { UserManagementView } from "../components/UserManagementView";
 import { CostDriverView } from "../components/CostDriverView";
 import { RiverJournalView } from "../components/RiverJournalView";
+import { InputProductionView } from "../components/InputProductionView";
+import { CoalProductionDashboardView } from "../components/CoalProductionDashboardView";
+import { CoalProductionReportView } from "../components/CoalProductionReportView";
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
+
 import { Menu, Bell, MapPin } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -215,26 +219,24 @@ export default function Home() {
           ) : activeMenu === "river-journal" ? (
             <RiverJournalView user={currentUser} />
           ) : activeMenu === "coal-dashboard" ? (
-            <UnderDevelopmentView
+            <CoalProductionDashboardView
               user={currentUser}
-              moduleName="Dashboard Produksi"
-              moduleCategory="Coal Hauling"
-              onBackToDashboard={() => setActiveMenu("dashboard")}
+              onNavigateToInput={() => setActiveMenu("coal-input")}
+              onNavigateToReports={() => setActiveMenu("coal-reports")}
             />
           ) : activeMenu === "coal-input" ? (
-            <UnderDevelopmentView
+
+            <InputProductionView
               user={currentUser}
-              moduleName="Input Data Produksi"
-              moduleCategory="Coal Hauling"
-              onBackToDashboard={() => setActiveMenu("dashboard")}
+              onNavigateToDashboard={() => setActiveMenu("dashboard")}
             />
           ) : activeMenu === "coal-reports" ? (
-            <UnderDevelopmentView
+            <CoalProductionReportView
               user={currentUser}
-              moduleName="Laporan Produksi"
-              moduleCategory="Coal Hauling"
-              onBackToDashboard={() => setActiveMenu("dashboard")}
+              onNavigateToInput={() => setActiveMenu("coal-input")}
+              onNavigateToDashboard={() => setActiveMenu("coal-dashboard")}
             />
+
           ) : (
             <DashboardView
               user={currentUser}

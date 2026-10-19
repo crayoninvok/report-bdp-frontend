@@ -66,19 +66,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "coal-dashboard",
           label: "Dashboard Produksi",
           icon: Truck,
-          badge: "Under Development",
         },
+
         {
           id: "coal-input",
           label: "Input Data Produksi",
           icon: FileSpreadsheet,
-          badge: "Under Development",
         },
+
         {
           id: "coal-reports",
           label: "Laporan Produksi",
           icon: ClipboardList,
-          badge: "Under Development",
         },
       ],
     },
