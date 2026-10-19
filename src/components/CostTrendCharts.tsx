@@ -65,8 +65,8 @@ export interface CostCategoryMeta {
 export const COST_CATEGORIES: CostCategoryMeta[] = [
   {
     key: "total",
-    label: "Beban Produksi (Total)",
-    shortLabel: "Biaya Produksi",
+    label: "BIAYA PRODUKSI",
+    shortLabel: "BIAYA PRODUKSI",
     icon: DollarSign,
     color: "#e95623",
     lightBg: "bg-[#fff5f1]",
@@ -76,8 +76,8 @@ export const COST_CATEGORIES: CostCategoryMeta[] = [
   },
   {
     key: "comp",
-    label: "Beban Gaji, Incentive dan Benefit Karyawan",
-    shortLabel: "Gaji & Benefit",
+    label: "BEBAN COMPENSATION AND BENEFIT - SITE",
+    shortLabel: "BEBAN COMPENSATION AND BENEFIT - SITE",
     icon: Users,
     color: "#059669",
     lightBg: "bg-emerald-50",
@@ -87,8 +87,8 @@ export const COST_CATEGORIES: CostCategoryMeta[] = [
   },
   {
     key: "fuel",
-    label: "Beban Fuel (Production)",
-    shortLabel: "Fuel Solar",
+    label: "BEBAN FUEL - PRODUCTION",
+    shortLabel: "BEBAN FUEL - PRODUCTION",
     icon: Fuel,
     color: "#D97706",
     lightBg: "bg-amber-50",
@@ -98,8 +98,8 @@ export const COST_CATEGORIES: CostCategoryMeta[] = [
   },
   {
     key: "tyre",
-    label: "Beban Tyre",
-    shortLabel: "Tyre (Ban)",
+    label: "BEBAN TYRE",
+    shortLabel: "BEBAN TYRE",
     icon: Disc,
     color: "#7C3AED",
     lightBg: "bg-purple-50",
@@ -109,8 +109,8 @@ export const COST_CATEGORIES: CostCategoryMeta[] = [
   },
   {
     key: "rep",
-    label: "Beban Repair & Maintenance",
-    shortLabel: "Repair & Maint",
+    label: "BEBAN REPAIRS & MAINTENANCE",
+    shortLabel: "BEBAN REPAIRS & MAINTENANCE",
     icon: Wrench,
     color: "#18bebc",
     lightBg: "bg-[#f0fdfd]",
@@ -120,8 +120,8 @@ export const COST_CATEGORIES: CostCategoryMeta[] = [
   },
   {
     key: "ovh",
-    label: "Beban Overhead Cost",
-    shortLabel: "Overhead Cost",
+    label: "BEBAN OVERHEAD COST - SITE",
+    shortLabel: "BEBAN OVERHEAD COST - SITE",
     icon: Building2,
     color: "#E11D48",
     lightBg: "bg-rose-50",
@@ -1282,11 +1282,12 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                   </span>
                 </div>
 
-                <div>
+                <div className="w-full min-w-0">
                   <p
-                    className={`text-xs font-bold truncate ${
+                    className={`text-[10px] sm:text-[11px] font-bold leading-tight line-clamp-2 min-h-7 flex items-center ${
                       isSelected ? "text-white" : "text-slate-800"
                     }`}
+                    title={cat.shortLabel}
                   >
                     {cat.shortLabel}
                   </p>
@@ -1599,7 +1600,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                   <span>
-                    DEVIASI BIAYA {activeMeta.label.toUpperCase()} (BUDGET vs REALISASI)
+                    DEVIASI {activeMeta.label.toUpperCase()} (BUDGET vs REALISASI)
                   </span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -1712,7 +1713,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                 <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                   <Coins size={18} className="text-[#0e9f9d]" />
                   <span>
-                    BIAYA PER TON {activeMeta.label.toUpperCase()} (IDR / TON)
+                    BIAYA PER TON: {activeMeta.label.toUpperCase()} (IDR / TON)
                   </span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
