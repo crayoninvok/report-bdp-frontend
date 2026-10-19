@@ -1866,7 +1866,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
             {/* Modal Body */}
             <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-xs text-slate-700">
               {/* Financial Variance Overview */}
-              <div className="grid grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+              <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Biaya Budget</span>
                   <p className="text-sm font-extrabold text-slate-800 mt-0.5 font-mono">
@@ -1890,12 +1890,6 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                     {(selectedDriverDetail.varianceCost / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M
                   </p>
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Rasio Serapan</span>
-                  <p className="text-sm font-black text-slate-900 mt-0.5">
-                    {selectedDriverDetail.serapanPercent}%
-                  </p>
-                </div>
               </div>
 
               {/* Grafik Tren Historis Periode */}
@@ -1908,15 +1902,23 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       {TOP5_BEBAN_META[selectedDriverDetail.bebanKey]?.shortLabel})
                     </span>
                   </h4>
-                  <span className="text-[10px] text-slate-500 font-medium">
-                    Realisasi vs Target Budget ({timeframe === "week" ? `W29 - ${baseDataset[baseDataset.length - 1]?.label || "W41"}` : "Jan - Okt 2026"})
-                  </span>
+                  <div className="flex items-center gap-3 text-[10px] font-bold">
+                    <div className="flex items-center gap-1 text-slate-500">
+                      <span className="w-2.5 h-2.5 rounded-xs bg-slate-400" />
+                      <span>Target Budget</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[#e95623]">
+                      <span className="w-2.5 h-2.5 rounded-xs bg-[#e95623]" />
+                      <span>Aktual Realisasi</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 h-48">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 h-52">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart
+                    <BarChart
                       data={getBebanSparkline(selectedDriverDetail.bebanKey)}
                       margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                      barGap={4}
                     >
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                       <XAxis
@@ -1985,22 +1987,20 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                         }}
                       />
                       <Bar
-                        dataKey="v"
-                        name="v"
-                        fill="#e95623"
-                        radius={[4, 4, 0, 0]}
-                        opacity={0.88}
-                      />
-                      <Line
-                        type="monotone"
                         dataKey="b"
-                        name="b"
-                        stroke="#0F172A"
-                        strokeWidth={2}
-                        strokeDasharray="4 4"
-                        dot={{ r: 2, fill: "#0F172A" }}
+                        name="Target Budget"
+                        fill="#94A3B8"
+                        radius={[3, 3, 0, 0]}
+                        maxBarSize={22}
                       />
-                    </ComposedChart>
+                      <Bar
+                        dataKey="v"
+                        name="Aktual Realisasi"
+                        fill="#e95623"
+                        radius={[3, 3, 0, 0]}
+                        maxBarSize={22}
+                      />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
