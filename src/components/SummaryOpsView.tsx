@@ -675,11 +675,11 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                 </tr>
                 <tr className="bg-slate-50 text-[11px] font-bold text-slate-600 border-b border-slate-300">
                   {/* Budget */}
-                  <th className="px-3 py-2 border border-slate-300 text-right bg-blue-50/40 min-w-32.5">COST (Rp) / TON</th>
+                  <th className="px-3 py-2 border border-slate-300 text-right bg-blue-50/40 min-w-32.5">COST (Rp)</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-blue-50/40 min-w-17.5">% NS</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-blue-50/40 min-w-22.5">IDR/Ton</th>
                   {/* Realisasi */}
-                  <th className="px-3 py-2 border border-slate-300 text-right bg-emerald-50/40 min-w-32.5">COST (Rp) / TON</th>
+                  <th className="px-3 py-2 border border-slate-300 text-right bg-emerald-50/40 min-w-32.5">COST (Rp)</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-emerald-50/40 min-w-17.5">% NS</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-emerald-50/40 min-w-22.5">IDR/Ton</th>
                   {/* Kinerja */}
