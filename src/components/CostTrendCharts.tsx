@@ -1049,25 +1049,25 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
       maximumFractionDigits: 1,
     })} M`;
     return (
-      <g transform={`translate(${x},${y - 14})`}>
+      <g transform={`translate(${x},${y - 15})`}>
         <rect
-          x={-24}
-          y={-10}
-          width={48}
-          height={16}
-          rx={3}
+          x={-26}
+          y={-9}
+          width={52}
+          height={18}
+          rx={4}
           fill="#FFF7ED"
           stroke="#FDBA74"
-          strokeWidth={1}
+          strokeWidth={1.2}
         />
         <text
           x={0}
           y={0}
           fill="#C2410C"
-          fontSize={9}
-          fontWeight="700"
+          fontSize={9.5}
+          fontWeight="800"
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="central"
         >
           {formatted}
         </text>
@@ -1118,7 +1118,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     );
   };
 
-  // Custom Data Label for Tonase Bar (semi-transparent green pill with tonnage value - Ditempatkan di dalam bar agar renggang & tidak tabrakan)
+  // Custom Data Label for Tonase Bar (semi-transparent green pill with tonnage value - Ditempatkan di tengah bar agar lega & tidak tabrakan dengan garis)
   const renderTonaseBarLabel = (props: any) => {
     const { x, y, width, height, value } = props;
     if (value === undefined || value === null || Number(value) <= 0) return null;
@@ -1129,26 +1129,32 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
         : `${valNum}`;
     const badgeText = `${formatted} Ton`;
     const posX = (x || 0) + (width || 0) / 2;
-    const posY = (height && height > 30) ? (y || 0) + 12 : (y || 0) - 9;
+    // Posisikan di tengah batang bar agar lega dan tidak pernah tabrakan dengan garis Realisasi di atasnya
+    const posY =
+      height && height > 55
+        ? (y || 0) + (height || 0) / 2
+        : height && height > 24
+        ? (y || 0) + 14
+        : (y || 0) - 11;
 
     return (
       <g transform={`translate(${posX},${posY})`}>
         <rect
-          x={-24}
-          y={-7}
-          width={48}
-          height={14}
-          rx={3}
+          x={-28}
+          y={-9}
+          width={56}
+          height={18}
+          rx={4}
           fill="#FFFFFF"
-          fillOpacity={0.94}
+          fillOpacity={0.96}
           stroke="#059669"
-          strokeWidth={1}
+          strokeWidth={1.2}
         />
         <text
           x={0}
           y={0}
           fill="#065F46"
-          fontSize={7.5}
+          fontSize={9.5}
           fontWeight="800"
           textAnchor="middle"
           dominantBaseline="central"
@@ -1477,11 +1483,11 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               </div>
 
               {/* Chart Canvas */}
-              <div className="w-full h-80 pt-4">
+              <div className="w-full h-[420px] pt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={processedFocusedData}
-                    margin={{ top: 28, right: isTonnageVisible ? 55 : 35, left: 15, bottom: 10 }}
+                    margin={{ top: 32, right: isTonnageVisible ? 55 : 35, left: 15, bottom: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis
@@ -1520,10 +1526,17 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                         axisLine={{ stroke: "#A7F3D0" }}
                         tickFormatter={(val: number) => {
                           if (val === 0) return "0";
-                          if (val >= 1000) return `${Math.round(val / 1000)}k`;
+                          if (val >= 1000) return `${Math.round(val / 1000).toLocaleString("id-ID")}k`;
                           return `${val}`;
                         }}
-                        domain={[0, (dataMax: number) => (dataMax > 0 ? Math.ceil(dataMax * 1.45) : 100)]}
+                        domain={[
+                          0,
+                          (dataMax: number) => {
+                            if (!dataMax || dataMax <= 0) return 100;
+                            const target = dataMax * 1.35;
+                            return Math.ceil(target / 200000) * 200000;
+                          },
+                        ]}
                         width={56}
                         label={{
                           value: "Ton",
@@ -1548,8 +1561,8 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                         stroke="#059669"
                         strokeWidth={1.2}
                         strokeOpacity={0.5}
-                        radius={[5, 5, 0, 0]}
-                        barSize={24}
+                        radius={[6, 6, 0, 0]}
+                        barSize={38}
                       >
                         <LabelList
                           dataKey="prodRealisasi"
@@ -1643,7 +1656,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               </div>
 
               {/* 2-Bar Chart Canvas */}
-              <div className="w-full h-56 pt-1">
+              <div className="w-full h-72 pt-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={sideBarTotalData}
