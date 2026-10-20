@@ -849,6 +849,8 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     () => COST_CATEGORIES.find((c) => c.key === selectedCategory) || COST_CATEGORIES[0],
     [selectedCategory]
   );
+  const isTotalCategory = selectedCategory === "total";
+  const isTonnageVisible = isTotalCategory && showProductionLine;
 
   // Raw period data selection
   const rawDataset: FullPeriodRecord[] = useMemo(() => {
@@ -1178,6 +1180,8 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               entry.name?.toLowerCase().includes("tonase") ||
               entry.name?.toLowerCase().includes("produksi");
 
+            if (isTonase && !isTonnageVisible) return null;
+
             let formattedVal = "-";
             if (entry.value !== undefined && entry.value !== null) {
               if (isTonase) {
@@ -1431,7 +1435,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {activeMeta.description} &bull; Sumbu Kiri: <span className="font-semibold text-slate-700">Biaya (Rp Miliar)</span>
-                      {showProductionLine && (
+                      {isTonnageVisible && (
                         <> &bull; Sumbu Kanan: <span className="font-semibold text-emerald-700">Tonase (Ton)</span></>
                       )}
                     </p>
@@ -1453,19 +1457,21 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                       <span>Tren Realisasi</span>
                     </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setShowProductionLine(!showProductionLine)}
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
-                      showProductionLine
-                        ? "bg-emerald-50 border-emerald-300 text-emerald-800 shadow-2xs font-bold"
-                        : "bg-slate-50 border-slate-200 text-slate-400 line-through opacity-70"
-                    }`}
-                    title="Klik untuk tampilkan / sembunyikan bar tonase produksi"
-                  >
-                    <span className="h-3 w-2.5 rounded-xs bg-emerald-500/40 border border-emerald-600 inline-block" />
-                    <span>Tonase Produksi</span>
-                  </button>
+                  {isTotalCategory && (
+                    <button
+                      type="button"
+                      onClick={() => setShowProductionLine(!showProductionLine)}
+                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
+                        showProductionLine
+                          ? "bg-emerald-50 border-emerald-300 text-emerald-800 shadow-2xs font-bold"
+                          : "bg-slate-50 border-slate-200 text-slate-400 line-through opacity-70"
+                      }`}
+                      title="Klik untuk tampilkan / sembunyikan bar tonase produksi"
+                    >
+                      <span className="h-3 w-2.5 rounded-xs bg-emerald-500/40 border border-emerald-600 inline-block" />
+                      <span>Tonase Produksi</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1474,7 +1480,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={processedFocusedData}
-                    margin={{ top: 28, right: showProductionLine ? 55 : 35, left: 15, bottom: 10 }}
+                    margin={{ top: 28, right: isTonnageVisible ? 55 : 35, left: 15, bottom: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis
@@ -1503,7 +1509,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                         fill: "#475569",
                       }}
                     />
-                    {showProductionLine && (
+                    {isTonnageVisible && (
                       <YAxis
                         yAxisId="right"
                         orientation="right"
@@ -1530,8 +1536,8 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     )}
                     <Tooltip content={<CustomTooltip />} />
 
-                    {/* TONASE PRODUKSI BAR (Transparan dengan badge angka tonase) */}
-                    {showProductionLine && (
+                    {/* TONASE PRODUKSI BAR (Hanya di Biaya Produksi, Transparan dengan badge angka tonase) */}
+                    {isTonnageVisible && (
                       <Bar
                         yAxisId="right"
                         dataKey="prodRealisasi"
