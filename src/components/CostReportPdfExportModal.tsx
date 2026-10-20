@@ -585,7 +585,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     window.print();
   };
 
-  // Data label formatter for Realisasi data points on Slide 1 chart (e.g. 2,1 M / 2,2 M / 33,5 M)
+  // Data label formatter for Realisasi data points on Slide 1 chart (e.g. 2,1 M / 2,2 M / 33,5 M) - Cocok dengan Dashboard Utama
   const renderSlide1PointLabel = (props: any) => {
     const { x, y, value } = props;
     if (value === undefined || value === null || isNaN(value)) return null;
@@ -599,23 +599,23 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       <g transform={`translate(${x},${y - 13})`}>
         <rect
           x={-24}
-          y={-9}
+          y={-10}
           width={48}
-          height={15}
+          height={16}
           rx={3}
-          fill="#FFFFFF"
-          fillOpacity={0.94}
-          stroke="#2563EB"
+          fill="#FFF7ED"
+          fillOpacity={0.96}
+          stroke="#FDBA74"
           strokeWidth={1}
         />
         <text
           x={0}
           y={0}
-          fill="#1D4ED8"
-          fontSize={9}
-          fontWeight="800"
+          fill="#C2410C"
+          fontSize={8.5}
+          fontWeight="700"
           textAnchor="middle"
-          dominantBaseline="central"
+          dominantBaseline="middle"
         >
           {formatted}
         </text>
@@ -623,7 +623,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     );
   };
 
-  // Data label formatter for Tonase Bar on Slide 1 chart (e.g. 708k Ton)
+  // Data label formatter for Tonase Bar on Slide 1 chart (e.g. 708k Ton) - Cocok dengan Dashboard Utama
   const renderSlide1TonaseLabel = (props: any) => {
     const { x, y, width, value } = props;
     if (value === undefined || value === null || Number(value) <= 0) return null;
@@ -640,10 +640,10 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       <g transform={`translate(${posX},${posY})`}>
         <rect
           x={-28}
-          y={-9}
+          y={-10}
           width={56}
-          height={15}
-          rx={3}
+          height={16}
+          rx={4}
           fill="#ECFDF5"
           fillOpacity={0.96}
           stroke="#A7F3D0"
@@ -652,11 +652,11 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
         <text
           x={0}
           y={0}
-          fill="#065F46"
+          fill="#047857"
           fontSize={8.5}
-          fontWeight="800"
+          fontWeight="700"
           textAnchor="middle"
-          dominantBaseline="central"
+          dominantBaseline="middle"
         >
           {badgeText}
         </text>
@@ -777,32 +777,32 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
         </div>
       </div>
 
-      {/* Middle Section: Main Trend Line Chart & Variance Bar Chart */}
+      {/* Middle Section: Main Trend Line Chart (9 cols) & Variance Bar Chart (3 cols) */}
       <div className="grid grid-cols-12 gap-5 my-2 flex-1">
-        {/* Primary Line Chart (8 cols) */}
-        <div className="col-span-8 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+        {/* Primary Line Chart (Diperlebar menjadi 9 cols) */}
+        <div className="col-span-9 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#e95623]"></span>
               <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">
                 Grafik Tren: {activeMeta.label}
               </h3>
             </div>
           </div>
 
-          {/* Recharts container with explicit dimensions for crisp capture */}
-          <div className="w-165 h-82.5">
+          {/* Recharts container with full width for crisp capture */}
+          <div className="w-full h-85">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={slide1TrendData}
-                margin={{ top: 22, right: isTotalCategory ? 48 : 24, left: 0, bottom: 0 }}
+                margin={{ top: 25, right: isTotalCategory ? 55 : 35, left: 10, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fontWeight: "bold", fill: "#475569" }}
                   axisLine={{ stroke: "#CBD5E1" }}
-                  padding={{ left: 28, right: 20 }}
+                  padding={{ left: 38, right: 30 }}
                 />
                 <YAxis
                   yAxisId="left"
@@ -826,7 +826,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                       return `${val}`;
                     }}
                     domain={[0, (dataMax: number) => (dataMax > 0 ? Math.ceil(dataMax * 1.2) : 100)]}
-                    width={44}
+                    width={48}
                     label={{
                       value: "Ton",
                       angle: 90,
@@ -853,8 +853,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                     stroke="#059669"
                     strokeWidth={1.2}
                     strokeOpacity={0.5}
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={32}
+                    radius={[5, 5, 0, 0]}
+                    maxBarSize={36}
                     isAnimationActive={false}
                   >
                     <LabelList
@@ -864,36 +864,38 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   </Bar>
                 )}
 
-                {/* Budget (Garis Solid Warna Cerah, Tanpa Nominal) */}
+                {/* Budget (Garis Solid Biru Terang Sesuai Dashboard) */}
                 <Line
                   yAxisId="left"
                   type="monotone"
                   dataKey="budget"
                   name="Budget"
                   stroke="#0EA5E9"
-                  strokeWidth={2.4}
-                  dot={{ r: 4, fill: "#0EA5E9", stroke: "#FFFFFF", strokeWidth: 1.5 }}
+                  strokeWidth={2.6}
+                  dot={{ r: 4.5, fill: "#0EA5E9", stroke: "#FFFFFF", strokeWidth: 1.5 }}
                   isAnimationActive={false}
                 />
-                {/* Realisasi (Garis Solid dengan Angka Titik 2,1 M / 2,2 M) */}
+
+                {/* Realisasi (Garis Solid Oranye Sesuai Dashboard dengan Angka Titik) */}
                 <Line
                   yAxisId="left"
                   type="monotone"
                   dataKey="realisasi"
                   name="Realisasi"
-                  stroke="#2563EB"
-                  strokeWidth={2.8}
-                  dot={{ r: 5, fill: "#1D4ED8", stroke: "#FFFFFF", strokeWidth: 1.5 }}
+                  stroke="#F97316"
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: "#06B6D4", stroke: "#EA580C", strokeWidth: 2 }}
                   label={renderSlide1PointLabel}
                   isAnimationActive={false}
                 />
-                {/* Trendline Realisasi (Garis Putus-putus Hanya untuk Tren) */}
+
+                {/* Trendline Realisasi (Garis Putus-putus Oranye Sesuai Dashboard) */}
                 <Line
                   yAxisId="left"
                   type="monotone"
                   dataKey="trendRealisasi"
                   name="Tren Realisasi"
-                  stroke="#D97706"
+                  stroke="#FDBA74"
                   strokeWidth={2}
                   strokeDasharray="4 4"
                   dot={false}
@@ -915,17 +917,17 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
           </div>
         </div>
 
-        {/* Right: 2-Bar Comparison (Budget vs Actual) & Ukuran Deviasi (4 cols) - Persis Dashboard Utama */}
-        <div className="col-span-4 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+        {/* Right: 2-Bar Comparison (Budget vs Actual) & Ukuran Deviasi (3 cols) - Persis Dashboard Utama */}
+        <div className="col-span-3 bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-              <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
+              <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide truncate">
                 Budget vs Actual
               </h3>
             </div>
             <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${
+              className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border shrink-0 ${
                 kpiSummary.isEfficient
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : "bg-rose-50 text-rose-700 border-rose-200"
@@ -935,27 +937,28 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
             </span>
           </div>
 
-          <div className="w-full h-52 my-1">
+          <div className="w-full h-48 my-1">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={slide1BarData}
-                margin={{ top: 22, right: 20, left: -15, bottom: 0 }}
-                barGap={12}
+                margin={{ top: 20, right: 10, left: -22, bottom: 0 }}
+                barGap={8}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                 <XAxis
                   dataKey="shortName"
-                  tick={{ fontSize: 11, fontWeight: "bold", fill: "#475569" }}
+                  tick={{ fontSize: 10, fontWeight: "bold", fill: "#475569" }}
                   tickLine={false}
                   axisLine={{ stroke: "#CBD5E1" }}
                 />
                 <YAxis
                   tickFormatter={formatYAxisTick}
-                  tick={{ fontSize: 10, fill: "#64748B" }}
+                  tick={{ fontSize: 9, fill: "#64748B" }}
                   axisLine={false}
                   tickLine={false}
+                  width={38}
                 />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48} isAnimationActive={false}>
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40} isAnimationActive={false}>
                   {slide1BarData.map((entry, index) => (
                     <Cell key={`bar-${index}`} fill={entry.fill} />
                   ))}
@@ -965,7 +968,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                     formatter={(v: any) =>
                       `${Math.round(Number(v) / 1000).toLocaleString("id-ID")} M`
                     }
-                    style={{ fontSize: "11px", fontWeight: "800", fill: "#1E293B" }}
+                    style={{ fontSize: "10px", fontWeight: "800", fill: "#1E293B" }}
                   />
                 </Bar>
               </BarChart>
@@ -973,47 +976,47 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
           </div>
 
           {/* Pengukuran Deviasi & Rasio Serapan Biaya */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
             <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/80">
-              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Scale size={13} className="text-[#e95623] shrink-0" />
-                <span>Deviasi Biaya:</span>
+              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                <Scale size={12} className="text-[#e95623] shrink-0" />
+                <span>Deviasi:</span>
               </span>
               <div className="text-right">
                 <span
-                  className={`text-sm font-black font-mono ${
+                  className={`text-xs font-black font-mono ${
                     kpiSummary.isEfficient ? "text-emerald-700" : "text-rose-700"
                   }`}
                 >
                   {kpiSummary.isEfficient ? "+" : ""}
                   {(kpiSummary.netDev / 1000).toLocaleString("id-ID", {
-                    maximumFractionDigits: 2,
+                    maximumFractionDigits: 1,
                   })}{" "}
                   M
                 </span>
                 <span
-                  className={`block text-[10px] font-extrabold ${
+                  className={`block text-[9px] font-extrabold ${
                     kpiSummary.isEfficient ? "text-emerald-600" : "text-rose-600"
                   }`}
                 >
                   {kpiSummary.isEfficient
-                    ? `(-${deviasiPercent.toFixed(1)}% di bawah budget)`
-                    : `(+${deviasiPercent.toFixed(1)}% di atas budget)`}
+                    ? `(-${deviasiPercent.toFixed(1)}%)`
+                    : `(+${deviasiPercent.toFixed(1)}%)`}
                 </span>
               </div>
             </div>
 
             {/* Visual Ratio Progress */}
             <div className="space-y-1">
-              <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
-                <span>Rasio Serapan Biaya:</span>
+              <div className="flex justify-between text-[9px] text-slate-500 font-semibold">
+                <span>Serapan:</span>
                 <strong
                   className={kpiSummary.isEfficient ? "text-emerald-700" : "text-rose-700"}
                 >
                   {kpiSummary.efficiency.toFixed(1)}%
                 </strong>
               </div>
-              <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full ${
                     kpiSummary.isEfficient ? "bg-emerald-500" : "bg-rose-500"
