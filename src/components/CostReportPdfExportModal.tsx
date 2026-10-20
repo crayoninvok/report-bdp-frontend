@@ -598,10 +598,10 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     return (
       <g transform={`translate(${x},${y - 13})`}>
         <rect
-          x={-24}
-          y={-10}
-          width={48}
-          height={16}
+          x={-22}
+          y={-8}
+          width={44}
+          height={15}
           rx={3}
           fill="#FFF7ED"
           fillOpacity={0.96}
@@ -612,10 +612,10 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
           x={0}
           y={0}
           fill="#C2410C"
-          fontSize={8.5}
-          fontWeight="700"
+          fontSize={8}
+          fontWeight="800"
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="central"
         >
           {formatted}
         </text>
@@ -623,9 +623,9 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     );
   };
 
-  // Data label formatter for Tonase Bar on Slide 1 chart (e.g. 708k Ton) - Cocok dengan Dashboard Utama
+  // Data label formatter for Tonase Bar on Slide 1 chart (e.g. 708k Ton) - Ditempatkan di dalam bar agar renggang & tidak tabrakan dengan garis biaya
   const renderSlide1TonaseLabel = (props: any) => {
-    const { x, y, width, value } = props;
+    const { x, y, width, height, value } = props;
     if (value === undefined || value === null || Number(value) <= 0) return null;
     const valNum = Number(value);
     const formatted =
@@ -634,29 +634,30 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
         : `${valNum}`;
     const badgeText = `${formatted} Ton`;
     const posX = (x || 0) + (width || 0) / 2;
-    const posY = (y || 0) - 10;
+    // Tempatkan badge di dalam cap atas bar bila tinggi mencukupi (> 30px), agar garis biaya di luar bar tetap lega
+    const posY = (height && height > 30) ? (y || 0) + 12 : (y || 0) - 9;
 
     return (
       <g transform={`translate(${posX},${posY})`}>
         <rect
-          x={-28}
-          y={-10}
-          width={56}
-          height={16}
-          rx={4}
-          fill="#ECFDF5"
-          fillOpacity={0.96}
-          stroke="#A7F3D0"
+          x={-24}
+          y={-7}
+          width={48}
+          height={14}
+          rx={3}
+          fill="#FFFFFF"
+          fillOpacity={0.94}
+          stroke="#059669"
           strokeWidth={1}
         />
         <text
           x={0}
           y={0}
-          fill="#047857"
-          fontSize={8.5}
-          fontWeight="700"
+          fill="#065F46"
+          fontSize={7.5}
+          fontWeight="800"
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="central"
         >
           {badgeText}
         </text>
@@ -802,7 +803,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   dataKey="label"
                   tick={{ fontSize: 11, fontWeight: "bold", fill: "#475569" }}
                   axisLine={{ stroke: "#CBD5E1" }}
-                  padding={{ left: 38, right: 30 }}
+                  padding={{ left: 45, right: 35 }}
                 />
                 <YAxis
                   yAxisId="left"
@@ -825,7 +826,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                       if (val >= 1000) return `${Math.round(val / 1000)}k`;
                       return `${val}`;
                     }}
-                    domain={[0, (dataMax: number) => (dataMax > 0 ? Math.ceil(dataMax * 1.2) : 100)]}
+                    domain={[0, (dataMax: number) => (dataMax > 0 ? Math.ceil(dataMax * 1.45) : 100)]}
                     width={48}
                     label={{
                       value: "Ton",
@@ -842,7 +843,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   wrapperStyle={{ fontSize: "11px", paddingTop: "6px", fontWeight: "bold" }}
                 />
 
-                {/* Tonase Produksi (Bar Hijau Transparan dengan Angka Tonase - Hanya pada Biaya Produksi) */}
+                {/* Tonase Produksi (Bar Hijau Transparan Ramping & Terbaca Lega) */}
                 {isTotalCategory && (
                   <Bar
                     yAxisId="right"
@@ -854,7 +855,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                     strokeWidth={1.2}
                     strokeOpacity={0.5}
                     radius={[5, 5, 0, 0]}
-                    maxBarSize={36}
+                    barSize={24}
                     isAnimationActive={false}
                   >
                     <LabelList
