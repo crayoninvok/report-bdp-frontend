@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ResponsiveContainer,
+  ComposedChart,
   LineChart,
   Line,
   BarChart,
@@ -100,6 +101,15 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   const [selectedSite, setSelectedSite] = useState<PdfSiteSelection>(initialResolvedSite);
   const [timeframe, setTimeframe] = useState<"month" | "week" | "ytd">(defaultTimeframe);
   const [selectedCategory, setSelectedCategory] = useState<CostCategoryKey>(defaultCategory);
+
+  // Sync state with props when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCategory(defaultCategory);
+      setTimeframe(defaultTimeframe);
+      setSelectedSite(initialResolvedSite);
+    }
+  }, [isOpen, defaultCategory, defaultTimeframe, initialResolvedSite]);
 
   // Range filters for Weeks
   const latestWeek = RAW_WEEKLY_SENYIUR[RAW_WEEKLY_SENYIUR.length - 1]?.label || "W41";
@@ -267,10 +277,12 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   }, [timeframe, selectedSite, startWeek, endWeek, startMonth, endMonth, availableWeeks, availableMonths]);
 
   // Active Category Meta
+  // Active Category Meta
   const activeMeta = useMemo(
     () => COST_CATEGORIES.find((c) => c.key === selectedCategory) || COST_CATEGORIES[0],
     [selectedCategory]
   );
+  const isTotalCategory = selectedCategory === "total";
 
   // Processed Focused Category Trendline Data for Slide 1
   const slide1TrendData = useMemo(() => {
@@ -279,6 +291,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       budget: item[selectedCategory].budget,
       realisasi: item[selectedCategory].realisasi,
       deviasi: item[selectedCategory].deviasi,
+      prodRealisasi: item.produksi?.realisasi || 0,
+      prodBudget: item.produksi?.budget || 0,
     }));
 
     let data = addLinearTrendline(extracted, "budget", "trendBudget");
@@ -609,6 +623,47 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     );
   };
 
+  // Data label formatter for Tonase Bar on Slide 1 chart (e.g. 708k Ton)
+  const renderSlide1TonaseLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    if (value === undefined || value === null || Number(value) <= 0) return null;
+    const valNum = Number(value);
+    const formatted =
+      valNum >= 1000
+        ? `${Math.round(valNum / 1000).toLocaleString("id-ID")}k`
+        : `${valNum}`;
+    const badgeText = `${formatted} Ton`;
+    const posX = (x || 0) + (width || 0) / 2;
+    const posY = (y || 0) - 10;
+
+    return (
+      <g transform={`translate(${posX},${posY})`}>
+        <rect
+          x={-28}
+          y={-9}
+          width={56}
+          height={15}
+          rx={3}
+          fill="#ECFDF5"
+          fillOpacity={0.96}
+          stroke="#A7F3D0"
+          strokeWidth={1}
+        />
+        <text
+          x={0}
+          y={0}
+          fill="#065F46"
+          fontSize={8.5}
+          fontWeight="800"
+          textAnchor="middle"
+          dominantBaseline="central"
+        >
+          {badgeText}
+        </text>
+      </g>
+    );
+  };
+
   // 5. SLIDE RENDER HELPERS
   const renderSlide1Content = () => (
     <div className="w-280.5 h-198.25 bg-white text-slate-900 p-8 shadow-xl border border-slate-300 rounded-lg flex flex-col justify-between shrink-0 font-sans">
@@ -738,9 +793,9 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
           {/* Recharts container with explicit dimensions for crisp capture */}
           <div className="w-165 h-82.5">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
+              <ComposedChart
                 data={slide1TrendData}
-                margin={{ top: 22, right: 24, left: 0, bottom: 0 }}
+                margin={{ top: 22, right: isTotalCategory ? 48 : 24, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                 <XAxis
@@ -750,18 +805,68 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   padding={{ left: 28, right: 20 }}
                 />
                 <YAxis
+                  yAxisId="left"
                   tickFormatter={formatYAxisTick}
                   tick={{ fontSize: 11, fill: "#64748B" }}
                   axisLine={false}
                   tickLine={false}
                   width={46}
                 />
+                {isTotalCategory && (
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#059669"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={{ stroke: "#A7F3D0" }}
+                    tickFormatter={(val: number) => {
+                      if (val === 0) return "0";
+                      if (val >= 1000) return `${Math.round(val / 1000)}k`;
+                      return `${val}`;
+                    }}
+                    domain={[0, (dataMax: number) => (dataMax > 0 ? Math.ceil(dataMax * 1.2) : 100)]}
+                    width={44}
+                    label={{
+                      value: "Ton",
+                      angle: 90,
+                      position: "insideRight",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      fill: "#059669",
+                    }}
+                  />
+                )}
                 <Tooltip />
                 <Legend
                   wrapperStyle={{ fontSize: "11px", paddingTop: "6px", fontWeight: "bold" }}
                 />
+
+                {/* Tonase Produksi (Bar Hijau Transparan dengan Angka Tonase - Hanya pada Biaya Produksi) */}
+                {isTotalCategory && (
+                  <Bar
+                    yAxisId="right"
+                    dataKey="prodRealisasi"
+                    name="Tonase Produksi"
+                    fill="#10B981"
+                    fillOpacity={0.28}
+                    stroke="#059669"
+                    strokeWidth={1.2}
+                    strokeOpacity={0.5}
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={32}
+                    isAnimationActive={false}
+                  >
+                    <LabelList
+                      dataKey="prodRealisasi"
+                      content={renderSlide1TonaseLabel}
+                    />
+                  </Bar>
+                )}
+
                 {/* Budget (Garis Solid Warna Cerah, Tanpa Nominal) */}
                 <Line
+                  yAxisId="left"
                   type="monotone"
                   dataKey="budget"
                   name="Budget"
@@ -772,6 +877,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                 />
                 {/* Realisasi (Garis Solid dengan Angka Titik 2,1 M / 2,2 M) */}
                 <Line
+                  yAxisId="left"
                   type="monotone"
                   dataKey="realisasi"
                   name="Realisasi"
@@ -783,6 +889,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                 />
                 {/* Trendline Realisasi (Garis Putus-putus Hanya untuk Tren) */}
                 <Line
+                  yAxisId="left"
                   type="monotone"
                   dataKey="trendRealisasi"
                   name="Tren Realisasi"
@@ -792,13 +899,15 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   dot={false}
                   isAnimationActive={false}
                 />
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
 
           {/* Sub Legend & Annotation */}
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Satuan nilai: Miliar Rupiah (M)</span>
+            <span>
+              Satuan nilai: Biaya (Miliar Rupiah){isTotalCategory ? " • Tonase (Ton)" : ""}
+            </span>
             <span>
               Puncak Realisasi: <strong>{kpiSummary.peakPeriod}</strong> (Rp{" "}
               {(kpiSummary.peakR / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M)
