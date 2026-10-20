@@ -173,6 +173,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1458, realisasi: 2918, deviasi: -1460 },
     rep: { budget: 1167, realisasi: 1161, deviasi: 6 },
     ovh: { budget: 374, realisasi: 840, deviasi: -466 },
+    produksi: { budget: 551862, realisasi: 534555 },
   },
   {
     label: "W30",
@@ -182,6 +183,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1902, realisasi: 3987, deviasi: -2085 },
     rep: { budget: 1522, realisasi: 1545, deviasi: -23 },
     ovh: { budget: 483, realisasi: 1100, deviasi: -617 },
+    produksi: { budget: 719820, realisasi: 719058 },
   },
   {
     label: "W31",
@@ -191,6 +193,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 380, realisasi: 434, deviasi: -54 },
     rep: { budget: 304, realisasi: 129, deviasi: 175 },
     ovh: { budget: 97, realisasi: 270, deviasi: -173 },
+    produksi: { budget: 143964, realisasi: 128020 },
   },
   {
     label: "W32",
@@ -200,6 +203,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 888, realisasi: 1364, deviasi: -476 },
     rep: { budget: 710, realisasi: 588, deviasi: 122 },
     ovh: { budget: 225, realisasi: 520, deviasi: -295 },
+    produksi: { budget: 335916, realisasi: 290073 },
   },
   {
     label: "W33",
@@ -209,6 +213,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1332, realisasi: 1879, deviasi: -547 },
     rep: { budget: 1065, realisasi: 2215, deviasi: -1150 },
     ovh: { budget: 338, realisasi: 750, deviasi: -412 },
+    produksi: { budget: 503874, realisasi: 329844 },
   },
   {
     label: "W34",
@@ -218,6 +223,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1775, realisasi: 1855, deviasi: -80 },
     rep: { budget: 1420, realisasi: 2562, deviasi: -1142 },
     ovh: { budget: 451, realisasi: 855, deviasi: -404 },
+    produksi: { budget: 671832, realisasi: 329844 },
   },
   {
     label: "W35",
@@ -227,6 +233,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 190, realisasi: 0, deviasi: 190 },
     rep: { budget: 152, realisasi: 18, deviasi: 134 },
     ovh: { budget: 48, realisasi: 56, deviasi: -8 },
+    produksi: { budget: 71982, realisasi: 0 },
   },
   {
     label: "W36",
@@ -236,6 +243,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 697, realisasi: 0, deviasi: 697 },
     rep: { budget: 558, realisasi: 21, deviasi: 537 },
     ovh: { budget: 174, realisasi: 62, deviasi: 112 },
+    produksi: { budget: 263934, realisasi: 0 },
   },
   {
     label: "W37",
@@ -245,6 +253,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1141, realisasi: 0, deviasi: 1141 },
     rep: { budget: 913, realisasi: 56, deviasi: 857 },
     ovh: { budget: 285, realisasi: 417, deviasi: -132 },
+    produksi: { budget: 431892, realisasi: 0 },
   },
   {
     label: "W38",
@@ -254,6 +263,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 876, realisasi: 0, deviasi: 876 },
     rep: { budget: 701, realisasi: 60, deviasi: 641 },
     ovh: { budget: 398, realisasi: 563, deviasi: -165 },
+    produksi: { budget: 331670, realisasi: 0 },
   },
   {
     label: "W39",
@@ -263,6 +273,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1052, realisasi: 0, deviasi: 1052 },
     rep: { budget: 841, realisasi: 64, deviasi: 777 },
     ovh: { budget: 425, realisasi: 899, deviasi: -474 },
+    produksi: { budget: 398000, realisasi: 0 },
   },
   {
     label: "W40",
@@ -272,6 +283,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 3, realisasi: 1, deviasi: 2 },
     ovh: { budget: 87, realisasi: 147, deviasi: -60 },
+    produksi: { budget: 173161, realisasi: 0 },
   },
   {
     label: "W41",
@@ -281,6 +293,7 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 2, realisasi: 1, deviasi: 1 },
     ovh: { budget: 76, realisasi: 0, deviasi: 76 },
+    produksi: { budget: 151516, realisasi: 0 },
   },
 ];
 
@@ -293,6 +306,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 211, realisasi: 0, deviasi: 211 },
     rep: { budget: 211, realisasi: 98, deviasi: 113 },
     ovh: { budget: 157, realisasi: 210, deviasi: -53 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "W30",
@@ -302,6 +316,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 275, realisasi: 0, deviasi: 275 },
     rep: { budget: 275, realisasi: 117, deviasi: 158 },
     ovh: { budget: 205, realisasi: 250, deviasi: -45 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "W31",
@@ -311,6 +326,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 55, realisasi: 41, deviasi: 14 },
     rep: { budget: 55, realisasi: 2, deviasi: 53 },
     ovh: { budget: 41, realisasi: 5, deviasi: 36 },
+    produksi: { budget: 18866, realisasi: 17204 },
   },
   {
     label: "W32",
@@ -320,6 +336,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 128, realisasi: 118, deviasi: 10 },
     rep: { budget: 128, realisasi: 177, deviasi: -49 },
     ovh: { budget: 96, realisasi: 91, deviasi: 5 },
+    produksi: { budget: 44021, realisasi: 45969 },
   },
   {
     label: "W33",
@@ -329,6 +346,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 192, realisasi: 193, deviasi: -1 },
     rep: { budget: 192, realisasi: 286, deviasi: -94 },
     ovh: { budget: 143, realisasi: 164, deviasi: -21 },
+    produksi: { budget: 66032, realisasi: 57519 },
   },
   {
     label: "W34",
@@ -338,6 +356,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 256, realisasi: 375, deviasi: -119 },
     rep: { budget: 256, realisasi: 273, deviasi: -17 },
     ovh: { budget: 191, realisasi: 180, deviasi: 11 },
+    produksi: { budget: 88043, realisasi: 0 },
   },
   {
     label: "W35",
@@ -347,6 +366,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 27, realisasi: 0, deviasi: 27 },
     rep: { budget: 27, realisasi: 148, deviasi: -121 },
     ovh: { budget: 20, realisasi: 636, deviasi: -616 },
+    produksi: { budget: 9433, realisasi: 19463 },
   },
   {
     label: "W36",
@@ -356,6 +376,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 101, realisasi: 92, deviasi: 9 },
     rep: { budget: 101, realisasi: 161, deviasi: -60 },
     ovh: { budget: 75, realisasi: 174, deviasi: -99 },
+    produksi: { budget: 34588, realisasi: 78188 },
   },
   {
     label: "W37",
@@ -365,6 +386,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 165, realisasi: 103, deviasi: 62 },
     rep: { budget: 165, realisasi: 642, deviasi: -477 },
     ovh: { budget: 123, realisasi: 209, deviasi: -86 },
+    produksi: { budget: 56599, realisasi: 78188 },
   },
   {
     label: "W38",
@@ -374,6 +396,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 966, realisasi: 222, deviasi: 744 },
     rep: { budget: 966, realisasi: 625, deviasi: 341 },
     ovh: { budget: 720, realisasi: 187, deviasi: 533 },
+    produksi: { budget: 331667, realisasi: 131651 },
   },
   {
     label: "W39",
@@ -383,6 +406,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 1159, realisasi: 504, deviasi: 655 },
     rep: { budget: 1159, realisasi: 749, deviasi: 410 },
     ovh: { budget: 864, realisasi: 222, deviasi: 642 },
+    produksi: { budget: 398000, realisasi: 0 },
   },
   {
     label: "W40",
@@ -392,6 +416,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 504, realisasi: 372, deviasi: 132 },
     rep: { budget: 504, realisasi: 106, deviasi: 398 },
     ovh: { budget: 376, realisasi: 26, deviasi: 350 },
+    produksi: { budget: 173161, realisasi: 147212 },
   },
   {
     label: "W41",
@@ -401,6 +426,7 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 732, deviasi: -732 },
     rep: { budget: 0, realisasi: 313, deviasi: -313 },
     ovh: { budget: 0, realisasi: 64, deviasi: -64 },
+    produksi: { budget: 151516, realisasi: 192040 },
   },
 ];
 
@@ -416,6 +442,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 2054, realisasi: 3287, deviasi: -1233 },
     rep: { budget: 1644, realisasi: 1594, deviasi: 50 },
     ovh: { budget: 512, realisasi: 1653, deviasi: -1141 },
+    produksi: { budget: 777406, realisasi: 711288 },
   },
   {
     label: "Feb",
@@ -425,6 +452,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1917, realisasi: 4098, deviasi: -2181 },
     rep: { budget: 1534, realisasi: 1352, deviasi: 182 },
     ovh: { budget: 479, realisasi: 379, deviasi: 100 },
+    produksi: { budget: 725579, realisasi: 721549 },
   },
   {
     label: "Mar",
@@ -434,6 +462,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1986, realisasi: 4332, deviasi: -2346 },
     rep: { budget: 1589, realisasi: 1430, deviasi: 159 },
     ovh: { budget: 495, realisasi: 327, deviasi: 168 },
+    produksi: { budget: 751492, realisasi: 676455 },
   },
   {
     label: "Apr",
@@ -443,6 +472,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 2054, realisasi: 3395, deviasi: -1341 },
     rep: { budget: 1644, realisasi: 1246, deviasi: 398 },
     ovh: { budget: 512, realisasi: 802, deviasi: -290 },
+    produksi: { budget: 777406, realisasi: 548131 },
   },
   {
     label: "May",
@@ -452,6 +482,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 2123, realisasi: 3604, deviasi: -1481 },
     rep: { budget: 1698, realisasi: 2161, deviasi: -463 },
     ovh: { budget: 531, realisasi: 656, deviasi: -125 },
+    produksi: { budget: 803319, realisasi: 710718 },
   },
   {
     label: "Jun",
@@ -461,6 +492,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 2123, realisasi: 3821, deviasi: -1698 },
     rep: { budget: 1698, realisasi: 1895, deviasi: -197 },
     ovh: { budget: 531, realisasi: 1417, deviasi: -886 },
+    produksi: { budget: 803319, realisasi: 743330 },
   },
   {
     label: "Jul",
@@ -470,6 +502,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1966, realisasi: 4308, deviasi: -2342 },
     rep: { budget: 1572, realisasi: 1859, deviasi: -287 },
     ovh: { budget: 491, realisasi: 858, deviasi: -367 },
+    produksi: { budget: 743814, realisasi: 743740 },
   },
   {
     label: "Aug",
@@ -479,6 +512,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1966, realisasi: 2227, deviasi: -261 },
     rep: { budget: 1572, realisasi: 2528, deviasi: -956 },
     ovh: { budget: 491, realisasi: 537, deviasi: -46 },
+    produksi: { budget: 743814, realisasi: 406397 },
   },
   {
     label: "Sep",
@@ -488,6 +522,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 1052, realisasi: 0, deviasi: 1052 },
     rep: { budget: 841, realisasi: 64, deviasi: 777 },
     ovh: { budget: 425, realisasi: 899, deviasi: -474 },
+    produksi: { budget: 398000, realisasi: 0 },
   },
   {
     label: "Oct",
@@ -497,6 +532,7 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 5, realisasi: 2, deviasi: 3 },
     ovh: { budget: 163, realisasi: 131, deviasi: 32 },
+    produksi: { budget: 324677, realisasi: 0 },
   },
 ];
 
@@ -509,6 +545,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 0, realisasi: 0, deviasi: 0 },
     ovh: { budget: 0, realisasi: 0, deviasi: 0 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "Feb",
@@ -518,6 +555,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 0, realisasi: 0, deviasi: 0 },
     ovh: { budget: 0, realisasi: 0, deviasi: 0 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "Mar",
@@ -527,6 +565,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 0, realisasi: 0, deviasi: 0 },
     ovh: { budget: 0, realisasi: 0, deviasi: 0 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "Apr",
@@ -536,6 +575,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 0, realisasi: 0, deviasi: 0 },
     ovh: { budget: 0, realisasi: 176, deviasi: -176 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "May",
@@ -545,6 +585,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 0, realisasi: 4, deviasi: -4 },
     ovh: { budget: 0, realisasi: 137, deviasi: -137 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "Jun",
@@ -554,6 +595,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 0, realisasi: 0, deviasi: 0 },
     rep: { budget: 0, realisasi: 77, deviasi: -77 },
     ovh: { budget: 0, realisasi: 21, deviasi: -21 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "Jul",
@@ -563,6 +605,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 275, realisasi: 0, deviasi: 275 },
     rep: { budget: 275, realisasi: 117, deviasi: 158 },
     ovh: { budget: 205, realisasi: 250, deviasi: -45 },
+    produksi: { budget: 0, realisasi: 0 },
   },
   {
     label: "Aug",
@@ -572,6 +615,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 256, realisasi: 375, deviasi: -119 },
     rep: { budget: 256, realisasi: 273, deviasi: -17 },
     ovh: { budget: 191, realisasi: 179, deviasi: 12 },
+    produksi: { budget: 88043, realisasi: 57519 },
   },
   {
     label: "Sep",
@@ -581,6 +625,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 1159, realisasi: 504, deviasi: 655 },
     rep: { budget: 1159, realisasi: 749, deviasi: 410 },
     ovh: { budget: 864, realisasi: 303, deviasi: 561 },
+    produksi: { budget: 398000, realisasi: 216232 },
   },
   {
     label: "Oct",
@@ -590,6 +635,7 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     tyre: { budget: 946, realisasi: 1104, deviasi: -158 },
     rep: { budget: 946, realisasi: 419, deviasi: 527 },
     ovh: { budget: 705, realisasi: 90, deviasi: 615 },
+    produksi: { budget: 324677, realisasi: 339252 },
   },
 ];
 
@@ -773,6 +819,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<CostCategoryKey>("total");
   const [viewMode, setViewMode] = useState<"both" | "focused" | "grid">("both");
   const [showTrendlines, setShowTrendlines] = useState(true);
+  const [showProductionLine, setShowProductionLine] = useState(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [dynamicTrends, setDynamicTrends] = useState<{
     Senyiur: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
@@ -833,6 +880,8 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
       budget: item[selectedCategory].budget,
       realisasi: item[selectedCategory].realisasi,
       deviasi: item[selectedCategory].deviasi,
+      prodBudget: item.produksi?.budget || 0,
+      prodRealisasi: item.produksi?.realisasi || 0,
     }));
 
     let data = addLinearTrendline(extracted, "budget", "trendBudget");
@@ -1067,12 +1116,52 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     );
   };
 
+  // Custom Data Label for Tonase Bar (semi-transparent green pill with tonnage value)
+  const renderTonaseBarLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    if (value === undefined || value === null || Number(value) <= 0) return null;
+    const valNum = Number(value);
+    const formatted =
+      valNum >= 1000
+        ? `${Math.round(valNum / 1000).toLocaleString("id-ID")}k`
+        : `${valNum}`;
+    const badgeText = `${formatted} Ton`;
+    const posX = (x || 0) + (width || 0) / 2;
+    const posY = (y || 0) - 10;
+
+    return (
+      <g transform={`translate(${posX},${posY})`}>
+        <rect
+          x={-28}
+          y={-9}
+          width={56}
+          height={16}
+          rx={4}
+          fill="#ECFDF5"
+          stroke="#A7F3D0"
+          strokeWidth={1}
+        />
+        <text
+          x={0}
+          y={0}
+          fill="#065F46"
+          fontSize={9}
+          fontWeight="700"
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          {badgeText}
+        </text>
+      </g>
+    );
+  };
+
   // Tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const isTodayItem = payload[0]?.payload?.isToday;
       return (
-        <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 min-w-44 z-50">
+        <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 min-w-48 z-50">
           <div className="font-bold text-slate-800 border-b border-slate-100 pb-1 flex items-center justify-between gap-2">
             <span>Periode: {label}</span>
             {isTodayItem && (
@@ -1083,7 +1172,25 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
           </div>
           {payload.map((entry: any, index: number) => {
             const isTrend = entry.dataKey?.startsWith("trend");
-            const valNum = Number(entry.value) / 1000;
+            const isTonase =
+              entry.dataKey === "prodRealisasi" ||
+              entry.dataKey === "prodBudget" ||
+              entry.name?.toLowerCase().includes("tonase") ||
+              entry.name?.toLowerCase().includes("produksi");
+
+            let formattedVal = "-";
+            if (entry.value !== undefined && entry.value !== null) {
+              if (isTonase) {
+                formattedVal = `${Math.round(Number(entry.value)).toLocaleString("id-ID")} Ton`;
+              } else {
+                const valNum = Number(entry.value) / 1000;
+                formattedVal = `${valNum.toLocaleString("id-ID", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 1,
+                })} M`;
+              }
+            }
+
             return (
               <div
                 key={`item-${index}`}
@@ -1098,15 +1205,14 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                 </div>
                 <span
                   className={`font-mono font-bold ${
-                    isTrend ? "text-slate-500 italic" : "text-slate-900"
+                    isTrend
+                      ? "text-slate-500 italic"
+                      : isTonase
+                      ? "text-emerald-700 font-extrabold"
+                      : "text-slate-900"
                   }`}
                 >
-                  {entry.value !== undefined
-                    ? `${valNum.toLocaleString("id-ID", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 1,
-                      })} M`
-                    : "-"}
+                  {formattedVal}
                 </span>
               </div>
             );
@@ -1324,12 +1430,15 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {activeMeta.description} &bull; Nilai dalam satuan Miliar Rupiah
+                      {activeMeta.description} &bull; Sumbu Kiri: <span className="font-semibold text-slate-700">Biaya (Rp Miliar)</span>
+                      {showProductionLine && (
+                        <> &bull; Sumbu Kanan: <span className="font-semibold text-emerald-700">Tonase (Ton)</span></>
+                      )}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-xs font-semibold">
+                <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
                   <div className="flex items-center gap-1.5 text-blue-600">
                     <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
                     <span>BUDGET</span>
@@ -1344,15 +1453,28 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                       <span>Tren Realisasi</span>
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setShowProductionLine(!showProductionLine)}
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
+                      showProductionLine
+                        ? "bg-emerald-50 border-emerald-300 text-emerald-800 shadow-2xs font-bold"
+                        : "bg-slate-50 border-slate-200 text-slate-400 line-through opacity-70"
+                    }`}
+                    title="Klik untuk tampilkan / sembunyikan bar tonase produksi"
+                  >
+                    <span className="h-3 w-2.5 rounded-xs bg-emerald-500/40 border border-emerald-600 inline-block" />
+                    <span>Tonase Produksi</span>
+                  </button>
                 </div>
               </div>
 
               {/* Chart Canvas */}
               <div className="w-full h-80 pt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
+                  <ComposedChart
                     data={processedFocusedData}
-                    margin={{ top: 25, right: 35, left: 15, bottom: 10 }}
+                    margin={{ top: 28, right: showProductionLine ? 55 : 35, left: 15, bottom: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis
@@ -1364,12 +1486,14 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                       padding={{ left: 38, right: 30 }}
                     />
                     <YAxis
+                      yAxisId="left"
                       stroke="#64748B"
                       fontSize={11}
                       tickLine={false}
                       axisLine={{ stroke: "#94A3B8" }}
                       tickFormatter={formatYAxisTick}
                       width={56}
+                      domain={[0, "auto"]}
                       label={{
                         value: "Rp",
                         angle: -90,
@@ -1379,10 +1503,57 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                         fill: "#475569",
                       }}
                     />
+                    {showProductionLine && (
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        stroke="#059669"
+                        fontSize={11}
+                        tickLine={false}
+                        axisLine={{ stroke: "#A7F3D0" }}
+                        tickFormatter={(val: number) => {
+                          if (val === 0) return "0";
+                          if (val >= 1000) return `${Math.round(val / 1000)}k`;
+                          return `${val}`;
+                        }}
+                        domain={[0, (dataMax: number) => (dataMax > 0 ? Math.ceil(dataMax * 1.2) : 100)]}
+                        width={56}
+                        label={{
+                          value: "Ton",
+                          angle: 90,
+                          position: "insideRight",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          fill: "#059669",
+                        }}
+                      />
+                    )}
                     <Tooltip content={<CustomTooltip />} />
+
+                    {/* TONASE PRODUKSI BAR (Transparan dengan badge angka tonase) */}
+                    {showProductionLine && (
+                      <Bar
+                        yAxisId="right"
+                        dataKey="prodRealisasi"
+                        name="Tonase Produksi"
+                        fill="#10B981"
+                        fillOpacity={0.28}
+                        stroke="#059669"
+                        strokeWidth={1.2}
+                        strokeOpacity={0.5}
+                        radius={[5, 5, 0, 0]}
+                        maxBarSize={36}
+                      >
+                        <LabelList
+                          dataKey="prodRealisasi"
+                          content={renderTonaseBarLabel}
+                        />
+                      </Bar>
+                    )}
 
                     {/* BUDGET Line (Solid Bright Color, No Nominal Label) */}
                     <Line
+                      yAxisId="left"
                       type="monotone"
                       dataKey="budget"
                       name="BUDGET"
@@ -1399,6 +1570,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
 
                     {/* REALISASI Line */}
                     <Line
+                      yAxisId="left"
                       type="monotone"
                       dataKey="realisasi"
                       name="REALISASI"
@@ -1417,6 +1589,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     {/* Regression Trendline (Realisasi Saja Sesuai Permintaan) */}
                     {showTrendlines && (
                       <Line
+                        yAxisId="left"
                         type="monotone"
                         dataKey="trendRealisasi"
                         name="Tren Realisasi"
@@ -1427,7 +1600,8 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                         isAnimationActive={false}
                       />
                     )}
-                  </LineChart>
+
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </div>

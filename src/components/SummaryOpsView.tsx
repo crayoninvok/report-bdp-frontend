@@ -188,9 +188,11 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
     if (!currentSummary) return;
     const headers = [
       "Akun",
+      "Budget Tonnase (Ton)",
       "Budget Cost (IDR)",
       "Budget % NS",
       "Budget IDR/Ton",
+      "Realisasi Tonnase (Ton)",
       "Realisasi Cost (IDR)",
       "Realisasi % NS",
       "Realisasi IDR/Ton",
@@ -207,7 +209,9 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
       currentSummary.budgetProduksi ? currentSummary.budgetProduksi.toString() : "-",
       "-",
       "-",
+      "-",
       currentSummary.realisasiProduksi ? currentSummary.realisasiProduksi.toString() : "-",
+      "-",
       "-",
       "-",
       currentSummary.achProduksiPercent ? currentSummary.achProduksiPercent.toFixed(2) + "%" : "-",
@@ -219,9 +223,11 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
     currentSummary.items.forEach((it) => {
       rows.push([
         `"${it.accountName.trim()}"`,
+        "-",
         it.budgetCost ? it.budgetCost.toString() : "-",
         it.budgetPercentNS ? it.budgetPercentNS.toFixed(2) + "%" : "-",
         it.budgetIdrPerTon ? it.budgetIdrPerTon.toFixed(2) : "-",
+        "-",
         it.realisasiCost ? it.realisasiCost.toString() : "-",
         it.realisasiPercentNS ? it.realisasiPercentNS.toFixed(2) + "%" : "-",
         it.realisasiIdrPerTon ? it.realisasiIdrPerTon.toFixed(2) : "-",
@@ -663,10 +669,10 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                   <th rowSpan={2} className="px-4 py-3 border border-slate-300 text-left min-w-70">
                     AKUN
                   </th>
-                  <th colSpan={3} className="px-3 py-2 border border-slate-300 text-center bg-blue-50/70 text-blue-900">
+                  <th colSpan={4} className="px-3 py-2 border border-slate-300 text-center bg-blue-50/70 text-blue-900">
                     BUDGET
                   </th>
-                  <th colSpan={3} className="px-3 py-2 border border-slate-300 text-center bg-emerald-50/70 text-emerald-900">
+                  <th colSpan={4} className="px-3 py-2 border border-slate-300 text-center bg-emerald-50/70 text-emerald-900">
                     REALISASI
                   </th>
                   <th colSpan={3} className="px-3 py-2 border border-slate-300 text-center bg-purple-50/70 text-purple-900">
@@ -675,10 +681,12 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                 </tr>
                 <tr className="bg-slate-50 text-[11px] font-bold text-slate-600 border-b border-slate-300">
                   {/* Budget */}
+                  <th className="px-2.5 py-2 border border-slate-300 text-right bg-blue-50/60 min-w-28">TONNASE (Ton)</th>
                   <th className="px-3 py-2 border border-slate-300 text-right bg-blue-50/40 min-w-32.5">COST (Rp)</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-blue-50/40 min-w-17.5">% NS</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-blue-50/40 min-w-22.5">IDR/Ton</th>
                   {/* Realisasi */}
+                  <th className="px-2.5 py-2 border border-slate-300 text-right bg-emerald-50/60 min-w-28">TONNASE (Ton)</th>
                   <th className="px-3 py-2 border border-slate-300 text-right bg-emerald-50/40 min-w-32.5">COST (Rp)</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-emerald-50/40 min-w-17.5">% NS</th>
                   <th className="px-2 py-2 border border-slate-300 text-right bg-emerald-50/40 min-w-22.5">IDR/Ton</th>
@@ -704,16 +712,21 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 border border-slate-300 text-right font-mono text-slate-800 font-bold">
+                  {/* Budget */}
+                  <td className="px-2.5 py-2.5 border border-slate-300 text-right font-mono text-slate-800 font-bold">
                     {currentSummary.budgetProduksi > 0 ? `${formatTon(currentSummary.budgetProduksi)} Ton` : "-"}
                   </td>
+                  <td className="px-3 py-2.5 border border-slate-300 text-center text-slate-400 font-mono">-</td>
                   <td className="px-2 py-2.5 border border-slate-300 text-center text-slate-400 font-mono">-</td>
                   <td className="px-2 py-2.5 border border-slate-300 text-center text-slate-400 font-mono">-</td>
-                  <td className="px-3 py-2.5 border border-slate-300 text-right font-mono text-slate-900 font-bold">
+                  {/* Realisasi */}
+                  <td className="px-2.5 py-2.5 border border-slate-300 text-right font-mono text-slate-900 font-bold">
                     {currentSummary.realisasiProduksi > 0 ? `${formatTon(currentSummary.realisasiProduksi)} Ton` : "-"}
                   </td>
+                  <td className="px-3 py-2.5 border border-slate-300 text-center text-slate-400 font-mono">-</td>
                   <td className="px-2 py-2.5 border border-slate-300 text-center text-slate-400 font-mono">-</td>
                   <td className="px-2 py-2.5 border border-slate-300 text-center text-slate-400 font-mono">-</td>
+                  {/* Kinerja */}
                   <td className="px-2 py-2.5 border border-slate-300 text-right font-mono">
                     {currentSummary.budgetProduksi > 0 && currentSummary.realisasiProduksi > 0 ? (
                       <span className={currentSummary.achProduksiPercent >= 100 ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
@@ -757,6 +770,9 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                       </td>
 
                       {/* Budget */}
+                      <td className="px-2.5 py-2 border border-slate-300 text-center text-slate-400 font-mono">
+                        -
+                      </td>
                       <td className="px-3 py-2 border border-slate-300 text-right font-mono">
                         {formatIDR(item.budgetCost)}
                       </td>
@@ -770,6 +786,9 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                       </td>
 
                       {/* Realisasi */}
+                      <td className="px-2.5 py-2 border border-slate-300 text-center text-slate-400 font-mono">
+                        -
+                      </td>
                       <td className="px-3 py-2 border border-slate-300 text-right font-mono">
                         {formatIDR(item.realisasiCost)}
                       </td>
