@@ -1483,7 +1483,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               </div>
 
               {/* Chart Canvas */}
-              <div className="w-full h-[420px] pt-4">
+              <div className="w-full h-105 pt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={processedFocusedData}
