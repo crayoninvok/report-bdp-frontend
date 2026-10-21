@@ -12,6 +12,7 @@ import { SummaryOpsView } from "../components/SummaryOpsView";
 import { UserManagementView } from "../components/UserManagementView";
 import { CostDriverView } from "../components/CostDriverView";
 import { RiverJournalView } from "../components/RiverJournalView";
+import { RiverWaterInfoView } from "../components/RiverWaterInfoView";
 import { InputProductionView } from "../components/InputProductionView";
 import { CoalProductionDashboardView } from "../components/CoalProductionDashboardView";
 import { CoalProductionReportView } from "../components/CoalProductionReportView";
@@ -141,6 +142,8 @@ export default function Home() {
                     ? "Manajemen Pengguna (Super Admin)"
                     : activeMenu === "cost-drivers"
                     ? "Cost Driver"
+                    : activeMenu === "informasi-air"
+                    ? "Informasi Air Sungai • Monitoring Elevasi Real-Time"
                     : activeMenu === "river-journal"
                     ? "River Journal • Kedalaman Sungai Project Tabang"
                     : activeMenu === "coal-dashboard"
@@ -216,6 +219,8 @@ export default function Home() {
             <UserManagementView user={currentUser} />
           ) : activeMenu === "cost-drivers" ? (
             <CostDriverView user={currentUser} />
+          ) : activeMenu === "informasi-air" ? (
+            <RiverWaterInfoView user={currentUser} isStandalone={false} />
           ) : activeMenu === "river-journal" ? (
             <RiverJournalView user={currentUser} />
           ) : activeMenu === "coal-dashboard" ? (

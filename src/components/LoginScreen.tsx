@@ -10,6 +10,7 @@ import {
   EyeOff,
   ArrowRight,
   AlertCircle,
+  Waves,
 } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -237,6 +238,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               )}
             </button>
           </form>
+
+          {/* Quick Public Access: Pantauan Air Sungai */}
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <a
+              href="/air-sungai"
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-teal-50/70 hover:bg-teal-100/80 border border-teal-200/80 text-teal-950 transition-all group shadow-2xs"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-teal-600 text-white shadow-xs group-hover:scale-105 transition-transform">
+                  <Waves size={16} />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-black flex items-center gap-1.5 text-teal-950">
+                    <span>Pantauan Air Sungai (Live)</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                  <p className="text-[10px] text-teal-700 font-medium">
+                    Lihat elevasi Senyiur KM 0 & Muara Pahu tanpa perlu login
+                  </p>
+                </div>
+              </div>
+              <ArrowRight
+                size={16}
+                className="text-teal-600 group-hover:translate-x-1 transition-transform mr-1"
+              />
+            </a>
+          </div>
 
           {/* Footer Note & Copyright */}
           <div className="mt-10 pt-6 border-t border-slate-100 text-center">
