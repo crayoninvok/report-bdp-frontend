@@ -894,6 +894,117 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
             </div>
           </div>
 
+          {/* Dedicated Production Tonnase Summary Panel */}
+          <div className="px-6 py-3.5 bg-linear-to-r from-amber-50/90 via-orange-50/40 to-slate-50 border-b border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-100 text-amber-800">
+                  <Boxes size={15} />
+                </div>
+                <div>
+                  <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                    Ringkasan Volume Produksi (Ton)
+                  </span>
+                  <span className="text-[11px] text-slate-500 hidden sm:inline ml-1.5">
+                    &bull; Target Budget vs Realisasi Penambangan Batubara Bulanan
+                  </span>
+                </div>
+              </div>
+              <div className="text-xs font-semibold text-slate-600 bg-white/80 px-2.5 py-1 rounded-lg border border-amber-200/60 shadow-2xs self-start sm:self-auto">
+                <span className="text-slate-500">YTD Realisasi: </span>
+                <strong className="text-slate-900 font-mono font-bold">
+                  {ytdTotals.realProd > 0 ? `${formatTon(ytdTotals.realProd)} Ton` : "-"}
+                </strong>
+                {ytdTotals.budgetProd > 0 && (
+                  <span className="ml-1.5 text-slate-400 font-normal">
+                    (Target: {formatTon(ytdTotals.budgetProd)} Ton &bull; {formatPercent(ytdTotals.achProd)})
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Horizontal Cards for Monthly Tonnase */}
+            <div className="flex items-stretch gap-2 overflow-x-auto pb-1 text-xs">
+              {summaries
+                .slice()
+                .sort((a, b) => a.month - b.month)
+                .map((s) => {
+                  const hasProd = s.budgetProduksi > 0 || s.realisasiProduksi > 0;
+                  return (
+                    <div
+                      key={`ton-${s.month}`}
+                      className="shrink-0 bg-white border border-slate-200/90 rounded-xl p-2.5 min-w-38 shadow-2xs hover:border-amber-400 transition-colors"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-1 mb-1.5">
+                        <span className="font-extrabold text-slate-800 text-[11px]">{s.monthLabel} 2026</span>
+                        {hasProd && s.achProduksiPercent > 0 ? (
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              s.achProduksiPercent >= 100
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {formatPercent(s.achProduksiPercent)}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-normal">-</span>
+                        )}
+                      </div>
+                      <div className="space-y-1 font-mono text-[11px]">
+                        <div className="flex items-center justify-between text-slate-500">
+                          <span>Budget:</span>
+                          <span className="font-semibold text-slate-700">
+                            {s.budgetProduksi > 0 ? `${formatTon(s.budgetProduksi)} Ton` : "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Real:</span>
+                          <span className="font-bold text-slate-900">
+                            {s.realisasiProduksi > 0 ? `${formatTon(s.realisasiProduksi)} Ton` : "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+              {/* YTD Total Tonnase Card */}
+              <div className="shrink-0 bg-linear-to-br from-amber-100/90 to-amber-50 border border-amber-300 rounded-xl p-2.5 min-w-44 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-amber-200/70 pb-1 mb-1.5">
+                  <span className="font-extrabold text-amber-950 text-[11px]">TOTAL YTD 2026</span>
+                  {ytdTotals.budgetProd > 0 && ytdTotals.realProd > 0 ? (
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        ytdTotals.achProd >= 100
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-200 text-amber-900"
+                      }`}
+                    >
+                      {formatPercent(ytdTotals.achProd)}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 font-normal">-</span>
+                  )}
+                </div>
+                <div className="space-y-1 font-mono text-[11px]">
+                  <div className="flex items-center justify-between text-amber-800">
+                    <span>Budget:</span>
+                    <span className="font-semibold text-amber-950">
+                      {ytdTotals.budgetProd > 0 ? `${formatTon(ytdTotals.budgetProd)} Ton` : "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-amber-900">
+                    <span>Real:</span>
+                    <span className="font-bold text-amber-950">
+                      {ytdTotals.realProd > 0 ? `${formatTon(ytdTotals.realProd)} Ton` : "-"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -966,12 +1077,15 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
               </thead>
               <tbody>
                 {/* PRODUKSI ROW */}
-                <tr className="bg-amber-50/60 font-bold border-b border-slate-300">
+                <tr className="bg-amber-50/50 font-bold border-b border-slate-300">
                   <td className="px-4 py-2 border border-slate-300 text-slate-900 sticky left-0 bg-amber-50/90 z-10 shadow-xs">
                     <div className="flex items-center gap-1.5">
-                      <span>PRODUKSI</span>
-                      <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-200/80 text-amber-900 font-semibold">
-                        Ton
+                      <span className="font-extrabold text-slate-800">PRODUKSI</span>
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-semibold"
+                        title="Satuan: Ton. Angka tonase produksi dirinci pada panel di atas."
+                      >
+                        Satuan: Ton
                       </span>
                     </div>
                   </td>
@@ -982,29 +1096,38 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                       <React.Fragment key={`p-${s.month}`}>
                         {matrixMetric === "all" ? (
                           <>
-                            <td className="px-2 py-2 border border-slate-300 text-right font-mono text-slate-900 font-bold">
-                              {s.realisasiProduksi > 0 ? `${formatTon(s.realisasiProduksi)} Ton` : "-"}
-                            </td>
-                            <td className="px-2 py-2 border border-slate-300 text-center font-mono text-slate-400">
+                            <td
+                              className="px-2 py-2 border border-slate-300 text-center font-mono text-slate-400"
+                              title="Bukan komponen biaya rupiah. Rincian tonase ada pada panel di atas."
+                            >
                               -
                             </td>
-                            <td className="px-2 py-2 border border-slate-300 text-right font-mono">
-                              {s.budgetProduksi > 0 && s.realisasiProduksi > 0 ? (
-                                <span className={s.achProduksiPercent >= 100 ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
-                                  {formatPercent(s.achProduksiPercent)}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400 font-normal">-</span>
-                              )}
+                            <td
+                              className="px-2 py-2 border border-slate-300 text-center font-mono text-slate-400"
+                              title="Bukan komponen biaya per ton. Rincian tonase ada pada panel di atas."
+                            >
+                              -
+                            </td>
+                            <td
+                              className="px-2 py-2 border border-slate-300 text-center font-mono text-slate-400"
+                              title="Bukan komponen biaya rupiah."
+                            >
+                              -
                             </td>
                           </>
                         ) : (
                           <>
-                            <td className="px-2 py-2 border border-slate-300 text-right font-mono text-slate-600">
-                              {s.budgetProduksi > 0 ? `${formatTon(s.budgetProduksi)} Ton` : "-"}
+                            <td
+                              className="px-2 py-2 border border-slate-300 text-center font-mono text-slate-400"
+                              title="Bukan komponen biaya rupiah. Rincian tonase ada pada panel di atas."
+                            >
+                              -
                             </td>
-                            <td className="px-2 py-2 border border-slate-300 text-right font-mono text-slate-900 font-bold">
-                              {s.realisasiProduksi > 0 ? `${formatTon(s.realisasiProduksi)} Ton` : "-"}
+                            <td
+                              className="px-2 py-2 border border-slate-300 text-center font-mono text-slate-400"
+                              title="Bukan komponen biaya rupiah. Rincian tonase ada pada panel di atas."
+                            >
+                              -
                             </td>
                           </>
                         )}
@@ -1012,25 +1135,23 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                     ))}
                   {matrixMetric === "all" ? (
                     <>
-                      <td className="px-2 py-2 border border-slate-300 text-right font-mono bg-blue-50/60 font-bold text-emerald-900">
-                        {ytdTotals.realProd > 0 ? `${formatTon(ytdTotals.realProd)} Ton` : "-"}
+                      <td className="px-2 py-2 border border-slate-300 text-center font-mono bg-blue-50/60 text-slate-400">
+                        -
                       </td>
                       <td className="px-2 py-2 border border-slate-300 text-center font-mono bg-blue-50/60 text-slate-400">
                         -
                       </td>
-                      <td className="px-2 py-2 border border-slate-300 text-right font-mono bg-blue-50/60 font-bold text-blue-900">
-                        {ytdTotals.budgetProd > 0 && ytdTotals.realProd > 0
-                          ? formatPercent((ytdTotals.realProd / ytdTotals.budgetProd) * 100)
-                          : "-"}
+                      <td className="px-2 py-2 border border-slate-300 text-center font-mono bg-blue-50/60 text-slate-400">
+                        -
                       </td>
                     </>
                   ) : (
                     <>
-                      <td className="px-2 py-2 border border-slate-300 text-right font-mono bg-blue-50/60 font-bold text-blue-950">
-                        {ytdTotals.budgetProd > 0 ? `${formatTon(ytdTotals.budgetProd)} Ton` : "-"}
+                      <td className="px-2 py-2 border border-slate-300 text-center font-mono bg-blue-50/60 text-slate-400">
+                        -
                       </td>
-                      <td className="px-2 py-2 border border-slate-300 text-right font-mono bg-blue-50/60 font-bold text-emerald-900">
-                        {ytdTotals.realProd > 0 ? `${formatTon(ytdTotals.realProd)} Ton` : "-"}
+                      <td className="px-2 py-2 border border-slate-300 text-center font-mono bg-blue-50/60 text-slate-400">
+                        -
                       </td>
                     </>
                   )}
