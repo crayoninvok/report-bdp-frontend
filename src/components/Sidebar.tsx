@@ -14,7 +14,6 @@ import {
   Gauge,
   FileEdit,
   Waves,
-  Droplets,
   Truck,
   FileSpreadsheet,
   ClipboardList,
@@ -85,11 +84,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: "Water Depth",
       items: [
-        {
-          id: "informasi-air",
-          label: "Informasi Air Sungai",
-          icon: Droplets,
-        },
         {
           id: "river-journal",
           label: "River Journal",
