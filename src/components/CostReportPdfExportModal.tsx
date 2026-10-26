@@ -1189,14 +1189,14 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   Biaya Total
                 </th>
                 <th className="py-2.5 px-2 border-r border-slate-800 text-right">
-                  Comp & Benefit
+                  Compensation & Benefit
                 </th>
-                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Fuel Solar</th>
-                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Tyre (Ban)</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Fuel - Production</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Tyre</th>
                 <th className="py-2.5 px-2 border-r border-slate-800 text-right">
-                  Repair & Maint
+                  Repairs & Maintenance
                 </th>
-                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Overhead</th>
+                <th className="py-2.5 px-2 border-r border-slate-800 text-right">Overhead Cost - Site</th>
                 <th className="py-2.5 px-2 border-r border-slate-800 text-right">Varian (M)</th>
                 <th className="py-2.5 px-2 border-r border-slate-800 text-right text-emerald-400">
                   IDR/Ton Real

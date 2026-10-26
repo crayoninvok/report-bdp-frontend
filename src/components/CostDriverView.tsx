@@ -66,48 +66,48 @@ export const TOP5_BEBAN_META: Record<
   { label: string; shortLabel: string; color: string; lightBg: string; borderCol: string; textCol: string }
 > = {
   comp: {
-    label: "Beban Gaji, Incentive dan Benefit Karyawan",
-    shortLabel: "Gaji & Benefit",
+    label: "BEBAN COMPENSATION AND BENEFIT - SITE",
+    shortLabel: "Beban Compensation and Benefit",
     color: "#059669",
     lightBg: "bg-emerald-50",
     borderCol: "border-emerald-200",
     textCol: "text-emerald-700",
   },
   fuel: {
-    label: "Beban Fuel (Solar Production)",
-    shortLabel: "Fuel Solar",
+    label: "BEBAN FUEL - PRODUCTION",
+    shortLabel: "Beban Fuel - Production",
     color: "#D97706",
     lightBg: "bg-amber-50",
     borderCol: "border-amber-200",
     textCol: "text-amber-700",
   },
   tyre: {
-    label: "Beban Tyre (Ban Alat Berat)",
-    shortLabel: "Tyre (Ban)",
+    label: "BEBAN TYRE",
+    shortLabel: "Beban Tyre",
     color: "#7C3AED",
     lightBg: "bg-purple-50",
     borderCol: "border-purple-200",
     textCol: "text-purple-700",
   },
   rep: {
-    label: "Beban Repair & Maintenance",
-    shortLabel: "Repair & Maint",
+    label: "BEBAN REPAIRS & MAINTENANCE",
+    shortLabel: "Beban Repairs & Maintenance",
     color: "#18bebc",
     lightBg: "bg-batara-teal-50",
     borderCol: "border-batara-teal-100",
     textCol: "text-[#0e9f9d]",
   },
   ovh: {
-    label: "Beban Overhead Cost - Site",
-    shortLabel: "Overhead Cost",
+    label: "BEBAN OVERHEAD COST - SITE",
+    shortLabel: "Beban Overhead Cost - Site",
     color: "#E11D48",
     lightBg: "bg-rose-50",
     borderCol: "border-rose-200",
     textCol: "text-rose-700",
   },
   sub: {
-    label: "Beban Subkontraktor & Rental",
-    shortLabel: "Subkontraktor",
+    label: "BEBAN SUB KONTRAKTOR",
+    shortLabel: "Beban Sub Kontraktor",
     color: "#2563EB",
     lightBg: "bg-blue-50",
     borderCol: "border-blue-200",
@@ -384,11 +384,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     return [
       {
         id: `${selectedSite}-comp-1`,
-        name: "05110101 - BEBAN GAJI, INCENTIVE DAN BENEFIT KARYAWAN",
+        name: "05110100 - BEBAN COMPENSATION AND BENEFIT - SITE",
         bebanKey: "comp",
-        bebanLabel: "Beban Gaji, Incentive dan Benefit Karyawan",
-        accountCode: "05110101",
-        accountName: "BEBAN GAJI, INCENTIVE DAN BENEFIT KARYAWAN",
+        bebanLabel: "Beban Compensation and Benefit",
+        accountCode: "05110100",
+        accountName: "BEBAN COMPENSATION AND BENEFIT - SITE",
         costBehavior: "VC",
         budgetCost: categorySums.comp.budget,
         realisasiCost: categorySums.comp.realisasi,
@@ -407,7 +407,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
         id: `${selectedSite}-fuel-1`,
         name: "05110201 - BEBAN FUEL - PRODUCTION",
         bebanKey: "fuel",
-        bebanLabel: "Beban Fuel (Solar Production)",
+        bebanLabel: "Beban Fuel - Production",
         accountCode: "05110201",
         accountName: "BEBAN FUEL - PRODUCTION",
         costBehavior: "VC",
@@ -426,11 +426,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
       },
       {
         id: `${selectedSite}-tyre-1`,
-        name: "05110203 - BEBAN TYRE & RIM",
+        name: "05110203 - BEBAN TYRE",
         bebanKey: "tyre",
-        bebanLabel: "Beban Tyre (Ban Alat Berat)",
+        bebanLabel: "Beban Tyre",
         accountCode: "05110203",
-        accountName: "BEBAN TYRE & RIM",
+        accountName: "BEBAN TYRE",
         costBehavior: "VC",
         budgetCost: categorySums.tyre.budget,
         realisasiCost: categorySums.tyre.realisasi,
@@ -447,11 +447,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
       },
       {
         id: `${selectedSite}-ovh-1`,
-        name: "05110401 - RENTAL ALAT NON PRODUKSI & KANTOR SITE",
+        name: "05110400 - BEBAN OVERHEAD COST - SITE",
         bebanKey: "ovh",
         bebanLabel: "Beban Overhead Cost - Site",
-        accountCode: "05110401",
-        accountName: "RENTAL ALAT NON PRODUKSI & KANTOR SITE",
+        accountCode: "05110400",
+        accountName: "BEBAN OVERHEAD COST - SITE",
         costBehavior: "FC",
         budgetCost: categorySums.ovh.budget,
         realisasiCost: categorySums.ovh.realisasi,
@@ -468,11 +468,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
       },
       {
         id: `${selectedSite}-rep-1`,
-        name: "05110301 - BEBAN SPAREPART & SERVICE EKSTERNAL",
+        name: "05110300 - BEBAN REPAIRS & MAINTENANCE",
         bebanKey: "rep",
-        bebanLabel: "Beban Repair & Maintenance",
-        accountCode: "05110301",
-        accountName: "BEBAN SPAREPART & SERVICE EKSTERNAL",
+        bebanLabel: "Beban Repairs & Maintenance",
+        accountCode: "05110300",
+        accountName: "BEBAN REPAIRS & MAINTENANCE",
         costBehavior: "VC",
         budgetCost: categorySums.rep.budget,
         realisasiCost: categorySums.rep.realisasi,
@@ -917,13 +917,14 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={top5ComparisonData}
-                  margin={{ top: 25, right: 20, left: 0, bottom: 10 }}
+                  margin={{ top: 25, right: 20, left: 0, bottom: 20 }}
                   barGap={6}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                   <XAxis
                     dataKey="shortLabel"
-                    tick={{ fontSize: 11, fontWeight: 600, fill: "#475569" }}
+                    tick={{ fontSize: 10.5, fontWeight: 700, fill: "#475569" }}
+                    interval={0}
                     tickLine={false}
                     axisLine={{ stroke: "#E2E8F0" }}
                   />
@@ -1134,7 +1135,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <Line
                         type="monotone"
                         dataKey="comp"
-                        name="Comp & Benefit"
+                        name="Beban Compensation and Benefit"
                         stroke={TOP5_BEBAN_META.comp.color}
                         strokeWidth={2.5}
                         dot={{ r: 3 }}
@@ -1143,7 +1144,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <Line
                         type="monotone"
                         dataKey="fuel"
-                        name="Fuel Solar"
+                        name="Beban Fuel - Production"
                         stroke={TOP5_BEBAN_META.fuel.color}
                         strokeWidth={2.5}
                         dot={{ r: 3 }}
@@ -1152,7 +1153,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <Line
                         type="monotone"
                         dataKey="tyre"
-                        name="Tyre (Ban)"
+                        name="Beban Tyre"
                         stroke={TOP5_BEBAN_META.tyre.color}
                         strokeWidth={2.5}
                         dot={{ r: 3 }}
@@ -1161,7 +1162,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <Line
                         type="monotone"
                         dataKey="rep"
-                        name="Repair & Maint"
+                        name="Beban Repairs & Maintenance"
                         stroke={TOP5_BEBAN_META.rep.color}
                         strokeWidth={2.5}
                         dot={{ r: 3 }}
@@ -1170,7 +1171,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <Line
                         type="monotone"
                         dataKey="ovh"
-                        name="Overhead Cost"
+                        name="Beban Overhead Cost - Site"
                         stroke={TOP5_BEBAN_META.ovh.color}
                         strokeWidth={2.5}
                         dot={{ r: 3 }}
@@ -1616,7 +1617,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               }`}
             >
               <Users size={13} />
-              <span>Gaji & Benefit</span>
+              <span>Beban Compensation and Benefit</span>
             </button>
             <button
               onClick={() => setActiveBebanFilter("fuel")}
@@ -1627,7 +1628,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               }`}
             >
               <Fuel size={13} />
-              <span>Fuel Solar</span>
+              <span>Beban Fuel - Production</span>
             </button>
             <button
               onClick={() => setActiveBebanFilter("tyre")}
@@ -1638,7 +1639,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               }`}
             >
               <Disc size={13} />
-              <span>Tyre (Ban)</span>
+              <span>Beban Tyre</span>
             </button>
             <button
               onClick={() => setActiveBebanFilter("rep")}
@@ -1649,7 +1650,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               }`}
             >
               <Wrench size={13} />
-              <span>Repair & Maintenance</span>
+              <span>Beban Repairs & Maintenance</span>
             </button>
             <button
               onClick={() => setActiveBebanFilter("ovh")}
@@ -1660,7 +1661,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               }`}
             >
               <Building2 size={13} />
-              <span>Overhead Cost</span>
+              <span>Beban Overhead Cost - Site</span>
             </button>
           </div>
         </div>
