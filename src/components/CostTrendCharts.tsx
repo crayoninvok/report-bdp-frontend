@@ -1928,7 +1928,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={processedIdrTonData}
-                  margin={{ top: 25, right: 30, left: 20, bottom: 10 }}
+                  margin={{ top: 28, right: 30, left: 20, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis
@@ -2006,14 +2006,50 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     fill="#94A3B8"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={36}
-                  />
+                  >
+                    <LabelList
+                      dataKey="idrTonBudget"
+                      position="top"
+                      formatter={(val: any) => {
+                        const n = Number(val);
+                        if (!n || n <= 0) return "";
+                        if (n >= 1000) {
+                          return `Rp ${(n / 1000).toLocaleString("id-ID", {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1,
+                          })}k`;
+                        }
+                        return `Rp ${Math.round(n).toLocaleString("id-ID")}`;
+                      }}
+                      style={{ fontSize: "9px", fontWeight: 700, fill: "#64748B" }}
+                      offset={5}
+                    />
+                  </Bar>
                   <Bar
                     dataKey="idrTonReal"
                     name="Realisasi (Rp/Ton)"
                     fill="#e95623"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={36}
-                  />
+                  >
+                    <LabelList
+                      dataKey="idrTonReal"
+                      position="top"
+                      formatter={(val: any) => {
+                        const n = Number(val);
+                        if (!n || n <= 0) return "";
+                        if (n >= 1000) {
+                          return `Rp ${(n / 1000).toLocaleString("id-ID", {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1,
+                          })}k`;
+                        }
+                        return `Rp ${Math.round(n).toLocaleString("id-ID")}`;
+                      }}
+                      style={{ fontSize: "9px", fontWeight: 800, fill: "#e95623" }}
+                      offset={5}
+                    />
+                  </Bar>
 
                   {showTrendlines && (
                     <Line

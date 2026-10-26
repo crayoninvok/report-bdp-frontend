@@ -31,6 +31,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 
 interface SummaryOpsViewProps {
@@ -1362,7 +1363,7 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
             </div>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <ComposedChart data={chartData} margin={{ top: 24, right: 10, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
@@ -1375,8 +1376,32 @@ export const SummaryOpsView: React.FC<SummaryOpsViewProps> = ({ user }) => {
                     contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0" }}
                   />
                   <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
-                  <Bar dataKey="idrTonBudget" name="Budget IDR/Ton" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="idrTonReal" name="Realisasi IDR/Ton" fill="#e95623" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="idrTonBudget" name="Budget IDR/Ton" fill="#cbd5e1" radius={[4, 4, 0, 0]}>
+                    <LabelList
+                      dataKey="idrTonBudget"
+                      position="top"
+                      formatter={(val: any) => {
+                        const n = Number(val);
+                        if (!n || n <= 0) return "";
+                        return `Rp ${(n / 1000).toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
+                      }}
+                      style={{ fontSize: "9px", fontWeight: 700, fill: "#64748B" }}
+                      offset={5}
+                    />
+                  </Bar>
+                  <Bar dataKey="idrTonReal" name="Realisasi IDR/Ton" fill="#e95623" radius={[4, 4, 0, 0]}>
+                    <LabelList
+                      dataKey="idrTonReal"
+                      position="top"
+                      formatter={(val: any) => {
+                        const n = Number(val);
+                        if (!n || n <= 0) return "";
+                        return `Rp ${(n / 1000).toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
+                      }}
+                      style={{ fontSize: "9px", fontWeight: 800, fill: "#e95623" }}
+                      offset={5}
+                    />
+                  </Bar>
                   <Line type="monotone" dataKey="idrTonReal" name="Garis Realisasi" stroke="#18bebc" strokeWidth={2.5} dot={{ r: 4 }} />
                 </ComposedChart>
               </ResponsiveContainer>
