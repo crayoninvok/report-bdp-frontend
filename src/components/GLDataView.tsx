@@ -313,7 +313,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-                  General Ledger (GL) Data
+                  GL Raw Data
                 </h1>
                 {activePeriod && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-orange-50 text-[#e95623] border border-orange-200/90">
@@ -371,7 +371,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
-              title="Refresh Data GL"
+              title="Refresh GL Raw Data"
             >
               <RefreshCw size={15} className={isRefreshing ? "animate-spin text-[#e95623]" : ""} />
             </button>
@@ -387,7 +387,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               className="px-4 py-2 rounded-xl bg-linear-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 hover:shadow-orange-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
             >
               <Upload size={14} className="stroke-[2.4]" />
-              <span>Upload Data GL (.xls)</span>
+              <span>Upload GL Raw Data (.xls)</span>
             </button>
           </div>
         </div>

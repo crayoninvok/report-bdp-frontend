@@ -159,7 +159,7 @@ export default function Home() {
                       : activeMenu === "coal-reports"
                       ? "Coal Hauling • Laporan Produksi"
                       : activeMenu === "gl-data"
-                      ? "Cost Analytics • GL Data"
+                      ? "Cost Analytics • GL Raw Data"
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
