@@ -365,7 +365,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               { id: "ALL", label: "Semua Site" },
               { id: "MPH", label: "Muara Pahu (MPH)" },
               { id: "SNY", label: "Senyiur (SNY)" },
-              { id: "HOF", label: "Head Office (HOF)" },
             ].map((st) => (
               <button
                 key={st.id}
@@ -413,10 +412,10 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                Rekapitulasi 38 Akun Beban (Sheet2)
+                Rekapitulasi 38 Akun Beban Site (Sheet2)
               </span>
               <span className="text-[11px] text-slate-400 font-medium">
-                &bull; Total Grand Total: <strong>{formatCurrency(summaryTotals.grandTotal)}</strong>
+                &bull; Total Biaya Site: <strong>{formatCurrency(summaryTotals.MPH + summaryTotals.SNY)}</strong>
               </span>
             </div>
 
@@ -441,13 +440,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   <th className="py-3 px-3.5 w-32">Kode Akun</th>
                   <th className="py-3 px-3.5 min-w-60">Nama Akun Beban</th>
                   <th
-                    className={`py-3 px-3.5 text-right w-36 ${
-                      selectedSite === "HOF" ? "bg-amber-100/60 font-black text-amber-900" : ""
-                    }`}
-                  >
-                    HOF (IDR)
-                  </th>
-                  <th
                     className={`py-3 px-3.5 text-right w-44 ${
                       selectedSite === "MPH" ? "bg-blue-100/60 font-black text-blue-900" : ""
                     }`}
@@ -462,7 +454,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                     SNY (IDR)
                   </th>
                   <th className="py-3 px-3.5 text-right w-44 bg-slate-200/70 font-black text-slate-900">
-                    Grand Total (IDR)
+                    Total Site (IDR)
                   </th>
                 </tr>
               </thead>
@@ -495,13 +487,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                       </td>
                       <td
                         className={`py-2.5 px-3.5 text-right font-mono ${
-                          selectedSite === "HOF" ? "bg-amber-50/60 font-bold" : ""
-                        }`}
-                      >
-                        {item.hofAmount > 0 ? formatNumber(item.hofAmount) : "-"}
-                      </td>
-                      <td
-                        className={`py-2.5 px-3.5 text-right font-mono ${
                           selectedSite === "MPH" ? "bg-blue-50/60 font-bold" : ""
                         }`}
                       >
@@ -515,7 +500,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                         {item.snyAmount > 0 ? formatNumber(item.snyAmount) : "-"}
                       </td>
                       <td className="py-2.5 px-3.5 text-right font-mono font-bold text-slate-900 bg-slate-50/60">
-                        {formatNumber(item.grandTotal)}
+                        {formatNumber(item.mphAmount + item.snyAmount)}
                       </td>
                     </tr>
                   ))
@@ -526,13 +511,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 text-xs">
                   <td colSpan={3} className="py-3 px-3.5 text-right uppercase tracking-wider">
                     Total
-                  </td>
-                  <td
-                    className={`py-3 px-3.5 text-right font-mono ${
-                      selectedSite === "HOF" ? "bg-amber-100/70" : ""
-                    }`}
-                  >
-                    {formatNumber(summaryTotals.HOF)}
                   </td>
                   <td
                     className={`py-3 px-3.5 text-right font-mono ${
@@ -549,7 +527,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                     {formatNumber(summaryTotals.SNY)}
                   </td>
                   <td className="py-3 px-3.5 text-right font-mono text-sm bg-slate-200/90 text-[#e95623]">
-                    {formatNumber(summaryTotals.grandTotal)}
+                    {formatNumber(summaryTotals.MPH + summaryTotals.SNY)}
                   </td>
                 </tr>
               </tfoot>
@@ -860,7 +838,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                     </strong>
                   </span>
                   <span className="text-slate-400">
-                    HOF: {formatNumber(previewData.siteTotals.HOF)} | MPH: {formatNumber(previewData.siteTotals.MPH)} | SNY: {formatNumber(previewData.siteTotals.SNY)}
+                    MPH: {formatNumber(previewData.siteTotals.MPH)} | SNY: {formatNumber(previewData.siteTotals.SNY)}
                   </span>
                 </div>
               </div>
