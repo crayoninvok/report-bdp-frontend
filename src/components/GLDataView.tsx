@@ -527,7 +527,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
             {/* Filter Controls Row: Akun Beban, Tanggal (Date Range), Search, Reset */}
             <div className="flex flex-wrap items-center gap-2.5 pt-1">
               {/* 1. Filter by Akun Beban */}
-              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs shadow-2xs flex-1 min-w-[240px] max-w-sm hover:border-slate-300 transition-colors">
+              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs shadow-2xs flex-1 min-w-60 max-w-sm hover:border-slate-300 transition-colors">
                 <Tag size={13} className="text-[#e95623] shrink-0" />
                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
                   Akun:
@@ -598,7 +598,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               </div>
 
               {/* 3. Search Box */}
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-50">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
