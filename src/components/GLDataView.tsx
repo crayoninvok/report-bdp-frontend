@@ -290,7 +290,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           {/* Left Title & Status Badges */}
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#e95623] to-[#d44818] shadow-md shadow-orange-500/20 text-white flex items-center justify-center shrink-0">
+            <div className="h-11 w-11 rounded-2xl bg-linear-to-br from-[#e95623] to-[#d44818] shadow-md shadow-orange-500/20 text-white flex items-center justify-center shrink-0">
               <Database size={22} className="stroke-[2.2]" />
             </div>
 
@@ -371,7 +371,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 setUploadSuccess(null);
                 setIsUploadModalOpen(true);
               }}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 hover:shadow-orange-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
+              className="px-4 py-2 rounded-xl bg-linear-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 hover:shadow-orange-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
             >
               <Upload size={14} className="stroke-[2.4]" />
               <span>Upload Data GL (.xls)</span>
@@ -482,7 +482,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   placeholder="Cari voucher, akun, vendor, remark..."
                   value={txSearch}
                   onChange={(e) => setTxSearch(e.target.value)}
-                  className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400"
+                  className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400 font-medium"
                 />
                 {txSearch && (
                   <button
@@ -812,7 +812,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 type="button"
                 disabled={!previewData || isCommitting || !!uploadSuccess}
                 onClick={handleCommitUpload}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-linear-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
               >
                 {isCommitting ? (
                   <>
