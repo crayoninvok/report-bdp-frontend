@@ -23,7 +23,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Database,
-  Download,
   FileSpreadsheet,
   MapPin,
   Tag,
@@ -62,7 +61,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isTxLoading, setIsTxLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isExporting, setIsExporting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Upload Modal State
@@ -251,50 +249,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
       setUploadError(err.message || "Gagal menyimpan data GL ke database.");
     } finally {
       setIsCommitting(false);
-    }
-  };
-
-  // Export Transactions to CSV
-  const exportTransactionsToCSV = async () => {
-    if (!selectedPeriodId) return;
-    setIsExporting(true);
-    try {
-      const res = await glService.getTransactions({
-        periodId: selectedPeriodId,
-        site: selectedSite !== "ALL" ? selectedSite : undefined,
-        accountCode: selectedAccountFilter || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        q: txSearch,
-        page: 1,
-        limit: 10000,
-      });
-
-      const headers = ["Tanggal", "No Voucher", "Kode Akun", "Nama Akun", "Cost Center", "Site", "Debet (IDR)", "Customer/Vendor", "Remark"];
-      const rows = res.data.map((tx) => [
-        `"${tx.date}"`,
-        `"${tx.regNo || ""}"`,
-        `"${tx.accountCode || ""}"`,
-        `"${(tx.accountName || "").replace(/"/g, '""')}"`,
-        `"${tx.costCenter || ""}"`,
-        `"${tx.projectArea || ""}"`,
-        Math.round(tx.debet || 0),
-        `"${(tx.supplierName || "").replace(/"/g, '""')}"`,
-        `"${(tx.remark || "").replace(/"/g, '""')}"`,
-      ]);
-
-      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `GL_Data_${activePeriod?.periodName.replace(/[\/\s:]+/g, "_") || "Export"}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err: any) {
-      console.error("Export error:", err);
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -497,21 +451,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   <option value={50}>50 baris</option>
                   <option value={100}>100 baris</option>
                 </select>
-
-                {/* Export CSV button */}
-                <button
-                  onClick={exportTransactionsToCSV}
-                  disabled={isExporting || transactions.length === 0}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap disabled:opacity-40"
-                  title="Download CSV Transaksi GL"
-                >
-                  {isExporting ? (
-                    <RefreshCw size={13} className="animate-spin text-[#e95623]" />
-                  ) : (
-                    <Download size={13} />
-                  )}
-                  <span className="hidden sm:inline">Export CSV</span>
-                </button>
               </div>
             </div>
 
