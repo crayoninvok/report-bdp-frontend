@@ -703,7 +703,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => loadTransactions(1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
                 title="Halaman Pertama"
               >
                 <ChevronsLeft size={14} />
@@ -711,7 +711,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => loadTransactions(pagination.page - 1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
                 title="Sebelumnya"
               >
                 <ChevronLeft size={14} />
@@ -724,7 +724,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => loadTransactions(pagination.page + 1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
                 title="Selanjutnya"
               >
                 <ChevronRight size={14} />
@@ -732,7 +732,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => loadTransactions(pagination.totalPages)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
                 title="Halaman Terakhir"
               >
                 <ChevronsRight size={14} />
@@ -880,7 +880,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 type="button"
                 disabled={!previewData || isCommitting || !!uploadSuccess}
                 onClick={handleCommitUpload}
-                className="px-5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer transition-all flex items-center gap-2"
+                className="px-5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
               >
                 {isCommitting ? (
                   <>
