@@ -6,7 +6,12 @@ export const metadata: Metadata = {
   title: "Report Management Portal - PT Batara Dharma Persada",
   description: "Sistem Report Management Portal & Pelaporan Operasional PT Batara Dharma Persada",
   icons: {
-    icon: "/coa-logo-bdp.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/coa-logo-bdp.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/coa-logo-bdp.png",
   },
 };
 
