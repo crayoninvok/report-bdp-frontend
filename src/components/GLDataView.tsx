@@ -25,7 +25,6 @@ import {
   Database,
   Download,
   FileSpreadsheet,
-  Coins,
   MapPin,
   Tag,
 } from "lucide-react";
@@ -329,14 +328,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-600">
                   <MapPin size={11} className="text-[#e95623]" />
                   <span>Site: Muara Pahu &amp; Senyiur</span>
-                </span>
-
-                <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-700 font-semibold">
-                  <Coins size={11} className="text-amber-600" />
-                  <span>Total Biaya Site:</span>
-                  <span className="font-mono font-bold text-[#e95623]">
-                    {formatCurrency(totalSiteCost)}
-                  </span>
                 </span>
 
                 {activePeriod && (
