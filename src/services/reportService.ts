@@ -274,5 +274,33 @@ export const reportService = {
     }
     return data.data;
   },
+
+  async getLatestUpdates(): Promise<LatestUpdatesResponse> {
+    const res = await fetch(`${API_BASE_URL}/reports/latest-updates`, {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || "Gagal mengambil data update terbaru");
+    }
+    return data;
+  },
 };
+
+export interface LatestDataUpdateItem {
+  id: string;
+  module: string;
+  category: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  type: string;
+}
+
+export interface LatestUpdatesResponse {
+  success: boolean;
+  latestTimestamp: string | null;
+  updates: LatestDataUpdateItem[];
+}
+
 

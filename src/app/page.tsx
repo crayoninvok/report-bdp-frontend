@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User } from "../types/auth";
 import { authService } from "../services/authService";
+import { reportService, LatestDataUpdateItem } from "../services/reportService";
 import { LoginScreen } from "../components/LoginScreen";
 import { Sidebar } from "../components/Sidebar";
 import { DashboardView } from "../components/DashboardView";
@@ -18,7 +19,19 @@ import { CoalProductionReportView } from "../components/CoalProductionReportView
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
 import { GLDataView } from "../components/GLDataView";
 
-import { Menu, Bell, MapPin } from "lucide-react";
+import {
+  Menu,
+  Bell,
+  MapPin,
+  X,
+  Clock,
+  RefreshCw,
+  Database,
+  FileText,
+  TableProperties,
+  Truck,
+  Waves,
+} from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
 export default function Home() {
@@ -27,6 +40,120 @@ export default function Home() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { confirm, showInfo } = useNotification();
+
+  // Notification Bell State & Latest Updates Tracking
+  const [latestUpdates, setLatestUpdates] = useState<LatestDataUpdateItem[]>([]);
+  const [latestTimestamp, setLatestTimestamp] = useState<string | null>(null);
+  const [hasUnread, setHasUnread] = useState<boolean>(false);
+  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
+  const [isNotifLoading, setIsNotifLoading] = useState<boolean>(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  const NOTIF_STORAGE_KEY = "report_bdp_last_notif_seen";
+
+  const fetchLatestUpdates = async () => {
+    try {
+      setIsNotifLoading(true);
+      const res = await reportService.getLatestUpdates();
+      if (res.success) {
+        setLatestUpdates(res.updates);
+        setLatestTimestamp(res.latestTimestamp);
+
+        // Check if there is a new update compared to last seen
+        const lastSeen = typeof window !== "undefined" ? localStorage.getItem(NOTIF_STORAGE_KEY) : null;
+        if (res.latestTimestamp) {
+          if (!lastSeen) {
+            setHasUnread(true);
+          } else {
+            const hasNew = new Date(res.latestTimestamp).getTime() > new Date(lastSeen).getTime();
+            setHasUnread(hasNew);
+          }
+        } else {
+          setHasUnread(false);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading latest updates:", err);
+    } finally {
+      setIsNotifLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLatestUpdates();
+    // Poll updates every 60 seconds
+    const interval = setInterval(fetchLatestUpdates, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    if (isNotifOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isNotifOpen]);
+
+  const handleToggleNotif = () => {
+    if (!isNotifOpen) {
+      setIsNotifOpen(true);
+      if (latestTimestamp) {
+        localStorage.setItem(NOTIF_STORAGE_KEY, latestTimestamp);
+      }
+      setHasUnread(false);
+      fetchLatestUpdates();
+    } else {
+      setIsNotifOpen(false);
+    }
+  };
+
+  const formatTimeAgo = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHour = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHour / 24);
+
+      if (diffMin < 1) return "Baru saja";
+      if (diffMin < 60) return `${diffMin} mnt lalu`;
+      if (diffHour < 24) return `${diffHour} jam lalu`;
+      if (diffDay === 1) return "Kemarin";
+      if (diffDay < 7) return `${diffDay} hr lalu`;
+
+      return new Intl.DateTimeFormat("id-ID", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date);
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatExactDate = (dateStr: string) => {
+    try {
+      return new Intl.DateTimeFormat("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(dateStr));
+    } catch {
+      return dateStr;
+    }
+  };
 
   useEffect(() => {
     // Check if user session exists in localStorage
@@ -189,14 +316,151 @@ export default function Home() {
               </span>
             </div>
 
-            {/* Notification bell */}
-            <button
-              className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-              title="Notifikasi"
-            >
-              <Bell size={16} />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            </button>
+            {/* Notification Bell with Latest Updates Popover */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={handleToggleNotif}
+                className={`relative flex h-8 w-8 items-center justify-center rounded-lg border transition-all cursor-pointer ${
+                  isNotifOpen
+                    ? "bg-orange-50 border-orange-300 text-[#e95623]"
+                    : "border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+                title={hasUnread ? "Ada data update baru!" : "Riwayat Update Data"}
+                aria-label="Riwayat Update Data"
+              >
+                <Bell size={16} />
+                {hasUnread && (
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                )}
+              </button>
+
+              {/* Notification Popover Dropdown */}
+              {isNotifOpen && (
+                <div className="absolute right-0 top-10 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  {/* Popover Header */}
+                  <div className="p-3.5 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-orange-100 text-[#e95623] flex items-center justify-center">
+                        <Bell size={14} className="stroke-[2.5]" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-slate-800">
+                          Riwayat Update Data
+                        </h4>
+                        <p className="text-[10px] text-slate-500">
+                          Waktu data terakhir diunggah ke sistem
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsNotifOpen(false)}
+                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                      title="Tutup"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  {/* Popover Content */}
+                  <div className="max-h-84 overflow-y-auto divide-y divide-slate-100 p-1">
+                    {isNotifLoading && latestUpdates.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 text-xs">
+                        <RefreshCw size={18} className="animate-spin text-[#e95623] mx-auto mb-2" />
+                        <span>Memeriksa pembaruan data...</span>
+                      </div>
+                    ) : latestUpdates.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 text-xs">
+                        <span>Belum ada data yang diunggah.</span>
+                      </div>
+                    ) : (
+                      latestUpdates.map((item) => {
+                        const Icon =
+                          item.category === "gl-data"
+                            ? Database
+                            : item.category === "reports"
+                            ? FileText
+                            : item.category === "summary"
+                            ? TableProperties
+                            : item.category === "coal-dashboard"
+                            ? Truck
+                            : Waves;
+
+                        const badgeClass =
+                          item.category === "gl-data"
+                            ? "bg-orange-50 text-[#e95623] border-orange-200"
+                            : item.category === "reports"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : item.category === "summary"
+                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                            : item.category === "coal-dashboard"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-cyan-50 text-cyan-700 border-cyan-200";
+
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => {
+                              setActiveMenu(item.category);
+                              setIsNotifOpen(false);
+                            }}
+                            className="p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group flex items-start gap-2.5"
+                          >
+                            <div className="h-8 w-8 rounded-xl bg-slate-100 text-slate-600 group-hover:bg-orange-50 group-hover:text-[#e95623] flex items-center justify-center shrink-0 transition-colors border border-slate-200/60 mt-0.5">
+                              <Icon size={14} />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span
+                                  className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${badgeClass}`}
+                                >
+                                  {item.module}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                                  {formatTimeAgo(item.timestamp)}
+                                </span>
+                              </div>
+
+                              <p className="text-xs font-bold text-slate-800 group-hover:text-[#e95623] transition-colors truncate mt-1">
+                                {item.title}
+                              </p>
+
+                              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                                {item.description}
+                              </p>
+
+                              <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1 font-mono">
+                                <Clock size={10} />
+                                <span>{formatExactDate(item.timestamp)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Popover Footer */}
+                  <div className="p-2.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 text-[10px]">
+                      Klik item untuk membuka menu
+                    </span>
+                    <button
+                      onClick={() => {
+                        if (latestTimestamp) {
+                          localStorage.setItem(NOTIF_STORAGE_KEY, latestTimestamp);
+                        }
+                        setHasUnread(false);
+                        setIsNotifOpen(false);
+                      }}
+                      className="text-xs font-bold text-[#e95623] hover:text-[#d44818] cursor-pointer"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* User Quick Info */}
             <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
