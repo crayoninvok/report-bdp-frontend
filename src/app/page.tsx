@@ -33,6 +33,13 @@ export default function Home() {
     if (saved) {
       setCurrentUser(saved);
     }
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const menuParam = params.get("menu");
+      if (menuParam) {
+        setActiveMenu(menuParam);
+      }
+    }
     setIsLoadingAuth(false);
   }, []);
 
@@ -149,6 +156,8 @@ export default function Home() {
                     ? "Coal Hauling • Input Data Produksi"
                     : activeMenu === "coal-reports"
                     ? "Coal Hauling • Laporan Produksi"
+                    : activeMenu === "gl-data"
+                    ? "Cost Analytics • GL Data"
                     : "Dashboard Cost"}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
@@ -236,7 +245,13 @@ export default function Home() {
               onNavigateToInput={() => setActiveMenu("coal-input")}
               onNavigateToDashboard={() => setActiveMenu("coal-dashboard")}
             />
-
+          ) : activeMenu === "gl-data" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="GL Data (General Ledger)"
+              moduleCategory="Cost Analytics"
+              onBackToDashboard={() => setActiveMenu("dashboard")}
+            />
           ) : (
             <DashboardView
               user={currentUser}

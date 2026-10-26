@@ -17,6 +17,7 @@ import {
   Truck,
   FileSpreadsheet,
   ClipboardList,
+  Database,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -57,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: "input-cost", label: "Input Cost", icon: FileEdit },
         { id: "reports", label: "Laporan Cost", icon: FileText },
         { id: "summary", label: "Laporan Summary", icon: TableProperties },
+        { id: "gl-data", label: "GL Data", icon: Database },
       ],
     },
     {
