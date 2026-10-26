@@ -295,6 +295,16 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     ovh: { budget: 76, realisasi: 0, deviasi: 76 },
     produksi: { budget: 151516, realisasi: 0 },
   },
+  {
+    label: "W42",
+    total: { budget: 493, realisasi: 492, deviasi: 1 },
+    comp: { budget: 364, realisasi: 362, deviasi: 2 },
+    fuel: { budget: 51, realisasi: 41, deviasi: 10 },
+    tyre: { budget: 0, realisasi: 0, deviasi: 0 },
+    rep: { budget: 2, realisasi: 1, deviasi: 1 },
+    ovh: { budget: 76, realisasi: 88, deviasi: -12 },
+    produksi: { budget: 0, realisasi: 0 },
+  },
 ];
 
 export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
@@ -427,6 +437,16 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     rep: { budget: 0, realisasi: 313, deviasi: -313 },
     ovh: { budget: 0, realisasi: 64, deviasi: -64 },
     produksi: { budget: 151516, realisasi: 192040 },
+  },
+  {
+    label: "W42",
+    total: { budget: 6218, realisasi: 10328, deviasi: -4110 },
+    comp: { budget: 832, realisasi: 1095, deviasi: -263 },
+    fuel: { budget: 4174, realisasi: 8374, deviasi: -4200 },
+    tyre: { budget: 441, realisasi: 654, deviasi: -213 },
+    rep: { budget: 441, realisasi: 147, deviasi: 294 },
+    ovh: { budget: 329, realisasi: 57, deviasi: 272 },
+    produksi: { budget: 151516, realisasi: 216430 },
   },
 ];
 

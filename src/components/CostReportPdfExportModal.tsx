@@ -102,23 +102,35 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   const [timeframe, setTimeframe] = useState<"month" | "week" | "ytd">(defaultTimeframe);
   const [selectedCategory, setSelectedCategory] = useState<CostCategoryKey>(defaultCategory);
 
-  // Sync state with props when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedCategory(defaultCategory);
-      setTimeframe(defaultTimeframe);
-      setSelectedSite(initialResolvedSite);
-    }
-  }, [isOpen, defaultCategory, defaultTimeframe, initialResolvedSite]);
+  // 2. DATA PROCESSING & CONSOLIDATION: Dynamic available periods
+  const availableWeeks = useMemo(() => {
+    const weeklySen = dynamicData?.Senyiur?.weekly?.length ? dynamicData.Senyiur.weekly : RAW_WEEKLY_SENYIUR;
+    const weeklyMua = dynamicData?.MuaraPahu?.weekly?.length ? dynamicData.MuaraPahu.weekly : RAW_WEEKLY_MUARAPAHU;
+    const set = new Set<string>();
+    weeklySen.forEach((it) => set.add(it.label));
+    weeklyMua.forEach((it) => set.add(it.label));
+    return Array.from(set);
+  }, [dynamicData]);
+
+  const availableMonths = useMemo(() => {
+    const monthlySen = dynamicData?.Senyiur?.monthly?.length ? dynamicData.Senyiur.monthly : RAW_MONTHLY_SENYIUR;
+    const monthlyMua = dynamicData?.MuaraPahu?.monthly?.length ? dynamicData.MuaraPahu.monthly : RAW_MONTHLY_MUARAPAHU;
+    const set = new Set<string>();
+    monthlySen.forEach((it) => set.add(it.label));
+    monthlyMua.forEach((it) => set.add(it.label));
+    return Array.from(set);
+  }, [dynamicData]);
+
+  const latestWeek = availableWeeks[availableWeeks.length - 1] || "W42";
+  const latestMonth = availableMonths[availableMonths.length - 1] || "Oct";
 
   // Range filters for Weeks
-  const latestWeek = RAW_WEEKLY_SENYIUR[RAW_WEEKLY_SENYIUR.length - 1]?.label || "W41";
   const [startWeek, setStartWeek] = useState<string>("W29");
   const [endWeek, setEndWeek] = useState<string>(latestWeek);
 
   // Range filters for Months
   const [startMonth, setStartMonth] = useState<string>("Jan");
-  const [endMonth, setEndMonth] = useState<string>("Oct");
+  const [endMonth, setEndMonth] = useState<string>(latestMonth);
 
   // Slide pages to include
   const [includeSlide1, setIncludeSlide1] = useState(true);
@@ -135,15 +147,20 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   const slide1Ref = useRef<HTMLDivElement>(null);
   const slide2Ref = useRef<HTMLDivElement>(null);
 
-  // 2. DATA PROCESSING & CONSOLIDATION
-  const availableWeeks = useMemo(
-    () => RAW_WEEKLY_SENYIUR.map((item) => item.label),
-    []
-  );
-  const availableMonths = useMemo(
-    () => RAW_MONTHLY_SENYIUR.map((item) => item.label),
-    []
-  );
+  // Sync state with props when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCategory(defaultCategory);
+      setTimeframe(defaultTimeframe);
+      setSelectedSite(initialResolvedSite);
+      if (availableWeeks.length > 0) {
+        setEndWeek(availableWeeks[availableWeeks.length - 1]);
+      }
+      if (availableMonths.length > 0) {
+        setEndMonth(availableMonths[availableMonths.length - 1]);
+      }
+    }
+  }, [isOpen, defaultCategory, defaultTimeframe, initialResolvedSite, availableWeeks, availableMonths]);
 
   // Build filtered raw dataset
   const filteredDataset: FullPeriodRecord[] = useMemo(() => {
@@ -160,45 +177,64 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
         sourceData = weeklyMua;
       } else {
         // Konsolidasi (AllSites): Sum Senyiur + Muara Pahu
-        sourceData = weeklySen.map((senItem, idx) => {
-          const muaraItem = weeklyMua[idx] || senItem;
-          const totB = senItem.total.budget + muaraItem.total.budget;
-          const totR = senItem.total.realisasi + muaraItem.total.realisasi;
-          const prodB = (senItem.produksi?.budget || 0) + (muaraItem.produksi?.budget || 0);
-          const prodR = (senItem.produksi?.realisasi || 0) + (muaraItem.produksi?.realisasi || 0);
+        const weekLabels = Array.from(
+          new Set([...weeklySen.map((w) => w.label), ...weeklyMua.map((w) => w.label)])
+        );
+        sourceData = weekLabels.map((lbl) => {
+          const senItem = weeklySen.find((s) => s.label === lbl);
+          const muaraItem = weeklyMua.find((m) => m.label === lbl);
+          const totB = (senItem?.total?.budget || 0) + (muaraItem?.total?.budget || 0);
+          const totR = (senItem?.total?.realisasi || 0) + (muaraItem?.total?.realisasi || 0);
+          const prodB = (senItem?.produksi?.budget || 0) + (muaraItem?.produksi?.budget || 0);
+          const prodR = (senItem?.produksi?.realisasi || 0) + (muaraItem?.produksi?.realisasi || 0);
           const idrTonB = prodB > 0 ? Math.round((totB * 1e6) / prodB) : 0;
           const idrTonR = prodR > 0 ? Math.round((totR * 1e6) / prodR) : 0;
           return {
-            label: senItem.label,
+            label: lbl,
             total: {
               budget: totB,
               realisasi: totR,
-              deviasi: senItem.total.deviasi + muaraItem.total.deviasi,
+              deviasi: totB - totR,
             },
             comp: {
-              budget: senItem.comp.budget + muaraItem.comp.budget,
-              realisasi: senItem.comp.realisasi + muaraItem.comp.realisasi,
-              deviasi: senItem.comp.deviasi + muaraItem.comp.deviasi,
+              budget: (senItem?.comp?.budget || 0) + (muaraItem?.comp?.budget || 0),
+              realisasi: (senItem?.comp?.realisasi || 0) + (muaraItem?.comp?.realisasi || 0),
+              deviasi:
+                (senItem?.comp?.budget || 0) +
+                (muaraItem?.comp?.budget || 0) -
+                ((senItem?.comp?.realisasi || 0) + (muaraItem?.comp?.realisasi || 0)),
             },
             fuel: {
-              budget: senItem.fuel.budget + muaraItem.fuel.budget,
-              realisasi: senItem.fuel.realisasi + muaraItem.fuel.realisasi,
-              deviasi: senItem.fuel.deviasi + muaraItem.fuel.deviasi,
+              budget: (senItem?.fuel?.budget || 0) + (muaraItem?.fuel?.budget || 0),
+              realisasi: (senItem?.fuel?.realisasi || 0) + (muaraItem?.fuel?.realisasi || 0),
+              deviasi:
+                (senItem?.fuel?.budget || 0) +
+                (muaraItem?.fuel?.budget || 0) -
+                ((senItem?.fuel?.realisasi || 0) + (muaraItem?.fuel?.realisasi || 0)),
             },
             tyre: {
-              budget: senItem.tyre.budget + muaraItem.tyre.budget,
-              realisasi: senItem.tyre.realisasi + muaraItem.tyre.realisasi,
-              deviasi: senItem.tyre.deviasi + muaraItem.tyre.deviasi,
+              budget: (senItem?.tyre?.budget || 0) + (muaraItem?.tyre?.budget || 0),
+              realisasi: (senItem?.tyre?.realisasi || 0) + (muaraItem?.tyre?.realisasi || 0),
+              deviasi:
+                (senItem?.tyre?.budget || 0) +
+                (muaraItem?.tyre?.budget || 0) -
+                ((senItem?.tyre?.realisasi || 0) + (muaraItem?.tyre?.realisasi || 0)),
             },
             rep: {
-              budget: senItem.rep.budget + muaraItem.rep.budget,
-              realisasi: senItem.rep.realisasi + muaraItem.rep.realisasi,
-              deviasi: senItem.rep.deviasi + muaraItem.rep.deviasi,
+              budget: (senItem?.rep?.budget || 0) + (muaraItem?.rep?.budget || 0),
+              realisasi: (senItem?.rep?.realisasi || 0) + (muaraItem?.rep?.realisasi || 0),
+              deviasi:
+                (senItem?.rep?.budget || 0) +
+                (muaraItem?.rep?.budget || 0) -
+                ((senItem?.rep?.realisasi || 0) + (muaraItem?.rep?.realisasi || 0)),
             },
             ovh: {
-              budget: senItem.ovh.budget + muaraItem.ovh.budget,
-              realisasi: senItem.ovh.realisasi + muaraItem.ovh.realisasi,
-              deviasi: senItem.ovh.deviasi + muaraItem.ovh.deviasi,
+              budget: (senItem?.ovh?.budget || 0) + (muaraItem?.ovh?.budget || 0),
+              realisasi: (senItem?.ovh?.realisasi || 0) + (muaraItem?.ovh?.realisasi || 0),
+              deviasi:
+                (senItem?.ovh?.budget || 0) +
+                (muaraItem?.ovh?.budget || 0) -
+                ((senItem?.ovh?.realisasi || 0) + (muaraItem?.ovh?.realisasi || 0)),
             },
             produksi: { budget: prodB, realisasi: prodR },
             idrPerTon: { budget: idrTonB, realisasi: idrTonR, deviasi: idrTonB - idrTonR },
@@ -211,7 +247,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       const eIdx = availableWeeks.indexOf(endWeek);
       const minI = Math.min(sIdx === -1 ? 0 : sIdx, eIdx === -1 ? availableWeeks.length - 1 : eIdx);
       const maxI = Math.max(sIdx === -1 ? 0 : sIdx, eIdx === -1 ? availableWeeks.length - 1 : eIdx);
-      return sourceData.slice(minI, maxI + 1);
+      const targetWeeks = new Set(availableWeeks.slice(minI, maxI + 1));
+      return sourceData.filter((item) => targetWeeks.has(item.label));
     } else {
       // Monthly
       if (selectedSite === "Senyiur") {
@@ -220,45 +257,64 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
         sourceData = monthlyMua;
       } else {
         // Konsolidasi (AllSites)
-        sourceData = monthlySen.map((senItem, idx) => {
-          const muaraItem = monthlyMua[idx] || senItem;
-          const totB = senItem.total.budget + muaraItem.total.budget;
-          const totR = senItem.total.realisasi + muaraItem.total.realisasi;
-          const prodB = (senItem.produksi?.budget || 0) + (muaraItem.produksi?.budget || 0);
-          const prodR = (senItem.produksi?.realisasi || 0) + (muaraItem.produksi?.realisasi || 0);
+        const monthLabels = Array.from(
+          new Set([...monthlySen.map((m) => m.label), ...monthlyMua.map((m) => m.label)])
+        );
+        sourceData = monthLabels.map((lbl) => {
+          const senItem = monthlySen.find((s) => s.label === lbl);
+          const muaraItem = monthlyMua.find((m) => m.label === lbl);
+          const totB = (senItem?.total?.budget || 0) + (muaraItem?.total?.budget || 0);
+          const totR = (senItem?.total?.realisasi || 0) + (muaraItem?.total?.realisasi || 0);
+          const prodB = (senItem?.produksi?.budget || 0) + (muaraItem?.produksi?.budget || 0);
+          const prodR = (senItem?.produksi?.realisasi || 0) + (muaraItem?.produksi?.realisasi || 0);
           const idrTonB = prodB > 0 ? Math.round((totB * 1e6) / prodB) : 0;
           const idrTonR = prodR > 0 ? Math.round((totR * 1e6) / prodR) : 0;
           return {
-            label: senItem.label,
+            label: lbl,
             total: {
               budget: totB,
               realisasi: totR,
-              deviasi: senItem.total.deviasi + muaraItem.total.deviasi,
+              deviasi: totB - totR,
             },
             comp: {
-              budget: senItem.comp.budget + muaraItem.comp.budget,
-              realisasi: senItem.comp.realisasi + muaraItem.comp.realisasi,
-              deviasi: senItem.comp.deviasi + muaraItem.comp.deviasi,
+              budget: (senItem?.comp?.budget || 0) + (muaraItem?.comp?.budget || 0),
+              realisasi: (senItem?.comp?.realisasi || 0) + (muaraItem?.comp?.realisasi || 0),
+              deviasi:
+                (senItem?.comp?.budget || 0) +
+                (muaraItem?.comp?.budget || 0) -
+                ((senItem?.comp?.realisasi || 0) + (muaraItem?.comp?.realisasi || 0)),
             },
             fuel: {
-              budget: senItem.fuel.budget + muaraItem.fuel.budget,
-              realisasi: senItem.fuel.realisasi + muaraItem.fuel.realisasi,
-              deviasi: senItem.fuel.deviasi + muaraItem.fuel.deviasi,
+              budget: (senItem?.fuel?.budget || 0) + (muaraItem?.fuel?.budget || 0),
+              realisasi: (senItem?.fuel?.realisasi || 0) + (muaraItem?.fuel?.realisasi || 0),
+              deviasi:
+                (senItem?.fuel?.budget || 0) +
+                (muaraItem?.fuel?.budget || 0) -
+                ((senItem?.fuel?.realisasi || 0) + (muaraItem?.fuel?.realisasi || 0)),
             },
             tyre: {
-              budget: senItem.tyre.budget + muaraItem.tyre.budget,
-              realisasi: senItem.tyre.realisasi + muaraItem.tyre.realisasi,
-              deviasi: senItem.tyre.deviasi + muaraItem.tyre.deviasi,
+              budget: (senItem?.tyre?.budget || 0) + (muaraItem?.tyre?.budget || 0),
+              realisasi: (senItem?.tyre?.realisasi || 0) + (muaraItem?.tyre?.realisasi || 0),
+              deviasi:
+                (senItem?.tyre?.budget || 0) +
+                (muaraItem?.tyre?.budget || 0) -
+                ((senItem?.tyre?.realisasi || 0) + (muaraItem?.tyre?.realisasi || 0)),
             },
             rep: {
-              budget: senItem.rep.budget + muaraItem.rep.budget,
-              realisasi: senItem.rep.realisasi + muaraItem.rep.realisasi,
-              deviasi: senItem.rep.deviasi + muaraItem.rep.deviasi,
+              budget: (senItem?.rep?.budget || 0) + (muaraItem?.rep?.budget || 0),
+              realisasi: (senItem?.rep?.realisasi || 0) + (muaraItem?.rep?.realisasi || 0),
+              deviasi:
+                (senItem?.rep?.budget || 0) +
+                (muaraItem?.rep?.budget || 0) -
+                ((senItem?.rep?.realisasi || 0) + (muaraItem?.rep?.realisasi || 0)),
             },
             ovh: {
-              budget: senItem.ovh.budget + muaraItem.ovh.budget,
-              realisasi: senItem.ovh.realisasi + muaraItem.ovh.realisasi,
-              deviasi: senItem.ovh.deviasi + muaraItem.ovh.deviasi,
+              budget: (senItem?.ovh?.budget || 0) + (muaraItem?.ovh?.budget || 0),
+              realisasi: (senItem?.ovh?.realisasi || 0) + (muaraItem?.ovh?.realisasi || 0),
+              deviasi:
+                (senItem?.ovh?.budget || 0) +
+                (muaraItem?.ovh?.budget || 0) -
+                ((senItem?.ovh?.realisasi || 0) + (muaraItem?.ovh?.realisasi || 0)),
             },
             produksi: { budget: prodB, realisasi: prodR },
             idrPerTon: { budget: idrTonB, realisasi: idrTonR, deviasi: idrTonB - idrTonR },
@@ -271,10 +327,11 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       const eIdx = availableMonths.indexOf(endMonth);
       const minI = Math.min(sIdx === -1 ? 0 : sIdx, eIdx === -1 ? availableMonths.length - 1 : eIdx);
       const maxI = Math.max(sIdx === -1 ? 0 : sIdx, eIdx === -1 ? availableMonths.length - 1 : eIdx);
-      const sliced = sourceData.slice(minI, maxI + 1);
+      const targetMonths = new Set(availableMonths.slice(minI, maxI + 1));
+      const sliced = sourceData.filter((item) => targetMonths.has(item.label));
       return timeframe === "ytd" ? computeYTDDataset(sliced) : sliced;
     }
-  }, [timeframe, selectedSite, startWeek, endWeek, startMonth, endMonth, availableWeeks, availableMonths]);
+  }, [timeframe, selectedSite, startWeek, endWeek, startMonth, endMonth, availableWeeks, availableMonths, dynamicData]);
 
   // Active Category Meta
   // Active Category Meta
@@ -1531,12 +1588,12 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                   <button
                     type="button"
                     onClick={() => {
-                      setStartWeek("W29");
+                      setStartWeek(availableWeeks[0] || "W29");
                       setEndWeek(latestWeek);
                     }}
                     className="px-2 py-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                   >
-                    Reset (Semua W29-{latestWeek})
+                    Reset (Semua {availableWeeks[0] || "W29"}-{latestWeek})
                   </button>
                 </div>
               ) : (
