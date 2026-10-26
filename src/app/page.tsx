@@ -16,6 +16,7 @@ import { InputProductionView } from "../components/InputProductionView";
 import { CoalProductionDashboardView } from "../components/CoalProductionDashboardView";
 import { CoalProductionReportView } from "../components/CoalProductionReportView";
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
+import { GLDataView } from "../components/GLDataView";
 
 import { Menu, Bell, MapPin } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
@@ -246,12 +247,7 @@ export default function Home() {
               onNavigateToDashboard={() => setActiveMenu("coal-dashboard")}
             />
           ) : activeMenu === "gl-data" ? (
-            <UnderDevelopmentView
-              user={currentUser}
-              moduleName="GL Data (General Ledger)"
-              moduleCategory="Cost Analytics"
-              onBackToDashboard={() => setActiveMenu("dashboard")}
-            />
+            <GLDataView user={currentUser} />
           ) : (
             <DashboardView
               user={currentUser}
