@@ -13,8 +13,6 @@ import {
   Upload,
   RefreshCw,
   Search,
-  Filter,
-  FileSpreadsheet,
   Calendar,
   Building2,
   TableProperties,
@@ -28,13 +26,23 @@ import {
   ChevronsRight,
   Database,
   ArrowUpDown,
-  FileText,
-  BadgeAlert,
+  ArrowUp,
+  ArrowDown,
+  Download,
+  FileSpreadsheet,
+  Coins,
+  MapPin,
+  Tag,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 interface GLDataViewProps {
   user: User;
 }
+
+type SortField = "code" | "name" | "mph" | "sny" | "total";
+type SortDirection = "asc" | "desc";
 
 export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   // Periods
@@ -45,11 +53,15 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   // Tabs: "summary" (Sheet2 - Kode Beban) vs "transactions" (Sheet1 - Detail Jurnal)
   const [activeTab, setActiveTab] = useState<"summary" | "transactions">("summary");
 
-  // Filters
-  const [selectedSite, setSelectedSite] = useState<string>("ALL"); // "ALL" | "MPH" | "SNY" | "HOF"
+  // Filters (Head Office omitted per requirement)
+  const [selectedSite, setSelectedSite] = useState<"ALL" | "MPH" | "SNY">("ALL");
   const [summarySearch, setSummarySearch] = useState<string>("");
   const [txSearch, setTxSearch] = useState<string>("");
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<string>("");
+
+  // Sorting for Tab 1
+  const [sortField, setSortField] = useState<SortField>("code");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Data states
   const [summaries, setSummaries] = useState<GLExpenseSummaryItem[]>([]);
@@ -70,6 +82,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isTxLoading, setIsTxLoading] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Upload Modal State
@@ -183,6 +196,60 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     return () => clearTimeout(timer);
   }, [txSearch]);
 
+  // Refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    if (selectedPeriodId) {
+      await loadSummaries(selectedPeriodId);
+      if (activeTab === "transactions") {
+        await loadTransactions(pagination.page);
+      }
+    }
+    setTimeout(() => setIsRefreshing(false), 400);
+  };
+
+  // Sorting logic for Sheet2 Summaries
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedSummaries = useMemo(() => {
+    return [...summaries].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      if (sortField === "code") {
+        aVal = a.accountCode;
+        bVal = b.accountCode;
+      } else if (sortField === "name") {
+        aVal = a.accountName.toLowerCase();
+        bVal = b.accountName.toLowerCase();
+      } else if (sortField === "mph") {
+        aVal = a.mphAmount;
+        bVal = b.mphAmount;
+      } else if (sortField === "sny") {
+        aVal = a.snyAmount;
+        bVal = b.snyAmount;
+      } else {
+        aVal = a.mphAmount + a.snyAmount;
+        bVal = b.mphAmount + b.snyAmount;
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [summaries, sortField, sortDirection]);
+
+  // Total Site Operational Cost (MPH + SNY)
+  const totalSiteCost = useMemo(() => {
+    return summaryTotals.MPH + summaryTotals.SNY;
+  }, [summaryTotals]);
+
   // Handle file select for upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -225,7 +292,6 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
       setUploadSuccess(
         `Sukses! Data GL periode "${result.periodName}" berhasil disimpan (${result.totalTransactions.toLocaleString()} baris transaksi).`
       );
-      // Reload periods & data
       await loadPeriods();
       setTimeout(() => {
         setIsUploadModalOpen(false);
@@ -241,43 +307,99 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     }
   };
 
+  // Export Sheet2 to CSV
+  const exportSummaryToCSV = () => {
+    if (sortedSummaries.length === 0) return;
+    const headers = ["No", "Kode Akun", "Nama Akun Beban", "MPH (IDR)", "SNY (IDR)", "Total Site (IDR)"];
+    const rows = sortedSummaries.map((item, idx) => [
+      idx + 1,
+      `"${item.accountCode}"`,
+      `"${item.accountName.replace(/"/g, '""')}"`,
+      Math.round(item.mphAmount),
+      Math.round(item.snyAmount),
+      Math.round(item.mphAmount + item.snyAmount),
+    ]);
+    rows.push([
+      "Total",
+      "",
+      "Total Biaya Site",
+      Math.round(summaryTotals.MPH),
+      Math.round(summaryTotals.SNY),
+      Math.round(totalSiteCost),
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Rekap_Kode_Beban_${activePeriod?.periodName || "GL"}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Top Action & Filter Bar (NO DASHBOARD AS REQUESTED) */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Left: Title & Active Period Info */}
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-orange-50 text-[#e95623] border border-orange-200 flex items-center justify-center shrink-0">
-              <Database size={20} />
+      {/* ================= REFINED TOP CONTROL & FILTER BAR ================= */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs transition-all space-y-4">
+        {/* Row 1: Header Title, Metadata Strips, and Action Buttons */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          {/* Left Title & Status Badges */}
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#e95623] to-[#d44818] shadow-md shadow-orange-500/20 text-white flex items-center justify-center shrink-0">
+              <Database size={22} className="stroke-[2.2]" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">
+
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
                   General Ledger (GL) Data
                 </h1>
                 {activePeriod && (
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-50 text-[#e95623] border border-orange-200">
-                    {activePeriod.periodName}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-orange-50 text-[#e95623] border border-orange-200/90">
+                    <Calendar size={11} className="shrink-0" />
+                    <span>{activePeriod.periodName}</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Buku besar transaksi biaya operasional per site (Sheet1 Detail &amp; Sheet2 Rekap Beban)
-              </p>
+
+              {/* Metadata Pill Strip (Executive & Compact) */}
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 font-medium pt-0.5">
+                <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-600">
+                  <MapPin size={11} className="text-[#e95623]" />
+                  <span>Site: Muara Pahu &amp; Senyiur</span>
+                </span>
+
+                <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-700 font-semibold">
+                  <Coins size={11} className="text-amber-600" />
+                  <span>Total Biaya:</span>
+                  <span className="font-mono font-bold text-[#e95623]">
+                    {formatCurrency(totalSiteCost)}
+                  </span>
+                </span>
+
+                {activePeriod && (
+                  <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-600">
+                    <FileSpreadsheet size={11} className="text-blue-600" />
+                    <span>{activePeriod.totalTransactions.toLocaleString()} Transaksi</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right: Period Dropdown, Refresh, and Upload Button */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          {/* Right Action Controls: Period Selector, Refresh, Upload CTA */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             {periods.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
-                <Calendar size={14} className="text-slate-400" />
-                <span className="text-slate-500 font-medium">Periode:</span>
+              <div className="flex items-center gap-2 bg-slate-50/90 border border-slate-200 px-3 py-1.5 rounded-xl text-xs hover:border-slate-300 transition-colors">
+                <Calendar size={14} className="text-slate-400 shrink-0" />
+                <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                  Periode:
+                </span>
                 <select
                   value={selectedPeriodId}
                   onChange={(e) => setSelectedPeriodId(e.target.value)}
-                  className="bg-transparent font-bold text-slate-800 focus:outline-hidden cursor-pointer"
+                  className="bg-transparent font-bold text-slate-800 focus:outline-hidden cursor-pointer text-xs"
                 >
                   {periods.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -289,16 +411,12 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
             )}
 
             <button
-              onClick={() => {
-                if (selectedPeriodId) {
-                  loadSummaries(selectedPeriodId);
-                  if (activeTab === "transactions") loadTransactions(pagination.page);
-                }
-              }}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
-              title="Refresh Data"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+              title="Refresh Data GL"
             >
-              <RefreshCw size={15} />
+              <RefreshCw size={15} className={isRefreshing ? "animate-spin text-[#e95623]" : ""} />
             </button>
 
             <button
@@ -309,30 +427,36 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 setUploadSuccess(null);
                 setIsUploadModalOpen(true);
               }}
-              className="px-4 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 hover:shadow-orange-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
             >
-              <Upload size={14} />
+              <Upload size={14} className="stroke-[2.4]" />
               <span>Upload Data GL (.xls)</span>
             </button>
           </div>
         </div>
 
-        {/* Tab Switcher & Site Filter Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-          {/* Tabs: Sheet2 vs Sheet1 */}
-          <div className="flex items-center bg-slate-100/80 p-1 rounded-xl">
+        {/* Row 2: Navigation Segmented Tabs & Site Filter Pills */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+          {/* Segmented Control Tabs */}
+          <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl gap-1">
             <button
               onClick={() => setActiveTab("summary")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === "summary"
-                  ? "bg-white text-slate-800 shadow-xs"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              <TableProperties size={14} />
+              <TableProperties size={14} className={activeTab === "summary" ? "text-[#e95623]" : ""} />
               <span>Rekap Kode Beban (Sheet2)</span>
               {summaries.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-600 font-bold">
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    activeTab === "summary"
+                      ? "bg-orange-100 text-[#e95623]"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
                   {summaries.length}
                 </span>
               )}
@@ -342,92 +466,131 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               onClick={() => setActiveTab("transactions")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === "transactions"
-                  ? "bg-white text-slate-800 shadow-xs"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              <ListFilter size={14} />
+              <ListFilter size={14} className={activeTab === "transactions" ? "text-[#e95623]" : ""} />
               <span>Detail Jurnal GL (Sheet1)</span>
               {activePeriod && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-600 font-bold">
-                  {activePeriod.totalTransactions.toLocaleString()}
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    activeTab === "transactions"
+                      ? "bg-orange-100 text-[#e95623]"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {pagination.total > 0 ? pagination.total.toLocaleString() : activePeriod.totalTransactions.toLocaleString()}
                 </span>
               )}
             </button>
           </div>
 
-          {/* Site Filter Buttons */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          {/* Site Filter Pills (Head Office omitted per requirement) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
               Site:
             </span>
             {[
-              { id: "ALL", label: "Semua Site" },
-              { id: "MPH", label: "Muara Pahu (MPH)" },
-              { id: "SNY", label: "Senyiur (SNY)" },
-            ].map((st) => (
-              <button
-                key={st.id}
-                onClick={() => setSelectedSite(st.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer whitespace-nowrap ${
-                  selectedSite === st.id
-                    ? "bg-slate-800 text-white border-slate-800 shadow-xs"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                {st.label}
-              </button>
-            ))}
+              { id: "ALL" as const, label: "Semua Site", count: null },
+              { id: "MPH" as const, label: "Muara Pahu (MPH)", color: "blue" },
+              { id: "SNY" as const, label: "Senyiur (SNY)", color: "emerald" },
+            ].map((st) => {
+              const isActive = selectedSite === st.id;
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => setSelectedSite(st.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    isActive
+                      ? st.id === "MPH"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                        : st.id === "SNY"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                        : "bg-slate-900 text-white border-slate-900 shadow-xs"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <MapPin size={12} className={isActive ? "text-white" : "text-slate-400"} />
+                  <span>{st.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* ================= MAIN CONTENT AREA ================= */}
       {isLoading ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs">
-          <RefreshCw size={28} className="animate-spin text-[#e95623] mx-auto mb-3" />
-          <p className="text-xs font-semibold text-slate-500">Memuat data General Ledger...</p>
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-16 text-center shadow-xs space-y-3">
+          <RefreshCw size={32} className="animate-spin text-[#e95623] mx-auto" />
+          <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
+            Memuat Data General Ledger...
+          </p>
         </div>
       ) : periods.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs space-y-3">
-          <div className="h-12 w-12 rounded-2xl bg-orange-50 text-[#e95623] border border-orange-200 flex items-center justify-center mx-auto">
-            <FileSpreadsheet size={24} />
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-12 text-center shadow-xs space-y-4 max-w-xl mx-auto my-6">
+          <div className="h-14 w-14 rounded-2xl bg-orange-50 text-[#e95623] border border-orange-200 flex items-center justify-center mx-auto shadow-inner">
+            <FileSpreadsheet size={28} />
           </div>
-          <h3 className="text-sm font-bold text-slate-800">Belum Ada Data GL yang Diunggah</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            Silakan unggah file Excel General Ledger bulanan (.xls / .xlsx) yang berisi Sheet1 (Data Jurnal) dan Sheet2 (Rekap Kode Beban).
-          </p>
+          <div>
+            <h3 className="text-base font-bold text-slate-800">Belum Ada Data GL yang Diunggah</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed mt-1.5">
+              Silakan unggah file Excel General Ledger bulanan (.xls / .xlsx) yang berisi Sheet1 (Data Jurnal) dan Sheet2 (Rekap Kode Beban).
+            </p>
+          </div>
           <button
             onClick={() => setIsUploadModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
+            className="px-5 py-2.5 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-md shadow-orange-500/20 cursor-pointer inline-flex items-center gap-2"
           >
             <Upload size={14} />
             <span>Upload File GL Sekarang</span>
           </button>
         </div>
       ) : activeTab === "summary" ? (
-        /* ================= TAB 1: SHEET2 REKAP KODE BEBAN ================= */
+        /* ================= TAB 1: SHEET2 REKAP KODE BEBAN (POLISHED) ================= */
         <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
           {/* Table Toolbar */}
-          <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+          <div className="p-3.5 sm:p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
                 Rekapitulasi 38 Akun Beban Site (Sheet2)
               </span>
-              <span className="text-[11px] text-slate-400 font-medium">
-                &bull; Total Biaya Site: <strong>{formatCurrency(summaryTotals.MPH + summaryTotals.SNY)}</strong>
+              <span className="text-[11px] text-slate-400 font-medium hidden md:inline">
+                &bull; Total Biaya Site: <strong className="text-slate-800 font-mono">{formatCurrency(totalSiteCost)}</strong>
               </span>
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari kode / nama akun..."
-                value={summarySearch}
-                onChange={(e) => setSummarySearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
-              />
+            <div className="flex items-center gap-2">
+              {/* Search input with clear button */}
+              <div className="relative w-full sm:w-64">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Cari kode / nama akun..."
+                  value={summarySearch}
+                  onChange={(e) => setSummarySearch(e.target.value)}
+                  className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400"
+                />
+                {summarySearch && (
+                  <button
+                    onClick={() => setSummarySearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {/* Export CSV button */}
+              <button
+                onClick={exportSummaryToCSV}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+                title="Download CSV Rekap Kode Beban"
+              >
+                <Download size={13} />
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
             </div>
           </div>
 
@@ -435,99 +598,164 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
+                <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider select-none">
                   <th className="py-3 px-3.5 w-12 text-center">No</th>
-                  <th className="py-3 px-3.5 w-32">Kode Akun</th>
-                  <th className="py-3 px-3.5 min-w-60">Nama Akun Beban</th>
+
                   <th
-                    className={`py-3 px-3.5 text-right w-44 ${
-                      selectedSite === "MPH" ? "bg-blue-100/60 font-black text-blue-900" : ""
+                    onClick={() => handleSort("code")}
+                    className="py-3 px-3.5 w-36 cursor-pointer hover:bg-slate-200/70 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Kode Akun</span>
+                      {sortField === "code" ? (
+                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+
+                  <th
+                    onClick={() => handleSort("name")}
+                    className="py-3 px-3.5 min-w-60 cursor-pointer hover:bg-slate-200/70 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Nama Akun Beban</span>
+                      {sortField === "name" ? (
+                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+
+                  <th
+                    onClick={() => handleSort("mph")}
+                    className={`py-3 px-3.5 text-right w-44 cursor-pointer hover:bg-blue-100/70 transition-colors ${
+                      selectedSite === "MPH" ? "bg-blue-100/80 font-black text-blue-900" : ""
                     }`}
                   >
-                    MPH (IDR)
+                    <div className="flex items-center justify-end gap-1">
+                      <span>MPH (IDR)</span>
+                      {sortField === "mph" ? (
+                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-400" />
+                      )}
+                    </div>
                   </th>
+
                   <th
-                    className={`py-3 px-3.5 text-right w-40 ${
-                      selectedSite === "SNY" ? "bg-emerald-100/60 font-black text-emerald-900" : ""
+                    onClick={() => handleSort("sny")}
+                    className={`py-3 px-3.5 text-right w-40 cursor-pointer hover:bg-emerald-100/70 transition-colors ${
+                      selectedSite === "SNY" ? "bg-emerald-100/80 font-black text-emerald-900" : ""
                     }`}
                   >
-                    SNY (IDR)
+                    <div className="flex items-center justify-end gap-1">
+                      <span>SNY (IDR)</span>
+                      {sortField === "sny" ? (
+                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-400" />
+                      )}
+                    </div>
                   </th>
-                  <th className="py-3 px-3.5 text-right w-44 bg-slate-200/70 font-black text-slate-900">
-                    Total Site (IDR)
+
+                  <th
+                    onClick={() => handleSort("total")}
+                    className="py-3 px-3.5 text-right w-48 bg-slate-200/80 font-black text-slate-900 cursor-pointer hover:bg-slate-300/80 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Total Site (IDR)</span>
+                      {sortField === "total" ? (
+                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-400" />
+                      )}
+                    </div>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {summaries.length === 0 ? (
+                {sortedSummaries.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400 text-xs">
-                      Tidak ada akun beban yang sesuai dengan pencarian.
+                    <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                      Tidak ada akun beban yang sesuai dengan pencarian &quot;{summarySearch}&quot;.
                     </td>
                   </tr>
                 ) : (
-                  summaries.map((item, idx) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-orange-50/40 transition-colors group cursor-pointer"
-                      onClick={() => {
-                        setSelectedAccountFilter(item.accountCode);
-                        setActiveTab("transactions");
-                      }}
-                      title="Klik untuk melihat transaksi jurnal akun ini"
-                    >
-                      <td className="py-2.5 px-3.5 text-center text-slate-400 text-[11px]">
-                        {idx + 1}
-                      </td>
-                      <td className="py-2.5 px-3.5 font-mono font-bold text-slate-800 text-[11px]">
-                        {item.accountCode}
-                      </td>
-                      <td className="py-2.5 px-3.5 font-bold text-slate-800 group-hover:text-[#e95623] transition-colors">
-                        {item.accountName}
-                      </td>
-                      <td
-                        className={`py-2.5 px-3.5 text-right font-mono ${
-                          selectedSite === "MPH" ? "bg-blue-50/60 font-bold" : ""
+                  sortedSummaries.map((item, idx) => {
+                    const rowSiteTotal = item.mphAmount + item.snyAmount;
+                    return (
+                      <tr
+                        key={item.id}
+                        className={`hover:bg-orange-50/50 transition-colors group cursor-pointer ${
+                          idx % 2 === 1 ? "bg-slate-50/40" : "bg-white"
                         }`}
+                        onClick={() => {
+                          setSelectedAccountFilter(item.accountCode);
+                          setActiveTab("transactions");
+                        }}
+                        title="Klik untuk melihat transaksi jurnal akun ini"
                       >
-                        {item.mphAmount > 0 ? formatNumber(item.mphAmount) : "-"}
-                      </td>
-                      <td
-                        className={`py-2.5 px-3.5 text-right font-mono ${
-                          selectedSite === "SNY" ? "bg-emerald-50/60 font-bold" : ""
-                        }`}
-                      >
-                        {item.snyAmount > 0 ? formatNumber(item.snyAmount) : "-"}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-right font-mono font-bold text-slate-900 bg-slate-50/60">
-                        {formatNumber(item.mphAmount + item.snyAmount)}
-                      </td>
-                    </tr>
-                  ))
+                        <td className="py-2.5 px-3.5 text-center text-slate-400 text-[11px] font-mono">
+                          {idx + 1}
+                        </td>
+                        <td className="py-2.5 px-3.5">
+                          <span className="font-mono font-bold text-slate-800 text-[11px] bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/70">
+                            {item.accountCode}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3.5 font-bold text-slate-800 group-hover:text-[#e95623] transition-colors">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>{item.accountName}</span>
+                            <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-[#e95623] transition-opacity shrink-0" />
+                          </div>
+                        </td>
+                        <td
+                          className={`py-2.5 px-3.5 text-right font-mono ${
+                            selectedSite === "MPH" ? "bg-blue-50/70 font-bold text-blue-900" : ""
+                          }`}
+                        >
+                          {item.mphAmount > 0 ? formatNumber(item.mphAmount) : "-"}
+                        </td>
+                        <td
+                          className={`py-2.5 px-3.5 text-right font-mono ${
+                            selectedSite === "SNY" ? "bg-emerald-50/70 font-bold text-emerald-900" : ""
+                          }`}
+                        >
+                          {item.snyAmount > 0 ? formatNumber(item.snyAmount) : "-"}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-right font-mono font-bold text-slate-900 bg-slate-50/70">
+                          {formatNumber(rowSiteTotal)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
               {/* Grand Total Footer */}
               <tfoot>
-                <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 text-xs">
-                  <td colSpan={3} className="py-3 px-3.5 text-right uppercase tracking-wider">
-                    Total
+                <tr className="bg-slate-100/95 font-black text-slate-900 border-t-2 border-slate-300 text-xs">
+                  <td colSpan={3} className="py-3 px-3.5 text-right uppercase tracking-wider text-slate-700">
+                    Total Keseluruhan (38 Akun)
                   </td>
                   <td
                     className={`py-3 px-3.5 text-right font-mono ${
-                      selectedSite === "MPH" ? "bg-blue-100/70" : ""
+                      selectedSite === "MPH" ? "bg-blue-100 text-blue-950 font-black" : "text-slate-800"
                     }`}
                   >
                     {formatNumber(summaryTotals.MPH)}
                   </td>
                   <td
                     className={`py-3 px-3.5 text-right font-mono ${
-                      selectedSite === "SNY" ? "bg-emerald-100/70" : ""
+                      selectedSite === "SNY" ? "bg-emerald-100 text-emerald-950 font-black" : "text-slate-800"
                     }`}
                   >
                     {formatNumber(summaryTotals.SNY)}
                   </td>
-                  <td className="py-3 px-3.5 text-right font-mono text-sm bg-slate-200/90 text-[#e95623]">
-                    {formatNumber(summaryTotals.MPH + summaryTotals.SNY)}
+                  <td className="py-3 px-3.5 text-right font-mono text-sm bg-slate-200 text-[#e95623]">
+                    {formatNumber(totalSiteCost)}
                   </td>
                 </tr>
               </tfoot>
@@ -535,23 +763,25 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           </div>
         </div>
       ) : (
-        /* ================= TAB 2: SHEET1 DETAIL JURNAL TRANSAKSI ================= */
+        /* ================= TAB 2: SHEET1 DETAIL JURNAL TRANSAKSI (POLISHED) ================= */
         <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden space-y-0">
           {/* Filter & Search Toolbar */}
-          <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+          <div className="p-3.5 sm:p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
                 Detail Transaksi Jurnal (Sheet1)
               </span>
 
               {selectedAccountFilter && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-orange-100/80 text-[#e95623] font-bold border border-orange-200">
-                  <span>Filter Akun: {selectedAccountFilter}</span>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs bg-orange-100 text-[#e95623] font-bold border border-orange-200 shadow-2xs">
+                  <Tag size={12} />
+                  <span>Akun: {selectedAccountFilter}</span>
                   <button
                     onClick={() => setSelectedAccountFilter("")}
-                    className="hover:text-red-600 cursor-pointer"
+                    className="hover:text-red-700 cursor-pointer ml-0.5"
+                    title="Hapus filter akun"
                   >
-                    <X size={12} />
+                    <X size={13} />
                   </button>
                 </div>
               )}
@@ -565,8 +795,16 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   placeholder="Cari voucher, akun, vendor, remark..."
                   value={txSearch}
                   onChange={(e) => setTxSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
+                  className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400"
                 />
+                {txSearch && (
+                  <button
+                    onClick={() => setTxSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
 
               <select
@@ -588,15 +826,17 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           {/* Table */}
           <div className="overflow-x-auto min-h-95">
             {isTxLoading ? (
-              <div className="py-16 text-center">
-                <RefreshCw size={24} className="animate-spin text-[#e95623] mx-auto mb-2" />
-                <p className="text-xs text-slate-500 font-medium">Memuat baris transaksi...</p>
+              <div className="py-20 text-center space-y-2.5">
+                <RefreshCw size={26} className="animate-spin text-[#e95623] mx-auto" />
+                <p className="text-xs text-slate-600 font-bold uppercase tracking-wider">
+                  Memuat Baris Transaksi...
+                </p>
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
-                    <th className="py-3 px-3 w-24">Tanggal</th>
+                  <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider select-none">
+                    <th className="py-3 px-3 w-28">Tanggal</th>
                     <th className="py-3 px-3 w-32">No. Voucher</th>
                     <th className="py-3 px-3 min-w-50">Akun Beban</th>
                     <th className="py-3 px-2.5 w-16 text-center">CC</th>
@@ -609,50 +849,61 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {transactions.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
-                        Tidak ada transaksi yang cocok dengan filter atau pencarian.
+                      <td colSpan={8} className="py-16 text-center text-slate-400 text-xs">
+                        Tidak ada transaksi yang cocok dengan filter atau pencarian saat ini.
                       </td>
                     </tr>
                   ) : (
-                    transactions.map((tx) => (
-                      <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-2 px-3 font-mono text-slate-500 whitespace-nowrap text-[11px]">
+                    transactions.map((tx, idx) => (
+                      <tr
+                        key={tx.id}
+                        className={`hover:bg-slate-50/90 transition-colors ${
+                          idx % 2 === 1 ? "bg-slate-50/30" : "bg-white"
+                        }`}
+                      >
+                        <td className="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap text-[11px]">
                           {tx.date}
                         </td>
-                        <td className="py-2 px-3 font-mono font-bold text-slate-800 text-[11px]">
-                          {tx.regNo || "-"}
+                        <td className="py-2.5 px-3">
+                          {tx.regNo ? (
+                            <span className="font-mono font-bold text-slate-800 text-[11px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200/70 whitespace-nowrap">
+                              {tx.regNo}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 font-mono">-</span>
+                          )}
                         </td>
-                        <td className="py-2 px-3">
-                          <div className="font-bold text-slate-800 text-[11px] line-clamp-1">
+                        <td className="py-2.5 px-3">
+                          <div className="font-bold text-slate-900 text-[11px] line-clamp-1">
                             {tx.accountName}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
+                          <div className="text-[10px] text-slate-400 font-mono font-medium">
                             {tx.accountCode}
                           </div>
                         </td>
-                        <td className="py-2 px-2.5 text-center font-mono text-[10px] text-slate-500">
+                        <td className="py-2.5 px-2.5 text-center font-mono text-[10px] text-slate-500">
                           {tx.costCenter || "-"}
                         </td>
-                        <td className="py-2 px-2.5 text-center whitespace-nowrap">
+                        <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider ${
                               tx.projectArea === "MPH"
-                                ? "bg-blue-100 text-blue-800"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
                                 : tx.projectArea === "SNY"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-amber-100 text-amber-800"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-slate-100 text-slate-700 border border-slate-200"
                             }`}
                           >
                             {tx.projectArea || "-"}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                           {formatNumber(tx.debet)}
                         </td>
-                        <td className="py-2 px-3 text-slate-700 text-[11px] max-w-50 truncate" title={tx.supplierName}>
+                        <td className="py-2.5 px-3 text-slate-700 text-[11px] max-w-50 truncate" title={tx.supplierName}>
                           {tx.supplierName || "-"}
                         </td>
-                        <td className="py-2 px-3 text-slate-600 text-[11px] max-w-60 truncate" title={tx.remark}>
+                        <td className="py-2.5 px-3 text-slate-600 text-[11px] max-w-60 truncate" title={tx.remark}>
                           {tx.remark || "-"}
                         </td>
                       </tr>
@@ -664,24 +915,24 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           </div>
 
           {/* Pagination Footer */}
-          <div className="p-3.5 sm:p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+          <div className="p-3.5 sm:p-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
             <div className="text-xs text-slate-500 font-medium">
               Menampilkan{" "}
-              <strong>
+              <strong className="text-slate-800">
                 {pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1}
               </strong>{" "}
               -{" "}
-              <strong>
+              <strong className="text-slate-800">
                 {Math.min(pagination.page * pagination.limit, pagination.total)}
               </strong>{" "}
-              dari <strong>{pagination.total.toLocaleString()}</strong> transaksi
+              dari <strong className="text-slate-800">{pagination.total.toLocaleString()}</strong> transaksi
             </div>
 
             <div className="flex items-center gap-1.5">
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => loadTransactions(1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-2xs"
                 title="Halaman Pertama"
               >
                 <ChevronsLeft size={14} />
@@ -689,20 +940,20 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => loadTransactions(pagination.page - 1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-2xs"
                 title="Sebelumnya"
               >
                 <ChevronLeft size={14} />
               </button>
 
-              <span className="px-3 py-1 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg">
+              <span className="px-3 py-1 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg shadow-2xs">
                 Halaman {pagination.page} / {pagination.totalPages || 1}
               </span>
 
               <button
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => loadTransactions(pagination.page + 1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-2xs"
                 title="Selanjutnya"
               >
                 <ChevronRight size={14} />
@@ -710,7 +961,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => loadTransactions(pagination.totalPages)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-2xs"
                 title="Halaman Terakhir"
               >
                 <ChevronsRight size={14} />
@@ -720,15 +971,15 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         </div>
       )}
 
-      {/* ================= MODAL UPLOAD DATA GL ================= */}
+      {/* ================= MODAL UPLOAD DATA GL (POLISHED) ================= */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 border border-slate-200">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-orange-50 text-[#e95623] border border-orange-200 flex items-center justify-center">
-                  <Upload size={18} />
+                <div className="h-10 w-10 rounded-xl bg-orange-50 text-[#e95623] border border-orange-200 flex items-center justify-center shadow-xs">
+                  <Upload size={18} className="stroke-[2.2]" />
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-800">Upload File General Ledger</h3>
@@ -750,7 +1001,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 hover:border-[#e95623] rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-orange-50/20 transition-all cursor-pointer space-y-2.5"
+              className="border-2 border-dashed border-slate-300 hover:border-[#e95623] rounded-2xl p-7 text-center bg-slate-50/50 hover:bg-orange-50/20 transition-all cursor-pointer space-y-2.5 group"
             >
               <input
                 ref={fileInputRef}
@@ -759,7 +1010,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <div className="h-12 w-12 rounded-2xl bg-white shadow-xs border border-slate-200 text-[#e95623] flex items-center justify-center mx-auto">
+              <div className="h-12 w-12 rounded-2xl bg-white shadow-xs border border-slate-200 text-[#e95623] flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
                 <FileSpreadsheet size={24} />
               </div>
               <div>
@@ -774,8 +1025,8 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
             {/* Preview Status & Details */}
             {isPreviewing && (
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-2">
-                <RefreshCw size={20} className="animate-spin text-[#e95623] mx-auto" />
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+                <RefreshCw size={22} className="animate-spin text-[#e95623] mx-auto" />
                 <p className="text-xs font-bold text-slate-700">
                   Menganalisis lembar Sheet1 &amp; Sheet2...
                 </p>
@@ -783,14 +1034,14 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
             )}
 
             {uploadError && (
-              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-700">
+              <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-700">
                 <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
                 <span>{uploadError}</span>
               </div>
             )}
 
             {uploadSuccess && (
-              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs text-emerald-800 font-bold">
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs text-emerald-800 font-bold">
                 <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-600" />
                 <span>{uploadSuccess}</span>
               </div>
@@ -798,8 +1049,8 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
             {previewData && !uploadSuccess && (
               <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                  <span className="font-bold text-slate-600">Hasil Analisis File:</span>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
+                  <span className="font-bold text-slate-700">Hasil Analisis File:</span>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
                     <CheckCircle2 size={12} />
                     Valid &amp; Siap Disimpan
@@ -807,25 +1058,25 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Periode</span>
-                    <p className="font-bold text-slate-800 truncate">{previewData.periodName}</p>
+                    <p className="font-bold text-slate-800 truncate mt-0.5">{previewData.periodName}</p>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Total Debet</span>
-                    <p className="font-bold text-[#e95623] truncate">
+                    <p className="font-bold text-[#e95623] truncate mt-0.5">
                       {formatCurrency(previewData.totalDebet)}
                     </p>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Sheet1 (Jurnal)</span>
-                    <p className="font-bold text-slate-800">
+                    <p className="font-bold text-slate-800 mt-0.5">
                       {previewData.totalTransactions.toLocaleString()} baris
                     </p>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Sheet2 (Akun)</span>
-                    <p className="font-bold text-slate-800">{previewData.summaries.length} akun</p>
+                    <p className="font-bold text-slate-800 mt-0.5">{previewData.summaries.length} akun</p>
                   </div>
                 </div>
 
@@ -837,8 +1088,8 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                       {previewData.reconciliationMatch ? "Cocok 100% (Selisih Rp 0)" : "Terdapat deviasi"}
                     </strong>
                   </span>
-                  <span className="text-slate-400">
-                    MPH: {formatNumber(previewData.siteTotals.MPH)} | SNY: {formatNumber(previewData.siteTotals.SNY)}
+                  <span className="text-slate-500 font-medium">
+                    MPH: <strong className="font-mono text-slate-800">{formatNumber(previewData.siteTotals.MPH)}</strong> | SNY: <strong className="font-mono text-slate-800">{formatNumber(previewData.siteTotals.SNY)}</strong>
                   </span>
                 </div>
               </div>
@@ -858,7 +1109,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 type="button"
                 disabled={!previewData || isCommitting || !!uploadSuccess}
                 onClick={handleCommitUpload}
-                className="px-5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 cursor-pointer"
               >
                 {isCommitting ? (
                   <>
