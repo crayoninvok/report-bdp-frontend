@@ -138,29 +138,36 @@ export default function Home() {
                 className="h-8 w-8 object-contain md:hidden"
               />
               <div className="flex flex-col">
-                <span className="text-sm font-extrabold text-slate-800">
-                  {activeMenu === "input-cost"
-                    ? "Input Cost"
-                    : activeMenu === "reports"
-                    ? "Laporan Cost"
-                    : activeMenu === "summary"
-                    ? "Laporan Summary Operasional (PL Summary 1 OPS)"
-                    : activeMenu === "users"
-                    ? "Manajemen Pengguna (Super Admin)"
-                    : activeMenu === "cost-drivers"
-                    ? "Cost Driver"
-                    : activeMenu === "river-journal"
-                    ? "River Journal • Kedalaman Sungai Project Tabang"
-                    : activeMenu === "coal-dashboard"
-                    ? "Coal Hauling • Dashboard Produksi"
-                    : activeMenu === "coal-input"
-                    ? "Coal Hauling • Input Data Produksi"
-                    : activeMenu === "coal-reports"
-                    ? "Coal Hauling • Laporan Produksi"
-                    : activeMenu === "gl-data"
-                    ? "Cost Analytics • GL Data"
-                    : "Dashboard Cost"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold text-slate-800">
+                    {activeMenu === "input-cost"
+                      ? "Input Cost"
+                      : activeMenu === "reports"
+                      ? "Laporan Cost"
+                      : activeMenu === "summary"
+                      ? "Laporan Summary Operasional (PL Summary 1 OPS)"
+                      : activeMenu === "users"
+                      ? "Manajemen Pengguna (Super Admin)"
+                      : activeMenu === "cost-drivers"
+                      ? "Cost Driver"
+                      : activeMenu === "river-journal"
+                      ? "River Journal • Kedalaman Sungai Project Tabang"
+                      : activeMenu === "coal-dashboard"
+                      ? "Coal Hauling • Dashboard Produksi"
+                      : activeMenu === "coal-input"
+                      ? "Coal Hauling • Input Data Produksi"
+                      : activeMenu === "coal-reports"
+                      ? "Coal Hauling • Laporan Produksi"
+                      : activeMenu === "gl-data"
+                      ? "Cost Analytics • GL Data"
+                      : "Dashboard Cost"}
+                  </span>
+                  {activeMenu.startsWith("coal-") && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      Maintenance
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
                   Report Management Portal &bull; PT Batara Dharma Persada
                 </span>

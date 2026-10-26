@@ -46,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   interface NavSection {
     title: string;
+    badge?: string;
     items: NavItem[];
   }
 
@@ -63,23 +64,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       title: "Coal Hauling",
+      badge: "Maintenance",
       items: [
         {
           id: "coal-dashboard",
           label: "Dashboard Produksi",
           icon: Truck,
+          badge: "Maintenance",
         },
 
         {
           id: "coal-input",
           label: "Input Data Produksi",
           icon: FileSpreadsheet,
+          badge: "Maintenance",
         },
 
         {
           id: "coal-reports",
           label: "Laporan Produksi",
           icon: ClipboardList,
+          badge: "Maintenance",
         },
       ],
     },
@@ -229,8 +234,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             )}
             {!isCollapsed && (
-              <div className="px-2 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {section.title}
+              <div className="px-2 mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <span>{section.title}</span>
+                {section.badge && (
+                  <span className="text-[8px] font-extrabold uppercase tracking-tight px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                    {section.badge}
+                  </span>
+                )}
               </div>
             )}
 
@@ -264,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {item.badge && (
                         <span
                           className={`text-[8px] font-extrabold uppercase tracking-tight px-1.5 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
-                            item.badge === "Under Development"
+                            item.badge === "Under Development" || item.badge === "Maintenance"
                               ? "bg-amber-50 text-amber-700 border border-amber-200"
                               : "bg-batara-orange-50 text-[#e95623] border border-batara-orange-200"
                           }`}
