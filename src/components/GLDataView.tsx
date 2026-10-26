@@ -5,7 +5,6 @@ import { User } from "../types/auth";
 import {
   glService,
   GLPeriodItem,
-  GLExpenseSummaryItem,
   GLTransactionItem,
   GLPreviewData,
 } from "../services/glService";
@@ -16,7 +15,6 @@ import {
   Calendar,
   Building2,
   TableProperties,
-  ListFilter,
   CheckCircle2,
   AlertCircle,
   X,
@@ -25,24 +23,16 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Database,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Download,
   FileSpreadsheet,
   Coins,
   MapPin,
   Tag,
-  ArrowRight,
-  Sparkles,
 } from "lucide-react";
 
 interface GLDataViewProps {
   user: User;
 }
-
-type SortField = "code" | "name" | "mph" | "sny" | "total";
-type SortDirection = "asc" | "desc";
 
 export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   // Periods
@@ -50,28 +40,12 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [activePeriod, setActivePeriod] = useState<GLPeriodItem | null>(null);
 
-  // Tabs: "summary" (Sheet2 - Kode Beban) vs "transactions" (Sheet1 - Detail Jurnal)
-  const [activeTab, setActiveTab] = useState<"summary" | "transactions">("summary");
-
   // Filters (Head Office omitted per requirement)
   const [selectedSite, setSelectedSite] = useState<"ALL" | "MPH" | "SNY">("ALL");
-  const [summarySearch, setSummarySearch] = useState<string>("");
   const [txSearch, setTxSearch] = useState<string>("");
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<string>("");
 
-  // Sorting for Tab 1
-  const [sortField, setSortField] = useState<SortField>("code");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-
   // Data states
-  const [summaries, setSummaries] = useState<GLExpenseSummaryItem[]>([]);
-  const [summaryTotals, setSummaryTotals] = useState<{
-    HOF: number;
-    MPH: number;
-    SNY: number;
-    grandTotal: number;
-  }>({ HOF: 0, MPH: 0, SNY: 0, grandTotal: 0 });
-
   const [transactions, setTransactions] = useState<GLTransactionItem[]>([]);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -80,9 +54,11 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     totalPages: 1,
   });
 
+  const [totalSiteCost, setTotalSiteCost] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isTxLoading, setIsTxLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Upload Modal State
@@ -134,32 +110,29 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     loadPeriods();
   }, []);
 
-  // When selectedPeriodId changes, load Sheet2 summaries
+  // Fetch summary totals for the active period (to show Total Biaya Site)
   useEffect(() => {
     if (!selectedPeriodId) {
-      setSummaries([]);
+      setTotalSiteCost(0);
       return;
     }
-    loadSummaries(selectedPeriodId);
-  }, [selectedPeriodId, summarySearch]);
-
-  const loadSummaries = async (periodId: string) => {
-    try {
-      const res = await glService.getExpenseSummaries(periodId, summarySearch);
-      setSummaries(res.data);
-      if (res.period) {
-        setActivePeriod(res.period);
+    const fetchTotals = async () => {
+      try {
+        const res = await glService.getExpenseSummaries(selectedPeriodId);
+        if (res.period) {
+          setActivePeriod(res.period);
+        }
+        if (res.totals) {
+          setTotalSiteCost(res.totals.MPH + res.totals.SNY);
+        }
+      } catch (err) {
+        console.error(err);
       }
-      if (res.totals) {
-        setSummaryTotals(res.totals);
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Gagal memuat ringkasan kode beban GL.");
-    }
-  };
+    };
+    fetchTotals();
+  }, [selectedPeriodId]);
 
-  // Load transactions when tab is "transactions", or when filters change
+  // Load transactions when period, site filter, account filter change
   const loadTransactions = async (page = 1) => {
     if (!selectedPeriodId) return;
     setIsTxLoading(true);
@@ -182,14 +155,11 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   };
 
   useEffect(() => {
-    if (activeTab === "transactions") {
-      loadTransactions(1);
-    }
-  }, [activeTab, selectedPeriodId, selectedSite, selectedAccountFilter]);
+    loadTransactions(1);
+  }, [selectedPeriodId, selectedSite, selectedAccountFilter]);
 
   // Debounced search for transactions
   useEffect(() => {
-    if (activeTab !== "transactions") return;
     const timer = setTimeout(() => {
       loadTransactions(1);
     }, 400);
@@ -200,55 +170,18 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     if (selectedPeriodId) {
-      await loadSummaries(selectedPeriodId);
-      if (activeTab === "transactions") {
-        await loadTransactions(pagination.page);
+      await loadTransactions(pagination.page);
+      try {
+        const res = await glService.getExpenseSummaries(selectedPeriodId);
+        if (res.totals) {
+          setTotalSiteCost(res.totals.MPH + res.totals.SNY);
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
     setTimeout(() => setIsRefreshing(false), 400);
   };
-
-  // Sorting logic for Sheet2 Summaries
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const sortedSummaries = useMemo(() => {
-    return [...summaries].sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
-      if (sortField === "code") {
-        aVal = a.accountCode;
-        bVal = b.accountCode;
-      } else if (sortField === "name") {
-        aVal = a.accountName.toLowerCase();
-        bVal = b.accountName.toLowerCase();
-      } else if (sortField === "mph") {
-        aVal = a.mphAmount;
-        bVal = b.mphAmount;
-      } else if (sortField === "sny") {
-        aVal = a.snyAmount;
-        bVal = b.snyAmount;
-      } else {
-        aVal = a.mphAmount + a.snyAmount;
-        bVal = b.mphAmount + b.snyAmount;
-      }
-
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [summaries, sortField, sortDirection]);
-
-  // Total Site Operational Cost (MPH + SNY)
-  const totalSiteCost = useMemo(() => {
-    return summaryTotals.MPH + summaryTotals.SNY;
-  }, [summaryTotals]);
 
   // Handle file select for upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,41 +240,52 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     }
   };
 
-  // Export Sheet2 to CSV
-  const exportSummaryToCSV = () => {
-    if (sortedSummaries.length === 0) return;
-    const headers = ["No", "Kode Akun", "Nama Akun Beban", "MPH (IDR)", "SNY (IDR)", "Total Site (IDR)"];
-    const rows = sortedSummaries.map((item, idx) => [
-      idx + 1,
-      `"${item.accountCode}"`,
-      `"${item.accountName.replace(/"/g, '""')}"`,
-      Math.round(item.mphAmount),
-      Math.round(item.snyAmount),
-      Math.round(item.mphAmount + item.snyAmount),
-    ]);
-    rows.push([
-      "Total",
-      "",
-      "Total Biaya Site",
-      Math.round(summaryTotals.MPH),
-      Math.round(summaryTotals.SNY),
-      Math.round(totalSiteCost),
-    ]);
+  // Export Transactions to CSV
+  const exportTransactionsToCSV = async () => {
+    if (!selectedPeriodId) return;
+    setIsExporting(true);
+    try {
+      const res = await glService.getTransactions({
+        periodId: selectedPeriodId,
+        site: selectedSite !== "ALL" ? selectedSite : undefined,
+        accountCode: selectedAccountFilter || undefined,
+        q: txSearch,
+        page: 1,
+        limit: 5000,
+      });
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Rekap_Kode_Beban_${activePeriod?.periodName || "GL"}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const headers = ["Tanggal", "No Voucher", "Kode Akun", "Nama Akun", "Cost Center", "Site", "Debet (IDR)", "Customer/Vendor", "Remark"];
+      const rows = res.data.map((tx) => [
+        `"${tx.date}"`,
+        `"${tx.regNo || ""}"`,
+        `"${tx.accountCode || ""}"`,
+        `"${(tx.accountName || "").replace(/"/g, '""')}"`,
+        `"${tx.costCenter || ""}"`,
+        `"${tx.projectArea || ""}"`,
+        Math.round(tx.debet || 0),
+        `"${(tx.supplierName || "").replace(/"/g, '""')}"`,
+        `"${(tx.remark || "").replace(/"/g, '""')}"`,
+      ]);
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `GL_Data_${activePeriod?.periodName.replace(/[\/\s:]+/g, "_") || "Export"}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      console.error("Export error:", err);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
     <div className="space-y-4">
-      {/* ================= REFINED TOP CONTROL & FILTER BAR ================= */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs transition-all space-y-4">
+      {/* ================= TOP CONTROL & FILTER BAR ================= */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
         {/* Row 1: Header Title, Metadata Strips, and Action Buttons */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           {/* Left Title & Status Badges */}
@@ -363,7 +307,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 )}
               </div>
 
-              {/* Metadata Pill Strip (Executive & Compact) */}
+              {/* Metadata Pill Strip */}
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 font-medium pt-0.5">
                 <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-600">
                   <MapPin size={11} className="text-[#e95623]" />
@@ -372,7 +316,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
                 <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-700 font-semibold">
                   <Coins size={11} className="text-amber-600" />
-                  <span>Total Biaya:</span>
+                  <span>Total Biaya Site:</span>
                   <span className="font-mono font-bold text-[#e95623]">
                     {formatCurrency(totalSiteCost)}
                   </span>
@@ -381,7 +325,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 {activePeriod && (
                   <span className="inline-flex items-center gap-1 bg-slate-50 px-2.5 py-0.5 rounded-lg border border-slate-200/70 text-slate-600">
                     <FileSpreadsheet size={11} className="text-blue-600" />
-                    <span>{activePeriod.totalTransactions.toLocaleString()} Transaksi</span>
+                    <span>{pagination.total > 0 ? pagination.total.toLocaleString() : activePeriod.totalTransactions.toLocaleString()} Transaksi</span>
                   </span>
                 )}
               </div>
@@ -435,66 +379,16 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* Row 2: Navigation Segmented Tabs & Site Filter Pills */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-100">
-          {/* Segmented Control Tabs */}
-          <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl gap-1">
-            <button
-              onClick={() => setActiveTab("summary")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === "summary"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <TableProperties size={14} className={activeTab === "summary" ? "text-[#e95623]" : ""} />
-              <span>Rekap Kode Beban (Sheet2)</span>
-              {summaries.length > 0 && (
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                    activeTab === "summary"
-                      ? "bg-orange-100 text-[#e95623]"
-                      : "bg-slate-200 text-slate-600"
-                  }`}
-                >
-                  {summaries.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("transactions")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === "transactions"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <ListFilter size={14} className={activeTab === "transactions" ? "text-[#e95623]" : ""} />
-              <span>Detail Jurnal GL (Sheet1)</span>
-              {activePeriod && (
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                    activeTab === "transactions"
-                      ? "bg-orange-100 text-[#e95623]"
-                      : "bg-slate-200 text-slate-600"
-                  }`}
-                >
-                  {pagination.total > 0 ? pagination.total.toLocaleString() : activePeriod.totalTransactions.toLocaleString()}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Site Filter Pills (Head Office omitted per requirement) */}
+        {/* Row 2: Site Filter Pills (Direct, no Sheet2 tab) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-              Site:
+              Filter Site:
             </span>
             {[
-              { id: "ALL" as const, label: "Semua Site", count: null },
-              { id: "MPH" as const, label: "Muara Pahu (MPH)", color: "blue" },
-              { id: "SNY" as const, label: "Senyiur (SNY)", color: "emerald" },
+              { id: "ALL" as const, label: "Semua Site" },
+              { id: "MPH" as const, label: "Muara Pahu (MPH)" },
+              { id: "SNY" as const, label: "Senyiur (SNY)" },
             ].map((st) => {
               const isActive = selectedSite === st.id;
               return (
@@ -517,10 +411,18 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               );
             })}
           </div>
+
+          {/* Quick Stats on Active Filter */}
+          <div className="text-xs text-slate-500 font-medium">
+            <span>Total Transaksi: </span>
+            <strong className="text-slate-800 font-mono font-bold">
+              {pagination.total.toLocaleString()}
+            </strong>
+          </div>
         </div>
       </div>
 
-      {/* ================= MAIN CONTENT AREA ================= */}
+      {/* ================= MAIN CONTENT: GL TRANSACTIONS (SHEET1) DIRECTLY ================= */}
       {isLoading ? (
         <div className="bg-white border border-slate-200/90 rounded-2xl p-16 text-center shadow-xs space-y-3">
           <RefreshCw size={32} className="animate-spin text-[#e95623] mx-auto" />
@@ -536,7 +438,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           <div>
             <h3 className="text-base font-bold text-slate-800">Belum Ada Data GL yang Diunggah</h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed mt-1.5">
-              Silakan unggah file Excel General Ledger bulanan (.xls / .xlsx) yang berisi Sheet1 (Data Jurnal) dan Sheet2 (Rekap Kode Beban).
+              Silakan unggah file Excel General Ledger bulanan (.xls / .xlsx) untuk melihat dan mengelola data transaksi.
             </p>
           </div>
           <button
@@ -547,229 +449,13 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
             <span>Upload File GL Sekarang</span>
           </button>
         </div>
-      ) : activeTab === "summary" ? (
-        /* ================= TAB 1: SHEET2 REKAP KODE BEBAN (POLISHED) ================= */
-        <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
-          {/* Table Toolbar */}
-          <div className="p-3.5 sm:p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                Rekapitulasi 38 Akun Beban Site (Sheet2)
-              </span>
-              <span className="text-[11px] text-slate-400 font-medium hidden md:inline">
-                &bull; Total Biaya Site: <strong className="text-slate-800 font-mono">{formatCurrency(totalSiteCost)}</strong>
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Search input with clear button */}
-              <div className="relative w-full sm:w-64">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Cari kode / nama akun..."
-                  value={summarySearch}
-                  onChange={(e) => setSummarySearch(e.target.value)}
-                  className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400"
-                />
-                {summarySearch && (
-                  <button
-                    onClick={() => setSummarySearch("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-
-              {/* Export CSV button */}
-              <button
-                onClick={exportSummaryToCSV}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
-                title="Download CSV Rekap Kode Beban"
-              >
-                <Download size={13} />
-                <span className="hidden sm:inline">Export CSV</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider select-none">
-                  <th className="py-3 px-3.5 w-12 text-center">No</th>
-
-                  <th
-                    onClick={() => handleSort("code")}
-                    className="py-3 px-3.5 w-36 cursor-pointer hover:bg-slate-200/70 transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Kode Akun</span>
-                      {sortField === "code" ? (
-                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
-                      ) : (
-                        <ArrowUpDown size={11} className="text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-
-                  <th
-                    onClick={() => handleSort("name")}
-                    className="py-3 px-3.5 min-w-60 cursor-pointer hover:bg-slate-200/70 transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Nama Akun Beban</span>
-                      {sortField === "name" ? (
-                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
-                      ) : (
-                        <ArrowUpDown size={11} className="text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-
-                  <th
-                    onClick={() => handleSort("mph")}
-                    className={`py-3 px-3.5 text-right w-44 cursor-pointer hover:bg-blue-100/70 transition-colors ${
-                      selectedSite === "MPH" ? "bg-blue-100/80 font-black text-blue-900" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>MPH (IDR)</span>
-                      {sortField === "mph" ? (
-                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
-                      ) : (
-                        <ArrowUpDown size={11} className="text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-
-                  <th
-                    onClick={() => handleSort("sny")}
-                    className={`py-3 px-3.5 text-right w-40 cursor-pointer hover:bg-emerald-100/70 transition-colors ${
-                      selectedSite === "SNY" ? "bg-emerald-100/80 font-black text-emerald-900" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>SNY (IDR)</span>
-                      {sortField === "sny" ? (
-                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
-                      ) : (
-                        <ArrowUpDown size={11} className="text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-
-                  <th
-                    onClick={() => handleSort("total")}
-                    className="py-3 px-3.5 text-right w-48 bg-slate-200/80 font-black text-slate-900 cursor-pointer hover:bg-slate-300/80 transition-colors"
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>Total Site (IDR)</span>
-                      {sortField === "total" ? (
-                        sortDirection === "asc" ? <ArrowUp size={12} className="text-[#e95623]" /> : <ArrowDown size={12} className="text-[#e95623]" />
-                      ) : (
-                        <ArrowUpDown size={11} className="text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {sortedSummaries.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
-                      Tidak ada akun beban yang sesuai dengan pencarian &quot;{summarySearch}&quot;.
-                    </td>
-                  </tr>
-                ) : (
-                  sortedSummaries.map((item, idx) => {
-                    const rowSiteTotal = item.mphAmount + item.snyAmount;
-                    return (
-                      <tr
-                        key={item.id}
-                        className={`hover:bg-orange-50/50 transition-colors group cursor-pointer ${
-                          idx % 2 === 1 ? "bg-slate-50/40" : "bg-white"
-                        }`}
-                        onClick={() => {
-                          setSelectedAccountFilter(item.accountCode);
-                          setActiveTab("transactions");
-                        }}
-                        title="Klik untuk melihat transaksi jurnal akun ini"
-                      >
-                        <td className="py-2.5 px-3.5 text-center text-slate-400 text-[11px] font-mono">
-                          {idx + 1}
-                        </td>
-                        <td className="py-2.5 px-3.5">
-                          <span className="font-mono font-bold text-slate-800 text-[11px] bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/70">
-                            {item.accountCode}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3.5 font-bold text-slate-800 group-hover:text-[#e95623] transition-colors">
-                          <div className="flex items-center justify-between gap-2">
-                            <span>{item.accountName}</span>
-                            <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-[#e95623] transition-opacity shrink-0" />
-                          </div>
-                        </td>
-                        <td
-                          className={`py-2.5 px-3.5 text-right font-mono ${
-                            selectedSite === "MPH" ? "bg-blue-50/70 font-bold text-blue-900" : ""
-                          }`}
-                        >
-                          {item.mphAmount > 0 ? formatNumber(item.mphAmount) : "-"}
-                        </td>
-                        <td
-                          className={`py-2.5 px-3.5 text-right font-mono ${
-                            selectedSite === "SNY" ? "bg-emerald-50/70 font-bold text-emerald-900" : ""
-                          }`}
-                        >
-                          {item.snyAmount > 0 ? formatNumber(item.snyAmount) : "-"}
-                        </td>
-                        <td className="py-2.5 px-3.5 text-right font-mono font-bold text-slate-900 bg-slate-50/70">
-                          {formatNumber(rowSiteTotal)}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-              {/* Grand Total Footer */}
-              <tfoot>
-                <tr className="bg-slate-100/95 font-black text-slate-900 border-t-2 border-slate-300 text-xs">
-                  <td colSpan={3} className="py-3 px-3.5 text-right uppercase tracking-wider text-slate-700">
-                    Total Keseluruhan (38 Akun)
-                  </td>
-                  <td
-                    className={`py-3 px-3.5 text-right font-mono ${
-                      selectedSite === "MPH" ? "bg-blue-100 text-blue-950 font-black" : "text-slate-800"
-                    }`}
-                  >
-                    {formatNumber(summaryTotals.MPH)}
-                  </td>
-                  <td
-                    className={`py-3 px-3.5 text-right font-mono ${
-                      selectedSite === "SNY" ? "bg-emerald-100 text-emerald-950 font-black" : "text-slate-800"
-                    }`}
-                  >
-                    {formatNumber(summaryTotals.SNY)}
-                  </td>
-                  <td className="py-3 px-3.5 text-right font-mono text-sm bg-slate-200 text-[#e95623]">
-                    {formatNumber(totalSiteCost)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
       ) : (
-        /* ================= TAB 2: SHEET1 DETAIL JURNAL TRANSAKSI (POLISHED) ================= */
         <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden space-y-0">
-          {/* Filter & Search Toolbar */}
+          {/* Table Toolbar */}
           <div className="p-3.5 sm:p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                Detail Transaksi Jurnal (Sheet1)
+                Detail Transaksi General Ledger
               </span>
 
               {selectedAccountFilter && (
@@ -788,6 +474,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Search input with clear button */}
               <div className="relative w-full sm:w-72">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -807,6 +494,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 )}
               </div>
 
+              {/* Rows per page selector */}
               <select
                 value={pagination.limit}
                 onChange={(e) => {
@@ -820,6 +508,21 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 <option value={50}>50 baris</option>
                 <option value={100}>100 baris</option>
               </select>
+
+              {/* Export CSV button */}
+              <button
+                onClick={exportTransactionsToCSV}
+                disabled={isExporting || transactions.length === 0}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap disabled:opacity-40"
+                title="Download CSV Transaksi GL"
+              >
+                {isExporting ? (
+                  <RefreshCw size={13} className="animate-spin text-[#e95623]" />
+                ) : (
+                  <Download size={13} />
+                )}
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
             </div>
           </div>
 
@@ -971,7 +674,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         </div>
       )}
 
-      {/* ================= MODAL UPLOAD DATA GL (POLISHED) ================= */}
+      {/* ================= MODAL UPLOAD DATA GL ================= */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 border border-slate-200">
