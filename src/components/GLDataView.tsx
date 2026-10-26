@@ -427,7 +427,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 placeholder="Cari kode / nama akun..."
                 value={summarySearch}
                 onChange={(e) => setSummarySearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-orange-500"
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
               />
             </div>
           </div>
@@ -439,7 +439,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 <tr className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
                   <th className="py-3 px-3.5 w-12 text-center">No</th>
                   <th className="py-3 px-3.5 w-32">Kode Akun</th>
-                  <th className="py-3 px-3.5 min-w-[240px]">Nama Akun Beban</th>
+                  <th className="py-3 px-3.5 min-w-60">Nama Akun Beban</th>
                   <th
                     className={`py-3 px-3.5 text-right w-36 ${
                       selectedSite === "HOF" ? "bg-amber-100/60 font-black text-amber-900" : ""
@@ -587,7 +587,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   placeholder="Cari voucher, akun, vendor, remark..."
                   value={txSearch}
                   onChange={(e) => setTxSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-orange-500"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
                 />
               </div>
 
@@ -608,7 +608,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto min-h-[380px]">
+          <div className="overflow-x-auto min-h-95">
             {isTxLoading ? (
               <div className="py-16 text-center">
                 <RefreshCw size={24} className="animate-spin text-[#e95623] mx-auto mb-2" />
@@ -620,12 +620,12 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   <tr className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
                     <th className="py-3 px-3 w-24">Tanggal</th>
                     <th className="py-3 px-3 w-32">No. Voucher</th>
-                    <th className="py-3 px-3 min-w-[200px]">Akun Beban</th>
+                    <th className="py-3 px-3 min-w-50">Akun Beban</th>
                     <th className="py-3 px-2.5 w-16 text-center">CC</th>
                     <th className="py-3 px-2.5 w-16 text-center">Site</th>
                     <th className="py-3 px-3 text-right w-36">Debet (IDR)</th>
-                    <th className="py-3 px-3 min-w-[180px]">Customer / Vendor</th>
-                    <th className="py-3 px-3 min-w-[220px]">Keterangan (Remark)</th>
+                    <th className="py-3 px-3 min-w-45">Customer / Vendor</th>
+                    <th className="py-3 px-3 min-w-55">Keterangan (Remark)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -671,10 +671,10 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                         <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                           {formatNumber(tx.debet)}
                         </td>
-                        <td className="py-2 px-3 text-slate-700 text-[11px] max-w-[200px] truncate" title={tx.supplierName}>
+                        <td className="py-2 px-3 text-slate-700 text-[11px] max-w-50 truncate" title={tx.supplierName}>
                           {tx.supplierName || "-"}
                         </td>
-                        <td className="py-2 px-3 text-slate-600 text-[11px] max-w-[240px] truncate" title={tx.remark}>
+                        <td className="py-2 px-3 text-slate-600 text-[11px] max-w-60 truncate" title={tx.remark}>
                           {tx.remark || "-"}
                         </td>
                       </tr>
@@ -703,7 +703,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => loadTransactions(1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
                 title="Halaman Pertama"
               >
                 <ChevronsLeft size={14} />
@@ -711,7 +711,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => loadTransactions(pagination.page - 1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
                 title="Sebelumnya"
               >
                 <ChevronLeft size={14} />
@@ -724,7 +724,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => loadTransactions(pagination.page + 1)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
                 title="Selanjutnya"
               >
                 <ChevronRight size={14} />
@@ -732,7 +732,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               <button
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => loadTransactions(pagination.totalPages)}
-                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-slate-50"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer hover:bg-slate-50"
                 title="Halaman Terakhir"
               >
                 <ChevronsRight size={14} />
@@ -880,7 +880,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 type="button"
                 disabled={!previewData || isCommitting || !!uploadSuccess}
                 onClick={handleCommitUpload}
-                className="px-5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold shadow-xs disabled:opacity-40 disabled:cursor-not-allowed enabled:cursor-pointer transition-all flex items-center gap-2"
               >
                 {isCommitting ? (
                   <>
