@@ -44,6 +44,11 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   const [selectedSite, setSelectedSite] = useState<"ALL" | "MPH" | "SNY">("ALL");
   const [txSearch, setTxSearch] = useState<string>("");
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [expenseAccounts, setExpenseAccounts] = useState<
+    Array<{ accountCode: string; accountName: string }>
+  >([]);
 
   // Data states
   const [transactions, setTransactions] = useState<GLTransactionItem[]>([]);
@@ -110,10 +115,11 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     loadPeriods();
   }, []);
 
-  // Fetch summary totals for the active period (to show Total Biaya Site)
+  // Fetch summary totals and accounts list for the active period
   useEffect(() => {
     if (!selectedPeriodId) {
       setTotalSiteCost(0);
+      setExpenseAccounts([]);
       return;
     }
     const fetchTotals = async () => {
@@ -125,6 +131,13 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         if (res.totals) {
           setTotalSiteCost(res.totals.MPH + res.totals.SNY);
         }
+        if (res.data) {
+          const accounts = res.data.map((item) => ({
+            accountCode: item.accountCode,
+            accountName: item.accountName,
+          }));
+          setExpenseAccounts(accounts);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -132,7 +145,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     fetchTotals();
   }, [selectedPeriodId]);
 
-  // Load transactions when period, site filter, account filter change
+  // Load transactions when period, site filter, account filter, or date filters change
   const loadTransactions = async (page = 1) => {
     if (!selectedPeriodId) return;
     setIsTxLoading(true);
@@ -141,6 +154,8 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         periodId: selectedPeriodId,
         site: selectedSite !== "ALL" ? selectedSite : undefined,
         accountCode: selectedAccountFilter || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         q: txSearch,
         page,
         limit: pagination.limit,
@@ -156,7 +171,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
   useEffect(() => {
     loadTransactions(1);
-  }, [selectedPeriodId, selectedSite, selectedAccountFilter]);
+  }, [selectedPeriodId, selectedSite, selectedAccountFilter, startDate, endDate]);
 
   // Debounced search for transactions
   useEffect(() => {
@@ -249,9 +264,11 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         periodId: selectedPeriodId,
         site: selectedSite !== "ALL" ? selectedSite : undefined,
         accountCode: selectedAccountFilter || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         q: txSearch,
         page: 1,
-        limit: 5000,
+        limit: 10000,
       });
 
       const headers = ["Tanggal", "No Voucher", "Kode Akun", "Nama Akun", "Cost Center", "Site", "Debet (IDR)", "Customer/Vendor", "Remark"];
@@ -342,7 +359,12 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 </span>
                 <select
                   value={selectedPeriodId}
-                  onChange={(e) => setSelectedPeriodId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedPeriodId(e.target.value);
+                    setSelectedAccountFilter("");
+                    setStartDate("");
+                    setEndDate("");
+                  }}
                   className="bg-transparent font-bold text-slate-800 focus:outline-hidden cursor-pointer text-xs"
                 >
                   {periods.map((p) => (
@@ -452,77 +474,166 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
       ) : (
         <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden space-y-0">
           {/* Table Toolbar */}
-          <div className="p-3.5 sm:p-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                Detail Transaksi General Ledger
-              </span>
+          <div className="p-3.5 sm:p-4 border-b border-slate-200/80 bg-slate-50/70 space-y-3">
+            {/* Top Toolbar Row: Section Title & Right Actions (Rows limit & Export) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                  Detail Transaksi General Ledger
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700">
+                  {pagination.total.toLocaleString()} Data
+                </span>
+                {(selectedAccountFilter || startDate || endDate || txSearch) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-[#e95623] border border-orange-200/80">
+                    Filter Aktif
+                  </span>
+                )}
+              </div>
 
-              {selectedAccountFilter && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs bg-orange-100 text-[#e95623] font-bold border border-orange-200 shadow-2xs">
-                  <Tag size={12} />
-                  <span>Akun: {selectedAccountFilter}</span>
-                  <button
-                    onClick={() => setSelectedAccountFilter("")}
-                    className="hover:text-red-700 cursor-pointer ml-0.5"
-                    title="Hapus filter akun"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Rows per page selector */}
+                <select
+                  value={pagination.limit}
+                  onChange={(e) => {
+                    setPagination((prev) => ({ ...prev, limit: parseInt(e.target.value, 10) }));
+                    loadTransactions(1);
+                  }}
+                  className="px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 font-bold cursor-pointer hover:border-slate-300 transition-colors shadow-2xs"
+                  title="Baris per halaman"
+                >
+                  <option value={25}>25 baris</option>
+                  <option value={50}>50 baris</option>
+                  <option value={100}>100 baris</option>
+                </select>
+
+                {/* Export CSV button */}
+                <button
+                  onClick={exportTransactionsToCSV}
+                  disabled={isExporting || transactions.length === 0}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap disabled:opacity-40"
+                  title="Download CSV Transaksi GL"
+                >
+                  {isExporting ? (
+                    <RefreshCw size={13} className="animate-spin text-[#e95623]" />
+                  ) : (
+                    <Download size={13} />
+                  )}
+                  <span className="hidden sm:inline">Export CSV</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Search input with clear button */}
-              <div className="relative w-full sm:w-72">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Cari voucher, akun, vendor, remark..."
-                  value={txSearch}
-                  onChange={(e) => setTxSearch(e.target.value)}
-                  className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400 font-medium"
-                />
-                {txSearch && (
+            {/* Filter Controls Row: Akun Beban, Tanggal (Date Range), Search, Reset */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              {/* 1. Filter by Akun Beban */}
+              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs shadow-2xs flex-1 min-w-[240px] max-w-sm hover:border-slate-300 transition-colors">
+                <Tag size={13} className="text-[#e95623] shrink-0" />
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+                  Akun:
+                </span>
+                <select
+                  value={selectedAccountFilter}
+                  onChange={(e) => setSelectedAccountFilter(e.target.value)}
+                  className="w-full bg-transparent font-medium text-slate-700 focus:outline-hidden cursor-pointer text-xs truncate"
+                  title="Filter Berdasarkan Akun Beban"
+                >
+                  <option value="">
+                    {expenseAccounts.length > 0 ? `Semua Akun Beban (${expenseAccounts.length})` : "Semua Akun Beban"}
+                  </option>
+                  {expenseAccounts.map((acc) => (
+                    <option key={acc.accountCode} value={acc.accountCode}>
+                      {acc.accountCode} - {acc.accountName}
+                    </option>
+                  ))}
+                </select>
+                {selectedAccountFilter && (
                   <button
-                    onClick={() => setTxSearch("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    onClick={() => setSelectedAccountFilter("")}
+                    className="text-slate-400 hover:text-red-500 cursor-pointer ml-0.5 shrink-0"
+                    title="Hapus filter akun"
                   >
                     <X size={13} />
                   </button>
                 )}
               </div>
 
-              {/* Rows per page selector */}
-              <select
-                value={pagination.limit}
-                onChange={(e) => {
-                  setPagination((prev) => ({ ...prev, limit: parseInt(e.target.value, 10) }));
-                  loadTransactions(1);
-                }}
-                className="px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 font-bold cursor-pointer"
-                title="Baris per halaman"
-              >
-                <option value={25}>25 baris</option>
-                <option value={50}>50 baris</option>
-                <option value={100}>100 baris</option>
-              </select>
-
-              {/* Export CSV button */}
-              <button
-                onClick={exportTransactionsToCSV}
-                disabled={isExporting || transactions.length === 0}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap disabled:opacity-40"
-                title="Download CSV Transaksi GL"
-              >
-                {isExporting ? (
-                  <RefreshCw size={13} className="animate-spin text-[#e95623]" />
-                ) : (
-                  <Download size={13} />
+              {/* 2. Filter by Date (Date Range) */}
+              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs shadow-2xs hover:border-slate-300 transition-colors">
+                <Calendar size={13} className="text-[#e95623] shrink-0" />
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+                  Tgl:
+                </span>
+                <input
+                  type="date"
+                  value={startDate}
+                  min={activePeriod?.startDate ? activePeriod.startDate.slice(0, 10) : undefined}
+                  max={endDate || (activePeriod?.endDate ? activePeriod.endDate.slice(0, 10) : undefined)}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent font-medium text-slate-700 focus:outline-hidden text-xs cursor-pointer"
+                  title="Dari Tanggal"
+                />
+                <span className="text-slate-300 font-bold shrink-0">-</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || (activePeriod?.startDate ? activePeriod.startDate.slice(0, 10) : undefined)}
+                  max={activePeriod?.endDate ? activePeriod.endDate.slice(0, 10) : undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent font-medium text-slate-700 focus:outline-hidden text-xs cursor-pointer"
+                  title="Sampai Tanggal"
+                />
+                {(startDate || endDate) && (
+                  <button
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                    className="text-slate-400 hover:text-red-500 cursor-pointer ml-0.5 shrink-0"
+                    title="Hapus filter tanggal"
+                  >
+                    <X size={13} />
+                  </button>
                 )}
-                <span className="hidden sm:inline">Export CSV</span>
-              </button>
+              </div>
+
+              {/* 3. Search Box */}
+              <div className="relative flex-1 min-w-[200px]">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Cari voucher, akun, vendor, remark..."
+                  value={txSearch}
+                  onChange={(e) => setTxSearch(e.target.value)}
+                  className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400 font-medium shadow-2xs hover:border-slate-300 transition-colors"
+                />
+                {txSearch && (
+                  <button
+                    onClick={() => setTxSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    title="Hapus pencarian"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {/* 4. Reset All Filters Button */}
+              {(selectedAccountFilter || startDate || endDate || txSearch) && (
+                <button
+                  onClick={() => {
+                    setSelectedAccountFilter("");
+                    setStartDate("");
+                    setEndDate("");
+                    setTxSearch("");
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-[#e95623] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-2xs"
+                  title="Reset Semua Filter"
+                >
+                  <X size={13} />
+                  <span>Reset Filter</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -564,7 +675,14 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                           idx % 2 === 1 ? "bg-slate-50/30" : "bg-white"
                         }`}
                       >
-                        <td className="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap text-[11px]">
+                        <td
+                          className="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap text-[11px] cursor-pointer hover:text-[#e95623] hover:underline transition-colors"
+                          onClick={() => {
+                            setStartDate(tx.date);
+                            setEndDate(tx.date);
+                          }}
+                          title={`Klik untuk filter tanggal ${tx.date}`}
+                        >
                           {tx.date}
                         </td>
                         <td className="py-2.5 px-3">
@@ -576,11 +694,15 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                             <span className="text-slate-400 font-mono">-</span>
                           )}
                         </td>
-                        <td className="py-2.5 px-3">
-                          <div className="font-bold text-slate-900 text-[11px] line-clamp-1">
+                        <td
+                          className="py-2.5 px-3 cursor-pointer group"
+                          onClick={() => setSelectedAccountFilter(tx.accountCode)}
+                          title={`Klik untuk filter akun ${tx.accountCode} - ${tx.accountName}`}
+                        >
+                          <div className="font-bold text-slate-900 text-[11px] line-clamp-1 group-hover:text-[#e95623] transition-colors">
                             {tx.accountName}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-mono font-medium">
+                          <div className="text-[10px] text-slate-400 font-mono font-medium group-hover:text-orange-500 transition-colors">
                             {tx.accountCode}
                           </div>
                         </td>

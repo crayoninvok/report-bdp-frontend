@@ -126,6 +126,8 @@ export const glService = {
     periodId?: string;
     site?: string;
     accountCode?: string;
+    startDate?: string;
+    endDate?: string;
     q?: string;
     page?: number;
     limit?: number;
@@ -137,6 +139,8 @@ export const glService = {
     if (paramsObj.periodId) params.append("periodId", paramsObj.periodId);
     if (paramsObj.site) params.append("site", paramsObj.site);
     if (paramsObj.accountCode) params.append("accountCode", paramsObj.accountCode);
+    if (paramsObj.startDate) params.append("startDate", paramsObj.startDate);
+    if (paramsObj.endDate) params.append("endDate", paramsObj.endDate);
     if (paramsObj.q) params.append("q", paramsObj.q);
     if (paramsObj.page) params.append("page", paramsObj.page.toString());
     if (paramsObj.limit) params.append("limit", paramsObj.limit.toString());
