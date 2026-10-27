@@ -445,7 +445,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                       strokeDasharray="4 4"
                       strokeWidth={1.5}
                       label={{
-                        value: "Pagu 4.0m",
+                        value: "Standar 4.0m",
                         position: "left",
                         fill: "#ef4444",
                         fontSize: 8,
@@ -589,7 +589,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                     </span>
                     <span className="flex items-center gap-1 text-rose-600 font-mono">
                       <span className="w-3 border-t-2 border-dashed border-rose-500" />
-                      Plan Pagu 4.0m
+                      Standar Air 4.0m
                     </span>
                     <span className="flex items-center gap-1 text-slate-800 font-mono">
                       <span className="w-3 border-t-2 border-dashed border-slate-800" />
@@ -715,7 +715,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                     </span>
                     <span className="flex items-center gap-1 text-rose-600 font-mono">
                       <span className="w-3 border-t-2 border-dashed border-rose-500" />
-                      Plan Pagu 4.0m
+                      Standar Air 4.0m
                     </span>
                     <span className="flex items-center gap-1 text-slate-800 font-mono">
                       <span className="w-3 border-t-2 border-dashed border-slate-800" />
@@ -815,7 +815,7 @@ export const RiverJournalPdfExportModal: React.FC<RiverJournalPdfExportModalProp
                 <strong>Kesimpulan Tren:</strong> Arah tren linier kedua site menunjukkan keselarasan positif searah aliran air hulu-ke-hilir. Garis putus-putus hitam merepresentasikan regresi linier Ordinary Least Squares (OLS).
               </span>
               <span className="font-bold text-slate-800 font-mono text-[9px] shrink-0 ml-4">
-                Pagu Draft: 4.00m (Batas Minimum Tongkang)
+                Standar Ketinggian Air Sungai: 4.00m (Batas Minimum Tongkang)
               </span>
             </div>
           </div>

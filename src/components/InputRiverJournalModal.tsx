@@ -275,7 +275,7 @@ export const InputRiverJournalModal: React.FC<InputRiverJournalModalProps> = ({
               <label className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-800">
                 <span>Batas Minimum Tongkang</span>
                 <span className="text-[10px] font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-md">
-                  Pagu Draft: 4.0 m
+                  Standar Ketinggian Air: 4.0 m
                 </span>
               </label>
               <div className="relative">

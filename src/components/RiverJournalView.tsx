@@ -546,7 +546,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
           </h4>
           <p className="text-[11px] text-slate-600 leading-relaxed">
             <strong className="text-rose-700 font-extrabold">BELUM BISA.</strong> Meskipun air Senyiur naik saat MP naik,
-            level air Senyiur (1.76m - 2.74m) masih berada di bawah pagu draft aman tongkang 4.0m (defisit minimal 1.26m).
+            level air Senyiur (1.76m - 2.74m) masih berada di bawah standar ketinggian air sungai aman tongkang 4.0m (defisit minimal 1.26m).
           </p>
           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[10px] text-slate-600 space-y-1">
             <div className="flex justify-between">
@@ -720,7 +720,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
-                      value: "Pagu 4.0m",
+                      value: "Standar 4.0m",
                       position: "left",
                       fill: "#ef4444",
                       fontSize: 9,
@@ -966,7 +966,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                 </span>
               </div>
               <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900">
-                GRAFIK ELEVASI & TREN PER SITE &bull; PLAN PAGU 4.0M & GARIS TREN LINIER
+                GRAFIK ELEVASI & TREN PER SITE &bull; STANDAR KETINGGIAN AIR 4.0M & GARIS TREN LINIER
               </h2>
               <p className="text-[11px] text-slate-500 font-medium">
                 Evaluasi kedalaman harian riil terhadap batas minimum draft tongkang (Plan 4.0m) disertai garis tren regresi linier OLS dan angka terukur
@@ -977,7 +977,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-[11px]">
               <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
-              <span>Plan Pagu Tongkang: 4.0m</span>
+              <span>Standar Ketinggian Air Sungai: 4.0m</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 font-extrabold text-[11px]">
               <span className="w-3 border-t-2 border-dashed border-slate-700 inline-block" />
@@ -1008,7 +1008,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                     Dermaga Senyiur KM 0
                   </h3>
                   <p className="text-[10px] text-slate-500 font-medium">
-                    Titik awal muat tongkang batu bara &bull; Pagu Batas Draft: 4.00 Meter
+                    Titik awal muat tongkang batu bara &bull; Standar Ketinggian Air Sungai: 4.00 Meter
                   </p>
                 </div>
 
@@ -1089,7 +1089,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                 </div>
                 <span className="flex items-center gap-1.5 font-bold text-rose-600 font-mono">
                   <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
-                  <span>Batas Pagu Navigasi: 4.0m</span>
+                  <span>Standar Ketinggian Air Sungai: 4.0m</span>
                 </span>
               </div>
 
@@ -1165,7 +1165,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                       strokeDasharray="4 4"
                       strokeWidth={1.75}
                       label={{
-                        value: "Pagu 4.0m",
+                        value: "Standar 4.0m",
                         position: "insideTopRight",
                         fill: "#ef4444",
                         fontSize: 9,
@@ -1211,7 +1211,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
               <ShieldAlert size={16} className="text-amber-700 shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <span className="font-black text-[11px] uppercase tracking-wider block">
-                  Analisis Pagu Kedalaman Senyiur:
+                  Analisis Ketinggian Air Senyiur:
                 </span>
                 <p className="text-[10px] text-amber-950 leading-relaxed font-medium">
                   Seluruh elevasi pengukuran di Senyiur berada di bawah batas ambang 4.0m (rentang {senyiurSiteData.min.toFixed(2)}m s/d {senyiurSiteData.max.toFixed(2)}m). Kemiringan tren tercatat <strong>{senyiurSiteData.slope >= 0 ? "+" : ""}{senyiurSiteData.slope}m/hari</strong>. Tugboat dan ponton 300ft membutuhkan koordinasi elevasi kiriman hulu sebelum manuver keluar.
@@ -1240,7 +1240,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                     Jetty Muara Pahu
                   </h3>
                   <p className="text-[10px] text-slate-500 font-medium">
-                    Jalur utama transshipment sungai &bull; Pagu Batas Draft: 4.00 Meter
+                    Jalur utama transshipment sungai &bull; Standar Ketinggian Air Sungai: 4.00 Meter
                   </p>
                 </div>
 
@@ -1321,7 +1321,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                 </div>
                 <span className="flex items-center gap-1.5 font-bold text-rose-600 font-mono">
                   <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
-                  <span>Batas Pagu Navigasi: 4.0m</span>
+                  <span>Standar Ketinggian Air Sungai: 4.0m</span>
                 </span>
               </div>
 
@@ -1397,7 +1397,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                       strokeDasharray="4 4"
                       strokeWidth={1.75}
                       label={{
-                        value: "Pagu 4.0m",
+                        value: "Standar 4.0m",
                         position: "insideBottomRight",
                         fill: "#ef4444",
                         fontSize: 9,
@@ -1443,10 +1443,10 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
               <CheckCircle2 size={16} className="text-emerald-700 shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <span className="font-black text-[11px] uppercase tracking-wider block">
-                  Analisis Pagu Kedalaman Muara Pahu:
+                  Analisis Ketinggian Air Muara Pahu:
                 </span>
                 <p className="text-[10px] text-emerald-950 leading-relaxed font-medium">
-                  Elevasi Muara Pahu sangat prima dengan rentang {muaraPahuSiteData.min.toFixed(2)}m s/d {muaraPahuSiteData.max.toFixed(2)}m (surplus {">"}+3.0m di atas pagu 4.0m). Kemiringan tren tercatat <strong>{muaraPahuSiteData.slope >= 0 ? "+" : ""}{muaraPahuSiteData.slope}m/hari</strong>, mengonfirmasi tidak ada hambatan draft tongkang di muara.
+                  Elevasi Muara Pahu sangat prima dengan rentang {muaraPahuSiteData.min.toFixed(2)}m s/d {muaraPahuSiteData.max.toFixed(2)}m (surplus {">"}+3.0m di atas standar 4.0m). Kemiringan tren tercatat <strong>{muaraPahuSiteData.slope >= 0 ? "+" : ""}{muaraPahuSiteData.slope}m/hari</strong>, mengonfirmasi tidak ada hambatan draft tongkang di muara.
                 </p>
               </div>
             </div>

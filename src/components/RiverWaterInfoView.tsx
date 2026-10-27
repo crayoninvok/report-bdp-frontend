@@ -275,7 +275,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                     Dermaga Senyiur KM 0
                   </h3>
                   <p className="text-[10px] text-slate-500">
-                    Titik awal muat tongkang batu bara &bull; Pagu Batas Draft: 4.00 Meter
+                    Titik awal muat tongkang batu bara &bull; Standar Ketinggian Air Sungai: 4.00 Meter
                   </p>
                 </div>
 
@@ -356,7 +356,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                 </div>
                 <span className="flex items-center gap-1.5 font-bold text-rose-600 font-mono">
                   <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
-                  <span>Batas Pagu Navigasi: 4.0m</span>
+                  <span>Standar Ketinggian Air Sungai: 4.0m</span>
                 </span>
               </div>
 
@@ -401,7 +401,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                                 </strong>
                               </div>
                               <div className="flex justify-between gap-3 text-slate-600">
-                                <span>Pagu Aman:</span>
+                                <span>Standar Aman:</span>
                                 <strong className="text-rose-600 font-mono">4.00 m</strong>
                               </div>
                             </div>
@@ -416,7 +416,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                       strokeDasharray="4 4"
                       strokeWidth={1.5}
                       label={{
-                        value: "Pagu 4.0m",
+                        value: "Standar 4.0m",
                         position: "insideBottomRight",
                         fill: "#ef4444",
                         fontSize: 9,
@@ -462,7 +462,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
               <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <span className="font-extrabold text-[11px] uppercase tracking-wider block text-amber-900">
-                  ANALISIS PAGU KEDALAMAN SENYIUR:
+                  ANALISIS KETINGGIAN AIR SENYIUR:
                 </span>
                 <p className="text-[10px] leading-relaxed font-medium text-amber-900/90">
                   Seluruh elevasi pengukuran di Senyiur berada di bawah batas ambang 4.0m (rentang{" "}
@@ -499,7 +499,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                     Jetty Muara Pahu
                   </h3>
                   <p className="text-[10px] text-slate-500">
-                    Jalur utama transshipment sungai &bull; Pagu Batas Draft: 4.00 Meter
+                    Jalur utama transshipment sungai &bull; Standar Ketinggian Air Sungai: 4.00 Meter
                   </p>
                 </div>
 
@@ -580,7 +580,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                 </div>
                 <span className="flex items-center gap-1.5 font-bold text-rose-600 font-mono">
                   <span className="w-3 border-t-2 border-dashed border-rose-500 inline-block" />
-                  <span>Batas Pagu Navigasi: 4.0m</span>
+                  <span>Standar Ketinggian Air Sungai: 4.0m</span>
                 </span>
               </div>
 
@@ -625,7 +625,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                                 </strong>
                               </div>
                               <div className="flex justify-between gap-3 text-slate-600">
-                                <span>Pagu Aman:</span>
+                                <span>Standar Aman:</span>
                                 <strong className="text-rose-600 font-mono">4.00 m</strong>
                               </div>
                             </div>
@@ -640,7 +640,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                       strokeDasharray="4 4"
                       strokeWidth={1.5}
                       label={{
-                        value: "Pagu 4.0m",
+                        value: "Standar 4.0m",
                         position: "insideBottomRight",
                         fill: "#ef4444",
                         fontSize: 9,
@@ -672,7 +672,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                         offset={6}
                         style={{ fontSize: "8px", fill: "#047857", fontWeight: 700 }}
                         formatter={(val: any) =>
-                          typeof val === "number" ? val.toFixed(2) : val
+                           typeof val === "number" ? val.toFixed(2) : val
                         }
                       />
                     </Area>
@@ -686,11 +686,11 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
               <CheckCircle2 size={15} className="text-emerald-600 shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <span className="font-extrabold text-[11px] uppercase tracking-wider block text-emerald-900">
-                  ANALISIS PAGU KEDALAMAN MUARA PAHU:
+                  ANALISIS KETINGGIAN AIR MUARA PAHU:
                 </span>
                 <p className="text-[10px] leading-relaxed font-medium text-emerald-900/90">
                   Elevasi Muara Pahu sangat prima dengan rentang {muaraPahuData.min.toFixed(2)}m s/d{" "}
-                  {muaraPahuData.max.toFixed(2)}m (surplus {">"}+3.0m di atas pagu 4.0m). Kemiringan
+                  {muaraPahuData.max.toFixed(2)}m (surplus {">"}+3.0m di atas standar 4.0m). Kemiringan
                   tren tercatat{" "}
                   <strong>
                     {muaraPahuData.slope >= 0 ? "+" : ""}
@@ -730,7 +730,7 @@ export const RiverWaterInfoView: React.FC<RiverWaterInfoViewProps> = ({
                     <th className="py-2 px-3">Waktu</th>
                     <th className="py-2 px-3">Lokasi</th>
                     <th className="py-2 px-3 text-right">Kedalaman (m)</th>
-                    <th className="py-2 px-3 text-right">Pagu Min</th>
+                    <th className="py-2 px-3 text-right">Standar Min</th>
                     <th className="py-2 px-3">Status</th>
                   </tr>
                 </thead>
