@@ -18,6 +18,8 @@ import {
   FileSpreadsheet,
   ClipboardList,
   Database,
+  Wrench,
+  ClipboardCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -85,6 +87,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: "Laporan Produksi",
           icon: ClipboardList,
           badge: "Maintenance",
+        },
+      ],
+    },
+    {
+      title: "Plant & Maintenance",
+      items: [
+        {
+          id: "plant-dashboard",
+          label: "Dashboard Plant",
+          icon: Wrench,
+        },
+        {
+          id: "periodic-inspection",
+          label: "Periodic Inspection",
+          icon: ClipboardCheck,
+        },
+        {
+          id: "master-unit",
+          label: "Master Data Unit",
+          icon: Database,
         },
       ],
     },

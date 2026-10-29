@@ -129,6 +129,7 @@ export const glService = {
     startDate?: string;
     endDate?: string;
     q?: string;
+    voucherType?: string;
     page?: number;
     limit?: number;
   }): Promise<{
@@ -141,6 +142,7 @@ export const glService = {
     if (paramsObj.accountCode) params.append("accountCode", paramsObj.accountCode);
     if (paramsObj.startDate) params.append("startDate", paramsObj.startDate);
     if (paramsObj.endDate) params.append("endDate", paramsObj.endDate);
+    if (paramsObj.voucherType) params.append("voucherType", paramsObj.voucherType);
     if (paramsObj.q) params.append("q", paramsObj.q);
     if (paramsObj.page) params.append("page", paramsObj.page.toString());
     if (paramsObj.limit) params.append("limit", paramsObj.limit.toString());

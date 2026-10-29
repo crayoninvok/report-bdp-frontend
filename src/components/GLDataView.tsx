@@ -26,6 +26,7 @@ import {
   FileSpreadsheet,
   MapPin,
   Tag,
+  Download,
 } from "lucide-react";
 
 interface GLDataViewProps {
@@ -40,6 +41,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
   // Filters (Head Office omitted per requirement)
   const [selectedSite, setSelectedSite] = useState<"ALL" | "MPH" | "SNY">("ALL");
+  const [voucherTypeFilter, setVoucherTypeFilter] = useState<string>(""); // "", "GI", "WITH_QTY"
   const [txSearch, setTxSearch] = useState<string>("");
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
@@ -61,6 +63,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isTxLoading, setIsTxLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isExportingCsv, setIsExportingCsv] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Upload Modal State
@@ -83,6 +86,14 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
   const formatNumber = (val: number) => {
     return new Intl.NumberFormat("id-ID").format(Math.round(val || 0));
+  };
+
+  const formatQty = (val?: number | null) => {
+    if (val == null || val === 0) return "-";
+    return new Intl.NumberFormat("id-ID", {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+    }).format(val);
   };
 
   // Initial load: Fetch periods
@@ -142,7 +153,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     fetchTotals();
   }, [selectedPeriodId]);
 
-  // Load transactions when period, site filter, account filter, or date filters change
+  // Load transactions when period, site filter, account filter, voucher filter, or date filters change
   const loadTransactions = async (page = 1) => {
     if (!selectedPeriodId) return;
     setIsTxLoading(true);
@@ -151,6 +162,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         periodId: selectedPeriodId,
         site: selectedSite !== "ALL" ? selectedSite : undefined,
         accountCode: selectedAccountFilter || undefined,
+        voucherType: voucherTypeFilter || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         q: txSearch,
@@ -168,7 +180,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
 
   useEffect(() => {
     loadTransactions(1);
-  }, [selectedPeriodId, selectedSite, selectedAccountFilter, startDate, endDate]);
+  }, [selectedPeriodId, selectedSite, selectedAccountFilter, voucherTypeFilter, startDate, endDate]);
 
   // Debounced search for transactions
   useEffect(() => {
@@ -177,6 +189,85 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
     }, 400);
     return () => clearTimeout(timer);
   }, [txSearch]);
+
+  // Export filtered transactions to CSV
+  const handleExportCsv = async () => {
+    if (!selectedPeriodId) return;
+    setIsExportingCsv(true);
+    try {
+      const res = await glService.getTransactions({
+        periodId: selectedPeriodId,
+        site: selectedSite !== "ALL" ? selectedSite : undefined,
+        accountCode: selectedAccountFilter || undefined,
+        voucherType: voucherTypeFilter || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        q: txSearch,
+        page: 1,
+        limit: 10000,
+      });
+
+      const rows = res.data;
+      if (rows.length === 0) {
+        alert("Tidak ada data transaksi untuk diekspor.");
+        return;
+      }
+
+      const headers = [
+        "Tanggal",
+        "No. Voucher",
+        "Kode Akun",
+        "Nama Akun",
+        "Kode Material",
+        "Item / Spesifikasi",
+        "Qty",
+        "Debet (IDR)",
+        "Credit (IDR)",
+        "Cost Center",
+        "Site",
+        "Customer / Vendor",
+        "Remark",
+      ];
+
+      const csvRows = [headers.join(",")];
+      rows.forEach((r) => {
+        const line = [
+          `"${r.date || ""}"`,
+          `"${r.regNo || ""}"`,
+          `"${r.accountCode || ""}"`,
+          `"${(r.accountName || "").replace(/"/g, '""')}"`,
+          `"${r.materialCode || ""}"`,
+          `"${(r.specification || "").replace(/"/g, '""')}"`,
+          r.qty != null ? r.qty : "",
+          r.debet || 0,
+          r.credit || 0,
+          `"${r.costCenter || ""}"`,
+          `"${r.projectArea || ""}"`,
+          `"${(r.supplierName || "").replace(/"/g, '""')}"`,
+          `"${(r.remark || "").replace(/"/g, '""')}"`,
+        ];
+        csvRows.push(line.join(","));
+      });
+
+      const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const siteTag = selectedSite !== "ALL" ? `_${selectedSite}` : "";
+      const typeTag = voucherTypeFilter ? `_${voucherTypeFilter}` : "";
+      const safePeriodName = (activePeriod?.periodName || "Periode").replace(/[^a-zA-Z0-9_-]/g, "_");
+      a.download = `GL_Raw_Data_${safePeriodName}${siteTag}${typeTag}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      alert("Gagal mengekspor data GL: " + (err.message || "Terjadi kesalahan."));
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
 
   // Refresh handler
   const handleRefresh = async () => {
@@ -420,7 +511,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
         <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden space-y-0">
           {/* Table Toolbar */}
           <div className="p-3.5 sm:p-4 border-b border-slate-200/80 bg-slate-50/70 space-y-3">
-            {/* Top Toolbar Row: Section Title & Right Actions (Rows limit & Export) */}
+            {/* Top Toolbar Row: Section Title, Voucher Type Filters, & Right Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
@@ -429,14 +520,51 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700">
                   {pagination.total.toLocaleString()} Data
                 </span>
-                {(selectedAccountFilter || startDate || endDate || txSearch) && (
+                {(selectedAccountFilter || startDate || endDate || txSearch || voucherTypeFilter) && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-[#e95623] border border-orange-200/80">
                     Filter Aktif
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {/* Voucher Type Pills (Semua, Hanya GI, Dengan Qty) */}
+                <div className="flex items-center gap-1 bg-slate-200/60 p-1 rounded-xl border border-slate-200 text-xs">
+                  <button
+                    onClick={() => setVoucherTypeFilter("")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      voucherTypeFilter === ""
+                        ? "bg-white text-slate-800 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Semua
+                  </button>
+                  <button
+                    onClick={() => setVoucherTypeFilter("GI")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      voucherTypeFilter === "GI"
+                        ? "bg-amber-100 text-amber-950 font-black shadow-2xs border border-amber-300"
+                        : "text-slate-600 hover:text-amber-900"
+                    }`}
+                    title="Khusus voucher Good Issue (GI) yang memiliki quantity barang di bagian debet kanan Excel"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                    Hanya GI
+                  </button>
+                  <button
+                    onClick={() => setVoucherTypeFilter("WITH_QTY")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      voucherTypeFilter === "WITH_QTY"
+                        ? "bg-white text-[#e95623] shadow-2xs font-black border border-orange-200"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                    title="Transaksi yang memiliki data Qty > 0 (GI, Pemakaian Solar, dll)"
+                  >
+                    Dengan Qty
+                  </button>
+                </div>
+
                 {/* Rows per page selector */}
                 <select
                   value={pagination.limit}
@@ -451,6 +579,17 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   <option value={50}>50 baris</option>
                   <option value={100}>100 baris</option>
                 </select>
+
+                {/* Export CSV button */}
+                <button
+                  onClick={handleExportCsv}
+                  disabled={isExportingCsv || transactions.length === 0}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs hover:border-slate-300 disabled:opacity-50"
+                  title="Ekspor data GL saat ini ke file CSV / Excel"
+                >
+                  <Download size={13} className="text-[#18bebc]" />
+                  <span>{isExportingCsv ? "Mengekspor..." : "Ekspor CSV"}</span>
+                </button>
               </div>
             </div>
 
@@ -532,7 +671,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Cari voucher, akun, vendor, remark..."
+                  placeholder="Cari voucher (GI/GR/PM), spesifikasi item, vendor, remark..."
                   value={txSearch}
                   onChange={(e) => setTxSearch(e.target.value)}
                   className="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-hidden focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400 font-medium shadow-2xs hover:border-slate-300 transition-colors"
@@ -549,13 +688,14 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
               </div>
 
               {/* 4. Reset All Filters Button */}
-              {(selectedAccountFilter || startDate || endDate || txSearch) && (
+              {(selectedAccountFilter || startDate || endDate || txSearch || voucherTypeFilter) && (
                 <button
                   onClick={() => {
                     setSelectedAccountFilter("");
                     setStartDate("");
                     setEndDate("");
                     setTxSearch("");
+                    setVoucherTypeFilter("");
                   }}
                   className="px-3 py-1.5 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-[#e95623] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-2xs"
                   title="Reset Semua Filter"
@@ -582,18 +722,20 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                   <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider select-none">
                     <th className="py-3 px-3 w-28">Tanggal</th>
                     <th className="py-3 px-3 w-32">No. Voucher</th>
-                    <th className="py-3 px-3 min-w-50">Akun Beban</th>
-                    <th className="py-3 px-2.5 w-16 text-center">CC</th>
-                    <th className="py-3 px-2.5 w-16 text-center">Site</th>
+                    <th className="py-3 px-3 min-w-44">Akun Beban</th>
+                    <th className="py-3 px-3 min-w-48">Item / Spesifikasi</th>
+                    <th className="py-3 px-2 w-14 text-center">CC</th>
+                    <th className="py-3 px-2 w-14 text-center">Site</th>
+                    <th className="py-3 px-3 text-right w-24" title="Quantity / Jumlah Barang (Debet Kanan di Excel)">Qty</th>
                     <th className="py-3 px-3 text-right w-36">Debet (IDR)</th>
-                    <th className="py-3 px-3 min-w-45">Customer / Vendor</th>
-                    <th className="py-3 px-3 min-w-55">Keterangan (Remark)</th>
+                    <th className="py-3 px-3 min-w-40">Customer / Vendor</th>
+                    <th className="py-3 px-3 min-w-48">Keterangan (Remark)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {transactions.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-16 text-center text-slate-400 text-xs">
+                      <td colSpan={10} className="py-16 text-center text-slate-400 text-xs">
                         Tidak ada transaksi yang cocok dengan filter atau pencarian saat ini.
                       </td>
                     </tr>
@@ -617,7 +759,13 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                         </td>
                         <td className="py-2.5 px-3">
                           {tx.regNo ? (
-                            <span className="font-mono font-bold text-slate-800 text-[11px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200/70 whitespace-nowrap">
+                            <span
+                              className={`font-mono font-bold text-[11px] px-2 py-0.5 rounded border whitespace-nowrap ${
+                                tx.regNo.startsWith("GI")
+                                  ? "bg-amber-50 text-amber-900 border-amber-200/90 font-black"
+                                  : "bg-slate-100 text-slate-800 border-slate-200/70"
+                              }`}
+                            >
                               {tx.regNo}
                             </span>
                           ) : (
@@ -636,10 +784,26 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                             {tx.accountCode}
                           </div>
                         </td>
-                        <td className="py-2.5 px-2.5 text-center font-mono text-[10px] text-slate-500">
+                        <td className="py-2.5 px-3 min-w-44 max-w-60">
+                          {tx.specification || tx.materialCode ? (
+                            <div>
+                              <div className="font-semibold text-slate-800 text-[11px] truncate" title={tx.specification || ""}>
+                                {tx.specification || "-"}
+                              </div>
+                              {tx.materialCode && (
+                                <div className="text-[10px] text-slate-400 font-mono tracking-tight">
+                                  {tx.materialCode}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-2 text-center font-mono text-[10px] text-slate-500">
                           {tx.costCenter || "-"}
                         </td>
-                        <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
+                        <td className="py-2.5 px-2 text-center whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider ${
                               tx.projectArea === "MPH"
@@ -652,13 +816,33 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
                             {tx.projectArea || "-"}
                           </span>
                         </td>
+                        <td className="py-2.5 px-3 text-right font-mono whitespace-nowrap">
+                          {tx.qty != null && tx.qty > 0 ? (
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                                tx.regNo?.startsWith("GI")
+                                  ? "bg-amber-100/90 text-amber-950 border border-amber-300 font-black"
+                                  : "bg-slate-100 text-slate-800 border border-slate-200/80"
+                              }`}
+                              title={
+                                tx.regNo?.startsWith("GI")
+                                  ? `Good Issue Qty: ${formatQty(tx.qty)}`
+                                  : `Qty: ${formatQty(tx.qty)}`
+                              }
+                            >
+                              {formatQty(tx.qty)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 font-normal">-</span>
+                          )}
+                        </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                           {formatNumber(tx.debet)}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-700 text-[11px] max-w-50 truncate" title={tx.supplierName}>
+                        <td className="py-2.5 px-3 text-slate-700 text-[11px] max-w-40 truncate" title={tx.supplierName}>
                           {tx.supplierName || "-"}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-600 text-[11px] max-w-60 truncate" title={tx.remark}>
+                        <td className="py-2.5 px-3 text-slate-600 text-[11px] max-w-48 truncate" title={tx.remark}>
                           {tx.remark || "-"}
                         </td>
                       </tr>

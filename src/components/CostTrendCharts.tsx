@@ -39,6 +39,7 @@ import {
   CheckCircle2,
   AlertCircle,
   FileDown,
+  Download,
   Presentation,
   Scale,
   Coins,
@@ -841,6 +842,18 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
   const [showTrendlines, setShowTrendlines] = useState(true);
   const [showProductionLine, setShowProductionLine] = useState(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // Week Range Filter state for Dashboard Cost
+  const [weekFilterMode, setWeekFilterMode] = useState<"range" | "single" | "all">("range");
+  const [startWeek, setStartWeek] = useState<string>("W39");
+  const [endWeek, setEndWeek] = useState<string>("W42");
+  const [selectedSingleWeek, setSelectedSingleWeek] = useState<string>("W42");
+
+  const parseWeekNumber = (label: string): number => {
+    const match = label.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+
   const [dynamicTrends, setDynamicTrends] = useState<{
     Senyiur: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
     MuaraPahu: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
@@ -863,6 +876,21 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
       isMounted = false;
     };
   }, []);
+
+  const availableWeeks = useMemo(() => {
+    const siteKey = activeSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
+    const weekly = (dynamicTrends && dynamicTrends[siteKey]?.weekly?.length > 0)
+      ? dynamicTrends[siteKey].weekly
+      : (activeSite === "MuaraPahu" ? RAW_WEEKLY_MUARAPAHU : RAW_WEEKLY_SENYIUR);
+    const weeks = weekly.map((item) => item.label);
+    const fallbackList = [
+      "W29", "W30", "W31", "W32", "W33", "W34", "W35",
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42"
+    ];
+    const combined = Array.from(new Set([...fallbackList, ...weeks]));
+    combined.sort((a, b) => parseWeekNumber(a) - parseWeekNumber(b));
+    return combined;
+  }, [activeSite, dynamicTrends]);
 
   // Active category metadata
   const activeMeta = useMemo(
@@ -887,12 +915,29 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     } else if (timeframe === "month") {
       return monthlyBase;
     } else {
-      if (dynamicTrends && dynamicTrends[siteKey]?.weekly?.length > 0) {
-        return dynamicTrends[siteKey].weekly;
+      const fullWeekly = (dynamicTrends && dynamicTrends[siteKey]?.weekly?.length > 0)
+        ? dynamicTrends[siteKey].weekly
+        : (activeSite === "MuaraPahu" ? RAW_WEEKLY_MUARAPAHU : RAW_WEEKLY_SENYIUR);
+
+      if (weekFilterMode === "all") {
+        return fullWeekly;
       }
-      return activeSite === "MuaraPahu" ? RAW_WEEKLY_MUARAPAHU : RAW_WEEKLY_SENYIUR;
+      if (weekFilterMode === "single") {
+        const single = fullWeekly.filter((it) => it.label === selectedSingleWeek);
+        return single.length > 0 ? single : fullWeekly;
+      }
+      // weekFilterMode === "range"
+      const sNum = parseWeekNumber(startWeek);
+      const eNum = parseWeekNumber(endWeek);
+      const minW = Math.min(sNum, eNum);
+      const maxW = Math.max(sNum, eNum);
+      const filtered = fullWeekly.filter((it) => {
+        const w = parseWeekNumber(it.label);
+        return w >= minW && w <= maxW;
+      });
+      return filtered.length > 0 ? filtered : fullWeekly;
     }
-  }, [timeframe, activeSite, dynamicTrends]);
+  }, [timeframe, activeSite, dynamicTrends, weekFilterMode, startWeek, endWeek, selectedSingleWeek]);
 
   // Extract focused category data & add trendlines
   const processedFocusedData = useMemo(() => {
@@ -1022,6 +1067,73 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
       };
     });
   }, [rawDataset, timeframe]);
+
+  // Label Periode Aktif untuk Dashboard Cost
+  const activePeriodLabel = useMemo(() => {
+    if (timeframe === "ytd") return "Kumulatif YTD 2026 (Jan - 15 Okt)";
+    if (timeframe === "month") return "Bulanan (Jan - Okt 2026)";
+    if (weekFilterMode === "all") {
+      const first = availableWeeks[0] || "W29";
+      const last = availableWeeks[availableWeeks.length - 1] || "W42";
+      return `Semua Minggu (${first} - ${last} 2026)`;
+    }
+    if (weekFilterMode === "single") {
+      return `Minggu ${selectedSingleWeek} 2026`;
+    }
+    const sNum = parseWeekNumber(startWeek);
+    const eNum = parseWeekNumber(endWeek);
+    const minW = Math.min(sNum, eNum);
+    const maxW = Math.max(sNum, eNum);
+    return `Minggu W${minW} - W${maxW} 2026 (${rawDataset.length} Minggu)`;
+  }, [timeframe, weekFilterMode, availableWeeks, selectedSingleWeek, startWeek, endWeek, rawDataset]);
+
+  // Export CSV Data untuk Dashboard Cost
+  const handleExportCsv = () => {
+    const headers = [
+      "PERIODE",
+      "PRODUKSI_BUDGET_TON",
+      "PRODUKSI_REALISASI_TON",
+      "TOTAL_BIAYA_BUDGET_JUTA_RP",
+      "TOTAL_BIAYA_REALISASI_JUTA_RP",
+      "TOTAL_DEVIASI_JUTA_RP",
+      "IDR_PER_TON_BUDGET",
+      "IDR_PER_TON_REALISASI",
+      "COMP_BENEFIT_REALISASI_JUTA_RP",
+      "FUEL_REALISASI_JUTA_RP",
+      "TYRE_REALISASI_JUTA_RP",
+      "REPAIRS_REALISASI_JUTA_RP",
+      "OVERHEAD_REALISASI_JUTA_RP",
+    ];
+
+    const rows = rawDataset.map((item) => [
+      item.label,
+      item.produksi?.budget || 0,
+      item.produksi?.realisasi || 0,
+      item.total.budget,
+      item.total.realisasi,
+      item.total.deviasi,
+      item.idrPerTon?.budget || 0,
+      item.idrPerTon?.realisasi || 0,
+      item.comp.realisasi,
+      item.fuel.realisasi,
+      item.tyre.realisasi,
+      item.rep.realisasi,
+      item.ovh.realisasi,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `Cost_Dashboard_${activeSite}_${activePeriodLabel.replace(/[\s\(\)\-\.]+/g, "_")}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Custom Data Label for Budget (matches blue badge box)
   const renderBudgetLabel = (props: any) => {
@@ -1319,7 +1431,12 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               <span>Bulanan</span>
             </button>
             <button
-              onClick={() => setTimeframe("week")}
+              onClick={() => {
+                setTimeframe("week");
+                setWeekFilterMode("range");
+                setStartWeek("W39");
+                setEndWeek("W42");
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 timeframe === "week"
                   ? "bg-white text-blue-700 shadow-xs"
@@ -1330,14 +1447,162 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               <span>Mingguan</span>
             </button>
           </div>
+
+          {/* Sub-Filter Periode Mingguan (Rentang Minggu / Single / Semua) */}
+          {timeframe === "week" && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Mode Selector */}
+              <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setWeekFilterMode("range")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    weekFilterMode === "range"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Rentang Minggu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWeekFilterMode("single");
+                    if (!selectedSingleWeek) {
+                      setSelectedSingleWeek(availableWeeks[availableWeeks.length - 1] || "W42");
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    weekFilterMode === "single"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  1 Minggu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWeekFilterMode("all")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    weekFilterMode === "all"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Semua
+                </button>
+              </div>
+
+              {/* Range Mode Controls */}
+              {weekFilterMode === "range" && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200 text-xs shadow-2xs">
+                    <span className="text-slate-500 text-[11px] font-semibold">Dari:</span>
+                    <select
+                      value={startWeek}
+                      onChange={(e) => setStartWeek(e.target.value)}
+                      className="bg-white text-slate-800 font-extrabold text-xs px-2 py-0.5 rounded-lg border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      {availableWeeks.map((w) => (
+                        <option key={`start-${w}`} value={w}>
+                          Minggu {w}
+                        </option>
+                      ))}
+                    </select>
+                    <ArrowRight size={12} className="text-slate-400 mx-0.5" />
+                    <span className="text-slate-500 text-[11px] font-semibold">Sampai:</span>
+                    <select
+                      value={endWeek}
+                      onChange={(e) => setEndWeek(e.target.value)}
+                      className="bg-white text-slate-800 font-extrabold text-xs px-2 py-0.5 rounded-lg border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      {availableWeeks.map((w) => (
+                        <option key={`end-${w}`} value={w}>
+                          Minggu {w}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartWeek("W39");
+                        setEndWeek("W42");
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
+                        startWeek === "W39" && endWeek === "W42"
+                          ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                          : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
+                      }`}
+                      title="Rentang Minggu W39 - W42"
+                    >
+                      W39 - W42
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const latest = availableWeeks[availableWeeks.length - 1] || "W42";
+                        const latestNum = parseWeekNumber(latest);
+                        const startNum = Math.max(29, latestNum - 3);
+                        setStartWeek(`W${startNum}`);
+                        setEndWeek(latest);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all cursor-pointer"
+                      title="4 Minggu Operasional Terakhir"
+                    >
+                      4 Mgg Terakhir
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Single Week Selector */}
+              {weekFilterMode === "single" && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 text-xs font-semibold">Pilih Minggu:</span>
+                  <select
+                    value={selectedSingleWeek}
+                    onChange={(e) => setSelectedSingleWeek(e.target.value)}
+                    className="bg-white text-slate-800 font-bold text-xs px-3 py-1 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-2xs"
+                  >
+                    {availableWeeks.map((w, idx) => (
+                      <option key={w} value={w}>
+                        Minggu {w} {idx === availableWeeks.length - 1 ? "(Terbaru)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* All Weeks Indicator */}
+              {weekFilterMode === "all" && (
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-blue-800 font-semibold">
+                  <span>Semua Minggu Operasional ({availableWeeks[0] || "W29"} &bull; {availableWeeks[availableWeeks.length - 1] || "W42"})</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Right: Export PDF Presentasi */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Right: Export CSV & PDF Presentasi */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+            title="Download data grafik format CSV"
+          >
+            <Download size={13} />
+            <span>Export CSV</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsPdfModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-linear-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-xs hover:shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-linear-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95"
             title="Download grafik ke PDF Landscape presentasi mingguan"
           >
             <FileDown size={14} className="text-white" />
@@ -1451,13 +1716,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                   <div>
                     <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                       <span>
-                        {activeMeta.label.toUpperCase()}{" "}
-                        {timeframe === "ytd"
-                          ? "KUMULATIF YTD 2026"
-                          : timeframe === "month"
-                          ? "BULANAN 2026"
-                          : "MINGGUAN"}{" "}
-                        {activeSite.toUpperCase()}
+                        {activeMeta.label.toUpperCase()} &bull; {activePeriodLabel.toUpperCase()} &bull; SITE {activeSite.toUpperCase()}
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -2338,6 +2597,8 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
         defaultSite={activeSite}
         defaultTimeframe={timeframe}
         defaultCategory={selectedCategory}
+        defaultStartWeek={startWeek}
+        defaultEndWeek={endWeek}
         user={user}
         dynamicData={dynamicTrends}
       />

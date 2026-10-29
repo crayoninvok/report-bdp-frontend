@@ -146,6 +146,16 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
   const [timeframe, setTimeframe] = useState<"month" | "week" | "ytd">("ytd");
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
 
+  // Filter Rentang Minggu (Fixed Week Range)
+  const [weekFilterMode, setWeekFilterMode] = useState<"range" | "single" | "all">("range");
+  const [startWeek, setStartWeek] = useState<string>("W39");
+  const [endWeek, setEndWeek] = useState<string>("W42");
+
+  const parseWeekNumber = (label: string): number => {
+    const match = label.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+
   // Filter Direktori & Chart
   const [activeBebanFilter, setActiveBebanFilter] = useState<string>("all");
   const [activeBehaviorFilter, setActiveBehaviorFilter] = useState<string>("all");
@@ -162,6 +172,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
   const handleTimeframeChange = (newTf: "month" | "week" | "ytd") => {
     setTimeframe(newTf);
     setSelectedPeriod("all");
+    if (newTf === "week") {
+      setWeekFilterMode("range");
+      setStartWeek("W39");
+      setEndWeek("W42");
+    }
   };
 
   // Dynamic Weekly Trends from Backend
@@ -307,11 +322,44 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     });
   }, [selectedSite, timeframe, weeklySenyiur, weeklyMuaraPahu]);
 
-  // 2. DATASET AKTIF BERDASARKAN FILTER PERIODE SPESIFIK
+  // Available Weeks List
+  const availableWeeks = useMemo(() => {
+    if (timeframe !== "week") return [];
+    const weeks = baseDataset.map((item) => item.label);
+    const fallbackList = [
+      "W29", "W30", "W31", "W32", "W33", "W34", "W35",
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42"
+    ];
+    const combined = Array.from(new Set([...fallbackList, ...weeks]));
+    combined.sort((a, b) => parseWeekNumber(a) - parseWeekNumber(b));
+    return combined;
+  }, [baseDataset, timeframe]);
+
+  // 2. DATASET AKTIF BERDASARKAN FILTER PERIODE SPESIFIK / RENTANG MINGGU
   const activeDataset: FullPeriodRecord[] = useMemo(() => {
+    if (timeframe === "week") {
+      if (weekFilterMode === "all") {
+        return baseDataset;
+      }
+      if (weekFilterMode === "single") {
+        if (selectedPeriod === "all") return baseDataset;
+        return baseDataset.filter((item) => item.label === selectedPeriod);
+      }
+      // Mode Range: filter week number antara min(startWeek, endWeek) dan max(startWeek, endWeek)
+      const sNum = parseWeekNumber(startWeek);
+      const eNum = parseWeekNumber(endWeek);
+      const minW = Math.min(sNum, eNum);
+      const maxW = Math.max(sNum, eNum);
+      const filtered = baseDataset.filter((item) => {
+        const w = parseWeekNumber(item.label);
+        return w >= minW && w <= maxW;
+      });
+      return filtered.length > 0 ? filtered : baseDataset;
+    }
+
     if (selectedPeriod === "all") return baseDataset;
     return baseDataset.filter((item) => item.label === selectedPeriod);
-  }, [baseDataset, selectedPeriod]);
+  }, [baseDataset, timeframe, selectedPeriod, weekFilterMode, startWeek, endWeek]);
 
   // 3. TOTAL FINANSIAL PER KATEGORI BEBAN (SINKRON DENGAN DASHBOARD UTAMA)
   const categorySums = useMemo(() => {
@@ -551,9 +599,10 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     });
   }, [orderedBebanKeys, categorySums]);
 
-  // 8. MULTI-LINE TREND DATA (BERDASARKAN BASET DATASET SESUAI TIMEFRAME)
+  // 8. MULTI-LINE TREND DATA (BERDASARKAN DATASET SESUAI TIMEFRAME & RENTANG MINGGU)
   const top5MonthlyMultiData = useMemo(() => {
-    return baseDataset.map((row) => ({
+    const dataSrc = timeframe === "week" && weekFilterMode === "range" ? activeDataset : baseDataset;
+    return dataSrc.map((row) => ({
       month: row.label,
       comp: row.comp?.realisasi || 0,
       fuel: row.fuel?.realisasi || 0,
@@ -561,12 +610,13 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
       rep: row.rep?.realisasi || 0,
       ovh: row.ovh?.realisasi || 0,
     }));
-  }, [baseDataset]);
+  }, [baseDataset, activeDataset, timeframe, weekFilterMode]);
 
   // Single Beban Trend Data
   const singleBebanMonthlyData = useMemo(() => {
     if (activeTop5Beban === "all") return [];
-    return baseDataset.map((row) => {
+    const dataSrc = timeframe === "week" && weekFilterMode === "range" ? activeDataset : baseDataset;
+    return dataSrc.map((row) => {
       const rec = getPeriodRecordForBeban(row, activeTop5Beban);
       const over = Math.max(0, rec.realisasi - rec.budget);
       return {
@@ -577,7 +627,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
         deviasi: rec.deviasi,
       };
     });
-  }, [activeTop5Beban, baseDataset]);
+  }, [activeTop5Beban, baseDataset, activeDataset, timeframe, weekFilterMode]);
 
   // Single Beban Metrics
   const singleBebanMetrics = useMemo(() => {
@@ -609,7 +659,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
 
   // Sparkline Bulanan / Mingguan
   const getBebanSparkline = (key: BebanGroupKey) => {
-    return baseDataset.map((row) => {
+    const dataSrc = timeframe === "week" && weekFilterMode === "range" ? activeDataset : baseDataset;
+    return dataSrc.map((row) => {
       const rec = getPeriodRecordForBeban(row, key);
       return {
         m: row.label,
@@ -661,12 +712,27 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
       if (selectedPeriod === "all") return "Bulanan (Jan - Okt 2026)";
       return `Bulan ${selectedPeriod} 2026`;
     }
-    if (selectedPeriod === "all") {
-      const lastLabel = baseDataset[baseDataset.length - 1]?.label || "W41";
-      return `Mingguan (W29 - ${lastLabel} 2026)`;
+    // Timeframe Week
+    if (weekFilterMode === "all") {
+      const firstLabel = baseDataset[0]?.label || "W29";
+      const lastLabel = baseDataset[baseDataset.length - 1]?.label || "W42";
+      return `Semua Minggu (${firstLabel} - ${lastLabel} 2026)`;
     }
-    return `Minggu ${selectedPeriod}`;
-  }, [timeframe, selectedPeriod, baseDataset]);
+    if (weekFilterMode === "single") {
+      if (selectedPeriod === "all") {
+        const lastLabel = baseDataset[baseDataset.length - 1]?.label || "W42";
+        return `Semua Minggu (W29 - ${lastLabel} 2026)`;
+      }
+      return `Minggu ${selectedPeriod} 2026`;
+    }
+    // weekFilterMode === "range"
+    const sNum = parseWeekNumber(startWeek);
+    const eNum = parseWeekNumber(endWeek);
+    const minW = Math.min(sNum, eNum);
+    const maxW = Math.max(sNum, eNum);
+    const count = activeDataset.length;
+    return `Minggu W${minW} - W${maxW} 2026 (${count} Minggu)`;
+  }, [timeframe, selectedPeriod, baseDataset, weekFilterMode, startWeek, endWeek, activeDataset]);
 
   // Export CSV Data
   const handleExportCsv = () => {
@@ -804,8 +870,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
               </button>
             </div>
 
-            {/* Sub-Filter Periode Spesifik (Bulan Tertentu / Minggu Tertentu) */}
-            {timeframe !== "ytd" && (
+            {/* Sub-Filter Periode: Bulanan vs Rentang Mingguan */}
+            {timeframe === "month" && (
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-slate-400 font-medium">Pilih Periode:</span>
                 <select
@@ -813,28 +879,150 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                   onChange={(e) => setSelectedPeriod(e.target.value)}
                   className="bg-slate-800 text-white font-semibold text-xs px-3 py-1.5 rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer shadow-md"
                 >
-                  {timeframe === "month" ? (
-                    <>
-                      <option value="all">Semua Bulan (Jan - Okt 2026)</option>
-                      {baseDataset.map((item) => (
-                        <option key={item.label} value={item.label}>
-                          Bulan {item.label} 2026
-                        </option>
-                      ))}
-                    </>
-                  ) : (
-                    <>
-                      <option value="all">
-                        Semua Minggu (W29 - {baseDataset[baseDataset.length - 1]?.label || "W41"})
-                      </option>
-                      {baseDataset.map((item, idx) => (
-                        <option key={item.label} value={item.label}>
-                          Minggu {item.label} {idx === baseDataset.length - 1 ? "(Terbaru)" : ""}
-                        </option>
-                      ))}
-                    </>
-                  )}
+                  <option value="all">Semua Bulan (Jan - Okt 2026)</option>
+                  {baseDataset.map((item) => (
+                    <option key={item.label} value={item.label}>
+                      Bulan {item.label} 2026
+                    </option>
+                  ))}
                 </select>
+              </div>
+            )}
+
+            {timeframe === "week" && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1 text-xs">
+                {/* Mode Selector */}
+                <div className="flex items-center p-0.5 bg-slate-800/90 rounded-xl border border-white/15 text-[11px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setWeekFilterMode("range")}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      weekFilterMode === "range"
+                        ? "bg-[#e95623] text-white shadow-xs"
+                        : "text-slate-300 hover:text-white"
+                    }`}
+                  >
+                    Rentang Minggu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWeekFilterMode("single");
+                      if (selectedPeriod === "all" || !selectedPeriod) {
+                        setSelectedPeriod(availableWeeks[availableWeeks.length - 1] || "W42");
+                      }
+                    }}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      weekFilterMode === "single"
+                        ? "bg-[#e95623] text-white shadow-xs"
+                        : "text-slate-300 hover:text-white"
+                    }`}
+                  >
+                    1 Minggu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWeekFilterMode("all")}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      weekFilterMode === "all"
+                        ? "bg-[#e95623] text-white shadow-xs"
+                        : "text-slate-300 hover:text-white"
+                    }`}
+                  >
+                    Semua
+                  </button>
+                </div>
+
+                {/* Range Controls */}
+                {weekFilterMode === "range" && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-slate-800/90 px-2.5 py-1 rounded-xl border border-white/15 shadow-md">
+                      <span className="text-slate-400 text-[11px] font-semibold">Dari:</span>
+                      <select
+                        value={startWeek}
+                        onChange={(e) => setStartWeek(e.target.value)}
+                        className="bg-slate-900 text-orange-200 font-extrabold text-xs px-2 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer"
+                      >
+                        {availableWeeks.map((w) => (
+                          <option key={`start-${w}`} value={w}>
+                            Minggu {w}
+                          </option>
+                        ))}
+                      </select>
+                      <ArrowRight size={12} className="text-orange-400 mx-0.5" />
+                      <span className="text-slate-400 text-[11px] font-semibold">Sampai:</span>
+                      <select
+                        value={endWeek}
+                        onChange={(e) => setEndWeek(e.target.value)}
+                        className="bg-slate-900 text-orange-200 font-extrabold text-xs px-2 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer"
+                      >
+                        {availableWeeks.map((w) => (
+                          <option key={`end-${w}`} value={w}>
+                            Minggu {w}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartWeek("W39");
+                          setEndWeek("W42");
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
+                          startWeek === "W39" && endWeek === "W42"
+                            ? "bg-orange-500/30 text-orange-200 border-orange-400 shadow-xs"
+                            : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-white/10"
+                        }`}
+                        title="Rentang Minggu 39 sampai 42"
+                      >
+                        W39 - W42
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const latest = availableWeeks[availableWeeks.length - 1] || "W42";
+                          const latestNum = parseWeekNumber(latest);
+                          const startNum = Math.max(29, latestNum - 3);
+                          setStartWeek(`W${startNum}`);
+                          setEndWeek(latest);
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 transition-all cursor-pointer"
+                        title="4 Minggu Operasional Terakhir"
+                      >
+                        4 Mgg Terakhir
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Single Week Selector */}
+                {weekFilterMode === "single" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-xs font-semibold">Pilih Minggu:</span>
+                    <select
+                      value={selectedPeriod}
+                      onChange={(e) => setSelectedPeriod(e.target.value)}
+                      className="bg-slate-800 text-white font-bold text-xs px-3 py-1.5 rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer shadow-md"
+                    >
+                      {availableWeeks.map((w, idx) => (
+                        <option key={w} value={w}>
+                          Minggu {w} {idx === availableWeeks.length - 1 ? "(Terbaru)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* All Weeks Indicator */}
+                {weekFilterMode === "all" && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-950/40 border border-orange-500/30 text-[11px] text-orange-200 font-semibold">
+                    <span>Semua Minggu Operasional ({availableWeeks[0] || "W29"} &bull; {availableWeeks[availableWeeks.length - 1] || "W42"})</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2031,7 +2219,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
           onClose={() => setIsPdfModalOpen(false)}
           selectedSite={selectedSite}
           timeframe={timeframe}
-          selectedPeriod={selectedPeriod}
+          selectedPeriod={timeframe === "week" && weekFilterMode === "range" ? `${startWeek}-${endWeek}` : selectedPeriod}
           categorySums={categorySums}
           top5ComparisonData={top5ComparisonData}
           top5Drivers={top5Drivers}

@@ -18,6 +18,8 @@ import { CoalProductionDashboardView } from "../components/CoalProductionDashboa
 import { CoalProductionReportView } from "../components/CoalProductionReportView";
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
 import { GLDataView } from "../components/GLDataView";
+import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
+import { MasterUnitView } from "../components/MasterUnitView";
 
 import {
   Menu,
@@ -287,6 +289,12 @@ export default function Home() {
                       ? "Coal Hauling • Laporan Produksi"
                       : activeMenu === "gl-data"
                       ? "Cost Analytics • GL Raw Data"
+                      : activeMenu === "plant-dashboard"
+                      ? "Plant & Maintenance • Dashboard Plant"
+                      : activeMenu === "periodic-inspection"
+                      ? "Plant & Maintenance • Periodic Inspection"
+                      : activeMenu === "master-unit"
+                      ? "Plant & Maintenance • Master Data Unit"
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
@@ -519,6 +527,23 @@ export default function Home() {
             />
           ) : activeMenu === "gl-data" ? (
             <GLDataView user={currentUser} />
+          ) : activeMenu === "plant-dashboard" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Dashboard Plant"
+              moduleCategory="Plant & Maintenance"
+              onBackToDashboard={() => setActiveMenu("dashboard")}
+            />
+          ) : activeMenu === "periodic-inspection" ? (
+            <PeriodicInspectionView
+              user={currentUser}
+              onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
+          ) : activeMenu === "master-unit" ? (
+            <MasterUnitView
+              user={currentUser}
+              onNavigateToPI={() => setActiveMenu("periodic-inspection")}
+            />
           ) : (
             <DashboardView
               user={currentUser}

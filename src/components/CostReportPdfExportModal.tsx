@@ -74,6 +74,8 @@ interface CostReportPdfExportModalProps {
   defaultSite?: JobSite;
   defaultTimeframe?: "month" | "week" | "ytd";
   defaultCategory?: CostCategoryKey;
+  defaultStartWeek?: string;
+  defaultEndWeek?: string;
   user?: User;
   dynamicData?: {
     Senyiur: { weekly: FullPeriodRecord[]; monthly?: FullPeriodRecord[] };
@@ -87,6 +89,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   defaultSite = "Senyiur",
   defaultTimeframe = "week",
   defaultCategory = "total",
+  defaultStartWeek = "W39",
+  defaultEndWeek = "W42",
   user,
   dynamicData,
 }) => {
@@ -106,10 +110,20 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   const availableWeeks = useMemo(() => {
     const weeklySen = dynamicData?.Senyiur?.weekly?.length ? dynamicData.Senyiur.weekly : RAW_WEEKLY_SENYIUR;
     const weeklyMua = dynamicData?.MuaraPahu?.weekly?.length ? dynamicData.MuaraPahu.weekly : RAW_WEEKLY_MUARAPAHU;
-    const set = new Set<string>();
+    const fallbackList = [
+      "W29", "W30", "W31", "W32", "W33", "W34", "W35",
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42"
+    ];
+    const set = new Set<string>(fallbackList);
     weeklySen.forEach((it) => set.add(it.label));
     weeklyMua.forEach((it) => set.add(it.label));
-    return Array.from(set);
+    const arr = Array.from(set);
+    arr.sort((a, b) => {
+      const na = parseInt(a.replace(/\D/g, ""), 10) || 0;
+      const nb = parseInt(b.replace(/\D/g, ""), 10) || 0;
+      return na - nb;
+    });
+    return arr;
   }, [dynamicData]);
 
   const availableMonths = useMemo(() => {
@@ -125,8 +139,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   const latestMonth = availableMonths[availableMonths.length - 1] || "Oct";
 
   // Range filters for Weeks
-  const [startWeek, setStartWeek] = useState<string>("W29");
-  const [endWeek, setEndWeek] = useState<string>(latestWeek);
+  const [startWeek, setStartWeek] = useState<string>(defaultStartWeek);
+  const [endWeek, setEndWeek] = useState<string>(defaultEndWeek || latestWeek);
 
   // Range filters for Months
   const [startMonth, setStartMonth] = useState<string>("Jan");
@@ -153,14 +167,19 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
       setSelectedCategory(defaultCategory);
       setTimeframe(defaultTimeframe);
       setSelectedSite(initialResolvedSite);
-      if (availableWeeks.length > 0) {
+      if (defaultStartWeek) {
+        setStartWeek(defaultStartWeek);
+      }
+      if (defaultEndWeek) {
+        setEndWeek(defaultEndWeek);
+      } else if (availableWeeks.length > 0) {
         setEndWeek(availableWeeks[availableWeeks.length - 1]);
       }
       if (availableMonths.length > 0) {
         setEndMonth(availableMonths[availableMonths.length - 1]);
       }
     }
-  }, [isOpen, defaultCategory, defaultTimeframe, initialResolvedSite, availableWeeks, availableMonths]);
+  }, [isOpen, defaultCategory, defaultTimeframe, initialResolvedSite, defaultStartWeek, defaultEndWeek, availableWeeks, availableMonths]);
 
   // Build filtered raw dataset
   const filteredDataset: FullPeriodRecord[] = useMemo(() => {
@@ -1585,16 +1604,48 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStartWeek(availableWeeks[0] || "W29");
-                      setEndWeek(latestWeek);
-                    }}
-                    className="px-2 py-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                  >
-                    Reset (Semua {availableWeeks[0] || "W29"}-{latestWeek})
-                  </button>
+                  {/* Preset Pills */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartWeek("W39");
+                        setEndWeek("W42");
+                      }}
+                      className={`px-2 py-1 text-[11px] font-bold rounded-md transition-colors ${
+                        startWeek === "W39" && endWeek === "W42"
+                          ? "bg-amber-100 text-amber-900 border border-amber-300"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                      title="Rentang Minggu W39 - W42"
+                    >
+                      W39 - W42
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const latest = availableWeeks[availableWeeks.length - 1] || "W42";
+                        const match = latest.match(/\d+/);
+                        const latestNum = match ? parseInt(match[0], 10) : 42;
+                        setStartWeek(`W${Math.max(29, latestNum - 3)}`);
+                        setEndWeek(latest);
+                      }}
+                      className="px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                      title="4 Minggu Operasional Terakhir"
+                    >
+                      4 Mgg Terakhir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartWeek(availableWeeks[0] || "W29");
+                        setEndWeek(latestWeek);
+                      }}
+                      className="px-2 py-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                    >
+                      Semua ({availableWeeks[0] || "W29"}-{latestWeek})
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs text-xs font-semibold">

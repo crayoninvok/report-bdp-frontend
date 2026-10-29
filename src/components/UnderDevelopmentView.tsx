@@ -16,6 +16,10 @@ import {
   Database,
   SearchCheck,
   FileCheck,
+  Wrench,
+  ClipboardCheck,
+  Activity,
+  Settings,
 } from "lucide-react";
 
 interface UnderDevelopmentViewProps {
@@ -32,6 +36,10 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
   onBackToDashboard,
 }) => {
   const isCostAnalytics = moduleCategory === "Cost Analytics" || moduleName.toLowerCase().includes("gl");
+  const isPlantMaintenance =
+    moduleCategory === "Plant & Maintenance" ||
+    moduleName.toLowerCase().includes("plant") ||
+    moduleName.toLowerCase().includes("inspection");
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -39,7 +47,9 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
       <div className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         {/* Decorative background outline */}
         <div className="absolute -right-8 -bottom-10 opacity-10 pointer-events-none">
-          {isCostAnalytics ? (
+          {isPlantMaintenance ? (
+            <Wrench size={240} className="text-amber-400" />
+          ) : isCostAnalytics ? (
             <Database size={240} className="text-orange-400" />
           ) : (
             <Truck size={240} className="text-amber-400" />
@@ -79,7 +89,45 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
       </div>
 
       {/* Feature Preview Cards */}
-      {isCostAnalytics ? (
+      {isPlantMaintenance ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-2.5">
+            <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center font-bold">
+              <Activity size={20} />
+            </div>
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+              Fleet Availability (PA / MA)
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Monitoring kesiapan unit operasional melalui Physical Availability (PA), Mechanical Availability (MA), MTBF, serta durasi breakdown armada hauling dan alat berat.
+            </p>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-2.5">
+            <div className="h-10 w-10 rounded-xl bg-orange-50 text-orange-700 border border-orange-200 flex items-center justify-center font-bold">
+              <ClipboardCheck size={20} />
+            </div>
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+              Periodic Inspection & Backlog
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Checklist berkala servis rutin (P1/250 HM, P2/500 HM, P3/1000 HM, P4/2000 HM), pelaporan temuan defect harian mekanik, dan mitigasi backlog penggantian part kritis.
+            </p>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-2.5">
+            <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-bold">
+              <Settings size={20} />
+            </div>
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+              Integrasi Biaya Sparepart & Oli
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Pencatatan konsumsi suku cadang, pelumas mesin/transmisi, dan biaya perbaikan per unit yang terhubung otomatis ke laporan Cost Analytics PT Batara Dharma Persada.
+            </p>
+          </div>
+        </div>
+      ) : isCostAnalytics ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-2.5">
             <div className="h-10 w-10 rounded-xl bg-orange-50 text-orange-700 border border-orange-200 flex items-center justify-center font-bold">
