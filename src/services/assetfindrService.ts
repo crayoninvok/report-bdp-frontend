@@ -147,6 +147,47 @@ export const assetfindrService = {
   },
 
   /**
+   * Login directly with AssetFindr credentials to obtain JWT token
+   */
+  async login(
+    email = "dzaky.athariqf@bataramining.com",
+    password = "",
+    clientAlias = "batara"
+  ): Promise<{
+    success: boolean;
+    token?: string;
+    message?: string;
+    error?: string;
+    user?: any;
+    logged_in_client_id?: string;
+  }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/assetfindr/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          client_alias: clientAlias,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.token) {
+        this.setStoredToken(data.token);
+      }
+      return data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || "Gagal menghubungi server untuk autentikasi",
+      };
+    }
+  },
+
+  /**
    * Test connection to AssetFindr API
    */
   async testConnection(
