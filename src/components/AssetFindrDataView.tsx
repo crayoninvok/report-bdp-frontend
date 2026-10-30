@@ -285,7 +285,7 @@ export const AssetFindrDataView: React.FC<AssetFindrDataViewProps> = ({
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               placeholder="Cari No Tiket, Unit, No Polisi, Operator, Lokasi..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-slate-400"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
             />
           </div>
 
@@ -627,7 +627,7 @@ export const AssetFindrDataView: React.FC<AssetFindrDataViewProps> = ({
             {/* Modal Body */}
             <div className="p-6 space-y-6 overflow-y-auto flex-1 text-xs">
               {/* Highlight Net Weight Card */}
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white flex items-center justify-between shadow-xs">
+              <div className="bg-linear-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white flex items-center justify-between shadow-xs">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-100 block">
                     Berat Bersih Muatan (Net Weight)

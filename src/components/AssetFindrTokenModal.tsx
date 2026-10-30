@@ -108,7 +108,7 @@ export const AssetFindrTokenModal: React.FC<AssetFindrTokenModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-orange-500/20 border border-orange-400/30 flex items-center justify-center text-[#e95623]">
               <Key size={20} />
@@ -205,7 +205,7 @@ export const AssetFindrTokenModal: React.FC<AssetFindrTokenModalProps> = ({
                   setTestResult(null);
                 }}
                 placeholder="Contoh: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... atau live_xxx"
-                className="w-full pl-3.5 pr-20 py-2.5 text-xs font-mono bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-slate-900 transition-all placeholder:text-slate-400"
+                className="w-full pl-3.5 pr-20 py-2.5 text-xs font-mono bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
               />
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <button
