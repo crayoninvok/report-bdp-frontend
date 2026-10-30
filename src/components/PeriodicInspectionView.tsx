@@ -11,7 +11,10 @@ import {
 } from "../services/plantService";
 import { useNotification } from "../context/NotificationContext";
 import * as XLSX from "xlsx";
-import { PeriodicInspectionPdfExportModal } from "./PeriodicInspectionPdfExportModal";
+import {
+  PeriodicInspectionPdfExportModal,
+  getAchievementTheme,
+} from "./PeriodicInspectionPdfExportModal";
 import {
   Calendar,
   Clock,
@@ -1050,41 +1053,33 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
               </div>
 
               {/* Card 3: Selesai */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-xs flex flex-col justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Inspeksi Selesai
-                </span>
-                <div className="my-1.5">
-                  <span
-                    className={`text-2xl font-black ${
-                      (scheduleData?.summary.achievementPercent || 0) >= 95
-                        ? "text-emerald-600"
-                        : (scheduleData?.summary.achievementPercent || 0) > 70
-                        ? "text-amber-600"
-                        : (scheduleData?.summary.achievementPercent || 0) > 0
-                        ? "text-rose-600"
-                        : "text-slate-800"
-                    }`}
-                  >
-                    {scheduleData?.summary.totalWeekCompleted || 0}
-                  </span>
-                  <span className="text-xs text-slate-400 font-semibold ml-1">Unit</span>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
-                  <span>Ketercapaian:</span>
-                  <span
-                    className={`font-black ${
-                      (scheduleData?.summary.achievementPercent || 0) >= 95
-                        ? "text-emerald-600"
-                        : (scheduleData?.summary.achievementPercent || 0) > 70
-                        ? "text-amber-600"
-                        : "text-rose-600"
-                    }`}
-                  >
-                    {scheduleData?.summary.achievementPercent || 0}%
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const ach = scheduleData?.summary.achievementPercent || 0;
+                const theme = getAchievementTheme(ach);
+                return (
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-xs flex flex-col justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Inspeksi Selesai
+                    </span>
+                    <div className="my-1.5">
+                      <span
+                        className={`text-2xl font-black ${
+                          ach > 0 ? theme.valText : "text-slate-800"
+                        }`}
+                      >
+                        {scheduleData?.summary.totalWeekCompleted || 0}
+                      </span>
+                      <span className="text-xs text-slate-400 font-semibold ml-1">Unit</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                      <span>Ketercapaian:</span>
+                      <span className={`font-black ${theme.valText}`}>
+                        {ach}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Card 4: Populasi Unit */}
               <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-xs flex flex-col justify-between">
@@ -1128,6 +1123,7 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                           Math.round((day.completedCount / day.targetUnits) * 100)
                         )
                       : 0;
+                  const dayTheme = getAchievementTheme(completionPercent);
 
                   return (
                     <div
@@ -1174,12 +1170,8 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                           <span className="text-slate-500 font-medium">{day.dayDateFormatted}</span>
                           <span
                             className={`font-black ${
-                              completionPercent >= 95
-                                ? "text-emerald-600"
-                                : completionPercent > 70
-                                ? "text-amber-600"
-                                : completionPercent > 0
-                                ? "text-rose-600"
+                              day.completedCount > 0
+                                ? dayTheme.valText
                                 : "text-slate-400"
                             }`}
                           >
@@ -1191,12 +1183,8 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                         <div className="w-full bg-slate-200 h-2 rounded-full mt-2.5 overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 rounded-full ${
-                              completionPercent >= 95
-                                ? "bg-emerald-500"
-                                : completionPercent > 70
-                                ? "bg-amber-500"
-                                : completionPercent > 0
-                                ? "bg-rose-500"
+                              day.completedCount > 0
+                                ? dayTheme.barFill
                                 : "bg-transparent"
                             }`}
                             style={{

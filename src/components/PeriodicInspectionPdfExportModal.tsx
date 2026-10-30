@@ -43,12 +43,12 @@ interface PeriodicInspectionPdfExportModalProps {
 
 /**
  * Dynamic Achievement Theme Helper
- * - <= 70%: Merah (Rose/Red)
- * - > 70% and < 95%: Kuning (Amber/Yellow)
- * - >= 95%: Hijau (Emerald/Green)
+ * - 0 - 89%: Merah (Rose/Red)
+ * - 90% - 99%: Kuning (Amber/Yellow)
+ * - >= 100%: Hijau (Emerald/Green)
  */
 export const getAchievementTheme = (pct: number) => {
-  if (pct >= 95) {
+  if (pct >= 100) {
     return {
       cardBg: "bg-emerald-50/60",
       border: "border-emerald-200",
@@ -61,7 +61,7 @@ export const getAchievementTheme = (pct: number) => {
       statusLabel: "Target Tercapai",
     };
   }
-  if (pct > 70) {
+  if (pct >= 90) {
     return {
       cardBg: "bg-amber-50/60",
       border: "border-amber-200",
