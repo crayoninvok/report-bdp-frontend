@@ -204,7 +204,12 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     if (selectedSubAccountFilter !== "ALL") {
       list = list.filter((item) => {
         if (item.type === "parent") return false;
-        return (item.accountCode && item.accountCode === selectedSubAccountFilter) || item.id === selectedSubAccountFilter || item.name === selectedSubAccountFilter;
+        return (
+          (item.accountCode && item.accountCode === selectedSubAccountFilter) ||
+          item.id === selectedSubAccountFilter ||
+          (item.name && item.name === selectedSubAccountFilter) ||
+          (item.accountName && item.accountName === selectedSubAccountFilter)
+        );
       });
     }
 
@@ -223,7 +228,8 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
         (item) =>
-          item.name.toLowerCase().includes(q) ||
+          (item.name && item.name.toLowerCase().includes(q)) ||
+          (item.accountName && item.accountName.toLowerCase().includes(q)) ||
           (item.accountCode && item.accountCode.toLowerCase().includes(q)) ||
           (item.subCategory && item.subCategory.toLowerCase().includes(q)) ||
           (item.parentName && item.parentName.toLowerCase().includes(q))
@@ -315,7 +321,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
         [
           `"${ent.type}"`,
           `"${ent.accountCode || "-"}"`,
-          `"${ent.name.replace(/"/g, '""')}"`,
+          `"${(ent.name || ent.accountName || "").replace(/"/g, '""')}"`,
           `"${(ent.parentName || "-").replace(/"/g, '""')}"`,
           `"${(ent.subCategory || "-").replace(/"/g, '""')}"`,
           `"${ent.costBehavior || "-"}"`,
@@ -786,11 +792,14 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
               <option value="ALL">
                 Semua Sub-Kategori ({availableSubCategories.length} Item)
               </option>
-              {availableSubCategories.map((acc) => (
-                <option key={acc.id} value={acc.accountCode || acc.id}>
-                  {acc.accountCode ? `${acc.accountCode} - ${acc.name}` : acc.name}
-                </option>
-              ))}
+              {availableSubCategories.map((acc) => {
+                const displayName = acc.name || acc.accountName || "Akun Beban";
+                return (
+                  <option key={acc.id} value={acc.accountCode || acc.id}>
+                    {acc.accountCode ? `${acc.accountCode} - ${displayName}` : displayName}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -1117,8 +1126,8 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                   </div>
 
                   {/* Title & Breadcrumb */}
-                  <h3 className="text-sm font-black text-slate-900 tracking-tight leading-snug group-hover:text-[#e95623] transition-colors" title={item.name}>
-                    {item.name}
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight leading-snug group-hover:text-[#e95623] transition-colors" title={item.name || item.accountName}>
+                    {item.name || item.accountName}
                   </h3>
 
                   {item.parentName && (
@@ -1307,7 +1316,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                   )}
                 </div>
                 <h2 className="text-base font-black text-slate-900 tracking-tight">
-                  {activeModalItem.name}
+                  {activeModalItem.name || activeModalItem.accountName}
                 </h2>
                 {activeModalItem.parentName && (
                   <p className="text-xs text-slate-500 font-medium">
