@@ -103,6 +103,47 @@ export interface WeighBridgeTicketsResponse {
   data: WeighBridgeTicket[];
 }
 
+export interface DailyProductionItem {
+  date: string;
+  day: number;
+  dayName: string;
+  displayDate: string;
+  tonaseDS: number;
+  ritaseDS: number;
+  tonaseNS: number;
+  ritaseNS: number;
+  totalTonase: number;
+  totalRitase: number;
+  avgPayloadDS: number;
+  avgPayloadNS: number;
+  avgPayloadTotal: number;
+}
+
+export interface DailyProductionResponse {
+  success: boolean;
+  isLive: boolean;
+  isDemo?: boolean;
+  isCached?: boolean;
+  period: {
+    start_date: string;
+    end_date: string;
+    total_days: number;
+    active_days: number;
+  };
+  summary: {
+    totalTonaseDS: number;
+    totalRitaseDS: number;
+    totalTonaseNS: number;
+    totalRitaseNS: number;
+    grandTotalTonase: number;
+    grandTotalRitase: number;
+    avgTonasePerDay: number;
+    avgPayloadOverall: number;
+  };
+  data: DailyProductionItem[];
+}
+
+
 const TOKEN_STORAGE_KEY = "batara_assetfindr_token";
 
 export const assetfindrService = {
@@ -261,4 +302,39 @@ export const assetfindrService = {
 
     return await res.json();
   },
+
+  /**
+   * Fetch Aggregated Daily Production (Day 01 to Today by Shift DS & NS)
+   */
+  async getDailyProduction(
+    startDate?: string,
+    endDate?: string,
+    overrideToken?: string
+  ): Promise<DailyProductionResponse> {
+    const token = overrideToken !== undefined ? overrideToken : this.getStoredToken();
+    const params = new URLSearchParams();
+    if (startDate) params.set("start_date", startDate);
+    if (endDate) params.set("end_date", endDate);
+
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      headers["x-assetfindr-token"] = token;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/assetfindr/daily-production?${params.toString()}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Error ${res.status}: ${res.statusText}`);
+    }
+
+    return await res.json();
+  },
 };
+
