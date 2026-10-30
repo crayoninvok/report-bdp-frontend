@@ -26,8 +26,6 @@ import {
   Clock,
   ArrowUpRight,
   BarChart3,
-  SlidersHorizontal,
-  FileSpreadsheet,
   Zap,
   MapPin,
 } from "lucide-react";
@@ -76,8 +74,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
   // View Options
   const [chartType, setChartType] = useState<"stacked" | "grouped">("stacked");
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
-  const [searchDate, setSearchDate] = useState<string>("");
 
   // Load Daily Production Data
   const loadDailyProduction = useCallback(async () => {
@@ -96,7 +92,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     }
   }, [startDate, endDate, selectedJobsite, showError]);
 
-
   useEffect(() => {
     loadDailyProduction();
   }, [loadDailyProduction]);
@@ -109,26 +104,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       maximumFractionDigits: decimals,
     });
   };
-
-  // Filtered & Sorted Daily List for Table
-  const tableRows = useMemo(() => {
-    let list = [...dailyData];
-    if (searchDate.trim()) {
-      const q = searchDate.toLowerCase();
-      list = list.filter(
-        (item) =>
-          item.date.includes(q) ||
-          item.displayDate.toLowerCase().includes(q) ||
-          item.dayName.toLowerCase().includes(q)
-      );
-    }
-    list.sort((a, b) => {
-      return sortOrder === "desc"
-        ? b.date.localeCompare(a.date)
-        : a.date.localeCompare(b.date);
-    });
-    return list;
-  }, [dailyData, searchDate, sortOrder]);
 
   // Chart Data preparation
   const chartData = useMemo(() => {
@@ -532,7 +507,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setChartType("stacked")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -552,6 +527,15 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               }`}
             >
               Berdampingan (Grouped)
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Download Data CSV"
+            >
+              <Download size={13} />
+              <span>Export CSV</span>
             </button>
           </div>
         </div>
@@ -656,284 +640,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         </div>
       </div>
 
-      {/* Main Table: Produksi Harian Tanggal 01 Hingga Hari Ini (DS & NS) */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-        {/* Table Toolbar */}
-        <div className="p-5 sm:p-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <FileSpreadsheet size={20} className="text-[#e95623]" />
-                Tabel Produksi Harian (Tanggal 01 s/d Hari Ini)
-              </h2>
-              <span
-                className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${
-                  selectedJobsite === "senyiur"
-                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                    : selectedJobsite === "muara_pahu"
-                    ? "bg-orange-100 text-orange-800 border border-orange-300"
-                    : "bg-slate-200/80 text-slate-800 border border-slate-300"
-                }`}
-              >
-                {selectedJobsite === "all"
-                  ? "Semua Jobsite"
-                  : selectedJobsite === "senyiur"
-                  ? "Jobsite Senyiur"
-                  : "Jobsite Muara Pahu"}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Rincian angka tonase Day Shift (DS) dan Night Shift (NS) setiap hari operasional
-            </p>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="text"
-              value={searchDate}
-              onChange={(e) => setSearchDate(e.target.value)}
-              placeholder="Cari tanggal atau hari..."
-              className="px-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-orange-500 w-44 sm:w-52"
-            />
-
-            <button
-              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300 hover:border-slate-400 text-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-            >
-              <SlidersHorizontal size={13} />
-              <span>{sortOrder === "desc" ? "Terbaru &rarr; Terlama" : "Terlama &rarr; Terbaru"}</span>
-            </button>
-
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs"
-            >
-              <Download size={13} />
-              <span>Export CSV</span>
-            </button>
-          </div>
-        </div>
-
-        {/* The Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-700 font-extrabold uppercase tracking-wider text-[11px]">
-                <th className="py-3.5 px-4 w-12 text-center">No</th>
-                <th className="py-3.5 px-4 min-w-37.5">Tanggal & Hari</th>
-                {/* DS Header with Amber Accent */}
-                <th className="py-3.5 px-4 min-w-45 bg-amber-100/90 text-amber-950 border-x border-amber-200 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <Sun size={14} className="text-amber-600" />
-                    <span>Day Shift (DS)</span>
-                  </div>
-                </th>
-                {/* NS Header with Indigo Accent */}
-                <th className="py-3.5 px-4 min-w-45 bg-indigo-100/90 text-indigo-950 border-r border-indigo-200 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <Moon size={14} className="text-indigo-600" />
-                    <span>Night Shift (NS)</span>
-                  </div>
-                </th>
-                <th className="py-3.5 px-4 min-w-37.5 text-right font-black">Total Tonase</th>
-                <th className="py-3.5 px-4 w-28 text-center">Total Rit</th>
-                <th className="py-3.5 px-4 min-w-32.5 text-center">Rasio Shift</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
-                    <div className="flex items-center justify-center gap-2">
-                      <RefreshCw size={16} className="animate-spin text-[#e95623]" />
-                      <span>Sedang memuat data harian...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : tableRows.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-400 font-medium">
-                    Tidak ada data produksi yang cocok.
-                  </td>
-                </tr>
-              ) : (
-                tableRows.map((row, idx) => {
-                  const isToday = row.date === todayStr;
-                  const dsPercent =
-                    row.totalTonase > 0 ? Math.round((row.tonaseDS / row.totalTonase) * 100) : 0;
-                  const nsPercent =
-                    row.totalTonase > 0 ? Math.round((row.tonaseNS / row.totalTonase) * 100) : 0;
-
-                  return (
-                    <tr
-                      key={row.date}
-                      className={`hover:bg-slate-50/80 transition-colors ${
-                        isToday ? "bg-orange-50/30 font-semibold" : ""
-                      }`}
-                    >
-                      {/* No */}
-                      <td className="py-3.5 px-4 text-center text-slate-400 font-bold">
-                        {idx + 1}
-                      </td>
-
-                      {/* Date & Day */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <span className="font-extrabold text-slate-900 block text-xs">
-                              {row.displayDate}
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-mono block">
-                              {row.date}
-                            </span>
-                          </div>
-                          {isToday && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-orange-500 text-white animate-pulse">
-                              Hari Ini
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Day Shift (DS) Column - Amber/Orange Accent */}
-                      <td className="py-3.5 px-4 text-right bg-amber-50/50 border-x border-amber-100/80">
-                        <div className="space-y-0.5">
-                          <span className="text-xs font-black text-amber-950 block">
-                            {formatNum(row.tonaseDS, 2)}{" "}
-                            <span className="text-[10px] font-bold text-amber-700">Ton</span>
-                          </span>
-                          <span className="text-[11px] text-amber-800 font-semibold flex items-center justify-end gap-1">
-                            <span className="px-1.5 py-0.2 rounded bg-amber-200/60 text-[10px] font-bold">
-                              {row.ritaseDS} Rit
-                            </span>
-                            {row.avgPayloadDS > 0 && (
-                              <span className="text-[10px] opacity-75 font-mono">
-                                ({row.avgPayloadDS} T/rit)
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Night Shift (NS) Column - Indigo Accent */}
-                      <td className="py-3.5 px-4 text-right bg-indigo-50/50 border-r border-indigo-100/80">
-                        <div className="space-y-0.5">
-                          <span className="text-xs font-black text-indigo-950 block">
-                            {formatNum(row.tonaseNS, 2)}{" "}
-                            <span className="text-[10px] font-bold text-indigo-700">Ton</span>
-                          </span>
-                          <span className="text-[11px] text-indigo-800 font-semibold flex items-center justify-end gap-1">
-                            <span className="px-1.5 py-0.2 rounded bg-indigo-200/60 text-[10px] font-bold">
-                              {row.ritaseNS} Rit
-                            </span>
-                            {row.avgPayloadNS > 0 && (
-                              <span className="text-[10px] opacity-75 font-mono">
-                                ({row.avgPayloadNS} T/rit)
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Total Tonase */}
-                      <td className="py-3.5 px-4 text-right">
-                        <span className="text-xs font-black text-slate-900 block">
-                          {formatNum(row.totalTonase, 2)}{" "}
-                          <span className="text-[10px] font-bold text-slate-500">Ton</span>
-                        </span>
-                        {row.avgPayloadTotal > 0 && (
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            Rata-rata: {row.avgPayloadTotal} T/rit
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Total Ritase */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 font-extrabold text-[11px]">
-                          {row.totalRitase} Rit
-                        </span>
-                      </td>
-
-                      {/* Shift Ratio Progress Bar */}
-                      <td className="py-3.5 px-4 text-center">
-                        {row.totalTonase > 0 ? (
-                          <div className="space-y-1">
-                            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex">
-                              <div
-                                style={{ width: `${dsPercent}%` }}
-                                className="bg-amber-500 h-full transition-all"
-                                title={`DS: ${dsPercent}%`}
-                              />
-                              <div
-                                style={{ width: `${nsPercent}%` }}
-                                className="bg-indigo-600 h-full transition-all"
-                                title={`NS: ${nsPercent}%`}
-                              />
-                            </div>
-                            <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                              <span className="text-amber-600">{dsPercent}% DS</span>
-                              <span className="text-indigo-600">{nsPercent}% NS</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic">0%</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-
-            {/* Table Footer: Total Akumulasi MTD */}
-            {summary && (
-              <tfoot>
-                <tr className="bg-slate-900 text-white font-black text-xs border-t-2 border-slate-700">
-                  <td colSpan={2} className="py-4 px-4 uppercase tracking-wider text-slate-200">
-                    TOTAL AKUMULASI (01 s/d Hari Ini)
-                  </td>
-                  {/* DS Total */}
-                  <td className="py-4 px-4 text-right bg-amber-500/20 text-amber-300 border-x border-slate-700">
-                    <span className="block text-sm font-black text-amber-200">
-                      {formatNum(summary.totalTonaseDS, 2)} Ton
-                    </span>
-                    <span className="text-[10px] text-amber-300/80 font-normal">
-                      {summary.totalRitaseDS.toLocaleString("id-ID")} Rit
-                    </span>
-                  </td>
-                  {/* NS Total */}
-                  <td className="py-4 px-4 text-right bg-indigo-500/20 text-indigo-300 border-r border-slate-700">
-                    <span className="block text-sm font-black text-indigo-200">
-                      {formatNum(summary.totalTonaseNS, 2)} Ton
-                    </span>
-                    <span className="text-[10px] text-indigo-300/80 font-normal">
-                      {summary.totalRitaseNS.toLocaleString("id-ID")} Rit
-                    </span>
-                  </td>
-                  {/* Grand Total */}
-                  <td className="py-4 px-4 text-right text-emerald-400">
-                    <span className="block text-sm font-black">
-                      {formatNum(summary.grandTotalTonase, 2)} Ton
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      {summary.avgPayloadOverall} T/rit
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-center text-white">
-                    <span className="px-2.5 py-1 rounded-xl bg-slate-800 text-white font-black">
-                      {summary.grandTotalRitase.toLocaleString("id-ID")} Rit
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-center text-slate-400 text-[10px]">
-                    MTD Summary
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-      </div>
 
       {/* AssetFindr Token Modal */}
       <AssetFindrTokenModal
