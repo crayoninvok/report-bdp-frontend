@@ -1055,7 +1055,17 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                   Inspeksi Selesai
                 </span>
                 <div className="my-1.5">
-                  <span className="text-2xl font-black text-emerald-600">
+                  <span
+                    className={`text-2xl font-black ${
+                      (scheduleData?.summary.achievementPercent || 0) >= 95
+                        ? "text-emerald-600"
+                        : (scheduleData?.summary.achievementPercent || 0) > 70
+                        ? "text-amber-600"
+                        : (scheduleData?.summary.achievementPercent || 0) > 0
+                        ? "text-rose-600"
+                        : "text-slate-800"
+                    }`}
+                  >
                     {scheduleData?.summary.totalWeekCompleted || 0}
                   </span>
                   <span className="text-xs text-slate-400 font-semibold ml-1">Unit</span>
@@ -1063,13 +1073,13 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                 <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
                   <span>Ketercapaian:</span>
                   <span
-                    className={
-                      (scheduleData?.summary.achievementPercent || 0) >= 100
+                    className={`font-black ${
+                      (scheduleData?.summary.achievementPercent || 0) >= 95
                         ? "text-emerald-600"
-                        : (scheduleData?.summary.achievementPercent || 0) > 0
+                        : (scheduleData?.summary.achievementPercent || 0) > 70
                         ? "text-amber-600"
-                        : "text-slate-400"
-                    }
+                        : "text-rose-600"
+                    }`}
                   >
                     {scheduleData?.summary.achievementPercent || 0}%
                   </span>
@@ -1164,10 +1174,12 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                           <span className="text-slate-500 font-medium">{day.dayDateFormatted}</span>
                           <span
                             className={`font-black ${
-                              isCompletedMet
+                              completionPercent >= 95
                                 ? "text-emerald-600"
-                                : day.completedCount > 0
-                                ? "text-[#e95623]"
+                                : completionPercent > 70
+                                ? "text-amber-600"
+                                : completionPercent > 0
+                                ? "text-rose-600"
                                 : "text-slate-400"
                             }`}
                           >
@@ -1179,10 +1191,12 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                         <div className="w-full bg-slate-200 h-2 rounded-full mt-2.5 overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 rounded-full ${
-                              isCompletedMet
+                              completionPercent >= 95
                                 ? "bg-emerald-500"
-                                : day.completedCount > 0
-                                ? "bg-[#e95623]"
+                                : completionPercent > 70
+                                ? "bg-amber-500"
+                                : completionPercent > 0
+                                ? "bg-rose-500"
                                 : "bg-transparent"
                             }`}
                             style={{

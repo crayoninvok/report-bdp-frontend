@@ -41,6 +41,52 @@ interface PeriodicInspectionPdfExportModalProps {
   initialEndDate?: string;
 }
 
+/**
+ * Dynamic Achievement Theme Helper
+ * - <= 70%: Merah (Rose/Red)
+ * - > 70% and < 95%: Kuning (Amber/Yellow)
+ * - >= 95%: Hijau (Emerald/Green)
+ */
+export const getAchievementTheme = (pct: number) => {
+  if (pct >= 95) {
+    return {
+      cardBg: "bg-emerald-50/60",
+      border: "border-emerald-200",
+      titleText: "text-emerald-800",
+      valText: "text-emerald-700",
+      subText: "text-emerald-800",
+      barTrack: "bg-emerald-200/60",
+      barFill: "bg-emerald-600",
+      badge: "bg-emerald-100 text-emerald-800",
+      statusLabel: "Target Tercapai",
+    };
+  }
+  if (pct > 70) {
+    return {
+      cardBg: "bg-amber-50/60",
+      border: "border-amber-200",
+      titleText: "text-amber-800",
+      valText: "text-amber-700",
+      subText: "text-amber-800",
+      barTrack: "bg-amber-200/60",
+      barFill: "bg-amber-500",
+      badge: "bg-amber-100 text-amber-800",
+      statusLabel: "Perlu Peningkatan",
+    };
+  }
+  return {
+    cardBg: "bg-rose-50/60",
+    border: "border-rose-200",
+    titleText: "text-rose-800",
+    valText: "text-rose-700",
+    subText: "text-rose-800",
+    barTrack: "bg-rose-200/60",
+    barFill: "bg-rose-600",
+    badge: "bg-rose-100 text-rose-800",
+    statusLabel: "Di Bawah Target",
+  };
+};
+
 export const PeriodicInspectionPdfExportModal: React.FC<
   PeriodicInspectionPdfExportModalProps
 > = ({
@@ -584,6 +630,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
               const chunkPlan = w.days.reduce((acc, d) => acc + d.targetUnits, 0);
               const chunkPercent =
                 chunkPlan > 0 ? Math.min(100, Math.round((chunkCompleted / chunkPlan) * 100)) : 0;
+              const chunkTheme = getAchievementTheme(chunkPercent);
 
               return (
                 <div
@@ -669,24 +716,24 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                       </div>
 
                       {/* Card 3: Realisasi Selesai */}
-                      <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-2.5">
-                        <span className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider block">
+                      <div className={`${chunkTheme.cardBg} border ${chunkTheme.border} rounded-xl p-2.5`}>
+                        <span className={`text-[9px] font-bold ${chunkTheme.titleText} uppercase tracking-wider block`}>
                           Inspeksi Selesai (Completed)
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
-                          <span className="text-xl font-black text-emerald-700 font-mono">
+                          <span className={`text-xl font-black ${chunkTheme.valText} font-mono`}>
                             {chunkCompleted}
                           </span>
-                          <span className="text-[10px] font-bold text-emerald-800">
+                          <span className={`text-[10px] font-bold ${chunkTheme.subText}`}>
                             / {chunkPlan} Unit
                           </span>
-                          <span className="text-xs font-black text-emerald-700 ml-auto">
+                          <span className={`text-xs font-black ${chunkTheme.valText} ml-auto`}>
                             {chunkPercent}%
                           </span>
                         </div>
-                        <div className="w-full bg-emerald-200/60 rounded-full h-1.5 mt-1 overflow-hidden">
+                        <div className={`w-full ${chunkTheme.barTrack} rounded-full h-1.5 mt-1 overflow-hidden`}>
                           <div
-                            className="bg-emerald-600 h-1.5 rounded-full transition-all"
+                            className={`${chunkTheme.barFill} h-1.5 rounded-full transition-all`}
                             style={{ width: `${chunkPercent}%` }}
                           />
                         </div>
@@ -733,6 +780,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                                 Math.round((day.completedCount / day.targetUnits) * 100)
                               )
                             : 0;
+                        const dayTheme = getAchievementTheme(completionPercent);
 
                         return (
                           <div
@@ -766,7 +814,9 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                                 </span>
                                 <span
                                   className={`text-[9px] font-mono font-black ${
-                                    isCompletedMet ? "text-emerald-600" : "text-slate-700"
+                                    day.completedCount === 0
+                                      ? "text-slate-700"
+                                      : dayTheme.valText
                                   }`}
                                 >
                                   {day.completedCount}/{day.targetUnits}
@@ -777,11 +827,9 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                               <div className="w-full bg-slate-200 rounded-full h-1 mt-1 overflow-hidden">
                                 <div
                                   className={`h-1 rounded-full ${
-                                    isCompletedMet
-                                      ? "bg-emerald-500"
-                                      : day.completedCount > 0
-                                      ? "bg-amber-500"
-                                      : "bg-transparent"
+                                    day.completedCount === 0
+                                      ? "bg-transparent"
+                                      : dayTheme.barFill
                                   }`}
                                   style={{ width: `${completionPercent}%` }}
                                 />
@@ -977,7 +1025,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                         const sched = d.items.filter((i) => i.status === "Scheduled").length;
                         const pend = d.items.filter((i) => i.status === "Pending").length;
                         const pct = d.targetUnits > 0 ? Math.round((comp / d.targetUnits) * 100) : 0;
-                        const isMet = comp >= d.targetUnits && d.targetUnits > 0;
+                        const rowTheme = getAchievementTheme(pct);
 
                         return (
                           <tr key={d.date} className="hover:bg-slate-50">
@@ -990,37 +1038,42 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                             <td className="py-2 px-3 text-center font-mono font-bold text-amber-700">{inProg}</td>
                             <td className="py-2 px-3 text-center font-mono font-bold text-slate-600">{sched}</td>
                             <td className="py-2 px-3 text-center font-mono font-bold text-rose-700">{pend}</td>
-                            <td className="py-2 px-3 text-center font-mono font-extrabold text-slate-900">{pct}%</td>
+                            <td className={`py-2 px-3 text-center font-mono font-extrabold ${comp === 0 ? "text-slate-400" : rowTheme.valText}`}>{pct}%</td>
                             <td className="py-2 px-3 text-right">
                               <span
                                 className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase ${
-                                  isMet
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : comp > 0
-                                    ? "bg-amber-100 text-amber-800"
-                                    : "bg-slate-100 text-slate-600"
+                                  comp === 0
+                                    ? "bg-slate-100 text-slate-500"
+                                    : rowTheme.badge
                                 }`}
                               >
-                                {isMet ? "Target Tercapai" : comp > 0 ? "Sebagian Selesai" : "Belum Mulai"}
+                                {comp === 0 ? "Belum Mulai" : rowTheme.statusLabel}
                               </span>
                             </td>
                           </tr>
                         );
                       })}
                       {/* Summary Row */}
-                      <tr className="bg-slate-100/80 font-black text-slate-900 border-t border-slate-300">
-                        <td className="py-2.5 px-3 uppercase tracking-wider">TOTAL KUMULATIF PERIODE</td>
-                        <td className="py-2.5 px-3 text-center font-mono">{totalWeekPlan} Unit</td>
-                        <td className="py-2.5 px-3 text-center font-mono">{allItems.length}</td>
-                        <td className="py-2.5 px-3 text-center font-mono text-emerald-700">{totalCompleted}</td>
-                        <td className="py-2.5 px-3 text-center font-mono text-amber-700">{totalInProgress}</td>
-                        <td className="py-2.5 px-3 text-center font-mono text-slate-700">{totalScheduled}</td>
-                        <td className="py-2.5 px-3 text-center font-mono text-rose-700">{totalPending}</td>
-                        <td className="py-2.5 px-3 text-center font-mono">{overallAchievementPercent}%</td>
-                        <td className="py-2.5 px-3 text-right text-[#e95623]">
-                          {overallAchievementPercent >= 100 ? "Memenuhi Target" : "Dalam Pemantauan"}
-                        </td>
-                      </tr>
+                      {(() => {
+                        const totalTheme = getAchievementTheme(overallAchievementPercent);
+                        return (
+                          <tr className="bg-slate-100/80 font-black text-slate-900 border-t border-slate-300">
+                            <td className="py-2.5 px-3 uppercase tracking-wider">TOTAL KUMULATIF PERIODE</td>
+                            <td className="py-2.5 px-3 text-center font-mono">{totalWeekPlan} Unit</td>
+                            <td className="py-2.5 px-3 text-center font-mono">{allItems.length}</td>
+                            <td className="py-2.5 px-3 text-center font-mono text-emerald-700">{totalCompleted}</td>
+                            <td className="py-2.5 px-3 text-center font-mono text-amber-700">{totalInProgress}</td>
+                            <td className="py-2.5 px-3 text-center font-mono text-slate-700">{totalScheduled}</td>
+                            <td className="py-2.5 px-3 text-center font-mono text-rose-700">{totalPending}</td>
+                            <td className={`py-2.5 px-3 text-center font-mono font-black ${totalTheme.valText}`}>{overallAchievementPercent}%</td>
+                            <td className="py-2.5 px-3 text-right">
+                              <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase ${totalTheme.badge}`}>
+                                {totalTheme.statusLabel}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })()}
                     </tbody>
                   </table>
                 </div>
