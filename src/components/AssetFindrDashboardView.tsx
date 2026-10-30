@@ -39,6 +39,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 
 interface AssetFindrDashboardViewProps {
@@ -72,8 +73,14 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   const [isLive, setIsLive] = useState<boolean>(true);
   const [isTokenModalOpen, setIsTokenModalOpen] = useState<boolean>(false);
 
+  // Today Date String
+  const todayStr = `${defaultYear}-${defaultMonth}-${defaultDate}`;
+
   // View Options
   const [chartType, setChartType] = useState<"stacked" | "grouped">("stacked");
+  const [showTrendLine, setShowTrendLine] = useState<boolean>(true);
+  const [showTotalLine, setShowTotalLine] = useState<boolean>(true);
+  const [showBarLabels, setShowBarLabels] = useState<boolean>(true);
 
   // Load Daily Production Data
   const loadDailyProduction = useCallback(async () => {
@@ -105,14 +112,80 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     });
   };
 
-  // Chart Data preparation
+  // Chart Data preparation with Trend Line and Total Tonase
   const chartData = useMemo(() => {
-    return [...dailyData].sort((a, b) => a.date.localeCompare(b.date)).map((item) => ({
-      ...item,
-      label: `${String(item.day).padStart(2, "0")}`,
-      fullLabel: item.displayDate,
-    }));
-  }, [dailyData]);
+    const sorted = [...dailyData].sort((a, b) => a.date.localeCompare(b.date));
+
+    // Hari operasional yang sudah selesai (strictly < todayStr & totalTonase > 0)
+    // Sesuai permintaan: Garis trend berhenti di 1 hari sebelum hari ini (H-1)
+    const completedItems = sorted.filter(
+      (item) => item.date < todayStr && item.totalTonase > 0
+    );
+    const n = completedItems.length;
+
+    let slope = 0;
+    let intercept = 0;
+
+    if (n >= 2) {
+      const sumX = completedItems.reduce((acc, _, idx) => acc + idx, 0);
+      const sumY = completedItems.reduce((acc, item) => acc + item.totalTonase, 0);
+      const avgX = sumX / n;
+      const avgY = sumY / n;
+
+      let numerator = 0;
+      let denominator = 0;
+      completedItems.forEach((item, idx) => {
+        const xDiff = idx - avgX;
+        const yDiff = item.totalTonase - avgY;
+        numerator += xDiff * yDiff;
+        denominator += xDiff * xDiff;
+      });
+
+      if (denominator !== 0) {
+        slope = numerator / denominator;
+        intercept = avgY - slope * avgX;
+      }
+    }
+
+    return sorted.map((item) => {
+      const isBeforeToday = item.date < todayStr;
+      const isToday = item.date === todayStr;
+
+      let trendValue: number | null = null;
+      let totalCompleted: number | null = null;
+
+      // Garis tren regresi & garis total berhenti tepat 1 hari sebelum hari ini (H-1)
+      if (isBeforeToday && item.totalTonase > 0) {
+        const completedIdx = completedItems.findIndex((ci) => ci.date === item.date);
+        if (completedIdx !== -1 && n >= 2) {
+          trendValue = Math.round(slope * completedIdx + intercept);
+        }
+        totalCompleted = item.totalTonase;
+      }
+
+      // Format label ringkas total tonase di atas setiap bar (misal: "15.5k", "35.0k", "8.4k")
+      let totalTonaseLabel = "";
+      if (item.totalTonase > 0) {
+        totalTonaseLabel =
+          item.totalTonase >= 1000
+            ? `${(item.totalTonase / 1000).toFixed(1)}k`
+            : `${Math.round(item.totalTonase)}`;
+      }
+
+      return {
+        ...item,
+        label: `${String(item.day).padStart(2, "0")}`,
+        fullLabel: item.displayDate,
+        isToday,
+        isBeforeToday,
+        // Garis tren linear berhenti di H-1 (null untuk hari ini)
+        trendLine: trendValue,
+        // Garis total harian berhenti di H-1 (null untuk hari ini)
+        totalTonaseCompleted: totalCompleted,
+        totalTonaseLabel,
+      };
+    });
+  }, [dailyData, todayStr]);
 
   // Export CSV
   const handleExportCSV = () => {
@@ -160,9 +233,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     document.body.removeChild(link);
     showSuccess("Data berhasil diekspor ke CSV!");
   };
-
-  // Today Date String
-  const todayStr = `${defaultYear}-${defaultMonth}-${defaultDate}`;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-16">
@@ -496,42 +566,87 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
       {/* Chart Section: Produksi Harian DS & NS */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
               <BarChart3 size={20} className="text-[#e95623]" />
               Grafik Produksi Harian per Shift (Tanggal 01 s/d Hari Ini)
             </h2>
             <p className="text-xs text-slate-500">
-              Perbandingan kontribusi tonase antara Day Shift (DS) dan Night Shift (NS) setiap hari
+              Perbandingan kontribusi Day Shift (DS), Night Shift (NS), Total Harian, serta Garis Tren produksi (berhenti H-1)
             </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Mode Stacked / Grouped */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                onClick={() => setChartType("stacked")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartType === "stacked"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                Bertumpuk
+              </button>
+              <button
+                onClick={() => setChartType("grouped")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartType === "grouped"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                Berdampingan
+              </button>
+            </div>
+
+            {/* Toggle Garis Tren Regresi */}
             <button
-              onClick={() => setChartType("stacked")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                chartType === "stacked"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              onClick={() => setShowTrendLine(!showTrendLine)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                showTrendLine
+                  ? "bg-sky-50 text-sky-800 border-sky-300 shadow-2xs"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
               }`}
+              title="Tampilkan / sembunyikan Garis Tren Regresi (berhenti di H-1)"
             >
-              Bertumpuk (Stacked)
-            </button>
-            <button
-              onClick={() => setChartType("grouped")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                chartType === "grouped"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              Berdampingan (Grouped)
+              <TrendingUp size={13} className={showTrendLine ? "text-sky-600" : "text-slate-400"} />
+              <span>Garis Tren</span>
             </button>
 
+            {/* Toggle Garis Total Harian */}
+            <button
+              onClick={() => setShowTotalLine(!showTotalLine)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                showTotalLine
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+              }`}
+              title="Tampilkan / sembunyikan Garis Total Harian (berhenti di H-1)"
+            >
+              <Layers size={13} className={showTotalLine ? "text-emerald-600" : "text-slate-400"} />
+              <span>Garis Total</span>
+            </button>
+
+            {/* Toggle Label Angka Total di Bar */}
+            <button
+              onClick={() => setShowBarLabels(!showBarLabels)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                showBarLabels
+                  ? "bg-amber-50 text-amber-900 border-amber-300 shadow-2xs"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+              }`}
+              title="Tampilkan / sembunyikan angka total di atas setiap batang grafik"
+            >
+              <span>Label Angka</span>
+            </button>
+
+            {/* Export CSV */}
             <button
               onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs ml-auto sm:ml-0"
               title="Download Data CSV"
             >
               <Download size={13} />
@@ -541,7 +656,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         </div>
 
         {/* Recharts Container */}
-        <div className="h-80 w-full pt-2">
+        <div className="h-88 sm:h-96 w-full pt-2">
           {isLoading ? (
             <div className="h-full flex items-center justify-center text-xs text-slate-400 gap-2">
               <RefreshCw size={18} className="animate-spin text-[#e95623]" />
@@ -553,7 +668,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 25, right: 15, left: 10, bottom: 20 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis
                   dataKey="label"
@@ -566,47 +684,81 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   stroke="#94a3b8"
                   fontSize={11}
                   tickLine={false}
+                  domain={[0, (dataMax: number) => Math.ceil((dataMax || 1000) * 1.15)]}
                   tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
-                      const data = payload[0].payload as DailyProductionItem & { fullLabel: string };
+                      const data = payload[0].payload as any;
+                      const isToday = data.isToday;
                       return (
-                        <div className="bg-slate-900 text-white p-3 rounded-2xl shadow-xl text-xs space-y-2 border border-slate-800">
-                          <p className="font-bold border-b border-slate-800 pb-1 text-slate-300">
-                            {data.fullLabel} ({data.dayName})
-                          </p>
-                          <div className="space-y-1">
+                        <div className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl text-xs space-y-2 border border-slate-800 min-w-56">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                            <span className="font-extrabold text-slate-200">
+                              {data.fullLabel} ({data.dayName})
+                            </span>
+                            {isToday && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-orange-500 text-white animate-pulse">
+                                Hari Ini
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            {/* Day Shift */}
                             <div className="flex items-center justify-between gap-4">
-                              <span className="flex items-center gap-1.5 text-amber-400">
+                              <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
                                 <span className="w-2 h-2 rounded-full bg-amber-400" />
                                 Day Shift (DS):
                               </span>
-                              <strong>{formatNum(data.tonaseDS, 2)} Ton</strong>
+                              <strong className="font-mono">{formatNum(data.tonaseDS, 2)} Ton</strong>
                             </div>
-                            <div className="text-[10px] text-slate-400 pl-3.5">
-                              Ritase: {data.ritaseDS} Rit &bull; {data.avgPayloadDS} T/rit
+                            <div className="text-[10px] text-slate-400 pl-3.5 flex justify-between">
+                              <span>{data.ritaseDS} Rit</span>
+                              {data.avgPayloadDS > 0 && <span>{data.avgPayloadDS} T/rit</span>}
                             </div>
 
+                            {/* Night Shift */}
                             <div className="flex items-center justify-between gap-4 pt-1">
-                              <span className="flex items-center gap-1.5 text-indigo-400">
+                              <span className="flex items-center gap-1.5 text-indigo-400 font-semibold">
                                 <span className="w-2 h-2 rounded-full bg-indigo-400" />
                                 Night Shift (NS):
                               </span>
-                              <strong>{formatNum(data.tonaseNS, 2)} Ton</strong>
+                              <strong className="font-mono">{formatNum(data.tonaseNS, 2)} Ton</strong>
                             </div>
-                            <div className="text-[10px] text-slate-400 pl-3.5">
-                              Ritase: {data.ritaseNS} Rit &bull; {data.avgPayloadNS} T/rit
+                            <div className="text-[10px] text-slate-400 pl-3.5 flex justify-between">
+                              <span>{data.ritaseNS} Rit</span>
+                              {data.avgPayloadNS > 0 && <span>{data.avgPayloadNS} T/rit</span>}
                             </div>
 
+                            {/* Total Harian */}
                             <div className="border-t border-slate-800 pt-1.5 flex items-center justify-between gap-4 text-emerald-400 font-extrabold">
                               <span>Total Harian:</span>
-                              <span>{formatNum(data.totalTonase, 2)} Ton</span>
+                              <span className="font-mono text-sm">{formatNum(data.totalTonase, 2)} Ton</span>
                             </div>
-                            <div className="text-[10px] text-slate-400 pl-1">
-                              Total Ritase: {data.totalRitase} Rit
+                            <div className="text-[10px] text-slate-400 pl-1 flex justify-between">
+                              <span>Total Ritase: {data.totalRitase} Rit</span>
+                              {data.avgPayloadTotal > 0 && <span>{data.avgPayloadTotal} T/rit</span>}
                             </div>
+
+                            {/* Garis Tren Regresi info */}
+                            {data.trendLine !== null && data.trendLine !== undefined && (
+                              <div className="border-t border-slate-800/80 pt-1 flex items-center justify-between gap-4 text-sky-400 text-[11px] font-semibold">
+                                <span className="flex items-center gap-1">
+                                  <span className="w-2 h-0.5 bg-sky-400" />
+                                  Garis Tren:
+                                </span>
+                                <span className="font-mono">{formatNum(data.trendLine, 0)} Ton</span>
+                              </div>
+                            )}
+
+                            {/* Catatan jika hari ini */}
+                            {isToday && (
+                              <div className="text-[10px] text-amber-300/90 bg-amber-950/40 p-2 rounded-lg border border-amber-800/50 mt-1 leading-snug">
+                                * Garis tren berhenti di H-1 (kemarin) karena operasional hari ini masih berjalan.
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -618,8 +770,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   verticalAlign="top"
                   align="right"
                   iconType="circle"
-                  wrapperStyle={{ paddingBottom: "10px", fontSize: "12px" }}
+                  wrapperStyle={{ paddingBottom: "12px", fontSize: "12px" }}
                 />
+
+                {/* Bar Day Shift (DS) */}
                 <Bar
                   name="Day Shift (DS)"
                   dataKey="tonaseDS"
@@ -627,6 +781,8 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   stackId={chartType === "stacked" ? "a" : undefined}
                   radius={chartType === "stacked" ? [0, 0, 0, 0] : [6, 6, 0, 0]}
                 />
+
+                {/* Bar Night Shift (NS) */}
                 <Bar
                   name="Night Shift (NS)"
                   dataKey="tonaseNS"
@@ -634,6 +790,60 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   stackId={chartType === "stacked" ? "a" : undefined}
                   radius={[6, 6, 0, 0]}
                 />
+
+                {/* Line Total Harian (Berhenti di H-1) */}
+                {showTotalLine && (
+                  <Line
+                    name="Total Harian (s/d Kemarin)"
+                    dataKey="totalTonaseCompleted"
+                    type="monotone"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: "#10b981", strokeWidth: 1.5, stroke: "#ffffff" }}
+                    activeDot={{ r: 5, fill: "#10b981" }}
+                    connectNulls={false}
+                  />
+                )}
+
+                {/* Line Garis Tren Regresi Linier (Berhenti di H-1) */}
+                {showTrendLine && (
+                  <Line
+                    name="Garis Tren (s/d Kemarin)"
+                    dataKey="trendLine"
+                    type="linear"
+                    stroke="#0284c7"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={{ r: 5, fill: "#0284c7" }}
+                    connectNulls={false}
+                  />
+                )}
+
+                {/* Label Total di Atas Setiap Bar */}
+                {showBarLabels && (
+                  <Line
+                    dataKey="totalTonase"
+                    stroke="none"
+                    dot={false}
+                    activeDot={false}
+                    legendType="none"
+                    isAnimationActive={false}
+                    tooltipType="none"
+                  >
+                    <LabelList
+                      dataKey="totalTonaseLabel"
+                      position="top"
+                      offset={8}
+                      style={{
+                        fontSize: "9.5px",
+                        fontWeight: 800,
+                        fill: "#475569",
+                        fontFamily: "ui-monospace, monospace",
+                      }}
+                    />
+                  </Line>
+                )}
               </ComposedChart>
             </ResponsiveContainer>
           )}
