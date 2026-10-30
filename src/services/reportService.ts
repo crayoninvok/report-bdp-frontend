@@ -275,6 +275,23 @@ export const reportService = {
     return data.data;
   },
 
+  async getCostOverall(site?: string, year?: number, minWeek?: number, maxWeek?: number): Promise<CostOverallData> {
+    const params = new URLSearchParams();
+    if (site) params.append("jobSite", site);
+    if (year) params.append("year", year.toString());
+    if (minWeek) params.append("minWeek", minWeek.toString());
+    if (maxWeek) params.append("maxWeek", maxWeek.toString());
+
+    const res = await fetch(`${API_BASE_URL}/reports/cost-overall?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || "Gagal mengambil data Dashboard Cost Overall");
+    }
+    return data.data;
+  },
+
   async getLatestUpdates(): Promise<LatestUpdatesResponse> {
     const res = await fetch(`${API_BASE_URL}/reports/latest-updates`, {
       headers: getAuthHeaders(),
@@ -286,6 +303,70 @@ export const reportService = {
     return data;
   },
 };
+
+export interface CostTimelinePoint {
+  weekNumber: number;
+  label: string;
+  periodName: string;
+  budgetCost: number;
+  realisasiCost: number;
+  deviasiCost: number;
+  prodBudget: number;
+  prodReal: number;
+  budgetIdrPerTon: number;
+  realisasiIdrPerTon: number;
+  deviasiIdrPerTon: number;
+}
+
+export interface CostCategoryEntity {
+  id: string;
+  name: string;
+  type: "parent" | "subcategory" | "account";
+  accountCode?: string | null;
+  accountName?: string;
+  parentName?: string | null;
+  subCategory?: string | null;
+  subCategories?: string[];
+  accountCodes?: string[];
+  accountCount?: number;
+  costBehavior?: string | null;
+  totalBudget: number;
+  totalRealisasi: number;
+  totalDeviasi: number;
+  avgBudgetIdrPerTon: number;
+  avgRealisasiIdrPerTon: number;
+  avgDeviasiIdrPerTon: number;
+  timeline: CostTimelinePoint[];
+}
+
+export interface CostOverallData {
+  site: string;
+  year: number;
+  totalBudgetProduksi: number;
+  totalRealisasiProduksi: number;
+  availableWeeks: string[];
+  productionTimeline: {
+    weekNumber: number;
+    label: string;
+    periodName: string;
+    budgetProduksi: number;
+    realisasiProduksi: number;
+    deviasiProduksi: number;
+  }[];
+  summaryTotal: {
+    name: string;
+    totalBudget: number;
+    totalRealisasi: number;
+    totalDeviasi: number;
+    avgBudgetIdrPerTon: number;
+    avgRealisasiIdrPerTon: number;
+    avgDeviasiIdrPerTon: number;
+    timeline: CostTimelinePoint[];
+  };
+  parentCategories: CostCategoryEntity[];
+  subCategories: CostCategoryEntity[];
+  accounts: CostCategoryEntity[];
+}
 
 export interface LatestDataUpdateItem {
   id: string;

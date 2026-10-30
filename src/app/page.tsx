@@ -21,6 +21,7 @@ import { GLDataView } from "../components/GLDataView";
 import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
 import { TyreRimUsageView } from "../components/TyreRimUsageView";
 import { MasterUnitView } from "../components/MasterUnitView";
+import { DashboardCostOverallView } from "../components/DashboardCostOverallView";
 
 import {
   Menu,
@@ -270,7 +271,9 @@ export default function Home() {
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-extrabold text-slate-800">
-                    {activeMenu === "input-cost"
+                    {activeMenu === "dashboard-overall"
+                      ? "Cost Analytics • Dashboard Cost Overall"
+                      : activeMenu === "input-cost"
                       ? "Input Cost"
                       : activeMenu === "reports"
                       ? "Laporan Cost"
@@ -492,7 +495,9 @@ export default function Home() {
 
         {/* Scrollable View Container */}
         <main className="flex-1 overflow-y-auto bg-slate-50">
-          {activeMenu === "input-cost" ? (
+          {activeMenu === "dashboard-overall" ? (
+            <DashboardCostOverallView user={currentUser} />
+          ) : activeMenu === "input-cost" ? (
             <InputCostView
               user={currentUser}
               onNavigateToReports={() => setActiveMenu("reports")}

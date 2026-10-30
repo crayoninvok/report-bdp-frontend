@@ -21,6 +21,7 @@ import {
   Wrench,
   ClipboardCheck,
   Disc,
+  BarChart3,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -58,6 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: "Cost Analytics",
       items: [
         { id: "dashboard", label: "Dashboard Cost", icon: LayoutDashboard },
+        { id: "dashboard-overall", label: "Dashboard Cost Overall", icon: BarChart3 },
         { id: "cost-drivers", label: "Cost Driver", icon: Gauge },
         { id: "input-cost", label: "Input Cost", icon: FileEdit },
         { id: "reports", label: "Laporan Cost", icon: FileText },
