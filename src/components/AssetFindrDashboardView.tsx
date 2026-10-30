@@ -12,7 +12,6 @@ import { useNotification } from "../context/NotificationContext";
 import {
   Scale,
   Truck,
-  Layers,
   Calendar,
   RefreshCw,
   Key,
@@ -79,7 +78,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   // View Options
   const [chartType, setChartType] = useState<"stacked" | "grouped">("stacked");
   const [showTrendLine, setShowTrendLine] = useState<boolean>(true);
-  const [showTotalLine, setShowTotalLine] = useState<boolean>(true);
   const [showBarLabels, setShowBarLabels] = useState<boolean>(true);
 
   // Load Daily Production Data
@@ -152,15 +150,13 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       const isToday = item.date === todayStr;
 
       let trendValue: number | null = null;
-      let totalCompleted: number | null = null;
 
-      // Garis tren regresi & garis total berhenti tepat 1 hari sebelum hari ini (H-1)
+      // Garis tren regresi linier berhenti tepat 1 hari sebelum hari ini (H-1)
       if (isBeforeToday && item.totalTonase > 0) {
         const completedIdx = completedItems.findIndex((ci) => ci.date === item.date);
         if (completedIdx !== -1 && n >= 2) {
           trendValue = Math.round(slope * completedIdx + intercept);
         }
-        totalCompleted = item.totalTonase;
       }
 
       // Format label ringkas total tonase di atas setiap bar (misal: "15.5k", "35.0k", "8.4k")
@@ -180,8 +176,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         isBeforeToday,
         // Garis tren linear berhenti di H-1 (null untuk hari ini)
         trendLine: trendValue,
-        // Garis total harian berhenti di H-1 (null untuk hari ini)
-        totalTonaseCompleted: totalCompleted,
         totalTonaseLabel,
       };
     });
@@ -616,19 +610,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               <span>Garis Tren</span>
             </button>
 
-            {/* Toggle Garis Total Harian */}
-            <button
-              onClick={() => setShowTotalLine(!showTotalLine)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                showTotalLine
-                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs"
-                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-              }`}
-              title="Tampilkan / sembunyikan Garis Total Harian (berhenti di H-1)"
-            >
-              <Layers size={13} className={showTotalLine ? "text-emerald-600" : "text-slate-400"} />
-              <span>Garis Total</span>
-            </button>
+
 
             {/* Toggle Label Angka Total di Bar */}
             <button
@@ -791,19 +773,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   radius={[6, 6, 0, 0]}
                 />
 
-                {/* Line Total Harian (Berhenti di H-1) */}
-                {showTotalLine && (
-                  <Line
-                    name="Total Harian (s/d Kemarin)"
-                    dataKey="totalTonaseCompleted"
-                    type="monotone"
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    dot={{ r: 3, fill: "#10b981", strokeWidth: 1.5, stroke: "#ffffff" }}
-                    activeDot={{ r: 5, fill: "#10b981" }}
-                    connectNulls={false}
-                  />
-                )}
+
 
                 {/* Line Garis Tren Regresi Linier (Berhenti di H-1) */}
                 {showTrendLine && (
