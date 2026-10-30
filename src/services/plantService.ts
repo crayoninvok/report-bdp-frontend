@@ -299,4 +299,118 @@ export const plantService = {
     }
     return res.json();
   },
+
+  // 11. Tyre & Rim Usage (from GL Beban Tyre 05110203)
+  getTyreRimUsage: async (params?: {
+    site?: string;
+    itemType?: string;
+    specification?: string;
+    startDate?: string;
+    endDate?: string;
+    q?: string;
+    periodId?: string;
+  }): Promise<TyreRimUsageResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.site) searchParams.set("site", params.site);
+    if (params?.itemType) searchParams.set("itemType", params.itemType);
+    if (params?.specification) searchParams.set("specification", params.specification);
+    if (params?.startDate) searchParams.set("startDate", params.startDate);
+    if (params?.endDate) searchParams.set("endDate", params.endDate);
+    if (params?.q) searchParams.set("q", params.q);
+    if (params?.periodId) searchParams.set("periodId", params.periodId);
+
+    const query = searchParams.toString();
+    const url = `${API_BASE_URL}/plant/tyre-rim-usage${query ? `?${query}` : ""}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to fetch Tyre & Rim usage data");
+    }
+    return res.json();
+  },
 };
+
+export interface TyreRimTransactionItem {
+  id: string;
+  date: string;
+  regNo?: string;
+  accountCode: string;
+  accountName: string;
+  specification: string;
+  materialCode: string;
+  itemType: "Tyre" | "Rim";
+  qty: number;
+  debet: number;
+  unitPrice: number;
+  costCenter: string;
+  targetUnit: string;
+  position: string;
+  remark: string;
+  projectArea: string;
+}
+
+export interface TyreRimKPIs {
+  totalTransactions: number;
+  totalQty: number;
+  totalCost: number;
+  tyreCount: number;
+  tyreQty: number;
+  tyreCost: number;
+  avgTyreCost: number;
+  rimCount: number;
+  rimQty: number;
+  rimCost: number;
+  avgRimCost: number;
+}
+
+export interface TyreRimSpecSummary {
+  specification: string;
+  itemType: "Tyre" | "Rim" | string;
+  count: number;
+  qty: number;
+  totalCost: number;
+  avgPrice: number;
+  percentQty: number;
+  percentCost: number;
+}
+
+export interface TyreRimUnitSummary {
+  unitCode: string;
+  count: number;
+  qty: number;
+  tyreQty: number;
+  rimQty: number;
+  totalCost: number;
+}
+
+export interface TyreRimDailyPoint {
+  date: string;
+  tyreQty: number;
+  rimQty: number;
+  totalQty: number;
+  totalCost: number;
+}
+
+export interface TyreRimUsageResponse {
+  success: boolean;
+  period?: {
+    id: string;
+    periodName: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  kpis: TyreRimKPIs;
+  specBreakdown: TyreRimSpecSummary[];
+  topUnits: TyreRimUnitSummary[];
+  dailyTimeline: TyreRimDailyPoint[];
+  positionSummary: {
+    PrimeMover: number;
+    Dolly: number;
+    Vessel1: number;
+    Vessel2: number;
+    Other: number;
+  };
+  transactions: TyreRimTransactionItem[];
+}

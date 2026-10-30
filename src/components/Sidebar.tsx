@@ -20,6 +20,7 @@ import {
   Database,
   Wrench,
   ClipboardCheck,
+  Disc,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -102,6 +103,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "periodic-inspection",
           label: "Periodic Inspection",
           icon: ClipboardCheck,
+        },
+        {
+          id: "tyre-rim-usage",
+          label: "Tyre & Rim Usage",
+          icon: Disc,
         },
         {
           id: "master-unit",

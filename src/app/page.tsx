@@ -19,6 +19,7 @@ import { CoalProductionReportView } from "../components/CoalProductionReportView
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
 import { GLDataView } from "../components/GLDataView";
 import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
+import { TyreRimUsageView } from "../components/TyreRimUsageView";
 import { MasterUnitView } from "../components/MasterUnitView";
 
 import {
@@ -293,6 +294,8 @@ export default function Home() {
                       ? "Plant & Maintenance • Dashboard Plant"
                       : activeMenu === "periodic-inspection"
                       ? "Plant & Maintenance • Periodic Inspection"
+                      : activeMenu === "tyre-rim-usage"
+                      ? "Plant & Maintenance • Tyre & Rim Usage"
                       : activeMenu === "master-unit"
                       ? "Plant & Maintenance • Master Data Unit"
                       : "Dashboard Cost"}
@@ -539,6 +542,8 @@ export default function Home() {
               user={currentUser}
               onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
             />
+          ) : activeMenu === "tyre-rim-usage" ? (
+            <TyreRimUsageView user={currentUser} />
           ) : activeMenu === "master-unit" ? (
             <MasterUnitView
               user={currentUser}
