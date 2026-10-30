@@ -22,6 +22,8 @@ import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
 import { TyreRimUsageView } from "../components/TyreRimUsageView";
 import { MasterUnitView } from "../components/MasterUnitView";
 import { DashboardCostOverallView } from "../components/DashboardCostOverallView";
+import { AssetFindrDashboardView } from "../components/AssetFindrDashboardView";
+import { AssetFindrDataView } from "../components/AssetFindrDataView";
 
 import {
   Menu,
@@ -291,6 +293,10 @@ export default function Home() {
                       ? "Coal Hauling • Input Data Produksi"
                       : activeMenu === "coal-reports"
                       ? "Coal Hauling • Laporan Produksi"
+                      : activeMenu === "assetfindr-dashboard"
+                      ? "Coal Hauling • AssetFindr Dashboard"
+                      : activeMenu === "assetfindr-data"
+                      ? "Coal Hauling • AssetFindr Data"
                       : activeMenu === "gl-data"
                       ? "Cost Analytics • GL Raw Data"
                       : activeMenu === "plant-dashboard"
@@ -532,6 +538,16 @@ export default function Home() {
               user={currentUser}
               onNavigateToInput={() => setActiveMenu("coal-input")}
               onNavigateToDashboard={() => setActiveMenu("coal-dashboard")}
+            />
+          ) : activeMenu === "assetfindr-dashboard" ? (
+            <AssetFindrDashboardView
+              user={currentUser}
+              onNavigateToData={() => setActiveMenu("assetfindr-data")}
+            />
+          ) : activeMenu === "assetfindr-data" ? (
+            <AssetFindrDataView
+              user={currentUser}
+              onNavigateToDashboard={() => setActiveMenu("assetfindr-dashboard")}
             />
           ) : activeMenu === "gl-data" ? (
             <GLDataView user={currentUser} />

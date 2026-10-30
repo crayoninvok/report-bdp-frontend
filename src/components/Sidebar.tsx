@@ -22,6 +22,8 @@ import {
   ClipboardCheck,
   Disc,
   BarChart3,
+  Scale,
+  Table,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -90,6 +92,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: "Laporan Produksi",
           icon: ClipboardList,
           badge: "Maintenance",
+        },
+        {
+          id: "assetfindr-dashboard",
+          label: "AssetFindr Dashboard",
+          icon: Scale,
+        },
+        {
+          id: "assetfindr-data",
+          label: "AssetFindr Data",
+          icon: Table,
         },
       ],
     },
