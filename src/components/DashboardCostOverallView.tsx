@@ -358,15 +358,17 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     const isOverBudget = devTon < 0;
 
     return (
-      <div className="bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-xl shadow-2xl border border-slate-700/80 text-xs space-y-2 min-w-56 z-50">
-        <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5">
-          <span className="font-bold text-slate-200 flex items-center gap-1.5">
+      <div className="bg-white/95 backdrop-blur-md text-slate-800 p-3 rounded-xl shadow-xl border border-slate-200 text-xs space-y-2 min-w-56 z-50">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+          <span className="font-bold text-slate-800 flex items-center gap-1.5">
             <Calendar size={13} className="text-[#e95623]" />
             {pData.label} ({pData.periodName || "-"})
           </span>
           <span
-            className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-black ${
-              isOverBudget ? "bg-red-950 text-red-300 border border-red-800" : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+            className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-black border ${
+              isOverBudget
+                ? "bg-red-50 text-red-700 border-red-200"
+                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
             }`}
           >
             {isOverBudget ? "Over Budget" : "Under Budget"}
@@ -374,36 +376,36 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
         </div>
 
         {/* Cost / Ton Section */}
-        <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700/60 space-y-1 font-mono text-[11px]">
-          <div className="flex justify-between text-slate-400">
+        <div className="p-2 rounded-lg bg-orange-50/50 border border-orange-200/60 space-y-1 font-mono text-[11px]">
+          <div className="flex justify-between text-slate-500">
             <span>Budget Cost/Ton:</span>
-            <strong className="text-slate-200">{formatIDRPerTon(bTon)}</strong>
+            <strong className="text-slate-700">{formatIDRPerTon(bTon)}</strong>
           </div>
-          <div className="flex justify-between text-orange-300">
+          <div className="flex justify-between text-slate-700">
             <span>Realisasi Cost/Ton:</span>
-            <strong className="text-white font-bold">{formatIDRPerTon(rTon)}</strong>
+            <strong className="text-[#e95623] font-bold">{formatIDRPerTon(rTon)}</strong>
           </div>
-          <div className="flex justify-between pt-1 border-t border-slate-700/60">
-            <span>Deviasi Cost/Ton:</span>
-            <strong className={devTon >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+          <div className="flex justify-between pt-1 border-t border-orange-200/60">
+            <span className="text-slate-500">Deviasi Cost/Ton:</span>
+            <strong className={devTon >= 0 ? "text-emerald-700 font-bold" : "text-red-600 font-bold"}>
               {devTon >= 0 ? `+${formatIDRPerTon(devTon)}` : formatIDRPerTon(devTon)}
             </strong>
           </div>
         </div>
 
         {/* Nominal Total Section */}
-        <div className="space-y-1 font-mono text-[11px]">
-          <div className="flex justify-between text-slate-400">
+        <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/60 space-y-1 font-mono text-[11px]">
+          <div className="flex justify-between text-slate-500">
             <span>Budget Nominal:</span>
-            <span className="text-slate-200">{formatCurrency(pData.budgetCost || 0)}</span>
+            <span className="text-slate-700">{formatCurrency(pData.budgetCost || 0)}</span>
           </div>
-          <div className="flex justify-between text-blue-300">
+          <div className="flex justify-between text-slate-700">
             <span>Realisasi Nominal:</span>
-            <span className="text-white font-bold">{formatCurrency(pData.realisasiCost || 0)}</span>
+            <span className="text-blue-700 font-bold">{formatCurrency(pData.realisasiCost || 0)}</span>
           </div>
-          <div className="flex justify-between text-slate-400 text-[10px] pt-1 border-t border-slate-800">
+          <div className="flex justify-between text-slate-400 text-[10px] pt-1 border-t border-slate-200/60">
             <span>Produksi Realisasi:</span>
-            <span className="text-slate-300">{formatNumber(pData.prodReal || 0)} Ton</span>
+            <span className="text-slate-600">{formatNumber(pData.prodReal || 0)} Ton</span>
           </div>
         </div>
       </div>
@@ -638,7 +640,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
             onClick={() => handleSelectParent("ALL")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs ${
               selectedParentFilter === "ALL"
-                ? "bg-slate-900 text-white"
+                ? "bg-[#e95623] text-white"
                 : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
             }`}
           >
@@ -709,8 +711,8 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
               onClick={() => setSelectedLevel("all")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedLevel === "all"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-[#e95623] text-white shadow-2xs"
+                  : "bg-orange-50 text-[#e95623] hover:bg-orange-100 border border-orange-200/60"
               }`}
             >
               Semua Tingkatan
@@ -895,24 +897,24 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
 
       {/* Featured Parent Category Card (if specific parent selected and viewing all sub-accounts) */}
       {activeParentCategory && selectedSubAccountFilter === "ALL" && (
-        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-700/80 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3">
+        <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200/90 space-y-4 hover:border-slate-300 transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                   Ringkasan Kategori Utama
                 </span>
-                <span className="text-xs text-slate-400 font-bold font-mono">
+                <span className="text-xs text-slate-500 font-bold font-mono">
                   {availableSubCategories.length} Sub-Kategori Akun
                 </span>
               </div>
-              <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                 {activeParentCategory.name}
               </h2>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono">
-              <span className="text-slate-400">Total Sub-Kategori:</span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-orange-400 font-bold border border-slate-700">
+              <span className="text-slate-400 font-medium font-sans">Total Sub-Kategori:</span>
+              <span className="px-2.5 py-1 rounded-lg bg-orange-50 text-[#e95623] font-bold border border-orange-200 shadow-2xs">
                 {availableSubCategories.length} Item
               </span>
             </div>
@@ -920,78 +922,78 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
 
           {/* Metrics row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+            <div className="p-3 rounded-xl bg-orange-50/60 border border-orange-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans block">
                 Cost/Ton Realisasi
               </span>
-              <p className="text-sm sm:text-base font-black text-orange-400 mt-0.5">
+              <p className="text-sm sm:text-base font-black text-[#e95623] mt-0.5">
                 {formatIDRPerTon(activeParentCategory.avgRealisasiIdrPerTon)}
               </p>
-              <span className="text-[10px] text-slate-400 block mt-0.5">
+              <span className="text-[10px] text-slate-500 block mt-0.5">
                 Budget: {formatIDRPerTon(activeParentCategory.avgBudgetIdrPerTon)}
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans block">
                 Deviasi Cost/Ton
               </span>
               <p
                 className={`text-sm sm:text-base font-black mt-0.5 ${
-                  activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "text-emerald-400" : "text-red-400"
+                  activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "text-emerald-700" : "text-red-600"
                 }`}
               >
                 {activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "+" : ""}
                 {formatIDRPerTon(activeParentCategory.avgDeviasiIdrPerTon)}
               </p>
-              <span className="text-[10px] text-slate-400 block mt-0.5">
+              <span className={`text-[10px] font-bold block mt-0.5 ${activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                 {activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "Under Budget" : "Over Budget"}
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans block">
                 Total Biaya Realisasi
               </span>
-              <p className="text-sm sm:text-base font-black text-white mt-0.5">
+              <p className="text-sm sm:text-base font-black text-slate-900 mt-0.5">
                 {formatCompact(activeParentCategory.totalRealisasi)}
               </p>
-              <span className="text-[10px] text-slate-400 block mt-0.5">
+              <span className="text-[10px] text-slate-500 block mt-0.5">
                 Budget: {formatCompact(activeParentCategory.totalBudget)}
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans block">
                 Deviasi Biaya Total
               </span>
               <p
                 className={`text-sm sm:text-base font-black mt-0.5 ${
-                  activeParentCategory.totalDeviasi >= 0 ? "text-emerald-400" : "text-red-400"
+                  activeParentCategory.totalDeviasi >= 0 ? "text-emerald-700" : "text-red-600"
                 }`}
               >
                 {activeParentCategory.totalDeviasi >= 0 ? "+" : ""}
                 {formatCompact(activeParentCategory.totalDeviasi)}
               </p>
-              <span className="text-[10px] text-slate-400 block mt-0.5">
+              <span className={`text-[10px] font-bold block mt-0.5 ${activeParentCategory.totalDeviasi >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                 {activeParentCategory.totalDeviasi >= 0 ? "Under Budget" : "Over Budget"}
               </span>
             </div>
           </div>
 
           {/* Parent Trend Line Chart */}
-          <div className="h-44 w-full pt-2">
+          <div className="h-48 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={filterTimelineRange(activeParentCategory.timeline)}
                 margin={{ top: 8, right: 10, left: -20, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 9.5, fill: "#94a3b8" }} stroke="#475569" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 9.5, fill: "#64748b" }} stroke="#cbd5e1" />
                 <YAxis
                   yAxisId="mainAxis"
-                  tick={{ fontSize: 9.5, fill: "#94a3b8" }}
-                  stroke="#475569"
+                  tick={{ fontSize: 9.5, fill: "#64748b" }}
+                  stroke="#cbd5e1"
                   tickFormatter={(v) =>
                     selectedMetric === "costPerTon" ? `${v.toLocaleString()}` : formatCompact(v)
                   }
@@ -999,13 +1001,13 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                 <Tooltip content={<CustomChartTooltip />} />
                 {selectedMetric === "costPerTon" ? (
                   <>
-                    <Bar yAxisId="mainAxis" dataKey="budgetIdrPerTon" fill="#475569" radius={[4, 4, 0, 0]} opacity={0.5} name="Budget (Rp/Ton)" />
-                    <Line yAxisId="mainAxis" type="monotone" dataKey="realisasiIdrPerTon" stroke="#f97316" strokeWidth={2.5} dot={{ r: 3, fill: "#f97316" }} name="Realisasi (Rp/Ton)" />
+                    <Bar yAxisId="mainAxis" dataKey="budgetIdrPerTon" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Budget (Rp/Ton)" />
+                    <Line yAxisId="mainAxis" type="monotone" dataKey="realisasiIdrPerTon" stroke="#e95623" strokeWidth={2.5} dot={{ r: 3, fill: "#e95623" }} name="Realisasi (Rp/Ton)" />
                   </>
                 ) : (
                   <>
-                    <Bar yAxisId="mainAxis" dataKey="budgetCost" fill="#475569" radius={[4, 4, 0, 0]} opacity={0.5} name="Budget (IDR)" />
-                    <Line yAxisId="mainAxis" type="monotone" dataKey="realisasiCost" stroke="#38bdf8" strokeWidth={2.5} dot={{ r: 3, fill: "#38bdf8" }} name="Realisasi (IDR)" />
+                    <Bar yAxisId="mainAxis" dataKey="budgetCost" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Budget (IDR)" />
+                    <Line yAxisId="mainAxis" type="monotone" dataKey="realisasiCost" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3b82f6" }} name="Realisasi (IDR)" />
                   </>
                 )}
               </ComposedChart>
