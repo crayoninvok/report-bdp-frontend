@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { VolvoUnit } from "../services/volvoService";
-import { Layers, Maximize2, Navigation, Compass, ExternalLink, Wrench, Building2 } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 
 export interface KnownArea {
   id: string;
@@ -13,12 +13,35 @@ export interface KnownArea {
   category: string;
   center: [number, number];
   zoom: number;
+  color: string;
+  fillColor: string;
   polygon: [number, number][];
   description: string;
 }
 
-// Known Key Mining Operational Areas & Facilities
+// Known Key Mining Operational Areas & Facilities (Senyiur & Muara Pahu)
 export const KNOWN_AREAS: KnownArea[] = [
+  {
+    id: "workshop-muara-pahu",
+    name: "Area Workshop Muara Pahu",
+    shortName: "Workshop Muara Pahu",
+    category: "Workshop & Maintenance Pool",
+    center: [0.0221, 116.0295],
+    zoom: 17,
+    color: "#2563eb",
+    fillColor: "#3b82f6",
+    polygon: [
+      [0.0236, 116.0288],
+      [0.0236, 116.0305],
+      [0.0224, 116.0308],
+      [0.0208, 116.0306],
+      [0.0205, 116.0294],
+      [0.0207, 116.0282],
+      [0.0220, 116.0282],
+      [0.0232, 116.0286],
+    ],
+    description: "Fasilitas Workshop, bengkel perawatan, dan pool parkir armada unit Volvo di Site Muara Pahu.",
+  },
   {
     id: "workshop-senyiur",
     name: "Area Workshop Senyiur",
@@ -26,6 +49,8 @@ export const KNOWN_AREAS: KnownArea[] = [
     category: "Workshop & Maintenance Pool",
     center: [0.2965, 116.5775],
     zoom: 17,
+    color: "#ea580c",
+    fillColor: "#f97316",
     polygon: [
       [0.2984, 116.5768],
       [0.2982, 116.5786],
@@ -41,7 +66,7 @@ export const KNOWN_AREAS: KnownArea[] = [
 ];
 
 // Helper: Check if point [lat, lng] is inside a polygon
-function isPointInPolygon(point: [number, number], vs: [number, number][]): boolean {
+export function isPointInPolygon(point: [number, number], vs: [number, number][]): boolean {
   const x = point[0];
   const y = point[1];
   let inside = false;
@@ -151,10 +176,10 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
 
       // 1. Draw boundary polygon
       const polygon = L.polygon(area.polygon, {
-        color: "#e95623",
+        color: area.color,
         weight: 2.5,
         dashArray: "6, 6",
-        fillColor: "#f97316",
+        fillColor: area.fillColor,
         fillOpacity: 0.16,
       }).addTo(areasGroup);
 
@@ -162,7 +187,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       const popupHtml = `
         <div class="p-3 text-slate-900 font-sans min-w-64" style="font-family: inherit;">
           <div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
-            <span class="w-7 h-7 rounded-lg bg-orange-100 text-[#e95623] flex items-center justify-center font-bold">
+            <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-sm">
               🏭
             </span>
             <div>
@@ -178,7 +203,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
             <div class="flex items-center justify-between font-bold">
               <span class="text-slate-600">Unit di Area:</span>
-              <span class="px-2 py-0.5 rounded-full bg-orange-100 text-[#e95623] font-black text-[11px]">
+              <span class="px-2 py-0.5 rounded-full font-black text-[11px] bg-slate-900 text-white">
                 ${insideUnits.length} Unit
               </span>
             </div>
@@ -203,10 +228,10 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       // 3. Floating area title badge on map
       const labelHtml = `
         <div class="cursor-pointer group pointer-events-auto" style="transform: translate(-50%, -50%);">
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/95 backdrop-blur-md text-white border-2 border-orange-500 shadow-xl transition-all group-hover:scale-105 group-hover:border-white">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/95 backdrop-blur-md text-white border-2 shadow-xl transition-all group-hover:scale-105 group-hover:border-white" style="border-color: ${area.color};">
             <span class="text-xs">🏭</span>
             <span class="font-black text-[11px] tracking-tight whitespace-nowrap">${area.name}</span>
-            <span class="px-1.5 py-0.2 rounded-md bg-orange-500 text-white text-[9px] font-black uppercase font-mono">
+            <span class="px-1.5 py-0.2 rounded-md text-white text-[9px] font-black uppercase font-mono" style="background-color: ${area.color};">
               ${insideUnits.length} Unit
             </span>
           </div>
@@ -216,11 +241,11 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       const labelIcon = L.divIcon({
         html: labelHtml,
         className: "custom-area-label",
-        iconSize: [160, 30],
-        iconAnchor: [80, 15],
+        iconSize: [170, 30],
+        iconAnchor: [85, 15],
       });
 
-      const labelMarker = L.marker([area.center[0] + 0.0016, area.center[1]], {
+      const labelMarker = L.marker([area.center[0] + 0.0014, area.center[1]], {
         icon: labelIcon,
       }).addTo(areasGroup);
 
@@ -297,11 +322,13 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         ? `https://www.google.com/maps?q=${unit.latitude},${unit.longitude}`
         : "#";
 
-    // Check if unit is in workshop area
-    const isInWorkshop =
-      unit.latitude !== null &&
-      unit.longitude !== null &&
-      isPointInPolygon([unit.latitude, unit.longitude], KNOWN_AREAS[0].polygon);
+    // Check which workshop area the unit is currently inside
+    const currentArea = KNOWN_AREAS.find(
+      (area) =>
+        unit.latitude !== null &&
+        unit.longitude !== null &&
+        isPointInPolygon([unit.latitude, unit.longitude], area.polygon)
+    );
 
     return `
       <div class="p-3 text-slate-900 font-sans min-w-56" style="font-family: inherit;">
@@ -320,10 +347,10 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         </div>
 
         ${
-          isInWorkshop
-            ? `<div class="mb-2 p-1.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 text-[10px] font-extrabold flex items-center gap-1.5">
+          currentArea
+            ? `<div class="mb-2 p-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-extrabold flex items-center gap-1.5">
                 <span>🏭</span>
-                <span>Berada di Area Workshop Senyiur</span>
+                <span>Berada di ${currentArea.name}</span>
                </div>`
             : ""
         }
@@ -450,23 +477,24 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     }
   };
 
-  // Fly to Area Workshop Senyiur
-  const handleFlyToWorkshop = () => {
+  // Fly to a specific Known Area (Workshop Senyiur or Muara Pahu)
+  const handleFlyToArea = (area: KnownArea) => {
     const map = mapInstanceRef.current;
     if (!map) return;
-    const workshop = KNOWN_AREAS[0];
-    map.flyTo(workshop.center, workshop.zoom, {
+    map.flyTo(area.center, area.zoom, {
       duration: 1.5,
     });
   };
 
-  // Count units currently in workshop
-  const workshopUnitsCount = units.filter(
-    (u) =>
-      u.latitude !== null &&
-      u.longitude !== null &&
-      isPointInPolygon([u.latitude, u.longitude], KNOWN_AREAS[0].polygon)
-  ).length;
+  // Count units in each workshop area
+  const getAreaUnitsCount = (area: KnownArea) => {
+    return units.filter(
+      (u) =>
+        u.latitude !== null &&
+        u.longitude !== null &&
+        isPointInPolygon([u.latitude, u.longitude], area.polygon)
+    ).length;
+  };
 
   return (
     <div className="relative w-full h-full min-h-125 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
@@ -509,17 +537,26 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </button>
         </div>
 
-        {/* Quick Fly to Area Workshop Senyiur */}
-        <button
-          onClick={handleFlyToWorkshop}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black transition-all shadow-md cursor-pointer border border-orange-400"
-          title="Fokus langsung ke Area Workshop Senyiur"
-        >
-          <span>🏭 Area Workshop Senyiur</span>
-          <span className="px-1.5 py-0.2 rounded-md bg-white text-orange-600 font-mono text-[10px]">
-            {workshopUnitsCount} Unit
-          </span>
-        </button>
+        {/* Quick Fly Buttons for Workshops */}
+        {KNOWN_AREAS.map((area) => {
+          const count = getAreaUnitsCount(area);
+          return (
+            <button
+              key={area.id}
+              onClick={() => handleFlyToArea(area)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/95 backdrop-blur-md text-slate-800 text-xs font-extrabold hover:bg-slate-50 transition-all shadow-md cursor-pointer border border-slate-200"
+              title={`Fokus ke ${area.name}`}
+            >
+              <span>🏭 {area.shortName}</span>
+              <span
+                className="px-1.5 py-0.2 rounded-md text-white font-mono text-[10px] font-black"
+                style={{ backgroundColor: area.color }}
+              >
+                {count} Unit
+              </span>
+            </button>
+          );
+        })}
 
         {/* Fit All Units Button */}
         <button
