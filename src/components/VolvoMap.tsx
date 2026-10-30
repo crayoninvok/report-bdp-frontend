@@ -253,8 +253,13 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     });
   }, [units]);
 
-  // Create custom HTML icon for each unit
-  const createUnitIcon = (unit: VolvoUnit, isSelected: boolean) => {
+  const isMapClickRef = useRef<boolean>(false);
+  const prevSelectedVinRef = useRef<string | null>(null);
+  const onSelectUnitRef = useRef(onSelectUnit);
+  onSelectUnitRef.current = onSelectUnit;
+
+  // Create custom HTML icon for each unit (stable geometry to prevent jitter)
+  const createUnitIcon = (unit: VolvoUnit) => {
     const isMoving = unit.isMoving;
     const speed = unit.speed;
     const heading = unit.heading || 0;
@@ -262,18 +267,17 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     // Colors: Moving = Emerald / Green, Idle = Amber / Orange
     const borderColor = isMoving ? "#10b981" : "#f59e0b";
     const bgBadge = isMoving ? "bg-emerald-600" : "bg-amber-600";
-    const selectedRing = isSelected ? "ring-4 ring-white shadow-2xl scale-125" : "hover:scale-110";
 
     const html = `
-      <div class="relative flex flex-col items-center cursor-pointer transition-transform duration-200 ${selectedRing}" style="transform-origin: center bottom;">
+      <div class="unit-marker-container relative flex flex-col items-center cursor-pointer select-none">
         <!-- Top Label: Unit PM & Speed -->
-        <div class="px-1.5 py-0.5 rounded-md ${bgBadge} text-white font-mono font-black text-[9px] shadow-md whitespace-nowrap flex items-center gap-1 border border-white/40 mb-1">
+        <div class="unit-marker-badge px-1.5 py-0.5 rounded-md ${bgBadge} text-white font-mono font-black text-[9px] shadow-md whitespace-nowrap flex items-center gap-1 border border-white/40 mb-1 transition-colors">
           <span>${unit.pmNumber}</span>
           ${isMoving ? `<span class="opacity-90 font-bold">${speed}km/h</span>` : ""}
         </div>
 
         <!-- Vehicle Directional Marker -->
-        <div class="relative w-7 h-7 rounded-full bg-slate-900 border-2 flex items-center justify-center shadow-lg text-white" style="border-color: ${borderColor};">
+        <div class="unit-marker-pin relative w-7 h-7 rounded-full bg-slate-900 border-2 flex items-center justify-center shadow-md text-white transition-all" style="border-color: ${borderColor};">
           ${
             isMoving
               ? `
@@ -296,10 +300,10 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
 
     return L.divIcon({
       html,
-      className: "custom-unit-marker",
-      iconSize: [60, 50],
-      iconAnchor: [30, 48],
-      popupAnchor: [0, -48],
+      className: "custom-unit-marker border-0 bg-transparent",
+      iconSize: [64, 52],
+      iconAnchor: [32, 50],
+      popupAnchor: [0, -50],
     });
   };
 
@@ -399,7 +403,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     `;
   };
 
-  // Sync Markers with Units
+  // Sync Markers with Units data (independent of selection state to prevent re-rendering loops)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -411,26 +415,51 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       if (unit.latitude === null || unit.longitude === null) return;
 
       activeVins.add(unit.vin);
-      const isSelected = selectedUnit?.vin === unit.vin;
-      const icon = createUnitIcon(unit, isSelected);
 
       if (currentMarkers.has(unit.vin)) {
-        // Update existing marker position & icon
+        // Update existing marker position & popup content smoothly without destroying icon DOM
         const marker = currentMarkers.get(unit.vin)!;
         marker.setLatLng([unit.latitude, unit.longitude]);
-        marker.setIcon(icon);
         marker.setPopupContent(createPopupContent(unit));
+
+        // Only update icon if movement/heading state actually changed
+        const prevVisual = (marker as any)._visualKey;
+        const currentVisualKey = `${unit.isMoving}-${unit.speed}-${unit.heading}`;
+        if (prevVisual !== currentVisualKey) {
+          marker.setIcon(createUnitIcon(unit));
+          (marker as any)._visualKey = currentVisualKey;
+
+          // Re-apply selection state if this unit is currently selected
+          if (selectedUnit?.vin === unit.vin) {
+            marker.setZIndexOffset(1000);
+            marker.getElement()?.classList.add("is-unit-selected");
+          }
+        }
       } else {
-        // Create new marker
+        // Create new marker with stable geometry
+        const icon = createUnitIcon(unit);
         const marker = L.marker([unit.latitude, unit.longitude], { icon }).addTo(map);
+
+        (marker as any)._visualKey = `${unit.isMoving}-${unit.speed}-${unit.heading}`;
+
         marker.bindPopup(createPopupContent(unit), {
           className: "custom-leaflet-popup",
-          maxWidth: 280,
+          maxWidth: 290,
+          autoPan: true,
+          autoPanPadding: [30, 30],
         });
 
-        marker.on("click", () => {
-          onSelectUnit(unit);
+        // Click handler on map marker: mark as map click and notify parent
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          isMapClickRef.current = true;
+          onSelectUnitRef.current(unit);
         });
+
+        if (selectedUnit?.vin === unit.vin) {
+          marker.setZIndexOffset(1000);
+          marker.getElement()?.classList.add("is-unit-selected");
+        }
 
         currentMarkers.set(unit.vin, marker);
       }
@@ -443,23 +472,69 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         currentMarkers.delete(vin);
       }
     });
-  }, [units, selectedUnit]);
+  }, [units]);
 
-  // Fly to selected unit if selected
+  // Handle Selected Unit changes (Highlighting & smooth camera without shaking)
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !selectedUnit) return;
+    if (!map) return;
 
-    if (selectedUnit.latitude && selectedUnit.longitude) {
-      map.flyTo([selectedUnit.latitude, selectedUnit.longitude], 16, {
-        duration: 1.2,
-      });
+    const fromMapClick = isMapClickRef.current;
+    isMapClickRef.current = false;
 
-      const marker = markersRef.current.get(selectedUnit.vin);
-      if (marker) {
-        marker.openPopup();
+    const prevVin = prevSelectedVinRef.current;
+    const currentVin = selectedUnit?.vin || null;
+
+    // 1. Remove highlight & reset z-index on previously selected marker
+    if (prevVin && prevVin !== currentVin) {
+      const prevMarker = markersRef.current.get(prevVin);
+      if (prevMarker) {
+        prevMarker.setZIndexOffset(0);
+        prevMarker.getElement()?.classList.remove("is-unit-selected");
       }
     }
+
+    // 2. Add highlight & elevate z-index on newly selected marker
+    if (currentVin) {
+      const currentMarker = markersRef.current.get(currentVin);
+      if (currentMarker) {
+        currentMarker.setZIndexOffset(1000);
+        currentMarker.getElement()?.classList.add("is-unit-selected");
+      }
+    }
+
+    prevSelectedVinRef.current = currentVin;
+
+    // 3. Handle camera and popup behavior
+    if (!selectedUnit || selectedUnit.latitude === null || selectedUnit.longitude === null) {
+      return;
+    }
+
+    const currentMarker = markersRef.current.get(selectedUnit.vin);
+
+    if (fromMapClick) {
+      // Direct click on map marker:
+      // The user is already focused right on the marker!
+      // Do NOT flyTo or pan the camera.
+      // Leaflet's built-in bindPopup click handler already opens the popup smoothly.
+      // Skipping flyTo completely eliminates camera oscillation and marker vibration!
+      return;
+    }
+
+    // Selection came from external sidebar list:
+    // Smoothly pan to the unit and open popup once the animation completes
+    const targetZoom = Math.max(map.getZoom(), 16);
+
+    const onFlyComplete = () => {
+      if (currentMarker && !currentMarker.isPopupOpen()) {
+        currentMarker.openPopup();
+      }
+    };
+
+    map.once("moveend", onFlyComplete);
+    map.flyTo([selectedUnit.latitude, selectedUnit.longitude], targetZoom, {
+      duration: 0.8,
+    });
   }, [selectedUnit]);
 
   // Fit bounds to all units helper

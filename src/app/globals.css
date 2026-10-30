@@ -69,3 +69,54 @@ textarea::placeholder {
 ::-webkit-scrollbar-thumb:hover {
   background: #e95623;
 }
+
+/* Leaflet Custom DivIcon & Popup Styles */
+.leaflet-div-icon.custom-unit-marker,
+.leaflet-div-icon.custom-area-label {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Hover effect: Subtle brightness boost without geometric scaling to prevent hover loops */
+.custom-unit-marker:hover .unit-marker-pin {
+  filter: brightness(1.25);
+}
+.custom-unit-marker:hover .unit-marker-badge {
+  filter: brightness(1.15);
+}
+
+/* Selected unit marker styling: Glowing high-contrast ring & elevated z-index */
+.custom-unit-marker.is-unit-selected {
+  z-index: 1000 !important;
+}
+
+.custom-unit-marker.is-unit-selected .unit-marker-pin {
+  border-color: #ffffff !important;
+  outline: 3px solid #e95623;
+  outline-offset: 1px;
+  box-shadow: 0 0 16px rgba(233, 86, 35, 0.85), 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.custom-unit-marker.is-unit-selected .unit-marker-badge {
+  background-color: #e95623 !important;
+  border-color: #ffffff;
+  box-shadow: 0 0 10px rgba(233, 86, 35, 0.7);
+}
+
+/* Custom Leaflet popup smooth style */
+.custom-leaflet-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.custom-leaflet-popup .leaflet-popup-content {
+  margin: 0;
+  line-height: inherit;
+}
+
+.custom-leaflet-popup .leaflet-popup-tip {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
