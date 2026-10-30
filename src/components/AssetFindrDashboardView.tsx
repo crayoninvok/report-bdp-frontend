@@ -379,6 +379,21 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         </div>
       </div>
 
+      {/* Notice when Jobsite Senyiur is selected */}
+      {selectedJobsite === "senyiur" && (
+        <div className="flex items-center gap-3 p-4 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
+            <Clock size={16} />
+          </div>
+          <div>
+            <span className="font-extrabold block">Informasi Operasional Site Senyiur</span>
+            <span className="text-amber-800/90 font-medium">
+              Tidak ada aktivitas operasional hauling batubara di Jobsite Senyiur pada periode bulan ini (Produksi 0 Ton). Seluruh aktivitas operasional berjalan aktif di Site Muara Pahu.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards: DS, NS, and Total */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Grand Total Tonase */}
