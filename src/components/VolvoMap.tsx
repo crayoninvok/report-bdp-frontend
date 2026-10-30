@@ -285,9 +285,9 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full min-h-[500px] rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+    <div className="relative w-full h-full min-h-125 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
       {/* Map DOM Container */}
-      <div ref={mapContainerRef} className="w-full h-full z-0 min-h-[500px]" />
+      <div ref={mapContainerRef} className="w-full h-full z-0 min-h-125" />
 
       {/* Floating Map Controls Toolbar */}
       <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2">

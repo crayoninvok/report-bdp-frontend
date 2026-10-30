@@ -29,7 +29,7 @@ import {
 const VolvoMap = dynamic(() => import("./VolvoMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[600px] flex flex-col items-center justify-center bg-slate-900/5 rounded-3xl border border-slate-200 gap-3">
+    <div className="w-full h-150 flex flex-col items-center justify-center bg-slate-900/5 rounded-3xl border border-slate-200 gap-3">
       <RefreshCw className="animate-spin text-[#e95623]" size={32} />
       <span className="text-xs font-extrabold text-slate-600">
         Menyiapkan Peta Satelit Interaktif Armada Volvo...
@@ -346,7 +346,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side: Leaflet Interactive Map (8 cols on lg) */}
         <div className="lg:col-span-8 xl:col-span-8 flex flex-col space-y-3">
-          <div className="h-[620px] w-full">
+          <div className="h-155 w-full">
             <VolvoMap
               units={filteredUnits}
               selectedUnit={selectedUnit}
@@ -391,7 +391,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari PM Unit (e.g. PM 439) atau VIN..."
-              className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-1 focus:ring-orange-500 focus:bg-white transition-all font-medium"
+              className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all font-medium"
             />
           </div>
 
@@ -430,7 +430,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
           </div>
 
           {/* Scrollable Units List */}
-          <div className="h-[440px] overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100">
+          <div className="h-110 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100">
             {filteredUnits.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-400">
                 Tidak ada unit yang cocok dengan filter.
