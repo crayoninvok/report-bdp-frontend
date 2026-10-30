@@ -24,6 +24,7 @@ import { MasterUnitView } from "../components/MasterUnitView";
 import { DashboardCostOverallView } from "../components/DashboardCostOverallView";
 import { AssetFindrDashboardView } from "../components/AssetFindrDashboardView";
 import { AssetFindrDataView } from "../components/AssetFindrDataView";
+import { LiveMonitoringUnitView } from "../components/LiveMonitoringUnitView";
 
 import {
   Menu,
@@ -297,6 +298,8 @@ export default function Home() {
                       ? "Coal Hauling • AssetFindr Dashboard"
                       : activeMenu === "assetfindr-data"
                       ? "Coal Hauling • AssetFindr Data"
+                      : activeMenu === "live-monitoring-unit"
+                      ? "Coal Hauling • Live Monitoring Unit"
                       : activeMenu === "gl-data"
                       ? "Cost Analytics • GL Raw Data"
                       : activeMenu === "plant-dashboard"
@@ -548,6 +551,11 @@ export default function Home() {
             <AssetFindrDataView
               user={currentUser}
               onNavigateToDashboard={() => setActiveMenu("assetfindr-dashboard")}
+            />
+          ) : activeMenu === "live-monitoring-unit" ? (
+            <LiveMonitoringUnitView
+              user={currentUser}
+              onNavigateToAssetFindr={() => setActiveMenu("assetfindr-data")}
             />
           ) : activeMenu === "gl-data" ? (
             <GLDataView user={currentUser} />

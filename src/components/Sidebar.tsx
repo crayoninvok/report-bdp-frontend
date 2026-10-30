@@ -24,6 +24,7 @@ import {
   BarChart3,
   Scale,
   Table,
+  Radio,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -102,6 +103,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "assetfindr-data",
           label: "AssetFindr Data",
           icon: Table,
+        },
+        {
+          id: "live-monitoring-unit",
+          label: "Live Monitoring Unit",
+          icon: Radio,
+          badge: "Live",
         },
       ],
     },
