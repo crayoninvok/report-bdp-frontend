@@ -48,9 +48,9 @@ interface DashboardCostOverallViewProps {
   user: User;
 }
 
-type LevelFilter = "all" | "parent" | "subcategory" | "account";
+type LevelFilter = "all" | "parent" | "account";
 type MetricDisplay = "costPerTon" | "costTotal" | "combo";
-type SortOption = "realisasiDesc" | "costPerTonDesc" | "deviasiDesc" | "default";
+type SortOption = "default" | "realisasiDesc" | "costPerTonDesc" | "deviasiDesc";
 
 export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> = ({ user }) => {
   const isHeadOffice = user.role === "SuperAdmin" || user.jobSite === "HeadOffice";
@@ -66,12 +66,13 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
   const [error, setError] = useState<string | null>(null);
 
   // Filters & Controls
-  const [selectedLevel, setSelectedLevel] = useState<LevelFilter>("all");
+  const [selectedLevel, setSelectedLevel] = useState<LevelFilter>("account");
   const [selectedMetric, setSelectedMetric] = useState<MetricDisplay>("costPerTon");
-  const [selectedParentFilter, setSelectedParentFilter] = useState<string>("ALL");
-  const [hideZeroCosts, setHideZeroCosts] = useState<boolean>(true);
+  const [selectedParentFilter, setSelectedParentFilter] = useState<string>("BEBAN COMPENSATION AND BENEFIT - SITE");
+  const [selectedSubAccountFilter, setSelectedSubAccountFilter] = useState<string>("ALL");
+  const [hideZeroCosts, setHideZeroCosts] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortBy, setSortBy] = useState<SortOption>("realisasiDesc");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
 
   // Week range filters
   const [startWeek, setStartWeek] = useState<string>("W29");
@@ -157,18 +158,37 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     });
   };
 
+  // Sub-categories / accounts under the currently selected parent category
+  const availableSubCategories = useMemo(() => {
+    if (!data?.accounts) return [];
+    if (selectedParentFilter === "ALL") {
+      return data.accounts;
+    }
+    return data.accounts.filter((a) => a.parentName === selectedParentFilter);
+  }, [data, selectedParentFilter]);
+
+  // Active Parent Category data (if a single parent category is chosen)
+  const activeParentCategory = useMemo(() => {
+    if (!data?.parentCategories || selectedParentFilter === "ALL") return null;
+    return data.parentCategories.find((p) => p.name === selectedParentFilter) || null;
+  }, [data, selectedParentFilter]);
+
+  const handleSelectParent = (parentName: string) => {
+    setSelectedParentFilter(parentName);
+    setSelectedSubAccountFilter("ALL");
+  };
+
   // Compute filtered entities list
   const filteredEntities = useMemo(() => {
     if (!data) return [];
     let list: CostCategoryEntity[] = [];
 
-    if (selectedLevel === "all") {
-      list = [...data.parentCategories, ...data.subCategories, ...data.accounts];
-    } else if (selectedLevel === "parent") {
+    if (selectedLevel === "parent") {
       list = [...data.parentCategories];
-    } else if (selectedLevel === "subcategory") {
-      list = [...data.subCategories];
-    } else if (selectedLevel === "account") {
+    } else if (selectedLevel === "all") {
+      list = [...data.parentCategories, ...data.accounts];
+    } else {
+      // Default: show sub-categories / child accounts
       list = [...data.accounts];
     }
 
@@ -177,6 +197,14 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
       list = list.filter((item) => {
         if (item.type === "parent") return item.name === selectedParentFilter;
         return item.parentName === selectedParentFilter;
+      });
+    }
+
+    // Filter by specific sub-category / account if selected
+    if (selectedSubAccountFilter !== "ALL") {
+      list = list.filter((item) => {
+        if (item.type === "parent") return false;
+        return (item.accountCode && item.accountCode === selectedSubAccountFilter) || item.id === selectedSubAccountFilter || item.name === selectedSubAccountFilter;
       });
     }
 
@@ -203,21 +231,26 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     }
 
     // Sorting
-    list.sort((a, b) => {
-      if (sortBy === "realisasiDesc") {
-        return b.totalRealisasi - a.totalRealisasi;
-      }
-      if (sortBy === "costPerTonDesc") {
-        return b.avgRealisasiIdrPerTon - a.avgRealisasiIdrPerTon;
-      }
-      if (sortBy === "deviasiDesc") {
-        return a.totalDeviasi - b.totalDeviasi; // Most over-budget first (negative deviasi)
-      }
-      return 0;
-    });
+    if (sortBy === "realisasiDesc") {
+      list.sort((a, b) => b.totalRealisasi - a.totalRealisasi);
+    } else if (sortBy === "costPerTonDesc") {
+      list.sort((a, b) => b.avgRealisasiIdrPerTon - a.avgRealisasiIdrPerTon);
+    } else if (sortBy === "deviasiDesc") {
+      list.sort((a, b) => a.totalDeviasi - b.totalDeviasi);
+    }
 
     return list;
-  }, [data, selectedLevel, selectedParentFilter, hideZeroCosts, searchQuery, sortBy, startWeek, endWeek]);
+  }, [
+    data,
+    selectedLevel,
+    selectedParentFilter,
+    selectedSubAccountFilter,
+    hideZeroCosts,
+    searchQuery,
+    sortBy,
+    startWeek,
+    endWeek,
+  ]);
 
   // Overall KPI totals based on active range
   const summaryRange = useMemo(() => {
@@ -566,18 +599,72 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
           <div className="mt-2.5 space-y-1">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-slate-500">Kategori Utama:</span>
-              <strong className="text-purple-700 font-bold">{data?.parentCategories?.length || 7} Parent</strong>
+              <strong className="text-purple-700 font-bold">{data?.parentCategories?.length || 7} Kategori</strong>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-500">Sub-Kategori:</span>
-              <strong className="text-blue-700 font-bold">{data?.subCategories?.length || 34} Kelompok</strong>
+              <span className="text-slate-500">Sub-Kategori Akun:</span>
+              <strong className="text-blue-700 font-bold">{data?.accounts?.length || 79} Akun Beban</strong>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-500">Akun Beban Rinci:</span>
-              <strong className="text-slate-800 font-bold">{data?.accounts?.length || 79} Akun</strong>
+              <span className="text-slate-500">Kategori Aktif:</span>
+              <strong className="text-orange-600 font-bold truncate max-w-36" title={selectedParentFilter}>
+                {selectedParentFilter === "ALL" ? "Semua Kategori" : selectedParentFilter.replace("BEBAN ", "")}
+              </strong>
             </div>
           </div>
           <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-purple-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-purple-500/10 transition-colors" />
+        </div>
+      </div>
+
+      {/* 2.5 Quick Category Switcher Pills */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Layers size={13} className="text-[#e95623]" />
+            Pilih Kategori Beban:
+          </span>
+          <span className="text-[11px] text-slate-500 font-medium">
+            Klik kategori untuk melihat seluruh sub-kategori di bawahnya
+          </span>
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => handleSelectParent("ALL")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs ${
+              selectedParentFilter === "ALL"
+                ? "bg-slate-900 text-white"
+                : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+            }`}
+          >
+            <Layers size={13} />
+            Semua Kategori (79)
+          </button>
+
+          {data?.parentCategories?.map((p) => {
+            const childCount = data.accounts.filter((a) => a.parentName === p.name).length;
+            const isSelected = selectedParentFilter === p.name;
+            const shortName = p.name.replace("BEBAN ", "");
+            return (
+              <button
+                key={p.name}
+                onClick={() => handleSelectParent(p.name)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs ${
+                  isSelected
+                    ? "bg-[#e95623] text-white"
+                    : "bg-white text-slate-700 hover:bg-orange-50 hover:text-[#e95623] border border-slate-200"
+                }`}
+              >
+                <span>{shortName}</span>
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    isSelected ? "bg-white/20 text-white font-black" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {childCount}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -591,14 +678,15 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
               Tingkatan:
             </span>
             <button
-              onClick={() => setSelectedLevel("all")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                selectedLevel === "all"
-                  ? "bg-slate-900 text-white shadow-2xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              onClick={() => setSelectedLevel("account")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                selectedLevel === "account"
+                  ? "bg-blue-600 text-white shadow-2xs"
+                  : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/60"
               }`}
             >
-              Semua Tingkatan
+              <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
+              Sub-Kategori Akun ({availableSubCategories.length})
             </button>
             <button
               onClick={() => setSelectedLevel("parent")}
@@ -612,26 +700,14 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
               Kategori Utama ({data?.parentCategories?.length || 7})
             </button>
             <button
-              onClick={() => setSelectedLevel("subcategory")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedLevel === "subcategory"
-                  ? "bg-amber-600 text-white shadow-2xs"
-                  : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200/60"
+              onClick={() => setSelectedLevel("all")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedLevel === "all"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-              Sub-Kategori ({data?.subCategories?.length || 34})
-            </button>
-            <button
-              onClick={() => setSelectedLevel("account")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedLevel === "account"
-                  ? "bg-blue-600 text-white shadow-2xs"
-                  : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/60"
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
-              Akun Beban Rinci ({data?.accounts?.length || 79})
+              Semua Tingkatan
             </button>
           </div>
 
@@ -673,31 +749,55 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
           </div>
         </div>
 
-        {/* Row 2: Parent Filter Dropdown, Week Range, Search, and Toggles */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Parent Category Dropdown */}
+        {/* Row 2: 5 Filter Controls (Parent Category, Sub-Category Dropdown, Week Range, Search, Sort) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* 1. Parent Category Dropdown */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 mb-1">
-              Filter Kategori Induk:
+              1. Kategori Induk:
             </label>
             <select
               value={selectedParentFilter}
-              onChange={(e) => setSelectedParentFilter(e.target.value)}
+              onChange={(e) => handleSelectParent(e.target.value)}
               className="w-full text-xs py-2 px-3 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#e95623]/20"
             >
-              <option value="ALL">Semua Kategori Induk</option>
-              {data?.parentCategories?.map((p) => (
-                <option key={p.name} value={p.name}>
-                  {p.name}
+              <option value="ALL">Semua Kategori (79 Sub-Kategori)</option>
+              {data?.parentCategories?.map((p) => {
+                const cCount = data.accounts.filter((a) => a.parentName === p.name).length;
+                return (
+                  <option key={p.name} value={p.name}>
+                    {p.name} ({cCount} Item)
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* 2. Sub-Category / Akun Dropdown */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 mb-1">
+              2. Sub-Kategori / Akun:
+            </label>
+            <select
+              value={selectedSubAccountFilter}
+              onChange={(e) => setSelectedSubAccountFilter(e.target.value)}
+              className="w-full text-xs py-2 px-3 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#e95623]/20"
+            >
+              <option value="ALL">
+                Semua Sub-Kategori ({availableSubCategories.length} Item)
+              </option>
+              {availableSubCategories.map((acc) => (
+                <option key={acc.id} value={acc.accountCode || acc.id}>
+                  {acc.accountCode ? `${acc.accountCode} - ${acc.name}` : acc.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Week Range Filter */}
+          {/* 3. Week Range Filter */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 mb-1">
-              Rentang Minggu:
+              3. Rentang Minggu:
             </label>
             <div className="flex items-center gap-2">
               <select
@@ -726,16 +826,16 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
             </div>
           </div>
 
-          {/* Search Box */}
+          {/* 4. Search Box */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 mb-1">
-              Cari Akun / Sub-Kategori:
+              4. Cari Cepat:
             </label>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Cari kode, nama akun, sub-kat..."
+                placeholder="Cari kode, nama akun..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]/20"
@@ -751,37 +851,183 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
             </div>
           </div>
 
-          {/* Sort & Zero-cost Toggle */}
+          {/* 5. Sort & Zero-cost Toggle */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 mb-1">
-              Urutan &amp; Opsi Tampilan:
+              5. Urutan &amp; Filter 0:
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="w-3/5 text-xs py-2 px-2.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700"
+                className="w-3/5 text-xs py-2 px-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700"
               >
+                <option value="default">Urutan Laporan Cost</option>
                 <option value="realisasiDesc">Realisasi Terbesar</option>
                 <option value="costPerTonDesc">Cost/Ton Terbesar</option>
-                <option value="deviasiDesc">Over Budget Terbesar</option>
-                <option value="default">Sesuai Master Akun</option>
+                <option value="deviasiDesc">Over Budget</option>
               </select>
 
               <button
                 onClick={() => setHideZeroCosts(!hideZeroCosts)}
-                className={`w-2/5 py-2 px-2 text-[10px] font-bold rounded-xl border transition-all text-center cursor-pointer ${
+                className={`w-2/5 py-2 px-1 text-[10px] font-bold rounded-xl border transition-all text-center cursor-pointer ${
                   hideZeroCosts
                     ? "bg-slate-100 text-slate-700 border-slate-300"
-                    : "bg-white text-slate-400 border-slate-200"
+                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                 }`}
-                title="Sembunyikan akun tanpa transaksi / 0 rupiah"
+                title="Klik untuk menyembunyikan akun tanpa biaya (0 rupiah)"
               >
-                {hideZeroCosts ? "Hide 0" : "Show All"}
+                {hideZeroCosts ? "Hanya >0" : "Semua (0)"}
               </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Featured Parent Category Card (if specific parent selected and viewing all sub-accounts) */}
+      {activeParentCategory && selectedSubAccountFilter === "ALL" && (
+        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-700/80 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                  Ringkasan Kategori Utama
+                </span>
+                <span className="text-xs text-slate-400 font-bold font-mono">
+                  {availableSubCategories.length} Sub-Kategori Akun
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
+                {activeParentCategory.name}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="text-slate-400">Total Sub-Kategori:</span>
+              <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-orange-400 font-bold border border-slate-700">
+                {availableSubCategories.length} Item
+              </span>
+            </div>
+          </div>
+
+          {/* Metrics row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+                Cost/Ton Realisasi
+              </span>
+              <p className="text-sm sm:text-base font-black text-orange-400 mt-0.5">
+                {formatIDRPerTon(activeParentCategory.avgRealisasiIdrPerTon)}
+              </p>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                Budget: {formatIDRPerTon(activeParentCategory.avgBudgetIdrPerTon)}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+                Deviasi Cost/Ton
+              </span>
+              <p
+                className={`text-sm sm:text-base font-black mt-0.5 ${
+                  activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "text-emerald-400" : "text-red-400"
+                }`}
+              >
+                {activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "+" : ""}
+                {formatIDRPerTon(activeParentCategory.avgDeviasiIdrPerTon)}
+              </p>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {activeParentCategory.avgDeviasiIdrPerTon >= 0 ? "Under Budget" : "Over Budget"}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+                Total Biaya Realisasi
+              </span>
+              <p className="text-sm sm:text-base font-black text-white mt-0.5">
+                {formatCompact(activeParentCategory.totalRealisasi)}
+              </p>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                Budget: {formatCompact(activeParentCategory.totalBudget)}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans block">
+                Deviasi Biaya Total
+              </span>
+              <p
+                className={`text-sm sm:text-base font-black mt-0.5 ${
+                  activeParentCategory.totalDeviasi >= 0 ? "text-emerald-400" : "text-red-400"
+                }`}
+              >
+                {activeParentCategory.totalDeviasi >= 0 ? "+" : ""}
+                {formatCompact(activeParentCategory.totalDeviasi)}
+              </p>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {activeParentCategory.totalDeviasi >= 0 ? "Under Budget" : "Over Budget"}
+              </span>
+            </div>
+          </div>
+
+          {/* Parent Trend Line Chart */}
+          <div className="h-44 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={filterTimelineRange(activeParentCategory.timeline)}
+                margin={{ top: 8, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 9.5, fill: "#94a3b8" }} stroke="#475569" />
+                <YAxis
+                  yAxisId="mainAxis"
+                  tick={{ fontSize: 9.5, fill: "#94a3b8" }}
+                  stroke="#475569"
+                  tickFormatter={(v) =>
+                    selectedMetric === "costPerTon" ? `${v.toLocaleString()}` : formatCompact(v)
+                  }
+                />
+                <Tooltip content={<CustomChartTooltip />} />
+                {selectedMetric === "costPerTon" ? (
+                  <>
+                    <Bar yAxisId="mainAxis" dataKey="budgetIdrPerTon" fill="#475569" radius={[4, 4, 0, 0]} opacity={0.5} name="Budget (Rp/Ton)" />
+                    <Line yAxisId="mainAxis" type="monotone" dataKey="realisasiIdrPerTon" stroke="#f97316" strokeWidth={2.5} dot={{ r: 3, fill: "#f97316" }} name="Realisasi (Rp/Ton)" />
+                  </>
+                ) : (
+                  <>
+                    <Bar yAxisId="mainAxis" dataKey="budgetCost" fill="#475569" radius={[4, 4, 0, 0]} opacity={0.5} name="Budget (IDR)" />
+                    <Line yAxisId="mainAxis" type="monotone" dataKey="realisasiCost" stroke="#38bdf8" strokeWidth={2.5} dot={{ r: 3, fill: "#38bdf8" }} name="Realisasi (IDR)" />
+                  </>
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Section Title for Sub-Categories List */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+            Daftar Sub-Kategori Akun Beban
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#e95623] border border-orange-200">
+              {filteredEntities.length} Item
+            </span>
+          </h2>
+          {selectedParentFilter !== "ALL" && (
+            <span className="text-xs text-slate-500 font-medium">
+              &bull; {selectedParentFilter}
+            </span>
+          )}
+        </div>
+        {selectedSubAccountFilter !== "ALL" && (
+          <button
+            onClick={() => setSelectedSubAccountFilter("ALL")}
+            className="text-xs font-bold text-[#e95623] hover:underline cursor-pointer self-start sm:self-auto"
+          >
+            Tampilkan Semua Sub-Kategori ({availableSubCategories.length}) &rarr;
+          </button>
+        )}
       </div>
 
       {/* 4. Visual Cards Grid */}
@@ -831,12 +1077,10 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                         className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                           isParent
                             ? "bg-purple-100 text-purple-900 border-purple-300"
-                            : isSubCat
-                            ? "bg-amber-100 text-amber-950 border-amber-300"
                             : "bg-blue-50 text-blue-700 border-blue-200"
                         }`}
                       >
-                        {isParent ? "Kategori Utama" : isSubCat ? "Sub-Kategori" : "Akun Rinci"}
+                        {isParent ? "Kategori Utama" : "Sub-Kategori"}
                       </span>
 
                       {/* Account Code */}
@@ -877,12 +1121,9 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                     {item.name}
                   </h3>
 
-                  {(item.parentName || item.subCategory) && (
+                  {item.parentName && (
                     <p className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">
-                      {item.parentName && <span>Induk: {item.parentName}</span>}
-                      {item.subCategory && item.subCategory !== item.name && (
-                        <span> &bull; Sub: {item.subCategory}</span>
-                      )}
+                      <span>Kategori Induk: {item.parentName}</span>
                     </p>
                   )}
                 </div>
