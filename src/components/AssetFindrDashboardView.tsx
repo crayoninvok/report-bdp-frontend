@@ -705,24 +705,24 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             <thead>
               <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-700 font-extrabold uppercase tracking-wider text-[11px]">
                 <th className="py-3.5 px-4 w-12 text-center">No</th>
-                <th className="py-3.5 px-4 min-w-[150px]">Tanggal & Hari</th>
+                <th className="py-3.5 px-4 min-w-37.5">Tanggal & Hari</th>
                 {/* DS Header with Amber Accent */}
-                <th className="py-3.5 px-4 min-w-[180px] bg-amber-100/90 text-amber-950 border-x border-amber-200 text-right">
+                <th className="py-3.5 px-4 min-w-45 bg-amber-100/90 text-amber-950 border-x border-amber-200 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <Sun size={14} className="text-amber-600" />
                     <span>Day Shift (DS)</span>
                   </div>
                 </th>
                 {/* NS Header with Indigo Accent */}
-                <th className="py-3.5 px-4 min-w-[180px] bg-indigo-100/90 text-indigo-950 border-r border-indigo-200 text-right">
+                <th className="py-3.5 px-4 min-w-45 bg-indigo-100/90 text-indigo-950 border-r border-indigo-200 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <Moon size={14} className="text-indigo-600" />
                     <span>Night Shift (NS)</span>
                   </div>
                 </th>
-                <th className="py-3.5 px-4 min-w-[150px] text-right font-black">Total Tonase</th>
+                <th className="py-3.5 px-4 min-w-37.5 text-right font-black">Total Tonase</th>
                 <th className="py-3.5 px-4 w-28 text-center">Total Rit</th>
-                <th className="py-3.5 px-4 min-w-[130px] text-center">Rasio Shift</th>
+                <th className="py-3.5 px-4 min-w-32.5 text-center">Rasio Shift</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
