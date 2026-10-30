@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { User, JobSite } from "../types/auth";
 import {
   reportService,
   CostOverallData,
+  CostOverallDataset,
   CostCategoryEntity,
   CostTimelinePoint,
 } from "../services/reportService";
@@ -25,6 +26,7 @@ import {
   TrendingUp,
   TrendingDown,
   Calendar,
+  Clock,
   Building2,
   DollarSign,
   Search,
@@ -65,6 +67,9 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Time Mode: 'monthly' (Month to Date / Bulanan - DEFAULT) or 'weekly' (Mingguan Mulai W41)
+  const [timeMode, setTimeMode] = useState<"monthly" | "weekly">("monthly");
+
   // Filters & Controls
   const [selectedLevel, setSelectedLevel] = useState<LevelFilter>("account");
   const [selectedMetric, setSelectedMetric] = useState<MetricDisplay>("costPerTon");
@@ -74,9 +79,9 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
 
-  // Week range filters
-  const [startWeek, setStartWeek] = useState<string>("W29");
-  const [endWeek, setEndWeek] = useState<string>("W42");
+  // Period range filters (Jan - Okt for monthly, W41 - W42 for weekly)
+  const [startPeriod, setStartPeriod] = useState<string>("Jan");
+  const [endPeriod, setEndPeriod] = useState<string>("Okt");
 
   // Detail Modal state
   const [activeModalItem, setActiveModalItem] = useState<CostCategoryEntity | null>(null);
@@ -110,11 +115,29 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     return `Rp ${new Intl.NumberFormat("id-ID").format(Math.round(val || 0))}/Ton`;
   };
 
-  const parseWeekNumber = (label: string): number => {
-    const m = label.match(/\d+/);
-    return m ? parseInt(m[0], 10) : 0;
-  };
+  // Active dataset based on selected timeMode
+  const activeDataset: CostOverallDataset | null = useMemo(() => {
+    if (!data) return null;
+    if (timeMode === "weekly" && data.weekly) {
+      return data.weekly;
+    }
+    if (data.monthly) {
+      return data.monthly;
+    }
+    return data;
+  }, [data, timeMode]);
 
+  // Available periods list according to active dataset
+  const availablePeriods = useMemo(() => {
+    if (activeDataset?.availablePeriods && activeDataset.availablePeriods.length > 0) {
+      return activeDataset.availablePeriods;
+    }
+    return timeMode === "monthly"
+      ? ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agst", "Sept", "Okt"]
+      : ["W41", "W42"];
+  }, [activeDataset, timeMode]);
+
+  // Load data from backend
   const loadData = async (isSilent = false) => {
     if (!isSilent) setIsLoading(true);
     else setIsRefreshing(true);
@@ -125,9 +148,10 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
         2026
       );
       setData(res);
-      if (res.availableWeeks && res.availableWeeks.length > 0) {
-        if (!res.availableWeeks.includes(startWeek)) setStartWeek(res.availableWeeks[0]);
-        if (!res.availableWeeks.includes(endWeek)) setEndWeek(res.availableWeeks[res.availableWeeks.length - 1]);
+      const dataset = timeMode === "weekly" ? res.weekly || res : res.monthly || res;
+      if (dataset.availablePeriods && dataset.availablePeriods.length > 0) {
+        setStartPeriod(dataset.availablePeriods[0]);
+        setEndPeriod(dataset.availablePeriods[dataset.availablePeriods.length - 1]);
       }
     } catch (err: any) {
       console.error("Error loading cost overall data:", err);
@@ -142,36 +166,41 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     loadData();
   }, [selectedSite]);
 
-  const availableWeeks = useMemo(() => {
-    return data?.availableWeeks || ["W29", "W30", "W31", "W32", "W33", "W34", "W35", "W36", "W37", "W38", "W39", "W40", "W41", "W42"];
-  }, [data]);
+  // Reset start and end period when timeMode changes
+  useEffect(() => {
+    if (availablePeriods.length > 0) {
+      setStartPeriod(availablePeriods[0]);
+      setEndPeriod(availablePeriods[availablePeriods.length - 1]);
+    }
+  }, [timeMode, availablePeriods]);
 
-  // Filter timeline points by selected week range
-  const filterTimelineRange = (points: CostTimelinePoint[]) => {
-    const sNum = parseWeekNumber(startWeek);
-    const eNum = parseWeekNumber(endWeek);
-    const minW = Math.min(sNum, eNum);
-    const maxW = Math.max(sNum, eNum);
-    return points.filter((p) => {
-      const w = parseWeekNumber(p.label);
-      return w >= minW && w <= maxW;
-    });
-  };
+  // Filter timeline points by selected period range
+  const filterTimelineRange = useCallback(
+    (points: CostTimelinePoint[]) => {
+      if (!points || points.length === 0) return [];
+      const sIdx = availablePeriods.indexOf(startPeriod);
+      const eIdx = availablePeriods.indexOf(endPeriod);
+      if (sIdx === -1 || eIdx === -1 || sIdx > eIdx) return points;
+      const validLabels = new Set(availablePeriods.slice(sIdx, eIdx + 1));
+      return points.filter((p) => validLabels.has(p.label));
+    },
+    [availablePeriods, startPeriod, endPeriod]
+  );
 
   // Sub-categories / accounts under the currently selected parent category
   const availableSubCategories = useMemo(() => {
-    if (!data?.accounts) return [];
+    if (!activeDataset?.accounts) return [];
     if (selectedParentFilter === "ALL") {
-      return data.accounts;
+      return activeDataset.accounts;
     }
-    return data.accounts.filter((a) => a.parentName === selectedParentFilter);
-  }, [data, selectedParentFilter]);
+    return activeDataset.accounts.filter((a) => a.parentName === selectedParentFilter);
+  }, [activeDataset, selectedParentFilter]);
 
   // Active Parent Category data (if a single parent category is chosen)
   const activeParentCategory = useMemo(() => {
-    if (!data?.parentCategories || selectedParentFilter === "ALL") return null;
-    return data.parentCategories.find((p) => p.name === selectedParentFilter) || null;
-  }, [data, selectedParentFilter]);
+    if (!activeDataset?.parentCategories || selectedParentFilter === "ALL") return null;
+    return activeDataset.parentCategories.find((p) => p.name === selectedParentFilter) || null;
+  }, [activeDataset, selectedParentFilter]);
 
   const handleSelectParent = (parentName: string) => {
     setSelectedParentFilter(parentName);
@@ -180,16 +209,16 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
 
   // Compute filtered entities list
   const filteredEntities = useMemo(() => {
-    if (!data) return [];
+    if (!activeDataset) return [];
     let list: CostCategoryEntity[] = [];
 
     if (selectedLevel === "parent") {
-      list = [...data.parentCategories];
+      list = [...activeDataset.parentCategories];
     } else if (selectedLevel === "all") {
-      list = [...data.parentCategories, ...data.accounts];
+      list = [...activeDataset.parentCategories, ...activeDataset.accounts];
     } else {
       // Default: show sub-categories / child accounts
-      list = [...data.accounts];
+      list = [...activeDataset.accounts];
     }
 
     // Filter by parent category if selected
@@ -247,22 +276,21 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
 
     return list;
   }, [
-    data,
+    activeDataset,
     selectedLevel,
     selectedParentFilter,
     selectedSubAccountFilter,
     hideZeroCosts,
     searchQuery,
     sortBy,
-    startWeek,
-    endWeek,
+    filterTimelineRange,
   ]);
 
   // Overall KPI totals based on active range
   const summaryRange = useMemo(() => {
-    if (!data?.summaryTotal) return null;
-    const timeline = filterTimelineRange(data.summaryTotal.timeline);
-    const prodRange = filterTimelineRange(data.productionTimeline as any);
+    if (!activeDataset?.summaryTotal) return null;
+    const timeline = filterTimelineRange(activeDataset.summaryTotal.timeline);
+    const prodRange = filterTimelineRange(activeDataset.productionTimeline as any);
     const totalProdBudget = prodRange.reduce((s, p: any) => s + (p.budgetProduksi || 0), 0);
     const totalProdReal = prodRange.reduce((s, p: any) => s + (p.realisasiProduksi || 0), 0);
     const totalCostBudget = timeline.reduce((s, t) => s + t.budgetCost, 0);
@@ -284,7 +312,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
       deviasiIdrPerTon,
       timeline,
     };
-  }, [data, startWeek, endWeek]);
+  }, [activeDataset, filterTimelineRange]);
 
   // CSV Export Handler
   const handleExportCSV = () => {
@@ -339,7 +367,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Dashboard_Cost_Overall_${selectedSite}_${startWeek}_${endWeek}.csv`;
+    a.download = `Dashboard_Cost_Overall_${selectedSite}_${timeMode}_${startPeriod}_${endPeriod}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -425,18 +453,47 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
               <h1 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
                 Dashboard Cost Overall
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  Semua Akun Beban &amp; Sub-Kategori
+                  {timeMode === "monthly" ? "Month to Date (MTD)" : "Mingguan (Mulai W41)"}
                 </span>
               </h1>
               <p className="text-xs text-slate-500 font-medium">
-                Monitoring komprehensif seluruh akun beban operasional, analisis tren biaya mingguan, dan evaluasi performa Cost/Ton
+                {timeMode === "monthly"
+                  ? "Analisis biaya operasional seluruh akun beban berbasis Bulanan (Month to Date) & evaluasi performa Cost/Ton"
+                  : "Analisis biaya operasional seluruh akun beban berbasis Mingguan (tersedia mulai W41) & evaluasi performa Cost/Ton"}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Site Selector & Action Buttons */}
+        {/* Site Selector, Mode Switcher & Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Time Mode Switcher (Bulanan vs Mingguan W41+) */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+            <button
+              onClick={() => setTimeMode("monthly")}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                timeMode === "monthly"
+                  ? "bg-white text-slate-900 shadow-2xs font-black"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Calendar size={13} className={timeMode === "monthly" ? "text-[#e95623]" : ""} />
+              <span>Bulanan (MTD)</span>
+            </button>
+            <button
+              onClick={() => setTimeMode("weekly")}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                timeMode === "weekly"
+                  ? "bg-white text-slate-900 shadow-2xs font-black"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+              title="Laporan mingguan murni (hanya tersedia mulai W41)"
+            >
+              <Clock size={13} className={timeMode === "weekly" ? "text-[#e95623]" : ""} />
+              <span>Mingguan (W41+)</span>
+            </button>
+          </div>
+
           {/* Site Filter Pills */}
           <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
             {isHeadOffice && (
@@ -607,11 +664,11 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
           <div className="mt-2.5 space-y-1">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-slate-500">Kategori Utama:</span>
-              <strong className="text-purple-700 font-bold">{data?.parentCategories?.length || 7} Kategori</strong>
+              <strong className="text-purple-700 font-bold">{activeDataset?.parentCategories?.length || 7} Kategori</strong>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-slate-500">Sub-Kategori Akun:</span>
-              <strong className="text-blue-700 font-bold">{data?.accounts?.length || 79} Akun Beban</strong>
+              <strong className="text-blue-700 font-bold">{activeDataset?.accounts?.length || 79} Akun Beban</strong>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-slate-500">Kategori Aktif:</span>
@@ -645,11 +702,11 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
             }`}
           >
             <Layers size={13} />
-            Semua Kategori (79)
+            Semua Kategori ({activeDataset?.accounts?.length || 79})
           </button>
 
-          {data?.parentCategories?.map((p) => {
-            const childCount = data.accounts.filter((a) => a.parentName === p.name).length;
+          {activeDataset?.parentCategories?.map((p) => {
+            const childCount = activeDataset.accounts.filter((a) => a.parentName === p.name).length;
             const isSelected = selectedParentFilter === p.name;
             const shortName = p.name.replace("BEBAN ", "");
             return (
@@ -705,7 +762,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" />
-              Kategori Utama ({data?.parentCategories?.length || 7})
+              Kategori Utama ({activeDataset?.parentCategories?.length || 7})
             </button>
             <button
               onClick={() => setSelectedLevel("all")}
@@ -757,7 +814,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
           </div>
         </div>
 
-        {/* Row 2: 5 Filter Controls (Parent Category, Sub-Category Dropdown, Week Range, Search, Sort) */}
+        {/* Row 2: 5 Filter Controls (Parent Category, Sub-Category Dropdown, Period Range, Search, Sort) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* 1. Parent Category Dropdown */}
           <div>
@@ -769,9 +826,9 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
               onChange={(e) => handleSelectParent(e.target.value)}
               className="w-full text-xs py-2 px-3 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#e95623]/20"
             >
-              <option value="ALL">Semua Kategori (79 Sub-Kategori)</option>
-              {data?.parentCategories?.map((p) => {
-                const cCount = data.accounts.filter((a) => a.parentName === p.name).length;
+              <option value="ALL">Semua Kategori ({activeDataset?.accounts?.length || 79} Sub-Kategori)</option>
+              {activeDataset?.parentCategories?.map((p) => {
+                const cCount = activeDataset.accounts.filter((a) => a.parentName === p.name).length;
                 return (
                   <option key={p.name} value={p.name}>
                     {p.name} ({cCount} Item)
@@ -805,32 +862,32 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
             </select>
           </div>
 
-          {/* 3. Week Range Filter */}
+          {/* 3. Period Range Filter */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 mb-1">
-              3. Rentang Minggu:
+              {timeMode === "monthly" ? "3. Rentang Bulan (MTD):" : "3. Rentang Minggu (W41+):"}
             </label>
             <div className="flex items-center gap-2">
               <select
-                value={startWeek}
-                onChange={(e) => setStartWeek(e.target.value)}
+                value={startPeriod}
+                onChange={(e) => setStartPeriod(e.target.value)}
                 className="w-1/2 text-xs py-2 px-2.5 rounded-xl border border-slate-200 bg-white font-mono font-bold text-slate-700"
               >
-                {availableWeeks.map((w) => (
-                  <option key={`start-${w}`} value={w}>
-                    {w}
+                {availablePeriods.map((p) => (
+                  <option key={`start-${p}`} value={p}>
+                    {p}
                   </option>
                 ))}
               </select>
               <span className="text-xs text-slate-400 font-bold">-</span>
               <select
-                value={endWeek}
-                onChange={(e) => setEndWeek(e.target.value)}
+                value={endPeriod}
+                onChange={(e) => setEndPeriod(e.target.value)}
                 className="w-1/2 text-xs py-2 px-2.5 rounded-xl border border-slate-200 bg-white font-mono font-bold text-slate-700"
               >
-                {availableWeeks.map((w) => (
-                  <option key={`end-${w}`} value={w}>
-                    {w}
+                {availablePeriods.map((p) => (
+                  <option key={`end-${p}`} value={p}>
+                    {p}
                   </option>
                 ))}
               </select>
@@ -1279,13 +1336,13 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                 {/* Footer Action */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className="text-[10px] text-slate-400 font-medium">
-                    {activeRangeTimeline.length} Minggu ({startWeek} - {endWeek})
+                    {activeRangeTimeline.length} {timeMode === "monthly" ? "Bulan" : "Minggu"} ({startPeriod} - {endPeriod})
                   </span>
                   <button
                     onClick={() => setActiveModalItem(item)}
                     className="text-[11px] font-bold text-slate-700 hover:text-[#e95623] flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    <span>Detail Mingguan</span>
+                    <span>{timeMode === "monthly" ? "Detail Bulanan" : "Detail Mingguan"}</span>
                     <Maximize2 size={12} />
                   </button>
                 </div>
@@ -1393,7 +1450,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
-                      <th className="py-2.5 px-3">Minggu</th>
+                      <th className="py-2.5 px-3">{timeMode === "monthly" ? "Bulan" : "Minggu"}</th>
                       <th className="py-2.5 px-3">Periode</th>
                       <th className="py-2.5 px-3 text-right">Produksi (Ton)</th>
                       <th className="py-2.5 px-3 text-right">Budget (Rp)</th>

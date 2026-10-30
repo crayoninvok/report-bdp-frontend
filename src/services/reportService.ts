@@ -305,7 +305,7 @@ export const reportService = {
 };
 
 export interface CostTimelinePoint {
-  weekNumber: number;
+  weekNumber?: number;
   label: string;
   periodName: string;
   budgetCost: number;
@@ -339,14 +339,11 @@ export interface CostCategoryEntity {
   timeline: CostTimelinePoint[];
 }
 
-export interface CostOverallData {
-  site: string;
-  year: number;
+export interface CostOverallDataset {
   totalBudgetProduksi: number;
   totalRealisasiProduksi: number;
-  availableWeeks: string[];
+  availablePeriods: string[];
   productionTimeline: {
-    weekNumber: number;
     label: string;
     periodName: string;
     budgetProduksi: number;
@@ -366,6 +363,15 @@ export interface CostOverallData {
   parentCategories: CostCategoryEntity[];
   subCategories: CostCategoryEntity[];
   accounts: CostCategoryEntity[];
+}
+
+export interface CostOverallData extends CostOverallDataset {
+  site: string;
+  year: number;
+  viewMode?: "monthly" | "weekly";
+  availableWeeks?: string[];
+  monthly?: CostOverallDataset;
+  weekly?: CostOverallDataset;
 }
 
 export interface LatestDataUpdateItem {
