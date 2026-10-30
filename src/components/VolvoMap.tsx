@@ -4,7 +4,57 @@ import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { VolvoUnit } from "../services/volvoService";
-import { Layers, Maximize2, Navigation, Compass, ExternalLink } from "lucide-react";
+import { Layers, Maximize2, Navigation, Compass, ExternalLink, Wrench, Building2 } from "lucide-react";
+
+export interface KnownArea {
+  id: string;
+  name: string;
+  shortName: string;
+  category: string;
+  center: [number, number];
+  zoom: number;
+  polygon: [number, number][];
+  description: string;
+}
+
+// Known Key Mining Operational Areas & Facilities
+export const KNOWN_AREAS: KnownArea[] = [
+  {
+    id: "workshop-senyiur",
+    name: "Area Workshop Senyiur",
+    shortName: "Workshop Senyiur",
+    category: "Workshop & Maintenance Pool",
+    center: [0.2965, 116.5775],
+    zoom: 17,
+    polygon: [
+      [0.2984, 116.5768],
+      [0.2982, 116.5786],
+      [0.2970, 116.5794],
+      [0.2950, 116.5790],
+      [0.2946, 116.5776],
+      [0.2952, 116.5762],
+      [0.2966, 116.5760],
+      [0.2978, 116.5764],
+    ],
+    description: "Fasilitas Workshop, bengkel perawatan, dan pool parkir armada unit Volvo di Site Senyiur.",
+  },
+];
+
+// Helper: Check if point [lat, lng] is inside a polygon
+function isPointInPolygon(point: [number, number], vs: [number, number][]): boolean {
+  const x = point[0];
+  const y = point[1];
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    const xi = vs[i][0];
+    const yi = vs[i][1];
+    const xj = vs[j][0];
+    const yj = vs[j][1];
+    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
 
 interface VolvoMapProps {
   units: VolvoUnit[];
@@ -25,6 +75,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const areasLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
   // Initialize Map
   useEffect(() => {
@@ -39,6 +90,10 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       });
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      // Create Layer Group for Geofenced Areas
+      const areasGroup = L.layerGroup().addTo(map);
+      areasLayerGroupRef.current = areasGroup;
 
       mapInstanceRef.current = map;
     }
@@ -77,6 +132,102 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     }).addTo(map);
   }, [mapLayer]);
 
+  // Render & Update Known Areas (Geofences) on Map
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const areasGroup = areasLayerGroupRef.current;
+    if (!map || !areasGroup) return;
+
+    areasGroup.clearLayers();
+
+    KNOWN_AREAS.forEach((area) => {
+      // Find units currently inside this area
+      const insideUnits = units.filter(
+        (u) =>
+          u.latitude !== null &&
+          u.longitude !== null &&
+          isPointInPolygon([u.latitude, u.longitude], area.polygon)
+      );
+
+      // 1. Draw boundary polygon
+      const polygon = L.polygon(area.polygon, {
+        color: "#e95623",
+        weight: 2.5,
+        dashArray: "6, 6",
+        fillColor: "#f97316",
+        fillOpacity: 0.16,
+      }).addTo(areasGroup);
+
+      // 2. Area Popup Content
+      const popupHtml = `
+        <div class="p-3 text-slate-900 font-sans min-w-64" style="font-family: inherit;">
+          <div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
+            <span class="w-7 h-7 rounded-lg bg-orange-100 text-[#e95623] flex items-center justify-center font-bold">
+              🏭
+            </span>
+            <div>
+              <h3 class="font-black text-sm text-slate-900 leading-tight">${area.name}</h3>
+              <p class="text-[10px] text-slate-500">${area.category}</p>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-600 mb-2 leading-relaxed">
+            ${area.description}
+          </p>
+
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+            <div class="flex items-center justify-between font-bold">
+              <span class="text-slate-600">Unit di Area:</span>
+              <span class="px-2 py-0.5 rounded-full bg-orange-100 text-[#e95623] font-black text-[11px]">
+                ${insideUnits.length} Unit
+              </span>
+            </div>
+            ${
+              insideUnits.length > 0
+                ? `<div class="text-[11px] text-slate-700 font-mono font-medium pt-1 border-t border-slate-200">
+                    ${insideUnits.map((u) => u.pmNumber).join(", ")}
+                   </div>`
+                : `<div class="text-[11px] text-slate-400 italic pt-1">Tidak ada unit di area saat ini</div>`
+            }
+          </div>
+
+          <div class="mt-2 text-[10px] text-slate-400 flex items-center justify-between">
+            <span>Koordinat Pusat:</span>
+            <code class="text-slate-600 font-mono">${area.center[0].toFixed(4)}, ${area.center[1].toFixed(4)}</code>
+          </div>
+        </div>
+      `;
+
+      polygon.bindPopup(popupHtml, { maxWidth: 300 });
+
+      // 3. Floating area title badge on map
+      const labelHtml = `
+        <div class="cursor-pointer group pointer-events-auto" style="transform: translate(-50%, -50%);">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/95 backdrop-blur-md text-white border-2 border-orange-500 shadow-xl transition-all group-hover:scale-105 group-hover:border-white">
+            <span class="text-xs">🏭</span>
+            <span class="font-black text-[11px] tracking-tight whitespace-nowrap">${area.name}</span>
+            <span class="px-1.5 py-0.2 rounded-md bg-orange-500 text-white text-[9px] font-black uppercase font-mono">
+              ${insideUnits.length} Unit
+            </span>
+          </div>
+        </div>
+      `;
+
+      const labelIcon = L.divIcon({
+        html: labelHtml,
+        className: "custom-area-label",
+        iconSize: [160, 30],
+        iconAnchor: [80, 15],
+      });
+
+      const labelMarker = L.marker([area.center[0] + 0.0016, area.center[1]], {
+        icon: labelIcon,
+      }).addTo(areasGroup);
+
+      labelMarker.bindPopup(popupHtml, { maxWidth: 300 });
+    });
+  }, [units]);
+
   // Create custom HTML icon for each unit
   const createUnitIcon = (unit: VolvoUnit, isSelected: boolean) => {
     const isMoving = unit.isMoving;
@@ -96,7 +247,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           ${isMoving ? `<span class="opacity-90 font-bold">${speed}km/h</span>` : ""}
         </div>
 
-        <!-- Vehicle Directional Marker Marker -->
+        <!-- Vehicle Directional Marker -->
         <div class="relative w-7 h-7 rounded-full bg-slate-900 border-2 flex items-center justify-center shadow-lg text-white" style="border-color: ${borderColor};">
           ${
             isMoving
@@ -127,7 +278,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     });
   };
 
-  // Build Popup Content HTML
+  // Build Popup Content HTML for a unit
   const createPopupContent = (unit: VolvoUnit) => {
     const isMoving = unit.isMoving;
     const dateFormatted = unit.positionDateTime
@@ -146,6 +297,12 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         ? `https://www.google.com/maps?q=${unit.latitude},${unit.longitude}`
         : "#";
 
+    // Check if unit is in workshop area
+    const isInWorkshop =
+      unit.latitude !== null &&
+      unit.longitude !== null &&
+      isPointInPolygon([unit.latitude, unit.longitude], KNOWN_AREAS[0].polygon);
+
     return `
       <div class="p-3 text-slate-900 font-sans min-w-56" style="font-family: inherit;">
         <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-2.5">
@@ -161,6 +318,15 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
             ${isMoving ? "Bergerak" : "Berhenti"}
           </span>
         </div>
+
+        ${
+          isInWorkshop
+            ? `<div class="mb-2 p-1.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-900 text-[10px] font-extrabold flex items-center gap-1.5">
+                <span>🏭</span>
+                <span>Berada di Area Workshop Senyiur</span>
+               </div>`
+            : ""
+        }
 
         <div class="space-y-1.5 text-xs">
           <div class="flex items-center justify-between py-0.5">
@@ -258,7 +424,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     if (!map || !selectedUnit) return;
 
     if (selectedUnit.latitude && selectedUnit.longitude) {
-      map.flyTo([selectedUnit.latitude, selectedUnit.longitude], 15, {
+      map.flyTo([selectedUnit.latitude, selectedUnit.longitude], 16, {
         duration: 1.2,
       });
 
@@ -284,6 +450,24 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     }
   };
 
+  // Fly to Area Workshop Senyiur
+  const handleFlyToWorkshop = () => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const workshop = KNOWN_AREAS[0];
+    map.flyTo(workshop.center, workshop.zoom, {
+      duration: 1.5,
+    });
+  };
+
+  // Count units currently in workshop
+  const workshopUnitsCount = units.filter(
+    (u) =>
+      u.latitude !== null &&
+      u.longitude !== null &&
+      isPointInPolygon([u.latitude, u.longitude], KNOWN_AREAS[0].polygon)
+  ).length;
+
   return (
     <div className="relative w-full h-full min-h-125 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
       {/* Map DOM Container */}
@@ -295,7 +479,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         <div className="flex items-center p-1 bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-slate-200/80">
           <button
             onClick={() => onLayerChange("satellite")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               mapLayer === "satellite"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -305,7 +489,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </button>
           <button
             onClick={() => onLayerChange("streets")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               mapLayer === "streets"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -315,7 +499,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </button>
           <button
             onClick={() => onLayerChange("dark")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               mapLayer === "dark"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -325,6 +509,18 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </button>
         </div>
 
+        {/* Quick Fly to Area Workshop Senyiur */}
+        <button
+          onClick={handleFlyToWorkshop}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black transition-all shadow-md cursor-pointer border border-orange-400"
+          title="Fokus langsung ke Area Workshop Senyiur"
+        >
+          <span>🏭 Area Workshop Senyiur</span>
+          <span className="px-1.5 py-0.2 rounded-md bg-white text-orange-600 font-mono text-[10px]">
+            {workshopUnitsCount} Unit
+          </span>
+        </button>
+
         {/* Fit All Units Button */}
         <button
           onClick={handleFitAll}
@@ -332,7 +528,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           title="Zoom ke seluruh armada unit"
         >
           <Maximize2 size={13} className="text-[#e95623]" />
-          <span>Lihat Semua Unit ({units.length})</span>
+          <span>Lihat Semua ({units.length})</span>
         </button>
       </div>
 
