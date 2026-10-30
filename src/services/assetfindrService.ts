@@ -196,12 +196,17 @@ export const assetfindrService = {
   ): Promise<{ success: boolean; message: string; total_records?: number }> {
     const token = customToken !== undefined ? customToken : this.getStoredToken();
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        headers["x-assetfindr-token"] = token;
+      }
+
       const res = await fetch(`${API_BASE_URL}/assetfindr/test-connection`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-assetfindr-token": token,
-        },
+        headers,
         body: JSON.stringify({ token, client_id: clientId }),
       });
 
@@ -240,6 +245,7 @@ export const assetfindrService = {
       Accept: "application/json",
     };
     if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
       headers["x-assetfindr-token"] = token;
     }
 

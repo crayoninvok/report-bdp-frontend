@@ -77,14 +77,25 @@ export const AssetFindrTokenModal: React.FC<AssetFindrTokenModalProps> = ({
         setTokenInput(res.token);
         // Test connection immediately with newly acquired token
         const conn = await assetfindrService.testConnection(res.token);
-        setTestResult({
-          tested: true,
-          success: conn.success,
-          message: `Login berhasil! ${conn.message}`,
-          totalRecords: conn.total_records,
-        });
-        showSuccess("Berhasil terhubung ke AssetFindr Batara!");
+        if (conn.success) {
+          setTestResult({
+            tested: true,
+            success: true,
+            message: `Login berhasil! ${conn.message}`,
+            totalRecords: conn.total_records,
+          });
+          showSuccess("Berhasil terhubung ke AssetFindr Batara!");
+        } else {
+          setTestResult({
+            tested: true,
+            success: false,
+            message: `Login akun berhasil, namun pengujian endpoint tiket: ${conn.message}`,
+            totalRecords: conn.total_records,
+          });
+          showError(`Login berhasil, namun pengujian endpoint tiket: ${conn.message}`);
+        }
         if (onTokenUpdated) onTokenUpdated();
+
       } else {
         setTestResult({
           tested: true,
