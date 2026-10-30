@@ -89,7 +89,9 @@ export interface WeighBridgeTicketsQuery {
   ticket_date_end?: string;
   reconciliation_date_start?: string;
   reconciliation_date_end?: string;
+  jobsite?: string;
 }
+
 
 export interface WeighBridgeTicketsResponse {
   success: boolean;
@@ -281,6 +283,9 @@ export const assetfindrService = {
       params.set("reconciliation_date_start", query.reconciliation_date_start);
     if (query.reconciliation_date_end)
       params.set("reconciliation_date_end", query.reconciliation_date_end);
+    if (query.jobsite && query.jobsite !== "all") {
+      params.set("jobsite", query.jobsite);
+    }
 
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -309,12 +314,15 @@ export const assetfindrService = {
   async getDailyProduction(
     startDate?: string,
     endDate?: string,
+    jobsite?: string,
     overrideToken?: string
   ): Promise<DailyProductionResponse> {
     const token = overrideToken !== undefined ? overrideToken : this.getStoredToken();
     const params = new URLSearchParams();
     if (startDate) params.set("start_date", startDate);
     if (endDate) params.set("end_date", endDate);
+    if (jobsite && jobsite !== "all") params.set("jobsite", jobsite);
+
 
     const headers: Record<string, string> = {
       Accept: "application/json",

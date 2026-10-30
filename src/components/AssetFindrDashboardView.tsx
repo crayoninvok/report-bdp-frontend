@@ -29,6 +29,7 @@ import {
   SlidersHorizontal,
   FileSpreadsheet,
   Zap,
+  MapPin,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -62,6 +63,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   const [startDate, setStartDate] = useState<string>(`${defaultYear}-${defaultMonth}-01`);
   const [endDate, setEndDate] = useState<string>(`${defaultYear}-${defaultMonth}-${defaultDate}`);
 
+  // Jobsite Filter: 'all' | 'senyiur' | 'muara_pahu'
+  const [selectedJobsite, setSelectedJobsite] = useState<"all" | "senyiur" | "muara_pahu">("all");
+
   // Data States
   const [dailyData, setDailyData] = useState<DailyProductionItem[]>([]);
   const [summary, setSummary] = useState<DailyProductionResponse["summary"] | null>(null);
@@ -79,7 +83,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   const loadDailyProduction = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await assetfindrService.getDailyProduction(startDate, endDate);
+      const res = await assetfindrService.getDailyProduction(startDate, endDate, selectedJobsite);
       setDailyData(res.data || []);
       setSummary(res.summary || null);
       setPeriod(res.period || null);
@@ -90,7 +94,8 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     } finally {
       setIsLoading(false);
     }
-  }, [startDate, endDate, showError]);
+  }, [startDate, endDate, selectedJobsite, showError]);
+
 
   useEffect(() => {
     loadDailyProduction();
@@ -254,55 +259,123 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
           </div>
         </div>
 
-        {/* Date Filter Bar */}
-        <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 mr-1">
-              <Calendar size={14} className="text-slate-500" />
-              Periode:
-            </span>
+        {/* Filter Section: Jobsite & Periode */}
+        <div className="mt-6 pt-5 border-t border-slate-100 space-y-4">
+          {/* Jobsite Selector */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 text-xs mr-1">
+                <MapPin size={15} className="text-[#e95623]" />
+                Pilih Jobsite:
+              </span>
 
-            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
-              <div className="flex items-center gap-1.5 px-2">
-                <span className="text-[11px] font-bold text-slate-500">Mulai:</span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                />
-              </div>
+              <div className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setSelectedJobsite("all")}
+                  className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedJobsite === "all"
+                      ? "bg-white text-slate-900 shadow-xs font-black"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <span>Semua Jobsite</span>
+                  {selectedJobsite === "all" && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+                  )}
+                </button>
 
-              <span className="text-slate-400 font-bold">s/d</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedJobsite("senyiur")}
+                  className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedJobsite === "senyiur"
+                      ? "bg-emerald-600 text-white shadow-xs font-black"
+                      : "text-slate-600 hover:text-emerald-700"
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${selectedJobsite === "senyiur" ? "bg-white" : "bg-emerald-500"}`} />
+                  <span>Jobsite Senyiur</span>
+                </button>
 
-              <div className="flex items-center gap-1.5 px-2">
-                <span className="text-[11px] font-bold text-slate-500">Sampai:</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                />
+                <button
+                  type="button"
+                  onClick={() => setSelectedJobsite("muara_pahu")}
+                  className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedJobsite === "muara_pahu"
+                      ? "bg-[#e95623] text-white shadow-xs font-black"
+                      : "text-slate-600 hover:text-orange-700"
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${selectedJobsite === "muara_pahu" ? "bg-white" : "bg-orange-500"}`} />
+                  <span>Jobsite Muara Pahu</span>
+                </button>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setStartDate(`${defaultYear}-${defaultMonth}-01`);
-                setEndDate(`${defaultYear}-${defaultMonth}-${defaultDate}`);
-              }}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-orange-50 hover:bg-orange-100 text-[#e95623] border border-orange-200 transition-colors cursor-pointer"
-            >
-              Reset ke 01 s/d Hari Ini
-            </button>
+            {/* Current Active Jobsite Badge Indicator */}
+            <div className="text-xs">
+              <span className="text-slate-500 font-medium">Filter Jobsite: </span>
+              <span className="font-extrabold text-slate-900 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200">
+                {selectedJobsite === "all"
+                  ? "Semua Jobsite (Senyiur & Muara Pahu)"
+                  : selectedJobsite === "senyiur"
+                  ? "Jobsite Senyiur"
+                  : "Jobsite Muara Pahu"}
+              </span>
+            </div>
           </div>
 
-          {period && (
-            <div className="text-xs text-slate-500 font-medium">
-              Menampilkan <strong>{period.total_days} hari</strong> ({period.active_days} hari operasional aktif)
+          {/* Date Filter Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-100">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 mr-1">
+                <Calendar size={14} className="text-slate-500" />
+                Periode:
+              </span>
+
+              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+                <div className="flex items-center gap-1.5 px-2">
+                  <span className="text-[11px] font-bold text-slate-500">Mulai:</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+
+                <span className="text-slate-400 font-bold">s/d</span>
+
+                <div className="flex items-center gap-1.5 px-2">
+                  <span className="text-[11px] font-bold text-slate-500">Sampai:</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate(`${defaultYear}-${defaultMonth}-01`);
+                  setEndDate(`${defaultYear}-${defaultMonth}-${defaultDate}`);
+                }}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-orange-50 hover:bg-orange-100 text-[#e95623] border border-orange-200 transition-colors cursor-pointer"
+              >
+                Reset ke 01 s/d Hari Ini
+              </button>
             </div>
-          )}
+
+            {period && (
+              <div className="text-xs text-slate-500 font-medium">
+                Menampilkan <strong>{period.total_days} hari</strong> ({period.active_days} hari operasional aktif)
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -573,11 +646,28 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         {/* Table Toolbar */}
         <div className="p-5 sm:p-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
           <div>
-            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <FileSpreadsheet size={20} className="text-[#e95623]" />
-              Tabel Produksi Harian (Tanggal 01 s/d Hari Ini)
-            </h2>
-            <p className="text-xs text-slate-500">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <FileSpreadsheet size={20} className="text-[#e95623]" />
+                Tabel Produksi Harian (Tanggal 01 s/d Hari Ini)
+              </h2>
+              <span
+                className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${
+                  selectedJobsite === "senyiur"
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : selectedJobsite === "muara_pahu"
+                    ? "bg-orange-100 text-orange-800 border border-orange-300"
+                    : "bg-slate-200/80 text-slate-800 border border-slate-300"
+                }`}
+              >
+                {selectedJobsite === "all"
+                  ? "Semua Jobsite"
+                  : selectedJobsite === "senyiur"
+                  ? "Jobsite Senyiur"
+                  : "Jobsite Muara Pahu"}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
               Rincian angka tonase Day Shift (DS) dan Night Shift (NS) setiap hari operasional
             </p>
           </div>

@@ -54,6 +54,7 @@ export const AssetFindrDataView: React.FC<AssetFindrDataViewProps> = ({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedShift, setSelectedShift] = useState<string>("all");
+  const [selectedJobsite, setSelectedJobsite] = useState<"all" | "senyiur" | "muara_pahu">("all");
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLive, setIsLive] = useState<boolean>(false);
@@ -81,6 +82,7 @@ export const AssetFindrDataView: React.FC<AssetFindrDataViewProps> = ({
         search_keyword: debouncedSearch || undefined,
         ticket_date_start: startDate ? `${startDate}T00:00:00+07:00` : undefined,
         ticket_date_end: endDate ? `${endDate}T23:59:59+07:00` : undefined,
+        jobsite: selectedJobsite !== "all" ? selectedJobsite : undefined,
       });
 
       setTickets(res.data || []);
@@ -92,7 +94,7 @@ export const AssetFindrDataView: React.FC<AssetFindrDataViewProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [pageNo, pageSize, debouncedSearch, startDate, endDate, showError]);
+  }, [pageNo, pageSize, debouncedSearch, startDate, endDate, selectedJobsite, showError]);
 
   useEffect(() => {
     loadTickets();
@@ -291,6 +293,23 @@ export const AssetFindrDataView: React.FC<AssetFindrDataViewProps> = ({
 
           {/* Secondary Controls: Date Range, Shift, Page Size */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Jobsite Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+              <MapPin size={13} className="text-[#e95623]" />
+              <select
+                value={selectedJobsite}
+                onChange={(e) => {
+                  setSelectedJobsite(e.target.value as any);
+                  setPageNo(1);
+                }}
+                className="bg-transparent text-slate-800 font-bold text-xs focus:outline-hidden cursor-pointer"
+              >
+                <option value="all">Semua Jobsite</option>
+                <option value="senyiur">Jobsite Senyiur</option>
+                <option value="muara_pahu">Jobsite Muara Pahu</option>
+              </select>
+            </div>
+
             {/* Shift Filter */}
             <select
               value={selectedShift}
