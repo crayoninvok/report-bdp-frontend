@@ -738,7 +738,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
                 placeholder="Cari kode, nama akun, sub-kat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]/20"
+                className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]/20"
               />
               {searchQuery && (
                 <button
