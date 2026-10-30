@@ -886,7 +886,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
 
       {/* Featured Parent Category Card (if specific parent selected and viewing all sub-accounts) */}
       {activeParentCategory && selectedSubAccountFilter === "ALL" && (
-        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-700/80 space-y-4">
+        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-700/80 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/80 pb-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
