@@ -306,6 +306,16 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     ovh: { budget: 76, realisasi: 88, deviasi: -12 },
     produksi: { budget: 0, realisasi: 0 },
   },
+  {
+    label: "W43",
+    total: { budget: 1257, realisasi: 1388, deviasi: -131 },
+    comp: { budget: 364, realisasi: 378, deviasi: -14 },
+    fuel: { budget: 51, realisasi: 162, deviasi: -111 },
+    tyre: { budget: 0, realisasi: 0, deviasi: 0 },
+    rep: { budget: 2, realisasi: 1, deviasi: 1 },
+    ovh: { budget: 76, realisasi: 149, deviasi: -73 },
+    produksi: { budget: 0, realisasi: 0 },
+  },
 ];
 
 export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
@@ -448,6 +458,16 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     rep: { budget: 441, realisasi: 147, deviasi: 294 },
     ovh: { budget: 329, realisasi: 57, deviasi: 272 },
     produksi: { budget: 151516, realisasi: 216430 },
+  },
+  {
+    label: "W43",
+    total: { budget: 6142, realisasi: 7536, deviasi: -1394 },
+    comp: { budget: 745, realisasi: 718, deviasi: 27 },
+    fuel: { budget: 4174, realisasi: 5482, deviasi: -1308 },
+    tyre: { budget: 441, realisasi: 990, deviasi: -549 },
+    rep: { budget: 441, realisasi: 219, deviasi: 222 },
+    ovh: { budget: 329, realisasi: 126, deviasi: 203 },
+    produksi: { budget: 151516, realisasi: 227883 },
   },
 ];
 
@@ -845,9 +865,9 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
 
   // Week Range Filter state for Dashboard Cost
   const [weekFilterMode, setWeekFilterMode] = useState<"range" | "single" | "all">("range");
-  const [startWeek, setStartWeek] = useState<string>("W39");
-  const [endWeek, setEndWeek] = useState<string>("W42");
-  const [selectedSingleWeek, setSelectedSingleWeek] = useState<string>("W42");
+  const [startWeek, setStartWeek] = useState<string>("W40");
+  const [endWeek, setEndWeek] = useState<string>("W43");
+  const [selectedSingleWeek, setSelectedSingleWeek] = useState<string>("W43");
 
   const parseWeekNumber = (label: string): number => {
     const match = label.match(/\d+/);
@@ -867,6 +887,17 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
       .then((data) => {
         if (isMounted && data) {
           setDynamicTrends(data);
+          // Automatically sync to latest week if available
+          const siteKey = activeSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
+          const weeklyList = data[siteKey]?.weekly || [];
+          if (weeklyList.length > 0) {
+            const latestLabel = weeklyList[weeklyList.length - 1].label;
+            const latestNum = parseWeekNumber(latestLabel);
+            const startNum = Math.max(29, latestNum - 3);
+            setEndWeek(latestLabel);
+            setStartWeek(`W${startNum}`);
+            setSelectedSingleWeek(latestLabel);
+          }
         }
       })
       .catch((err) => {
@@ -875,7 +906,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeSite]);
 
   const availableWeeks = useMemo(() => {
     const siteKey = activeSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
@@ -885,7 +916,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     const weeks = weekly.map((item) => item.label);
     const fallbackList = [
       "W29", "W30", "W31", "W32", "W33", "W34", "W35",
-      "W36", "W37", "W38", "W39", "W40", "W41", "W42"
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43"
     ];
     const combined = Array.from(new Set([...fallbackList, ...weeks]));
     combined.sort((a, b) => parseWeekNumber(a) - parseWeekNumber(b));
@@ -1434,8 +1465,11 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               onClick={() => {
                 setTimeframe("week");
                 setWeekFilterMode("range");
-                setStartWeek("W39");
-                setEndWeek("W42");
+                const latest = availableWeeks[availableWeeks.length - 1] || "W43";
+                const latestNum = parseWeekNumber(latest);
+                const startNum = Math.max(29, latestNum - 3);
+                setStartWeek(`W${startNum}`);
+                setEndWeek(latest);
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 timeframe === "week"
@@ -1529,31 +1563,35 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        setStartWeek("W39");
-                        setEndWeek("W42");
-                      }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
-                        startWeek === "W39" && endWeek === "W42"
-                          ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
-                          : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
-                      }`}
-                      title="Rentang Minggu W39 - W42"
-                    >
-                      W39 - W42
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const latest = availableWeeks[availableWeeks.length - 1] || "W42";
+                        const latest = availableWeeks[availableWeeks.length - 1] || "W43";
                         const latestNum = parseWeekNumber(latest);
                         const startNum = Math.max(29, latestNum - 3);
                         setStartWeek(`W${startNum}`);
                         setEndWeek(latest);
                       }}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all cursor-pointer"
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
+                        endWeek === (availableWeeks[availableWeeks.length - 1] || "W43")
+                          ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                          : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
+                      }`}
                       title="4 Minggu Operasional Terakhir"
                     >
                       4 Mgg Terakhir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartWeek("W39");
+                        setEndWeek("W42");
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all cursor-pointer ${
+                        startWeek === "W39" && endWeek === "W42"
+                          ? "bg-slate-100 text-slate-900 font-extrabold"
+                          : ""
+                      }`}
+                      title="Rentang Minggu W39 - W42"
+                    >
+                      W39 - W42
                     </button>
                   </div>
                 </div>

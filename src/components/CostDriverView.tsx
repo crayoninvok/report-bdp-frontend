@@ -148,8 +148,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
 
   // Filter Rentang Minggu (Fixed Week Range)
   const [weekFilterMode, setWeekFilterMode] = useState<"range" | "single" | "all">("range");
-  const [startWeek, setStartWeek] = useState<string>("W39");
-  const [endWeek, setEndWeek] = useState<string>("W42");
+  const [startWeek, setStartWeek] = useState<string>("W40");
+  const [endWeek, setEndWeek] = useState<string>("W43");
 
   const parseWeekNumber = (label: string): number => {
     const match = label.match(/\d+/);
@@ -174,8 +174,11 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     setSelectedPeriod("all");
     if (newTf === "week") {
       setWeekFilterMode("range");
-      setStartWeek("W39");
-      setEndWeek("W42");
+      const latest = availableWeeks[availableWeeks.length - 1] || "W43";
+      const latestNum = parseWeekNumber(latest);
+      const startNum = Math.max(29, latestNum - 3);
+      setStartWeek(`W${startNum}`);
+      setEndWeek(latest);
     }
   };
 
@@ -192,6 +195,15 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
       .then((data) => {
         if (isMounted && data) {
           setDynamicWeekly(data);
+          const siteKey = selectedSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
+          const weekly = data[siteKey]?.weekly || [];
+          if (weekly.length > 0) {
+            const latest = weekly[weekly.length - 1].label;
+            const latestNum = parseWeekNumber(latest);
+            const startNum = Math.max(29, latestNum - 3);
+            setEndWeek(latest);
+            setStartWeek(`W${startNum}`);
+          }
         }
       })
       .catch((err) => {
@@ -200,7 +212,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedSite]);
 
   const weeklySenyiur = useMemo(() => {
     if (dynamicWeekly?.Senyiur?.weekly?.length) return dynamicWeekly.Senyiur.weekly;
@@ -328,7 +340,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     const weeks = baseDataset.map((item) => item.label);
     const fallbackList = [
       "W29", "W30", "W31", "W32", "W33", "W34", "W35",
-      "W36", "W37", "W38", "W39", "W40", "W41", "W42"
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43"
     ];
     const combined = Array.from(new Set([...fallbackList, ...weeks]));
     combined.sort((a, b) => parseWeekNumber(a) - parseWeekNumber(b));
@@ -969,31 +981,35 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <button
                         type="button"
                         onClick={() => {
-                          setStartWeek("W39");
-                          setEndWeek("W42");
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
-                          startWeek === "W39" && endWeek === "W42"
-                            ? "bg-orange-500/30 text-orange-200 border-orange-400 shadow-xs"
-                            : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-white/10"
-                        }`}
-                        title="Rentang Minggu 39 sampai 42"
-                      >
-                        W39 - W42
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const latest = availableWeeks[availableWeeks.length - 1] || "W42";
+                          const latest = availableWeeks[availableWeeks.length - 1] || "W43";
                           const latestNum = parseWeekNumber(latest);
                           const startNum = Math.max(29, latestNum - 3);
                           setStartWeek(`W${startNum}`);
                           setEndWeek(latest);
                         }}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 transition-all cursor-pointer"
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
+                          endWeek === (availableWeeks[availableWeeks.length - 1] || "W43")
+                            ? "bg-orange-500/30 text-orange-200 border-orange-400 shadow-xs"
+                            : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-white/10"
+                        }`}
                         title="4 Minggu Operasional Terakhir"
                       >
                         4 Mgg Terakhir
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartWeek("W39");
+                          setEndWeek("W42");
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 transition-all cursor-pointer ${
+                          startWeek === "W39" && endWeek === "W42"
+                            ? "bg-slate-700 text-white font-extrabold"
+                            : ""
+                        }`}
+                        title="Rentang Minggu 39 sampai 42"
+                      >
+                        W39 - W42
                       </button>
                     </div>
                   </div>
