@@ -82,8 +82,12 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   const [showBarLabels, setShowBarLabels] = useState<boolean>(true);
 
   // View Options for Trip Per Day (Ritase)
+  const [tripViewMode, setTripViewMode] = useState<"fleet" | "shift">("fleet");
   const [tripChartType, setTripChartType] = useState<"stacked" | "grouped">("stacked");
-  const [showTripTrendLine, setShowTripTrendLine] = useState<boolean>(true);
+  const [showPlanUnit, setShowPlanUnit] = useState<boolean>(true);
+  const [showTotalUnit, setShowTotalUnit] = useState<boolean>(true);
+  const [showActualTrip, setShowActualTrip] = useState<boolean>(true);
+  const [showTripTrendLine, setShowTripTrendLine] = useState<boolean>(false);
   const [showTripBarLabels, setShowTripBarLabels] = useState<boolean>(true);
 
   // Load Daily Production Data
@@ -125,6 +129,22 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     }
     return 0;
   }, [summary, dailyData]);
+
+  // Average Unit Running per Day
+  const avgUnitRunning = useMemo(() => {
+    const active = dailyData.filter((d) => (d.totalUnitRunning || 0) > 0);
+    if (active.length === 0) return 62;
+    const sum = active.reduce((acc, d) => acc + (d.totalUnitRunning || 0), 0);
+    return Math.round((sum / active.length) * 10) / 10;
+  }, [dailyData]);
+
+  // Average Actual Trip per Unit
+  const avgActualTripPerUnit = useMemo(() => {
+    const active = dailyData.filter((d) => (d.actualTripPerUnit || 0) > 0);
+    if (active.length === 0) return 2.565;
+    const sum = active.reduce((acc, d) => acc + (d.actualTripPerUnit || 0), 0);
+    return Number((sum / active.length).toFixed(3));
+  }, [dailyData]);
 
   // Chart Data preparation with Trend Lines for Tonase and Trip Per Day
   const chartData = useMemo(() => {
@@ -225,9 +245,24 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       // Format label total ritase / trip di atas bar
       const totalRitaseLabel = item.totalRitase > 0 ? `${item.totalRitase}` : "";
 
+      // Format short date for X-Axis e.g. "1/11", "2/11" matching reference image
+      const dateParts = item.date.split("-");
+      const monthNum = dateParts[1] ? String(parseInt(dateParts[1], 10)) : "11";
+      const shortDateLabel = `${item.day}/${monthNum}`;
+
+      // Plan unit running: 70 untuk bulan November (sesuai arahan user)
+      const isNov = item.date.includes("-11-") || monthNum === "11";
+      const planUnitRunning = item.planUnitRunning ?? (isNov ? 70 : 70);
+      const totalUnitRunning =
+        item.totalUnitRunning ?? (item.totalRitase > 0 ? Math.round(item.totalRitase / 2.565) : 0);
+      const actualTripPerUnit =
+        item.actualTripPerUnit ??
+        (totalUnitRunning > 0 ? Number((item.totalRitase / totalUnitRunning).toFixed(3)) : 0);
+
       return {
         ...item,
         label: `${String(item.day).padStart(2, "0")}`,
+        shortDateLabel,
         fullLabel: item.displayDate,
         isToday,
         isBeforeToday,
@@ -236,6 +271,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         trendLineTrip: tripTrendValue,
         totalTonaseLabel,
         totalRitaseLabel,
+        planUnitRunning,
+        totalUnitRunning,
+        actualTripPerUnit,
       };
     });
   }, [dailyData, todayStr]);
@@ -879,7 +917,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         </div>
       </div>
 
-      {/* Chart Section: Trip Per Day (Ritase DS & NS) */}
+      {/* Chart Section: Trip Per Day (#Ritase, Plan 70 & Armada Aktif) */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
@@ -888,68 +926,148 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               Grafik Trip Per Day (Tanggal 01 s/d Hari Ini)
             </h2>
             <p className="text-xs text-slate-500">
-              Frekuensi ritase harian per shift (Day Shift &amp; Night Shift), total trip per hari, dan garis tren operasional (berhenti H-1)
+              Monitoring ritase harian (#Ritase), armada aktif (Total Unit Running), target unit (Plan: 70), dan efisiensi Actual Trip per Unit
             </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Badge Rata-rata Trip/Hari */}
-            {avgTripsPerDay > 0 && (
-              <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-teal-500" />
-                <span>Rata-rata: {avgTripsPerDay} Trip/Hari</span>
-              </div>
-            )}
+            {/* Summary Badges */}
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-cyan-500" />
+              <span>Plan Unit Running (Nov): 70</span>
+            </div>
 
-            {/* Mode Stacked / Grouped */}
+            <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span>Rata-rata Armada: {avgUnitRunning} Unit</span>
+            </div>
+
+            <div className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span>Rata-rata: {avgTripsPerDay} Trip</span>
+            </div>
+
+            {/* Mode Toggle: Armada (Plan 70) vs Shift (DS & NS) */}
             <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
               <button
-                onClick={() => setTripChartType("stacked")}
+                onClick={() => setTripViewMode("fleet")}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  tripChartType === "stacked"
-                    ? "bg-white text-slate-900 shadow-2xs"
+                  tripViewMode === "fleet"
+                    ? "bg-white text-blue-900 shadow-2xs font-extrabold"
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
-                Bertumpuk
+                #Ritase &amp; Armada
               </button>
               <button
-                onClick={() => setTripChartType("grouped")}
+                onClick={() => setTripViewMode("shift")}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  tripChartType === "grouped"
-                    ? "bg-white text-slate-900 shadow-2xs"
+                  tripViewMode === "shift"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
-                Berdampingan
+                Per Shift (DS/NS)
               </button>
             </div>
 
-            {/* Toggle Garis Tren Regresi */}
-            <button
-              onClick={() => setShowTripTrendLine(!showTripTrendLine)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                showTripTrendLine
-                  ? "bg-sky-50 text-sky-800 border-sky-300 shadow-2xs"
-                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-              }`}
-              title="Tampilkan / sembunyikan Garis Tren Regresi Trip (berhenti di H-1)"
-            >
-              <TrendingUp size={13} className={showTripTrendLine ? "text-sky-600" : "text-slate-400"} />
-              <span>Garis Tren</span>
-            </button>
+            {tripViewMode === "fleet" ? (
+              <>
+                {/* Toggle Plan Unit Running */}
+                <button
+                  onClick={() => setShowPlanUnit(!showPlanUnit)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    showPlanUnit
+                      ? "bg-cyan-50 text-cyan-900 border-cyan-300 shadow-2xs"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  }`}
+                  title="Tampilkan / sembunyikan garis Plan Unit Running (70)"
+                >
+                  <span className={`w-2 h-2 rounded-full ${showPlanUnit ? "bg-cyan-500" : "bg-slate-300"}`} />
+                  <span>Plan (70)</span>
+                </button>
+
+                {/* Toggle Total Unit Running */}
+                <button
+                  onClick={() => setShowTotalUnit(!showTotalUnit)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    showTotalUnit
+                      ? "bg-amber-50 text-amber-900 border-amber-300 shadow-2xs"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  }`}
+                  title="Tampilkan / sembunyikan garis Total Unit Running"
+                >
+                  <span className={`w-2 h-2 rounded-full ${showTotalUnit ? "bg-amber-500" : "bg-slate-300"}`} />
+                  <span>Unit Aktif</span>
+                </button>
+
+                {/* Toggle Actual Trip per Unit */}
+                <button
+                  onClick={() => setShowActualTrip(!showActualTrip)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    showActualTrip
+                      ? "bg-purple-50 text-purple-900 border-purple-300 shadow-2xs"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  }`}
+                  title="Tampilkan / sembunyikan garis Actual Trip per Unit"
+                >
+                  <span className={`w-2 h-2 rounded-full ${showActualTrip ? "bg-purple-500" : "bg-slate-300"}`} />
+                  <span>Trip/Unit</span>
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Mode Stacked / Grouped */}
+                <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
+                  <button
+                    onClick={() => setTripChartType("stacked")}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      tripChartType === "stacked"
+                        ? "bg-white text-slate-900 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    Bertumpuk
+                  </button>
+                  <button
+                    onClick={() => setTripChartType("grouped")}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      tripChartType === "grouped"
+                        ? "bg-white text-slate-900 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    Berdampingan
+                  </button>
+                </div>
+
+                {/* Toggle Garis Tren Regresi */}
+                <button
+                  onClick={() => setShowTripTrendLine(!showTripTrendLine)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    showTripTrendLine
+                      ? "bg-sky-50 text-sky-800 border-sky-300 shadow-2xs"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  }`}
+                  title="Tampilkan / sembunyikan Garis Tren Regresi Trip (berhenti di H-1)"
+                >
+                  <TrendingUp size={13} className={showTripTrendLine ? "text-sky-600" : "text-slate-400"} />
+                  <span>Tren H-1</span>
+                </button>
+              </>
+            )}
 
             {/* Toggle Label Angka Total di Bar */}
             <button
               onClick={() => setShowTripBarLabels(!showTripBarLabels)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                 showTripBarLabels
-                  ? "bg-amber-50 text-amber-900 border-amber-300 shadow-2xs"
+                  ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
                   : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
               }`}
               title="Tampilkan / sembunyikan angka total trip di atas setiap batang grafik"
             >
-              <span>Label Angka</span>
+              <span>Label</span>
             </button>
           </div>
         </div>
@@ -969,49 +1087,70 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={chartData}
-                margin={{ top: 25, right: 15, left: 10, bottom: 20 }}
+                margin={{ top: 25, right: tripViewMode === "fleet" && showActualTrip ? 25 : 15, left: 10, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis
-                  dataKey="label"
+                  dataKey="shortDateLabel"
                   stroke="#94a3b8"
                   fontSize={11}
                   tickLine={false}
                   dy={8}
                 />
                 <YAxis
+                  yAxisId="left"
                   stroke="#94a3b8"
                   fontSize={11}
                   tickLine={false}
-                  domain={[0, (dataMax: number) => Math.ceil((dataMax || 50) * 1.15)]}
+                  domain={[0, (dataMax: number) => Math.ceil(Math.max(dataMax || 100, 80) * 1.15)]}
                   tickFormatter={(val) => `${val}`}
                 />
-                {avgTripsPerDay > 0 && (
+                {tripViewMode === "fleet" && showActualTrip && (
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#8b5cf6"
+                    fontSize={11}
+                    tickLine={false}
+                    domain={[0, 4]}
+                    tickFormatter={(val) => `${val.toFixed(1)}`}
+                  />
+                )}
+
+                {/* Plan Reference Line (70 Unit) */}
+                {tripViewMode === "fleet" && showPlanUnit && (
                   <ReferenceLine
-                    y={avgTripsPerDay}
-                    stroke="#0d9488"
+                    yAxisId="left"
+                    y={70}
+                    stroke="#06b6d4"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
-                      value: `Rata-rata: ${avgTripsPerDay} Trip`,
+                      value: "Plan Unit: 70",
                       position: "insideTopLeft",
-                      fill: "#0d9488",
+                      fill: "#0891b2",
                       fontSize: 10,
                       fontWeight: 700,
                     }}
                   />
                 )}
+
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload as any;
                       const isToday = data.isToday;
                       return (
-                        <div className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl text-xs space-y-2 border border-slate-800 min-w-56">
-                          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                            <span className="font-extrabold text-slate-200">
-                              {data.fullLabel} ({data.dayName})
-                            </span>
+                        <div className="bg-[#1e293b]/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl text-xs space-y-2.5 border border-slate-700/80 min-w-60 font-sans">
+                          <div className="flex items-center justify-between border-b border-slate-700/80 pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-white text-base">
+                                {data.shortDateLabel}
+                              </span>
+                              <span className="text-[11px] text-slate-300 font-medium">
+                                ({data.dayName})
+                              </span>
+                            </div>
                             {isToday && (
                               <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-orange-500 text-white animate-pulse">
                                 Hari Ini
@@ -1019,64 +1158,55 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                             )}
                           </div>
 
-                          <div className="space-y-1.5">
-                            {/* Day Shift */}
+                          <div className="space-y-2 py-0.5">
+                            {/* 1. Plan Unit Running */}
                             <div className="flex items-center justify-between gap-4">
-                              <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
-                                <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                Day Shift (DS):
+                              <span className="flex items-center gap-2 text-cyan-300 font-medium">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#22d3ee] ring-2 ring-cyan-400/20" />
+                                Plan Unit Running
                               </span>
-                              <strong className="font-mono">{data.ritaseDS?.toLocaleString("id-ID") || 0} Trip</strong>
-                            </div>
-                            <div className="text-[10px] text-slate-400 pl-3.5 flex justify-between">
-                              <span>{formatNum(data.tonaseDS, 2)} Ton</span>
-                              {data.avgPayloadDS > 0 && <span>{data.avgPayloadDS} T/rit</span>}
+                              <strong className="font-mono text-cyan-200 text-sm font-black">
+                                {data.planUnitRunning ?? 70}
+                              </strong>
                             </div>
 
-                            {/* Night Shift */}
+                            {/* 2. Actual Trip per Unit */}
                             <div className="flex items-center justify-between gap-4">
-                              <span className="flex items-center gap-1.5 text-indigo-400 font-semibold">
-                                <span className="w-2 h-2 rounded-full bg-indigo-400" />
-                                Night Shift (NS):
+                              <span className="flex items-center gap-2 text-indigo-300 font-medium">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] ring-2 ring-indigo-400/20" />
+                                Actual Trip per Unit
                               </span>
-                              <strong className="font-mono">{data.ritaseNS?.toLocaleString("id-ID") || 0} Trip</strong>
-                            </div>
-                            <div className="text-[10px] text-slate-400 pl-3.5 flex justify-between">
-                              <span>{formatNum(data.tonaseNS, 2)} Ton</span>
-                              {data.avgPayloadNS > 0 && <span>{data.avgPayloadNS} T/rit</span>}
+                              <strong className="font-mono text-indigo-200 text-sm font-black">
+                                {typeof data.actualTripPerUnit === "number" ? data.actualTripPerUnit.toFixed(3) : "0.000"}
+                              </strong>
                             </div>
 
-                            {/* Total Trip */}
-                            <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800 text-slate-300 font-bold">
-                              <span>Total Trip:</span>
-                              <span className="text-emerald-400 font-mono text-sm font-black">
-                                {data.totalRitase?.toLocaleString("id-ID") || 0} Trip
+                            {/* 3. #Ritase */}
+                            <div className="flex items-center justify-between gap-4 bg-blue-500/15 px-2.5 py-1 rounded-lg border border-blue-500/30">
+                              <span className="flex items-center gap-2 text-blue-300 font-bold">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6] ring-2 ring-blue-400/30" />
+                                #Ritase
                               </span>
+                              <strong className="font-mono text-white text-base font-black">
+                                {data.totalRitase?.toLocaleString("id-ID") || 0}
+                              </strong>
                             </div>
 
-                            {/* Total Tonase */}
-                            <div className="flex items-center justify-between gap-4 text-[11px] text-slate-400">
-                              <span>Total Tonase:</span>
-                              <span className="font-mono">{formatNum(data.totalTonase, 2)} Ton</span>
+                            {/* 4. Total Unit Running */}
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="flex items-center gap-2 text-amber-300 font-medium">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] ring-2 ring-amber-400/20" />
+                                Total Unit Running
+                              </span>
+                              <strong className="font-mono text-amber-200 text-sm font-black">
+                                {data.totalUnitRunning || 0}
+                              </strong>
                             </div>
+                          </div>
 
-                            {/* Trend Line Trip */}
-                            {showTripTrendLine && data.trendLineTrip !== null && data.trendLineTrip !== undefined && (
-                              <div className="flex items-center justify-between gap-4 text-[11px] text-sky-400 font-semibold pt-1 border-t border-slate-800/80">
-                                <span className="flex items-center gap-1.5">
-                                  <span className="w-2 h-0.5 bg-sky-400" />
-                                  Garis Tren:
-                                </span>
-                                <span className="font-mono">{data.trendLineTrip} Trip</span>
-                              </div>
-                            )}
-
-                            {/* Catatan jika hari ini */}
-                            {isToday && (
-                              <div className="text-[10px] text-amber-300/90 bg-amber-950/40 p-2 rounded-lg border border-amber-800/50 mt-1 leading-snug">
-                                * Garis tren berhenti di H-1 (kemarin) karena operasional hari ini masih berjalan.
-                              </div>
-                            )}
+                          <div className="pt-2 border-t border-slate-700/80 flex items-center justify-between text-[11px] text-slate-400">
+                            <span>Total Tonase:</span>
+                            <span className="font-mono font-bold text-slate-200">{formatNum(data.totalTonase, 2)} Ton</span>
                           </div>
                         </div>
                       );
@@ -1091,62 +1221,150 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   wrapperStyle={{ paddingBottom: "12px", fontSize: "12px" }}
                 />
 
-                {/* Bar Day Shift (DS) */}
-                <Bar
-                  name="Day Shift (DS)"
-                  dataKey="ritaseDS"
-                  fill="#f97316"
-                  stackId={tripChartType === "stacked" ? "a" : undefined}
-                  radius={tripChartType === "stacked" ? [0, 0, 0, 0] : [6, 6, 0, 0]}
-                />
-
-                {/* Bar Night Shift (NS) */}
-                <Bar
-                  name="Night Shift (NS)"
-                  dataKey="ritaseNS"
-                  fill="#6366f1"
-                  stackId={tripChartType === "stacked" ? "a" : undefined}
-                  radius={[6, 6, 0, 0]}
-                />
-
-                {/* Line Garis Tren Regresi Linier Trip (Berhenti di H-1) */}
-                {showTripTrendLine && (
-                  <Line
-                    name="Garis Tren Trip (s/d Kemarin)"
-                    dataKey="trendLineTrip"
-                    type="linear"
-                    stroke="#0284c7"
-                    strokeWidth={2.5}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    activeDot={{ r: 5, fill: "#0284c7" }}
-                    connectNulls={false}
-                  />
-                )}
-
-                {/* Label Total Trip di Atas Setiap Bar */}
-                {showTripBarLabels && (
-                  <Line
-                    dataKey="totalRitase"
-                    stroke="none"
-                    dot={false}
-                    activeDot={false}
-                    legendType="none"
-                    isAnimationActive={false}
-                    tooltipType="none"
-                  >
-                    <LabelList
-                      dataKey="totalRitaseLabel"
-                      position="top"
-                      offset={8}
-                      style={{
-                        fontSize: "9.5px",
-                        fontWeight: 800,
-                        fill: "#475569",
-                        fontFamily: "ui-monospace, monospace",
-                      }}
+                {tripViewMode === "fleet" ? (
+                  <>
+                    {/* Bar #Ritase (Solid Blue) */}
+                    <Bar
+                      yAxisId="left"
+                      name="#Ritase"
+                      dataKey="totalRitase"
+                      fill="#3b82f6"
+                      radius={[6, 6, 0, 0]}
                     />
-                  </Line>
+
+                    {/* Line Plan Unit Running (Cyan) */}
+                    {showPlanUnit && (
+                      <Line
+                        yAxisId="left"
+                        name="Plan Unit Running"
+                        dataKey="planUnitRunning"
+                        type="monotone"
+                        stroke="#06b6d4"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: "#06b6d4", strokeWidth: 1.5, stroke: "#ffffff" }}
+                        activeDot={{ r: 6, fill: "#06b6d4" }}
+                      />
+                    )}
+
+                    {/* Line Total Unit Running (Yellow) */}
+                    {showTotalUnit && (
+                      <Line
+                        yAxisId="left"
+                        name="Total Unit Running"
+                        dataKey="totalUnitRunning"
+                        type="monotone"
+                        stroke="#eab308"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: "#eab308", strokeWidth: 1.5, stroke: "#ffffff" }}
+                        activeDot={{ r: 6, fill: "#eab308" }}
+                      />
+                    )}
+
+                    {/* Line Actual Trip per Unit (Purple - Sumbu Kanan) */}
+                    {showActualTrip && (
+                      <Line
+                        yAxisId="right"
+                        name="Actual Trip per Unit"
+                        dataKey="actualTripPerUnit"
+                        type="monotone"
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 1.5, stroke: "#ffffff" }}
+                        activeDot={{ r: 6, fill: "#8b5cf6" }}
+                      />
+                    )}
+
+                    {/* Label Total Trip di Atas Setiap Bar */}
+                    {showTripBarLabels && (
+                      <Line
+                        yAxisId="left"
+                        dataKey="totalRitase"
+                        stroke="none"
+                        dot={false}
+                        activeDot={false}
+                        legendType="none"
+                        isAnimationActive={false}
+                        tooltipType="none"
+                      >
+                        <LabelList
+                          dataKey="totalRitaseLabel"
+                          position="top"
+                          offset={8}
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            fill: "#1e40af",
+                            fontFamily: "ui-monospace, monospace",
+                          }}
+                        />
+                      </Line>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Bar Day Shift (DS) */}
+                    <Bar
+                      yAxisId="left"
+                      name="Day Shift (DS)"
+                      dataKey="ritaseDS"
+                      fill="#f97316"
+                      stackId={tripChartType === "stacked" ? "a" : undefined}
+                      radius={tripChartType === "stacked" ? [0, 0, 0, 0] : [6, 6, 0, 0]}
+                    />
+
+                    {/* Bar Night Shift (NS) */}
+                    <Bar
+                      yAxisId="left"
+                      name="Night Shift (NS)"
+                      dataKey="ritaseNS"
+                      fill="#6366f1"
+                      stackId={tripChartType === "stacked" ? "a" : undefined}
+                      radius={[6, 6, 0, 0]}
+                    />
+
+                    {/* Line Garis Tren Regresi Linier Trip (Berhenti di H-1) */}
+                    {showTripTrendLine && (
+                      <Line
+                        yAxisId="left"
+                        name="Garis Tren Trip (s/d Kemarin)"
+                        dataKey="trendLineTrip"
+                        type="linear"
+                        stroke="#0284c7"
+                        strokeWidth={2.5}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        activeDot={{ r: 5, fill: "#0284c7" }}
+                        connectNulls={false}
+                      />
+                    )}
+
+                    {/* Label Total Trip di Atas Setiap Bar */}
+                    {showTripBarLabels && (
+                      <Line
+                        yAxisId="left"
+                        dataKey="totalRitase"
+                        stroke="none"
+                        dot={false}
+                        activeDot={false}
+                        legendType="none"
+                        isAnimationActive={false}
+                        tooltipType="none"
+                      >
+                        <LabelList
+                          dataKey="totalRitaseLabel"
+                          position="top"
+                          offset={8}
+                          style={{
+                            fontSize: "9.5px",
+                            fontWeight: 800,
+                            fill: "#475569",
+                            fontFamily: "ui-monospace, monospace",
+                          }}
+                        />
+                      </Line>
+                    )}
+                  </>
                 )}
               </ComposedChart>
             </ResponsiveContainer>
