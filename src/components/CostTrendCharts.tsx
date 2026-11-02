@@ -1998,7 +1998,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           const item = payload[0];
-                          const num = Math.round(Number(item.value) / 1000);
+                          const num = Number(item.value) / 1000;
                           const isBudget = item.payload.shortName === "Budget";
                           return (
                             <div className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1 min-w-36 z-50">
@@ -2013,7 +2013,10 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                               <div className="flex items-center justify-between gap-3 pt-0.5">
                                 <span className="text-slate-500 font-medium">Total:</span>
                                 <span className="font-mono font-black text-slate-900 text-xs">
-                                  Rp {num.toLocaleString("id-ID")} M
+                                  Rp {num.toLocaleString("id-ID", {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 1,
+                                  })} M
                                 </span>
                               </div>
                             </div>
@@ -2030,7 +2033,10 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                         dataKey="value"
                         position="top"
                         formatter={(v: any) =>
-                          `${Math.round(Number(v) / 1000).toLocaleString("id-ID")} M`
+                          `${(Number(v) / 1000).toLocaleString("id-ID", {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 1,
+                          })} M`
                         }
                         style={{ fontSize: "11px", fontWeight: "800", fill: "#1E293B" }}
                       />

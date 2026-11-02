@@ -1043,7 +1043,10 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
                     dataKey="value"
                     position="top"
                     formatter={(v: any) =>
-                      `${Math.round(Number(v) / 1000).toLocaleString("id-ID")} M`
+                      `${(Number(v) / 1000).toLocaleString("id-ID", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 1,
+                      })} M`
                     }
                     style={{ fontSize: "10px", fontWeight: "800", fill: "#1E293B" }}
                   />
