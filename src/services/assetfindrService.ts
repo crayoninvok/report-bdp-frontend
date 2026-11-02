@@ -140,6 +140,7 @@ export interface DailyProductionResponse {
     grandTotalTonase: number;
     grandTotalRitase: number;
     avgTonasePerDay: number;
+    avgRitasePerDay?: number;
     avgPayloadOverall: number;
   };
   data: DailyProductionItem[];

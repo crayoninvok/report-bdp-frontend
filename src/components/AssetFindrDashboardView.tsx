@@ -39,6 +39,7 @@ import {
   Tooltip,
   Legend,
   LabelList,
+  ReferenceLine,
 } from "recharts";
 
 interface AssetFindrDashboardViewProps {
@@ -75,10 +76,15 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   // Today Date String
   const todayStr = `${defaultYear}-${defaultMonth}-${defaultDate}`;
 
-  // View Options
+  // View Options for Produksi Harian (Tonase)
   const [chartType, setChartType] = useState<"stacked" | "grouped">("stacked");
   const [showTrendLine, setShowTrendLine] = useState<boolean>(true);
   const [showBarLabels, setShowBarLabels] = useState<boolean>(true);
+
+  // View Options for Trip Per Day (Ritase)
+  const [tripChartType, setTripChartType] = useState<"stacked" | "grouped">("stacked");
+  const [showTripTrendLine, setShowTripTrendLine] = useState<boolean>(true);
+  const [showTripBarLabels, setShowTripBarLabels] = useState<boolean>(true);
 
   // Load Daily Production Data
   const loadDailyProduction = useCallback(async () => {
@@ -110,11 +116,21 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     });
   };
 
-  // Chart Data preparation with Trend Line and Total Tonase
+  // Average Trips per Day (Ritase / Hari)
+  const avgTripsPerDay = useMemo(() => {
+    if (summary?.avgRitasePerDay) return summary.avgRitasePerDay;
+    if (summary && summary.grandTotalRitase > 0) {
+      const activeDays = dailyData.filter((d) => d.totalRitase > 0).length || 1;
+      return Math.round((summary.grandTotalRitase / activeDays) * 10) / 10;
+    }
+    return 0;
+  }, [summary, dailyData]);
+
+  // Chart Data preparation with Trend Lines for Tonase and Trip Per Day
   const chartData = useMemo(() => {
     const sorted = [...dailyData].sort((a, b) => a.date.localeCompare(b.date));
 
-    // Hari operasional yang sudah selesai (strictly < todayStr & totalTonase > 0)
+    // 1. Hari operasional yang sudah selesai untuk Tonase (strictly < todayStr & totalTonase > 0)
     // Sesuai permintaan: Garis trend berhenti di 1 hari sebelum hari ini (H-1)
     const completedItems = sorted.filter(
       (item) => item.date < todayStr && item.totalTonase > 0
@@ -145,17 +161,55 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       }
     }
 
+    // 2. Hari operasional yang sudah selesai untuk Trip Per Day (strictly < todayStr & totalRitase > 0)
+    const completedTripItems = sorted.filter(
+      (item) => item.date < todayStr && item.totalRitase > 0
+    );
+    const nTrip = completedTripItems.length;
+
+    let slopeTrip = 0;
+    let interceptTrip = 0;
+
+    if (nTrip >= 2) {
+      const sumXTrip = completedTripItems.reduce((acc, _, idx) => acc + idx, 0);
+      const sumYTrip = completedTripItems.reduce((acc, item) => acc + item.totalRitase, 0);
+      const avgXTrip = sumXTrip / nTrip;
+      const avgYTrip = sumYTrip / nTrip;
+
+      let numTrip = 0;
+      let denTrip = 0;
+      completedTripItems.forEach((item, idx) => {
+        const xDiff = idx - avgXTrip;
+        const yDiff = item.totalRitase - avgYTrip;
+        numTrip += xDiff * yDiff;
+        denTrip += xDiff * xDiff;
+      });
+
+      if (denTrip !== 0) {
+        slopeTrip = numTrip / denTrip;
+        interceptTrip = avgYTrip - slopeTrip * avgXTrip;
+      }
+    }
+
     return sorted.map((item) => {
       const isBeforeToday = item.date < todayStr;
       const isToday = item.date === todayStr;
 
       let trendValue: number | null = null;
+      let tripTrendValue: number | null = null;
 
       // Garis tren regresi linier berhenti tepat 1 hari sebelum hari ini (H-1)
       if (isBeforeToday && item.totalTonase > 0) {
         const completedIdx = completedItems.findIndex((ci) => ci.date === item.date);
         if (completedIdx !== -1 && n >= 2) {
           trendValue = Math.round(slope * completedIdx + intercept);
+        }
+      }
+
+      if (isBeforeToday && item.totalRitase > 0) {
+        const completedTripIdx = completedTripItems.findIndex((ci) => ci.date === item.date);
+        if (completedTripIdx !== -1 && nTrip >= 2) {
+          tripTrendValue = Math.round(slopeTrip * completedTripIdx + interceptTrip);
         }
       }
 
@@ -168,6 +222,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             : `${Math.round(item.totalTonase)}`;
       }
 
+      // Format label total ritase / trip di atas bar
+      const totalRitaseLabel = item.totalRitase > 0 ? `${item.totalRitase}` : "";
+
       return {
         ...item,
         label: `${String(item.day).padStart(2, "0")}`,
@@ -176,7 +233,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         isBeforeToday,
         // Garis tren linear berhenti di H-1 (null untuk hari ini)
         trendLine: trendValue,
+        trendLineTrip: tripTrendValue,
         totalTonaseLabel,
+        totalRitaseLabel,
       };
     });
   }, [dailyData, todayStr]);
@@ -803,6 +862,281 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   >
                     <LabelList
                       dataKey="totalTonaseLabel"
+                      position="top"
+                      offset={8}
+                      style={{
+                        fontSize: "9.5px",
+                        fontWeight: 800,
+                        fill: "#475569",
+                        fontFamily: "ui-monospace, monospace",
+                      }}
+                    />
+                  </Line>
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Chart Section: Trip Per Day (Ritase DS & NS) */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <Truck size={20} className="text-[#e95623]" />
+              Grafik Trip Per Day (Tanggal 01 s/d Hari Ini)
+            </h2>
+            <p className="text-xs text-slate-500">
+              Frekuensi ritase harian per shift (Day Shift &amp; Night Shift), total trip per hari, dan garis tren operasional (berhenti H-1)
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Badge Rata-rata Trip/Hari */}
+            {avgTripsPerDay > 0 && (
+              <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-teal-500" />
+                <span>Rata-rata: {avgTripsPerDay} Trip/Hari</span>
+              </div>
+            )}
+
+            {/* Mode Stacked / Grouped */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                onClick={() => setTripChartType("stacked")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  tripChartType === "stacked"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                Bertumpuk
+              </button>
+              <button
+                onClick={() => setTripChartType("grouped")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  tripChartType === "grouped"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                Berdampingan
+              </button>
+            </div>
+
+            {/* Toggle Garis Tren Regresi */}
+            <button
+              onClick={() => setShowTripTrendLine(!showTripTrendLine)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                showTripTrendLine
+                  ? "bg-sky-50 text-sky-800 border-sky-300 shadow-2xs"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+              }`}
+              title="Tampilkan / sembunyikan Garis Tren Regresi Trip (berhenti di H-1)"
+            >
+              <TrendingUp size={13} className={showTripTrendLine ? "text-sky-600" : "text-slate-400"} />
+              <span>Garis Tren</span>
+            </button>
+
+            {/* Toggle Label Angka Total di Bar */}
+            <button
+              onClick={() => setShowTripBarLabels(!showTripBarLabels)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                showTripBarLabels
+                  ? "bg-amber-50 text-amber-900 border-amber-300 shadow-2xs"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+              }`}
+              title="Tampilkan / sembunyikan angka total trip di atas setiap batang grafik"
+            >
+              <span>Label Angka</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Recharts Container */}
+        <div className="h-88 sm:h-96 w-full pt-2">
+          {isLoading ? (
+            <div className="h-full flex items-center justify-center text-xs text-slate-400 gap-2">
+              <RefreshCw size={18} className="animate-spin text-[#e95623]" />
+              <span>Memuat grafik trip per day...</span>
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-xs text-slate-400">
+              Tidak ada data ritase pada rentang tanggal yang dipilih.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 25, right: 15, left: 10, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  tickLine={false}
+                  dy={8}
+                />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  tickLine={false}
+                  domain={[0, (dataMax: number) => Math.ceil((dataMax || 50) * 1.15)]}
+                  tickFormatter={(val) => `${val}`}
+                />
+                {avgTripsPerDay > 0 && (
+                  <ReferenceLine
+                    y={avgTripsPerDay}
+                    stroke="#0d9488"
+                    strokeDasharray="4 4"
+                    strokeWidth={1.5}
+                    label={{
+                      value: `Rata-rata: ${avgTripsPerDay} Trip`,
+                      position: "insideTopLeft",
+                      fill: "#0d9488",
+                      fontSize: 10,
+                      fontWeight: 700,
+                    }}
+                  />
+                )}
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload as any;
+                      const isToday = data.isToday;
+                      return (
+                        <div className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl text-xs space-y-2 border border-slate-800 min-w-56">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                            <span className="font-extrabold text-slate-200">
+                              {data.fullLabel} ({data.dayName})
+                            </span>
+                            {isToday && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-orange-500 text-white animate-pulse">
+                                Hari Ini
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            {/* Day Shift */}
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                Day Shift (DS):
+                              </span>
+                              <strong className="font-mono">{data.ritaseDS?.toLocaleString("id-ID") || 0} Trip</strong>
+                            </div>
+                            <div className="text-[10px] text-slate-400 pl-3.5 flex justify-between">
+                              <span>{formatNum(data.tonaseDS, 2)} Ton</span>
+                              {data.avgPayloadDS > 0 && <span>{data.avgPayloadDS} T/rit</span>}
+                            </div>
+
+                            {/* Night Shift */}
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="flex items-center gap-1.5 text-indigo-400 font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                                Night Shift (NS):
+                              </span>
+                              <strong className="font-mono">{data.ritaseNS?.toLocaleString("id-ID") || 0} Trip</strong>
+                            </div>
+                            <div className="text-[10px] text-slate-400 pl-3.5 flex justify-between">
+                              <span>{formatNum(data.tonaseNS, 2)} Ton</span>
+                              {data.avgPayloadNS > 0 && <span>{data.avgPayloadNS} T/rit</span>}
+                            </div>
+
+                            {/* Total Trip */}
+                            <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800 text-slate-300 font-bold">
+                              <span>Total Trip:</span>
+                              <span className="text-emerald-400 font-mono text-sm font-black">
+                                {data.totalRitase?.toLocaleString("id-ID") || 0} Trip
+                              </span>
+                            </div>
+
+                            {/* Total Tonase */}
+                            <div className="flex items-center justify-between gap-4 text-[11px] text-slate-400">
+                              <span>Total Tonase:</span>
+                              <span className="font-mono">{formatNum(data.totalTonase, 2)} Ton</span>
+                            </div>
+
+                            {/* Trend Line Trip */}
+                            {showTripTrendLine && data.trendLineTrip !== null && data.trendLineTrip !== undefined && (
+                              <div className="flex items-center justify-between gap-4 text-[11px] text-sky-400 font-semibold pt-1 border-t border-slate-800/80">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="w-2 h-0.5 bg-sky-400" />
+                                  Garis Tren:
+                                </span>
+                                <span className="font-mono">{data.trendLineTrip} Trip</span>
+                              </div>
+                            )}
+
+                            {/* Catatan jika hari ini */}
+                            {isToday && (
+                              <div className="text-[10px] text-amber-300/90 bg-amber-950/40 p-2 rounded-lg border border-amber-800/50 mt-1 leading-snug">
+                                * Garis tren berhenti di H-1 (kemarin) karena operasional hari ini masih berjalan.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  iconType="circle"
+                  wrapperStyle={{ paddingBottom: "12px", fontSize: "12px" }}
+                />
+
+                {/* Bar Day Shift (DS) */}
+                <Bar
+                  name="Day Shift (DS)"
+                  dataKey="ritaseDS"
+                  fill="#f97316"
+                  stackId={tripChartType === "stacked" ? "a" : undefined}
+                  radius={tripChartType === "stacked" ? [0, 0, 0, 0] : [6, 6, 0, 0]}
+                />
+
+                {/* Bar Night Shift (NS) */}
+                <Bar
+                  name="Night Shift (NS)"
+                  dataKey="ritaseNS"
+                  fill="#6366f1"
+                  stackId={tripChartType === "stacked" ? "a" : undefined}
+                  radius={[6, 6, 0, 0]}
+                />
+
+                {/* Line Garis Tren Regresi Linier Trip (Berhenti di H-1) */}
+                {showTripTrendLine && (
+                  <Line
+                    name="Garis Tren Trip (s/d Kemarin)"
+                    dataKey="trendLineTrip"
+                    type="linear"
+                    stroke="#0284c7"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={{ r: 5, fill: "#0284c7" }}
+                    connectNulls={false}
+                  />
+                )}
+
+                {/* Label Total Trip di Atas Setiap Bar */}
+                {showTripBarLabels && (
+                  <Line
+                    dataKey="totalRitase"
+                    stroke="none"
+                    dot={false}
+                    activeDot={false}
+                    legendType="none"
+                    isAnimationActive={false}
+                    tooltipType="none"
+                  >
+                    <LabelList
+                      dataKey="totalRitaseLabel"
                       position="top"
                       offset={8}
                       style={{
