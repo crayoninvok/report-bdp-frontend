@@ -657,7 +657,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
             {/* Speedometer Gauge Visual */}
             <div className="sm:col-span-5 flex flex-col items-center justify-center pt-1">
-              <svg viewBox="0 0 240 135" className="w-full max-w-[220px] h-auto drop-shadow-xs">
+              <svg viewBox="0 0 240 135" className="w-full max-w-55 h-auto drop-shadow-xs">
                 {/* Background Track */}
                 <path
                   d="M 42 105 A 78 78 0 0 1 198 105"
