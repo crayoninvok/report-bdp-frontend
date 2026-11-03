@@ -27,6 +27,7 @@ import {
   BarChart3,
   Zap,
   MapPin,
+  Gauge,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -337,6 +338,53 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     showSuccess("Data berhasil diekspor ke CSV!");
   };
 
+  // Monthly Production Plan & Achievement Speedometer Calculations
+  const isNovMonth = startDate.includes("-11-") || endDate.includes("-11-") || defaultMonth === "11";
+  const planMonthlyTonase = summary?.planProductionMonthly || (isNovMonth ? 1028000 : 671000);
+  const actualTonase = summary?.grandTotalTonase || 0;
+  const achievement = planMonthlyTonase > 0 ? (actualTonase / planMonthlyTonase) * 100 : 0;
+  const diffTonase = actualTonase - planMonthlyTonase;
+
+  // Speedometer Needle Angle (-180 deg to 0 deg)
+  // 0% -> -180 deg
+  // 90% -> -60 deg (span 120 deg for 0-90%)
+  // 100% -> -30 deg (span 30 deg for 90-100%)
+  // 120%+ -> 0 deg (span 30 deg for 100-120%+)
+  const clampedAchievement = Math.max(0, achievement);
+  let needleAngle = -180;
+  if (clampedAchievement <= 90) {
+    needleAngle = -180 + (clampedAchievement / 90) * 120;
+  } else if (clampedAchievement <= 100) {
+    needleAngle = -60 + ((clampedAchievement - 90) / 10) * 30;
+  } else {
+    const over = Math.min(clampedAchievement - 100, 20);
+    needleAngle = -30 + (over / 20) * 30;
+  }
+
+  // Speedometer Status & Color Theme per user requirements:
+  // 0-90% = merah
+  // 90-99% = kuning
+  // 100% up = hijau
+  let themeColor = "#ef4444";
+  let themeBadge = "bg-rose-50 text-rose-700 border-rose-200";
+  let themeText = "text-rose-600";
+  let statusText = "0 - 90% (Merah - Di Bawah Target)";
+  let rangeLabel = "0 - 90% (Merah)";
+
+  if (achievement >= 100) {
+    themeColor = "#10b981";
+    themeBadge = "bg-emerald-50 text-emerald-700 border-emerald-200";
+    themeText = "text-emerald-600";
+    statusText = "100% Up (Hijau - Target Tercapai)";
+    rangeLabel = "100% Up (Hijau)";
+  } else if (achievement >= 90) {
+    themeColor = "#f59e0b";
+    themeBadge = "bg-amber-50 text-amber-700 border-amber-200";
+    themeText = "text-amber-600";
+    statusText = "90 - 99% (Kuning - Mendekati Target)";
+    rangeLabel = "90 - 99% (Kuning)";
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-16">
       {/* Top Header Card */}
@@ -571,69 +619,173 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               {summary?.grandTotalRitase?.toLocaleString("id-ID") || 0} Rit
             </strong>
           </div>
+
+          {/* Quick Shift Breakdown */}
+          {summary && summary.grandTotalTonase > 0 && (
+            <div className="mt-2 text-[10px] text-slate-400 flex items-center justify-between font-medium">
+              <span>DS: <strong className="text-amber-800">{formatNum(summary.totalTonaseDS, 0)} T</strong> ({Math.round((summary.totalTonaseDS / summary.grandTotalTonase) * 100)}%)</span>
+              <span>NS: <strong className="text-indigo-800">{formatNum(summary.totalTonaseNS, 0)} T</strong> ({Math.round((summary.totalTonaseNS / summary.grandTotalTonase) * 100)}%)</span>
+            </div>
+          )}
         </div>
 
-        {/* Card 2: Day Shift (DS) - Orange Theme */}
-        <div className="bg-linear-to-br from-amber-50/70 via-orange-50/40 to-white rounded-3xl p-5 border border-amber-200/80 shadow-xs relative overflow-hidden group hover:border-amber-300 transition-all">
-          <div className="flex items-start justify-between">
-            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-amber-500 to-[#e95623] text-white flex items-center justify-center shadow-xs shadow-orange-500/20">
-              <Sun size={24} />
+                {/* Speedometer Actual vs Plan Produksi Bulanan (Menggantikan Card DS & NS) */}
+        <div className="sm:col-span-2 lg:col-span-2 bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-slate-800 to-slate-950 text-white flex items-center justify-center shadow-xs">
+                <Gauge size={20} className="text-[#e95623]" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                  Speedometer Produksi Bulanan
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Actual Produksi vs Plan Bulanan (Muara Pahu Nov)
+                </span>
+              </div>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-              Day Shift (DS)
+
+            {/* Achievement Badge Status */}
+            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 shadow-2xs ${themeBadge}`}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: themeColor }} />
+              <span>{rangeLabel}</span>
             </span>
           </div>
 
-          <div className="mt-4 space-y-1">
-            <span className="text-xs font-black text-amber-800 block uppercase tracking-wider">
-              Tonase Day Shift (DS)
-            </span>
-            <div className="text-2xl sm:text-3xl font-black text-amber-950 tracking-tight">
-              {formatNum(summary?.totalTonaseDS, 2)}{" "}
-              <span className="text-sm font-bold text-amber-700">Ton</span>
+          {/* Main Content: Gauge + Stats */}
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            {/* Speedometer Gauge Visual */}
+            <div className="sm:col-span-5 flex flex-col items-center justify-center pt-1">
+              <svg viewBox="0 0 240 135" className="w-full max-w-[220px] h-auto drop-shadow-xs">
+                {/* Background Track */}
+                <path
+                  d="M 42 105 A 78 78 0 0 1 198 105"
+                  fill="none"
+                  stroke="#f1f5f9"
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                />
+
+                {/* Red Segment (0% - 90%) */}
+                <path
+                  d="M 42.05 102.28 A 78 78 0 0 1 156.62 36.13"
+                  fill="none"
+                  stroke="#ef4444"
+                  strokeWidth="13"
+                  strokeLinecap="round"
+                />
+
+                {/* Yellow Segment (90% - 100%) */}
+                <path
+                  d="M 161.33 38.85 A 78 78 0 0 1 186.15 63.67"
+                  fill="none"
+                  stroke="#f59e0b"
+                  strokeWidth="13"
+                  strokeLinecap="round"
+                />
+
+                {/* Green Segment (100% - 120%+) */}
+                <path
+                  d="M 188.87 68.38 A 78 78 0 0 1 197.95 102.28"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="13"
+                  strokeLinecap="round"
+                />
+
+                {/* Ticks and scale labels */}
+                <text x="36" y="122" textAnchor="middle" fontSize="9" fontWeight="700" fill="#94a3b8">0%</text>
+                <text x="156" y="23" textAnchor="middle" fontSize="9" fontWeight="700" fill="#f59e0b">90%</text>
+                <text x="195" y="56" textAnchor="start" fontSize="9.5" fontWeight="800" fill="#10b981">100%</text>
+
+                {/* Needle */}
+                <g
+                  transform={`rotate(${needleAngle}, 120, 105)`}
+                  style={{
+                    transition: "transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    transformOrigin: "120px 105px",
+                  }}
+                >
+                  <polygon points="120,102.5 192,105 120,107.5" fill={themeColor} />
+                  <polygon points="120,103 160,105 120,107" fill="#1e293b" opacity="0.35" />
+                </g>
+
+                {/* Center Hub */}
+                <circle cx="120" cy="105" r="9" fill="#1e293b" />
+                <circle cx="120" cy="105" r="7" fill={themeColor} />
+                <circle cx="120" cy="105" r="2.5" fill="#ffffff" />
+
+                {/* Percentage Readout */}
+                <text x="120" y="128" textAnchor="middle" fontSize="13" fontWeight="900" fill="#0f172a">
+                  {achievement.toFixed(1)}%
+                </text>
+              </svg>
+
+              {/* Range Legend */}
+              <div className="flex items-center gap-2.5 text-[10px] font-bold text-slate-500 mt-1">
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> &lt;90%
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> 90-99%
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> &ge;100%
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-3 pt-3 border-t border-amber-200/50 flex items-center justify-between text-xs font-semibold text-amber-900">
-            <span>Ritase DS:</span>
-            <strong className="font-extrabold">
-              {summary?.totalRitaseDS?.toLocaleString("id-ID") || 0} Rit{" "}
-              <span className="text-[11px] font-normal text-amber-700">
-                ({summary && summary.grandTotalTonase > 0 ? Math.round((summary.totalTonaseDS / summary.grandTotalTonase) * 100) : 0}%)
-              </span>
-            </strong>
-          </div>
-        </div>
+            {/* Achievement KPI & Comparison Numbers */}
+            <div className="sm:col-span-7 space-y-2.5">
+              <div className="flex items-baseline justify-between border-b border-slate-100 pb-2">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                    Achievement Produksi
+                  </span>
+                  <div className={`text-2xl sm:text-3xl font-black tracking-tight ${themeText}`}>
+                    {achievement.toFixed(2)}%
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-slate-400 block">Status Target</span>
+                  <span className={`text-xs font-extrabold ${themeText}`}>
+                    {statusText.split(" - ")[1] || statusText}
+                  </span>
+                </div>
+              </div>
 
-        {/* Card 3: Night Shift (NS) - Indigo Theme */}
-        <div className="bg-linear-to-br from-indigo-50/70 via-slate-50/40 to-white rounded-3xl p-5 border border-indigo-200/80 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition-all">
-          <div className="flex items-start justify-between">
-            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-indigo-600 to-slate-900 text-white flex items-center justify-center shadow-xs shadow-indigo-500/20">
-              <Moon size={22} />
+              {/* Metric Grid: Actual vs Plan Bulanan */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                    Actual Produksi
+                  </span>
+                  <strong className="text-sm font-black text-slate-900 font-mono block">
+                    {formatNum(actualTonase, 1)} <span className="text-[10px] font-semibold text-slate-500">Ton</span>
+                  </strong>
+                </div>
+
+                <div className="bg-orange-50/60 p-2.5 rounded-xl border border-orange-100">
+                  <span className="text-[10px] font-bold text-orange-950 block uppercase">
+                    Plan Bulanan (Nov)
+                  </span>
+                  <strong className="text-sm font-black text-orange-950 font-mono block">
+                    {formatNum(planMonthlyTonase, 0)} <span className="text-[10px] font-semibold text-orange-900">Ton</span>
+                  </strong>
+                </div>
+              </div>
+
+              {/* Sisa Target / Surplus Banner */}
+              <div className="pt-1 flex items-center justify-between text-xs font-semibold">
+                <span className="text-slate-500 text-[11px]">
+                  {diffTonase >= 0 ? "Surplus Produksi:" : "Sisa Target Bulan Ini:"}
+                </span>
+                <span className={`font-mono text-xs font-extrabold ${diffTonase >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {diffTonase >= 0 ? `+${formatNum(diffTonase, 1)}` : `-${formatNum(Math.abs(diffTonase), 1)}`} Ton
+                </span>
+              </div>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-900 border border-indigo-200">
-              Night Shift (NS)
-            </span>
-          </div>
-
-          <div className="mt-4 space-y-1">
-            <span className="text-xs font-black text-indigo-800 block uppercase tracking-wider">
-              Tonase Night Shift (NS)
-            </span>
-            <div className="text-2xl sm:text-3xl font-black text-indigo-950 tracking-tight">
-              {formatNum(summary?.totalTonaseNS, 2)}{" "}
-              <span className="text-sm font-bold text-indigo-700">Ton</span>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-indigo-200/50 flex items-center justify-between text-xs font-semibold text-indigo-900">
-            <span>Ritase NS:</span>
-            <strong className="font-extrabold">
-              {summary?.totalRitaseNS?.toLocaleString("id-ID") || 0} Rit{" "}
-              <span className="text-[11px] font-normal text-indigo-700">
-                ({summary && summary.grandTotalTonase > 0 ? Math.round((summary.totalTonaseNS / summary.grandTotalTonase) * 100) : 0}%)
-              </span>
-            </strong>
           </div>
         </div>
 
