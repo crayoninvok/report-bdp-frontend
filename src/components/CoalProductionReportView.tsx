@@ -692,7 +692,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                 value={selectedSite}
                 disabled={!isHeadOffice}
                 onChange={(e) => setSelectedSite(e.target.value as any)}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] disabled:opacity-60 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] disabled:opacity-60 cursor-pointer"
               >
                 <option value="all">Semua Site Operasional</option>
                 <option value="MuaraPahu">Muara Pahu</option>
@@ -706,7 +706,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
               <select
                 value={selectedWeek}
                 onChange={(e) => setSelectedWeek(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] cursor-pointer"
               >
                 <option value="all">Semua Kelompok Minggu</option>
                 {availableWeeks.map((w) => (
@@ -721,7 +721,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] cursor-pointer"
+              className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] cursor-pointer"
             >
               <option value="all">Semua Bulan</option>
               <option value="01">Januari</option>
@@ -744,7 +744,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
                 title="Rentang Awal Tanggal"
               />
               <span>s/d</span>
@@ -752,7 +752,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
                 title="Rentang Akhir Tanggal"
               />
             </div>
@@ -776,14 +776,14 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
           </div>
 
           {/* Search Box */}
-          <div className="relative min-w-[220px]">
+          <div className="relative min-w-55">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
               placeholder="Cari tanggal, minggu, catatan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] placeholder:text-slate-400 font-medium"
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623] placeholder:text-slate-400 font-medium"
             />
           </div>
         </div>
@@ -1230,7 +1230,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                         {/* PA (%) */}
                         <td className="px-3 py-3 whitespace-nowrap text-center">
                           <span
-                            className={`inline-flex items-center justify-center min-w-[54px] px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                            className={`inline-flex items-center justify-center min-w-13.5 px-2 py-0.5 rounded-md text-[11px] font-bold ${
                               isPaAchieved
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                 : "bg-amber-50 text-amber-700 border border-amber-200"
@@ -1244,7 +1244,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                         {/* UA (%) */}
                         <td className="px-3 py-3 whitespace-nowrap text-center">
                           <span
-                            className={`inline-flex items-center justify-center min-w-[54px] px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                            className={`inline-flex items-center justify-center min-w-13.5 px-2 py-0.5 rounded-md text-[11px] font-bold ${
                               isUaAchieved
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                 : "bg-amber-50 text-amber-700 border border-amber-200"
@@ -1332,7 +1332,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
 
                         {/* Keterangan */}
                         <td
-                          className="px-4 py-3 max-w-[200px] truncate text-[11px] text-slate-500 font-normal"
+                          className="px-4 py-3 max-w-50 truncate text-[11px] text-slate-500 font-normal"
                           title={r.notes || ""}
                         >
                           {r.notes || "-"}
@@ -1406,7 +1406,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                     setPageSize(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="px-2 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 font-bold bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
+                  className="px-2 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 font-bold bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>
@@ -1471,7 +1471,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                       <button
                         key={`page-${page}`}
                         onClick={() => setCurrentPage(Number(page))}
-                        className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition-all ${
+                        className={`min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all ${
                           isCurrent
                             ? "bg-[#e95623] text-white shadow-xs"
                             : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
@@ -1516,7 +1516,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                     value={jumpPageInput}
                     onChange={(e) => setJumpPageInput(e.target.value)}
                     placeholder={String(validCurrentPage)}
-                    className="w-12 px-1.5 py-1 text-center text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
+                    className="w-12 px-1.5 py-1 text-center text-xs font-bold rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#e95623]"
                   />
                   <button
                     type="submit"
@@ -1695,7 +1695,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
                   <button
                     key={`w-page-${p}`}
                     onClick={() => setWeeklyPage(p)}
-                    className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition-all ${
+                    className={`min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all ${
                       p === validWeeklyPage
                         ? "bg-[#e95623] text-white shadow-xs"
                         : "text-slate-600 hover:bg-slate-100 border border-slate-200/60"
