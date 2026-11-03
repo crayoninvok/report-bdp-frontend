@@ -357,29 +357,29 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
   // Speedometer Needle Angle (-180 deg to 0 deg)
   // 0% -> -180 deg
-  // 90% -> -60 deg (span 120 deg for 0-90%)
-  // 100% -> -30 deg (span 30 deg for 90-100%)
+  // 95% -> -55 deg (span 125 deg for 0-95%)
+  // 100% -> -30 deg (span 25 deg for 95-100%)
   // 120%+ -> 0 deg (span 30 deg for 100-120%+)
   const clampedAchievement = Math.max(0, achievement);
   let needleAngle = -180;
-  if (clampedAchievement <= 90) {
-    needleAngle = -180 + (clampedAchievement / 90) * 120;
+  if (clampedAchievement <= 95) {
+    needleAngle = -180 + (clampedAchievement / 95) * 125;
   } else if (clampedAchievement <= 100) {
-    needleAngle = -60 + ((clampedAchievement - 90) / 10) * 30;
+    needleAngle = -55 + ((clampedAchievement - 95) / 5) * 25;
   } else {
     const over = Math.min(clampedAchievement - 100, 20);
     needleAngle = -30 + (over / 20) * 30;
   }
 
   // Speedometer Status & Color Theme per user requirements:
-  // 0-90% = merah
-  // 90-99% = kuning
+  // 0-95% = merah
+  // 95-99% = kuning
   // 100% up = hijau
   let themeColor = "#ef4444";
   let themeBadge = "bg-rose-50 text-rose-700 border-rose-200";
   let themeText = "text-rose-600";
-  let statusText = "0 - 90% (Merah - Di Bawah Target)";
-  let rangeLabel = "0 - 90% (Merah)";
+  let statusText = "0 - 95% (Merah - Di Bawah Target)";
+  let rangeLabel = "0 - 95% (Merah)";
 
   if (achievement >= 100) {
     themeColor = "#10b981";
@@ -387,12 +387,12 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     themeText = "text-emerald-600";
     statusText = "100% Up (Hijau - Target Tercapai)";
     rangeLabel = "100% Up (Hijau)";
-  } else if (achievement >= 90) {
+  } else if (achievement >= 95) {
     themeColor = "#f59e0b";
     themeBadge = "bg-amber-50 text-amber-700 border-amber-200";
     themeText = "text-amber-600";
-    statusText = "90 - 99% (Kuning - Mendekati Target)";
-    rangeLabel = "90 - 99% (Kuning)";
+    statusText = "95 - 99% (Kuning - Mendekati Target)";
+    rangeLabel = "95 - 99% (Kuning)";
   }
 
   return (
@@ -677,18 +677,18 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   strokeLinecap="round"
                 />
 
-                {/* Red Segment (0% - 90%) */}
+                {/* Red Segment (0% - 95%) */}
                 <path
-                  d="M 42.05 102.28 A 78 78 0 0 1 156.62 36.13"
+                  d="M 42.05 102.28 A 78 78 0 0 1 162.48 39.58"
                   fill="none"
                   stroke="#ef4444"
                   strokeWidth="13"
                   strokeLinecap="round"
                 />
 
-                {/* Yellow Segment (90% - 100%) */}
+                {/* Yellow Segment (95% - 100%) */}
                 <path
-                  d="M 161.33 38.85 A 78 78 0 0 1 186.15 63.67"
+                  d="M 166.94 42.71 A 78 78 0 0 1 186.15 63.67"
                   fill="none"
                   stroke="#f59e0b"
                   strokeWidth="13"
@@ -706,7 +706,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
                 {/* Ticks and scale labels */}
                 <text x="36" y="122" textAnchor="middle" fontSize="9" fontWeight="700" fill="#94a3b8">0%</text>
-                <text x="156" y="23" textAnchor="middle" fontSize="9" fontWeight="700" fill="#f59e0b">90%</text>
+                <text x="166" y="27" textAnchor="middle" fontSize="9" fontWeight="700" fill="#f59e0b">95%</text>
                 <text x="195" y="56" textAnchor="start" fontSize="9.5" fontWeight="800" fill="#10b981">100%</text>
 
                 {/* Needle */}
@@ -735,10 +735,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               {/* Range Legend */}
               <div className="flex items-center gap-2.5 text-[10px] font-bold text-slate-500 mt-1">
                 <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> &lt;90%
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> &lt;95%
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> 90-99%
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> 95-99%
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> &ge;100%
