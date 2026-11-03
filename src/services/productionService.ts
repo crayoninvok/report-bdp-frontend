@@ -21,9 +21,11 @@ export const DEFAULT_PRODUCTION_TARGETS: ProductionTargets = {
   tdp: 2.7,
   dailyProductionBase: 13266.67,
   dailyProductionQ4: 21645.16,
+  dailyProductionOctober: 21645.16,
   dailyProductionNovember: 33161.29,
   monthlyProductionBase: 398000,
   monthlyProductionTarget: 671000,
+  monthlyProductionOctober: 671000,
   monthlyProductionNovember: 1028000,
 };
 

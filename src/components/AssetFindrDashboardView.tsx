@@ -254,6 +254,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
       // Plan unit running: 70 untuk bulan November (sesuai arahan user)
       const isNov = item.date.includes("-11-") || monthNum === "11";
+      const isOct = item.date.includes("-10-") || monthNum === "10";
       const planUnitRunning = item.planUnitRunning ?? (isNov ? 70 : 70);
       const totalUnitRunning =
         item.totalUnitRunning ?? (item.totalRitase > 0 ? Math.round(item.totalRitase / 2.565) : 0);
@@ -264,9 +265,11 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       const actualTripLabel =
         actualTripPerUnit > 0 ? actualTripPerUnit.toFixed(2) : "";
 
-      // Plan produksi Muara Pahu: Nov 1.028.000 Ton, harian (dibagi 31) = 33.161,29 Ton
-      const planDailyTonase = isNov ? 33161.29 : 21645.16;
-      const planMonthlyTonase = isNov ? 1028000 : 671000;
+      // Plan produksi Muara Pahu:
+      // - Nov 2026: 1.028.000 Ton, harian (dibagi 31) = 33.161,29 Ton
+      // - Okt 2026: 671.000 Ton, harian (dibagi 31) = 21.645,16 Ton
+      const planDailyTonase = item.planProductionDaily ?? (isNov ? 33161.29 : isOct ? 21645.16 : 21645.16);
+      const planMonthlyTonase = item.planProductionMonthly ?? (isNov ? 1028000 : isOct ? 671000 : 671000);
 
       return {
         ...item,
@@ -339,8 +342,15 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   };
 
   // Monthly Production Plan & Achievement Speedometer Calculations
-  const isNovMonth = startDate.includes("-11-") || endDate.includes("-11-") || defaultMonth === "11";
+  // Sesuai arahan:
+  // - November 2026: Plan Bulanan = 1.028.000 Ton, Plan Harian (dibagi 31) = 33.161,29 Ton/hari
+  // - Oktober 2026: Plan Bulanan = 671.000 Ton, Plan Harian (dibagi 31) = 21.645,16 Ton/hari
+  const isNovMonth = startDate.includes("-11-") || endDate.includes("-11-") || (defaultMonth === "11" && !startDate.includes("-10-"));
+  const isOctMonth = startDate.includes("-10-") || endDate.includes("-10-") || defaultMonth === "10";
+  const activeMonthLabel = isNovMonth ? "Nov" : (isOctMonth ? "Okt" : "Okt");
+  const activeMonthFullName = isNovMonth ? "November 2026" : "Oktober 2026";
   const planMonthlyTonase = summary?.planProductionMonthly || (isNovMonth ? 1028000 : 671000);
+  const planDailyTonase = summary?.planProductionDaily || (isNovMonth ? 33161.29 : 21645.16);
   const actualTonase = summary?.grandTotalTonase || 0;
   const achievement = planMonthlyTonase > 0 ? (actualTonase / planMonthlyTonase) * 100 : 0;
   const diffTonase = actualTonase - planMonthlyTonase;
@@ -641,7 +651,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   Speedometer Produksi Bulanan
                 </span>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  Actual Produksi vs Plan Bulanan (Muara Pahu Nov)
+                  Actual Produksi vs Plan Bulanan (Muara Pahu {activeMonthLabel})
                 </span>
               </div>
             </div>
@@ -768,7 +778,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
                 <div className="bg-orange-50/60 p-2.5 rounded-xl border border-orange-100">
                   <span className="text-[10px] font-bold text-orange-950 block uppercase">
-                    Plan Bulanan (Nov)
+                    Plan Bulanan ({activeMonthLabel})
                   </span>
                   <strong className="text-sm font-black text-orange-950 font-mono block">
                     {formatNum(planMonthlyTonase, 0)} <span className="text-[10px] font-semibold text-orange-900">Ton</span>
@@ -819,7 +829,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
           <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between font-medium">
             <span>Target Plan Harian:</span>
-            <span className="font-bold text-[#e95623]">33.161 Ton/Hari</span>
+            <span className="font-bold text-[#e95623]">{formatNum(planDailyTonase, 0)} Ton/Hari</span>
           </div>
         </div>
       </div>
@@ -838,13 +848,13 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Badge Plan Produksi Nov (Muara Pahu) */}
+            {/* Badge Plan Produksi Muara Pahu (Okt: 671.000 Ton / 21.645 Ton/hari, Nov: 1.028.000 Ton / 33.161 Ton/hari) */}
             <div
               className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-950 text-xs font-bold shadow-2xs"
-              title="Plan Produksi Nov Muara Pahu: 1.028.000 Ton (Harian / 31: 33.161,29 Ton/hari)"
+              title={`Plan Produksi ${activeMonthFullName} Muara Pahu: ${formatNum(planMonthlyTonase, 0)} Ton (Harian / 31: ${formatNum(planDailyTonase, 2)} Ton/hari)`}
             >
               <span className="w-2 h-2 rounded-full bg-[#e95623]" />
-              <span>Plan Nov: 1.028.000 Ton (33.161 Ton/Hari)</span>
+              <span>Plan {activeMonthLabel}: {formatNum(planMonthlyTonase, 0)} Ton ({formatNum(planDailyTonase, 0)} Ton/Hari)</span>
             </div>
 
             {/* Mode Stacked / Grouped */}
@@ -871,7 +881,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               </button>
             </div>
 
-            {/* Toggle Garis Target Plan Harian (33.161 Ton) */}
+            {/* Toggle Garis Target Plan Harian */}
             <button
               onClick={() => setShowPlanTonase(!showPlanTonase)}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
@@ -879,10 +889,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   ? "bg-orange-50 text-orange-900 border-orange-300 shadow-2xs"
                   : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
               }`}
-              title="Tampilkan / sembunyikan garis target Plan Harian (33.161 Ton/hari)"
+              title={`Tampilkan / sembunyikan garis target Plan Harian (${formatNum(planDailyTonase, 0)} Ton/hari)`}
             >
               <span className={`w-2 h-2 rounded-full ${showPlanTonase ? "bg-[#e95623]" : "bg-slate-300"}`} />
-              <span>Plan (33.2k)</span>
+              <span>Plan ({isNovMonth ? "33.2k" : "21.6k"})</span>
             </button>
 
             {/* Toggle Garis Tren Regresi */}
@@ -959,15 +969,15 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                 />
 
-                {/* Plan Reference Line (Nov Muara Pahu: 33.161,29 Ton/hari) */}
+                {/* Plan Reference Line (Muara Pahu: Okt 21.645 Ton/hari, Nov 33.161 Ton/hari) */}
                 {showPlanTonase && (
                   <ReferenceLine
-                    y={33161.29}
+                    y={planDailyTonase}
                     stroke="#e95623"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
-                      value: "Plan: 33.161 Ton/Hari",
+                      value: `Plan: ${formatNum(planDailyTonase, 0)} Ton/Hari`,
                       position: "insideTopLeft",
                       fill: "#c2410c",
                       fontSize: 10,
@@ -1046,9 +1056,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                               <div className="border-t border-slate-800/80 pt-1 flex items-center justify-between gap-4 text-orange-400 text-[11px] font-semibold">
                                 <span className="flex items-center gap-1">
                                   <span className="w-2 h-0.5 bg-orange-400" />
-                                  Target Plan:
+                                  Target Plan ({activeMonthLabel}):
                                 </span>
-                                <span className="font-mono">33.161 Ton/Hari</span>
+                                <span className="font-mono">{formatNum(planDailyTonase, 0)} Ton/Hari</span>
                               </div>
                             )}
 
