@@ -858,10 +858,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
           <div className="flex items-center gap-2 flex-wrap">
             {/* Badge Plan Produksi Muara Pahu (Okt: 671.000 Ton / 21.645 Ton/hari, Nov: 1.028.000 Ton / 33.161 Ton/hari) */}
             <div
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-950 text-xs font-bold shadow-2xs"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs font-bold shadow-2xs"
               title={`Plan Produksi ${activeMonthFullName} Muara Pahu: ${formatNum(planMonthlyTonase, 0)} Ton (Harian / 31: ${formatNum(planDailyTonase, 2)} Ton/hari)`}
             >
-              <span className="w-2 h-2 rounded-full bg-[#e95623]" />
+              <span className="w-2 h-2 rounded-full bg-[#10b981]" />
               <span>Plan {activeMonthLabel}: {formatNum(planMonthlyTonase, 0)} Ton ({formatNum(planDailyTonase, 0)} Ton/Hari)</span>
             </div>
 
@@ -889,31 +889,31 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               </button>
             </div>
 
-            {/* Toggle Garis Target Plan Harian */}
+            {/* Toggle Garis Target Plan Harian (Hijau Emerald) */}
             <button
               onClick={() => setShowPlanTonase(!showPlanTonase)}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                 showPlanTonase
-                  ? "bg-orange-50 text-orange-900 border-orange-300 shadow-2xs"
+                  ? "bg-emerald-50 text-emerald-900 border-emerald-300 shadow-2xs"
                   : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
               }`}
               title={`Tampilkan / sembunyikan garis target Plan Harian (${formatNum(planDailyTonase, 0)} Ton/hari)`}
             >
-              <span className={`w-2 h-2 rounded-full ${showPlanTonase ? "bg-[#e95623]" : "bg-slate-300"}`} />
+              <span className={`w-2 h-2 rounded-full ${showPlanTonase ? "bg-[#10b981]" : "bg-slate-300"}`} />
               <span>Plan ({isNovMonth ? "33.2k" : "21.6k"})</span>
             </button>
 
-            {/* Toggle Garis Tren Regresi */}
+            {/* Toggle Garis Tren Regresi (Kuning Emas) */}
             <button
               onClick={() => setShowTrendLine(!showTrendLine)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                 showTrendLine
-                  ? "bg-sky-50 text-sky-800 border-sky-300 shadow-2xs"
+                  ? "bg-amber-50 text-amber-900 border-amber-300 shadow-2xs"
                   : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
               }`}
               title="Tampilkan / sembunyikan Garis Tren Regresi (berhenti di H-1)"
             >
-              <TrendingUp size={13} className={showTrendLine ? "text-sky-600" : "text-slate-400"} />
+              <TrendingUp size={13} className={showTrendLine ? "text-amber-500" : "text-slate-400"} />
               <span>Garis Tren</span>
             </button>
 
@@ -977,17 +977,17 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                 />
 
-                {/* Plan Reference Line (Muara Pahu: Okt 21.645 Ton/hari, Nov 33.161 Ton/hari) */}
+                {/* Plan Reference Line & Line Series (Hijau Emerald - #10b981) */}
                 {showPlanTonase && (
                   <ReferenceLine
                     y={planDailyTonase}
-                    stroke="#e95623"
+                    stroke="#10b981"
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
                     label={{
                       value: `Plan: ${formatNum(planDailyTonase, 0)} Ton/Hari`,
                       position: "insideTopLeft",
-                      fill: "#c2410c",
+                      fill: "#059669",
                       fontSize: 10,
                       fontWeight: 700,
                     }}
@@ -1048,22 +1048,22 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                               {data.avgPayloadTotal > 0 && <span>{data.avgPayloadTotal} T/rit</span>}
                             </div>
 
-                            {/* Garis Tren Regresi info */}
+                            {/* Garis Tren Regresi info (Kuning Emas) */}
                             {data.trendLine !== null && data.trendLine !== undefined && (
-                              <div className="border-t border-slate-800/80 pt-1 flex items-center justify-between gap-4 text-sky-400 text-[11px] font-semibold">
+                              <div className="border-t border-slate-800/80 pt-1 flex items-center justify-between gap-4 text-amber-400 text-[11px] font-semibold">
                                 <span className="flex items-center gap-1">
-                                  <span className="w-2 h-0.5 bg-sky-400" />
+                                  <span className="w-2 h-0.5 bg-amber-400" />
                                   Garis Tren:
                                 </span>
                                 <span className="font-mono">{formatNum(data.trendLine, 0)} Ton</span>
                               </div>
                             )}
 
-                            {/* Target Plan Produksi Harian */}
+                            {/* Target Plan Produksi Harian (Hijau Emerald) */}
                             {showPlanTonase && (
-                              <div className="border-t border-slate-800/80 pt-1 flex items-center justify-between gap-4 text-orange-400 text-[11px] font-semibold">
+                              <div className="border-t border-slate-800/80 pt-1 flex items-center justify-between gap-4 text-emerald-400 text-[11px] font-semibold">
                                 <span className="flex items-center gap-1">
-                                  <span className="w-2 h-0.5 bg-orange-400" />
+                                  <span className="w-2 h-0.5 bg-emerald-400" />
                                   Target Plan ({activeMonthLabel}):
                                 </span>
                                 <span className="font-mono">{formatNum(planDailyTonase, 0)} Ton/Hari</span>
@@ -1110,17 +1110,31 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
 
 
-                {/* Line Garis Tren Regresi Linier (Berhenti di H-1) */}
+                {/* Line Target Plan Produksi (Line Series di Legend - Hijau Emerald) */}
+                {showPlanTonase && (
+                  <Line
+                    name={`Plan Target (${isNovMonth ? "33.2k" : "21.6k"} T/Hari)`}
+                    dataKey="planDailyTonase"
+                    type="monotone"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={{ r: 5, fill: "#10b981" }}
+                  />
+                )}
+
+                {/* Line Garis Tren Regresi Linier (Kuning Emas - Kontras terhadap Night Shift Ungu) */}
                 {showTrendLine && (
                   <Line
                     name="Garis Tren (s/d Kemarin)"
                     dataKey="trendLine"
                     type="linear"
-                    stroke="#0284c7"
+                    stroke="#f59e0b"
                     strokeWidth={2.5}
                     strokeDasharray="5 5"
                     dot={false}
-                    activeDot={{ r: 5, fill: "#0284c7" }}
+                    activeDot={{ r: 5, fill: "#f59e0b" }}
                     connectNulls={false}
                   />
                 )}
