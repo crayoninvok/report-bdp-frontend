@@ -41,6 +41,7 @@ import {
   Legend,
   LabelList,
   ReferenceLine,
+  Label,
 } from "recharts";
 
 interface AssetFindrDashboardViewProps {
@@ -252,18 +253,22 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       const monthNum = dateParts[1] ? String(parseInt(dateParts[1], 10)) : "11";
       const shortDateLabel = `${item.day}/${monthNum}`;
 
-      // Plan unit running: 70 untuk bulan November (sesuai arahan user)
+      // Plan unit running: 25 sesuai dashboard Daily Trip per Unit
       const isNov = item.date.includes("-11-") || monthNum === "11";
       const isOct = item.date.includes("-10-") || monthNum === "10";
-      const planUnitRunning = item.planUnitRunning ?? (isNov ? 70 : 70);
+      const planUnitRunning = item.planUnitRunning ?? 25;
       const totalUnitRunning =
         item.totalUnitRunning ?? (item.totalRitase > 0 ? Math.round(item.totalRitase / 2.565) : 0);
       const actualTripPerUnit =
         item.actualTripPerUnit ??
         (totalUnitRunning > 0 ? Number((item.totalRitase / totalUnitRunning).toFixed(3)) : 0);
-      // Format label Actual Trip per Day di atas bar (misal: "2.56", "2.53", "1.00")
+      // Format label Actual Trip per Unit di atas bar (format 3 desimal e.g. "2.565", "2.532", "1.000")
+      const actualTripFormatted =
+        actualTripPerUnit > 0 ? actualTripPerUnit.toFixed(3) : "";
       const actualTripLabel =
         actualTripPerUnit > 0 ? actualTripPerUnit.toFixed(2) : "";
+      const totalUnitLabel = totalUnitRunning > 0 ? `${totalUnitRunning}` : "";
+      const planUnitLabel = planUnitRunning > 0 ? `${planUnitRunning}` : "";
 
       // Plan produksi Muara Pahu:
       // - Nov 2026: 1.028.000 Ton, harian (dibagi 31) = 33.161,29 Ton
@@ -284,6 +289,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         totalTonaseLabel,
         totalRitaseLabel,
         actualTripLabel,
+        actualTripFormatted,
+        totalUnitLabel,
+        planUnitLabel,
         planDailyTonase,
         planMonthlyTonase,
         planUnitRunning,
@@ -1147,40 +1155,40 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         </div>
       </div>
 
-      {/* Chart Section: Trip Per Day (#Ritase, Plan 70 & Armada Aktif) */}
+      {/* Chart Section: Daily Trip per Unit */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Truck size={20} className="text-[#e95623]" />
-              Grafik Trip Per Day (Tanggal 01 s/d Hari Ini)
+              Daily Trip per Unit
             </h2>
             <p className="text-xs text-slate-500">
-              Monitoring ritase harian (#Ritase), armada aktif (Total Unit Running), target unit (Plan: 70), dan efisiensi Actual Trip per Day
+              Monitoring ritase harian (#Ritase), armada aktif (Total Unit Running), target unit (Plan Unit Running: {chartData[0]?.planUnitRunning ?? 25}), dan efisiensi Actual Trip per Unit
             </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* Summary Badges */}
             <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-cyan-500" />
-              <span>Plan Unit Running (Nov): 70</span>
+              <span className="w-2 h-2 rounded-full bg-[#86cbdc]" />
+              <span>Plan Unit Running: {chartData[0]?.planUnitRunning ?? 25}</span>
             </div>
 
             <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="w-2 h-2 rounded-full bg-[#f4c322]" />
               <span>Rata-rata Armada: {avgUnitRunning} Unit</span>
             </div>
 
             <div
               className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs font-bold shadow-2xs"
-              title="Rata-rata Actual Trip per Day armada aktif"
+              title="Rata-rata Actual Trip per Unit armada aktif"
             >
-              <span className="w-2 h-2 rounded-full bg-purple-500" />
-              <span>Rata-rata: {avgActualTripPerUnit.toFixed(2)} Trip/Day</span>
+              <span className="w-2 h-2 rounded-full bg-[#7172ad]" />
+              <span>Rata-rata: {avgActualTripPerUnit.toFixed(3)} Trip/Unit</span>
             </div>
 
-            {/* Mode Toggle: Armada (Plan 70) vs Shift (DS & NS) */}
+            {/* Mode Toggle: Armada vs Shift (DS & NS) */}
             <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
               <button
                 onClick={() => setTripViewMode("fleet")}
@@ -1190,7 +1198,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
-                #Ritase &amp; Armada
+                Daily Trip per Unit
               </button>
               <button
                 onClick={() => setTripViewMode("shift")}
@@ -1214,10 +1222,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                       ? "bg-cyan-50 text-cyan-900 border-cyan-300 shadow-2xs"
                       : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                   }`}
-                  title="Tampilkan / sembunyikan garis Plan Unit Running (70)"
+                  title="Tampilkan / sembunyikan garis Plan Unit Running"
                 >
-                  <span className={`w-2 h-2 rounded-full ${showPlanUnit ? "bg-cyan-500" : "bg-slate-300"}`} />
-                  <span>Plan (70)</span>
+                  <span className={`w-2 h-2 rounded-full ${showPlanUnit ? "bg-[#86cbdc]" : "bg-slate-300"}`} />
+                  <span>Plan Unit</span>
                 </button>
 
                 {/* Toggle Total Unit Running */}
@@ -1230,11 +1238,11 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   }`}
                   title="Tampilkan / sembunyikan garis Total Unit Running"
                 >
-                  <span className={`w-2 h-2 rounded-full ${showTotalUnit ? "bg-amber-500" : "bg-slate-300"}`} />
-                  <span>Unit Aktif</span>
+                  <span className={`w-2 h-2 rounded-full ${showTotalUnit ? "bg-[#f4c322]" : "bg-slate-300"}`} />
+                  <span>Total Unit</span>
                 </button>
 
-                {/* Toggle Actual Trip per Day */}
+                {/* Toggle Actual Trip per Unit */}
                 <button
                   onClick={() => setShowActualTrip(!showActualTrip)}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
@@ -1242,10 +1250,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                       ? "bg-purple-50 text-purple-900 border-purple-300 shadow-2xs"
                       : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                   }`}
-                  title="Tampilkan / sembunyikan garis Actual Trip per Day"
+                  title="Tampilkan / sembunyikan batang Actual Trip per Unit"
                 >
-                  <span className={`w-2 h-2 rounded-full ${showActualTrip ? "bg-purple-500" : "bg-slate-300"}`} />
-                  <span>Trip/Day</span>
+                  <span className={`w-2 h-2 rounded-full ${showActualTrip ? "bg-[#7172ad]" : "bg-slate-300"}`} />
+                  <span>Actual Trip</span>
                 </button>
               </>
             ) : (
@@ -1320,7 +1328,14 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={chartData}
-                margin={{ top: 25, right: tripViewMode === "fleet" && showActualTrip ? 25 : 15, left: 10, bottom: 20 }}
+                barGap={1}
+                barCategoryGap="25%"
+                margin={{
+                  top: 25,
+                  right: 25,
+                  left: 10,
+                  bottom: 30,
+                }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis
@@ -1328,45 +1343,47 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   stroke="#94a3b8"
                   fontSize={11}
                   tickLine={false}
+                  axisLine={{ stroke: "#cbd5e1" }}
                   dy={8}
-                />
+                >
+                  <Label
+                    value="Reconciliation Date"
+                    offset={-16}
+                    position="insideBottom"
+                    style={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
+                  />
+                </XAxis>
+                {/* Left Y-Axis: Actual Trip per Unit (0.000 s/d 3.000) */}
                 <YAxis
                   yAxisId="left"
                   stroke="#94a3b8"
                   fontSize={11}
                   tickLine={false}
-                  domain={[0, (dataMax: number) => Math.ceil(Math.max(dataMax || 100, 80) * 1.15)]}
+                  axisLine={false}
+                  domain={[
+                    0,
+                    (dataMax: number) =>
+                      Math.max(3.0, Math.ceil((dataMax || 2.5) * 1.15 * 2) / 2),
+                  ]}
+                  tickCount={7}
+                  tickFormatter={(val) => Number(val).toFixed(3)}
+                />
+                {/* Right Y-Axis: Ritase dan Units (0 s/d 180) */}
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={[
+                    0,
+                    (dataMax: number) =>
+                      Math.max(180, Math.ceil((dataMax || 150) / 30) * 30),
+                  ]}
+                  tickCount={7}
                   tickFormatter={(val) => `${val}`}
                 />
-                {tripViewMode === "fleet" && showActualTrip && (
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    stroke="#8b5cf6"
-                    fontSize={11}
-                    tickLine={false}
-                    domain={[0, 4]}
-                    tickFormatter={(val) => `${val.toFixed(1)}`}
-                  />
-                )}
-
-                {/* Plan Reference Line (70 Unit) */}
-                {tripViewMode === "fleet" && showPlanUnit && (
-                  <ReferenceLine
-                    yAxisId="left"
-                    y={70}
-                    stroke="#06b6d4"
-                    strokeDasharray="4 4"
-                    strokeWidth={1.5}
-                    label={{
-                      value: "Plan Unit: 70",
-                      position: "insideTopLeft",
-                      fill: "#0891b2",
-                      fontSize: 10,
-                      fontWeight: 700,
-                    }}
-                  />
-                )}
 
                 <Tooltip
                   content={({ active, payload }) => {
@@ -1394,30 +1411,32 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                           <div className="space-y-2 py-0.5">
                             {/* 1. Plan Unit Running */}
                             <div className="flex items-center justify-between gap-4">
-                              <span className="flex items-center gap-2 text-cyan-300 font-medium">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#22d3ee] ring-2 ring-cyan-400/20" />
+                              <span className="flex items-center gap-2 text-[#86cbdc] font-medium">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#86cbdc] ring-2 ring-[#86cbdc]/30" />
                                 Plan Unit Running
                               </span>
                               <strong className="font-mono text-cyan-200 text-sm font-black">
-                                {data.planUnitRunning ?? 70}
+                                {data.planUnitRunning ?? 25}
                               </strong>
                             </div>
 
-                            {/* 2. Actual Trip per Day */}
+                            {/* 2. Actual Trip per Unit */}
                             <div className="flex items-center justify-between gap-4">
                               <span className="flex items-center gap-2 text-indigo-300 font-medium">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] ring-2 ring-indigo-400/20" />
-                                Actual Trip per Day
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#7172ad] ring-2 ring-indigo-400/20" />
+                                Actual Trip per Unit
                               </span>
                               <strong className="font-mono text-indigo-200 text-sm font-black">
-                                {typeof data.actualTripPerUnit === "number" ? data.actualTripPerUnit.toFixed(2) : "0.00"}
+                                {typeof data.actualTripPerUnit === "number"
+                                  ? data.actualTripPerUnit.toFixed(3)
+                                  : "0.000"}
                               </strong>
                             </div>
 
                             {/* 3. #Ritase */}
                             <div className="flex items-center justify-between gap-4 bg-blue-500/15 px-2.5 py-1 rounded-lg border border-blue-500/30">
                               <span className="flex items-center gap-2 text-blue-300 font-bold">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6] ring-2 ring-blue-400/30" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#509ee3] ring-2 ring-blue-400/30" />
                                 #Ritase
                               </span>
                               <strong className="font-mono text-white text-base font-black">
@@ -1428,7 +1447,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                             {/* 4. Total Unit Running */}
                             <div className="flex items-center justify-between gap-4">
                               <span className="flex items-center gap-2 text-amber-300 font-medium">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] ring-2 ring-amber-400/20" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#f4c322] ring-2 ring-amber-400/20" />
                                 Total Unit Running
                               </span>
                               <strong className="font-mono text-amber-200 text-sm font-black">
@@ -1449,88 +1468,116 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                 />
                 <Legend
                   verticalAlign="top"
-                  align="right"
+                  align="left"
                   iconType="circle"
-                  wrapperStyle={{ paddingBottom: "12px", fontSize: "12px" }}
+                  wrapperStyle={{ paddingBottom: "16px", fontSize: "12px", fontWeight: 500 }}
                 />
 
                 {tripViewMode === "fleet" ? (
                   <>
-                    {/* Bar #Ritase (Solid Blue) */}
-                    <Bar
-                      yAxisId="left"
-                      name="#Ritase"
-                      dataKey="totalRitase"
-                      fill="#3b82f6"
-                      radius={[6, 6, 0, 0]}
-                    />
-
-                    {/* Line Plan Unit Running (Cyan) */}
+                    {/* 1. Line Plan Unit Running (Light Cyan - Sumbu Kanan) */}
                     {showPlanUnit && (
                       <Line
-                        yAxisId="left"
+                        yAxisId="right"
                         name="Plan Unit Running"
                         dataKey="planUnitRunning"
                         type="monotone"
-                        stroke="#06b6d4"
-                        strokeWidth={2.5}
-                        dot={{ r: 4, fill: "#06b6d4", strokeWidth: 1.5, stroke: "#ffffff" }}
-                        activeDot={{ r: 6, fill: "#06b6d4" }}
-                      />
-                    )}
-
-                    {/* Line Total Unit Running (Yellow) */}
-                    {showTotalUnit && (
-                      <Line
-                        yAxisId="left"
-                        name="Total Unit Running"
-                        dataKey="totalUnitRunning"
-                        type="monotone"
-                        stroke="#eab308"
-                        strokeWidth={2.5}
-                        dot={{ r: 4, fill: "#eab308", strokeWidth: 1.5, stroke: "#ffffff" }}
-                        activeDot={{ r: 6, fill: "#eab308" }}
-                      />
-                    )}
-
-                    {/* Line Actual Trip per Day (Purple - Sumbu Kanan) */}
-                    {showActualTrip && (
-                      <Line
-                        yAxisId="right"
-                        name="Actual Trip per Day"
-                        dataKey="actualTripPerUnit"
-                        type="monotone"
-                        stroke="#8b5cf6"
+                        stroke="#86cbdc"
                         strokeWidth={2}
-                        strokeDasharray="4 4"
-                        dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 1.5, stroke: "#ffffff" }}
-                        activeDot={{ r: 6, fill: "#8b5cf6" }}
-                      />
+                        dot={{ r: 4, fill: "#86cbdc", strokeWidth: 1.5, stroke: "#ffffff" }}
+                        activeDot={{ r: 6, fill: "#86cbdc" }}
+                      >
+                        {showTripBarLabels && (
+                          <LabelList
+                            dataKey="planUnitLabel"
+                            position="top"
+                            offset={8}
+                            style={{
+                              fontSize: "9.5px",
+                              fontWeight: 700,
+                              fill: "#0e7490",
+                              fontFamily: "ui-monospace, monospace",
+                            }}
+                          />
+                        )}
+                      </Line>
                     )}
 
-                    {/* Label Actual Trip per Day di Atas Setiap Bar */}
-                    {showTripBarLabels && (
-                      <Line
+                    {/* 2. Bar Actual Trip per Unit (Slate Purple - Sumbu Kiri) */}
+                    {showActualTrip && (
+                      <Bar
                         yAxisId="left"
-                        dataKey="totalRitase"
-                        stroke="none"
-                        dot={false}
-                        activeDot={false}
-                        legendType="none"
-                        isAnimationActive={false}
-                        tooltipType="none"
+                        name="Actual Trip per Unit"
+                        dataKey="actualTripPerUnit"
+                        fill="#7172ad"
+                        radius={[2, 2, 0, 0]}
+                        maxBarSize={56}
                       >
+                        {showTripBarLabels && (
+                          <LabelList
+                            dataKey="actualTripFormatted"
+                            position="top"
+                            offset={6}
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              fill: "#334155",
+                              fontFamily: "ui-monospace, monospace",
+                            }}
+                          />
+                        )}
+                      </Bar>
+                    )}
+
+                    {/* 3. Bar #Ritase (Sky Blue - Sumbu Kanan) */}
+                    <Bar
+                      yAxisId="right"
+                      name="#Ritase"
+                      dataKey="totalRitase"
+                      fill="#509ee3"
+                      radius={[2, 2, 0, 0]}
+                      maxBarSize={56}
+                    >
+                      {showTripBarLabels && (
                         <LabelList
-                          dataKey="actualTripLabel"
+                          dataKey="totalRitaseLabel"
                           position="top"
-                          offset={8}
+                          offset={6}
                           style={{
                             fontSize: "10px",
-                            fontWeight: 800,
-                            fill: "#6d28d9",
+                            fontWeight: 700,
+                            fill: "#334155",
                             fontFamily: "ui-monospace, monospace",
                           }}
                         />
+                      )}
+                    </Bar>
+
+                    {/* 4. Line Total Unit Running (Yellow/Gold - Sumbu Kanan) */}
+                    {showTotalUnit && (
+                      <Line
+                        yAxisId="right"
+                        name="Total Unit Running"
+                        dataKey="totalUnitRunning"
+                        type="monotone"
+                        stroke="#f4c322"
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: "#f4c322", strokeWidth: 1.5, stroke: "#ffffff" }}
+                        activeDot={{ r: 6, fill: "#f4c322" }}
+                      >
+                        {showTripBarLabels && (
+                          <LabelList
+                            dataKey="totalUnitLabel"
+                            position="top"
+                            offset={8}
+                            style={{
+                              fontSize: "9.5px",
+                              fontWeight: 700,
+                              fill: "#b45309",
+                              fontFamily: "ui-monospace, monospace",
+                            }}
+                          />
+                        )}
                       </Line>
                     )}
                   </>
