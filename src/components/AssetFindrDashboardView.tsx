@@ -258,6 +258,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       const actualTripPerUnit =
         item.actualTripPerUnit ??
         (totalUnitRunning > 0 ? Number((item.totalRitase / totalUnitRunning).toFixed(3)) : 0);
+      // Format label Actual Trip per Day di atas bar (misal: "2.56", "2.53", "1.00")
+      const actualTripLabel =
+        actualTripPerUnit > 0 ? actualTripPerUnit.toFixed(2) : "";
 
       return {
         ...item,
@@ -271,9 +274,11 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         trendLineTrip: tripTrendValue,
         totalTonaseLabel,
         totalRitaseLabel,
+        actualTripLabel,
         planUnitRunning,
         totalUnitRunning,
         actualTripPerUnit,
+        actualTripPerDay: actualTripPerUnit,
       };
     });
   }, [dailyData, todayStr]);
@@ -926,7 +931,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               Grafik Trip Per Day (Tanggal 01 s/d Hari Ini)
             </h2>
             <p className="text-xs text-slate-500">
-              Monitoring ritase harian (#Ritase), armada aktif (Total Unit Running), target unit (Plan: 70), dan efisiensi Actual Trip per Unit
+              Monitoring ritase harian (#Ritase), armada aktif (Total Unit Running), target unit (Plan: 70), dan efisiensi Actual Trip per Day
             </p>
           </div>
 
@@ -942,9 +947,12 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               <span>Rata-rata Armada: {avgUnitRunning} Unit</span>
             </div>
 
-            <div className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              <span>Rata-rata: {avgTripsPerDay} Trip</span>
+            <div
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs font-bold shadow-2xs"
+              title="Rata-rata Actual Trip per Day armada aktif"
+            >
+              <span className="w-2 h-2 rounded-full bg-purple-500" />
+              <span>Rata-rata: {avgActualTripPerUnit.toFixed(2)} Trip/Day</span>
             </div>
 
             {/* Mode Toggle: Armada (Plan 70) vs Shift (DS & NS) */}
@@ -1001,7 +1009,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   <span>Unit Aktif</span>
                 </button>
 
-                {/* Toggle Actual Trip per Unit */}
+                {/* Toggle Actual Trip per Day */}
                 <button
                   onClick={() => setShowActualTrip(!showActualTrip)}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
@@ -1009,10 +1017,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                       ? "bg-purple-50 text-purple-900 border-purple-300 shadow-2xs"
                       : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                   }`}
-                  title="Tampilkan / sembunyikan garis Actual Trip per Unit"
+                  title="Tampilkan / sembunyikan garis Actual Trip per Day"
                 >
                   <span className={`w-2 h-2 rounded-full ${showActualTrip ? "bg-purple-500" : "bg-slate-300"}`} />
-                  <span>Trip/Unit</span>
+                  <span>Trip/Day</span>
                 </button>
               </>
             ) : (
@@ -1065,7 +1073,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
                   : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
               }`}
-              title="Tampilkan / sembunyikan angka total trip di atas setiap batang grafik"
+              title="Tampilkan / sembunyikan angka Actual Trip per Day di atas setiap batang grafik"
             >
               <span>Label</span>
             </button>
@@ -1170,14 +1178,14 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                               </strong>
                             </div>
 
-                            {/* 2. Actual Trip per Unit */}
+                            {/* 2. Actual Trip per Day */}
                             <div className="flex items-center justify-between gap-4">
                               <span className="flex items-center gap-2 text-indigo-300 font-medium">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] ring-2 ring-indigo-400/20" />
-                                Actual Trip per Unit
+                                Actual Trip per Day
                               </span>
                               <strong className="font-mono text-indigo-200 text-sm font-black">
-                                {typeof data.actualTripPerUnit === "number" ? data.actualTripPerUnit.toFixed(3) : "0.000"}
+                                {typeof data.actualTripPerUnit === "number" ? data.actualTripPerUnit.toFixed(2) : "0.00"}
                               </strong>
                             </div>
 
@@ -1260,11 +1268,11 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                       />
                     )}
 
-                    {/* Line Actual Trip per Unit (Purple - Sumbu Kanan) */}
+                    {/* Line Actual Trip per Day (Purple - Sumbu Kanan) */}
                     {showActualTrip && (
                       <Line
                         yAxisId="right"
-                        name="Actual Trip per Unit"
+                        name="Actual Trip per Day"
                         dataKey="actualTripPerUnit"
                         type="monotone"
                         stroke="#8b5cf6"
@@ -1275,7 +1283,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                       />
                     )}
 
-                    {/* Label Total Trip di Atas Setiap Bar */}
+                    {/* Label Actual Trip per Day di Atas Setiap Bar */}
                     {showTripBarLabels && (
                       <Line
                         yAxisId="left"
@@ -1288,13 +1296,13 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                         tooltipType="none"
                       >
                         <LabelList
-                          dataKey="totalRitaseLabel"
+                          dataKey="actualTripLabel"
                           position="top"
                           offset={8}
                           style={{
                             fontSize: "10px",
                             fontWeight: 800,
-                            fill: "#1e40af",
+                            fill: "#6d28d9",
                             fontFamily: "ui-monospace, monospace",
                           }}
                         />

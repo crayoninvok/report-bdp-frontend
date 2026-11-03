@@ -122,6 +122,7 @@ export interface DailyProductionItem {
   planUnitRunning?: number;
   totalUnitRunning?: number;
   actualTripPerUnit?: number;
+  actualTripPerDay?: number;
 }
 
 export interface DailyProductionResponse {
