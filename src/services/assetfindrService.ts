@@ -123,6 +123,8 @@ export interface DailyProductionItem {
   totalUnitRunning?: number;
   actualTripPerUnit?: number;
   actualTripPerDay?: number;
+  planProductionDaily?: number;
+  planProductionMonthly?: number;
 }
 
 export interface DailyProductionResponse {
@@ -147,6 +149,8 @@ export interface DailyProductionResponse {
     avgRitasePerDay?: number;
     avgPayloadOverall: number;
     planUnitRunning?: number;
+    planProductionDaily?: number;
+    planProductionMonthly?: number;
   };
   data: DailyProductionItem[];
 }

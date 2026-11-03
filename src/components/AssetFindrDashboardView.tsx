@@ -79,6 +79,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   // View Options for Produksi Harian (Tonase)
   const [chartType, setChartType] = useState<"stacked" | "grouped">("stacked");
   const [showTrendLine, setShowTrendLine] = useState<boolean>(true);
+  const [showPlanTonase, setShowPlanTonase] = useState<boolean>(true);
   const [showBarLabels, setShowBarLabels] = useState<boolean>(true);
 
   // View Options for Trip Per Day (Ritase)
@@ -262,6 +263,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
       const actualTripLabel =
         actualTripPerUnit > 0 ? actualTripPerUnit.toFixed(2) : "";
 
+      // Plan produksi Muara Pahu: Nov 1.028.000 Ton, harian (dibagi 31) = 33.161,29 Ton
+      const planDailyTonase = isNov ? 33161.29 : 21645.16;
+      const planMonthlyTonase = isNov ? 1028000 : 671000;
+
       return {
         ...item,
         label: `${String(item.day).padStart(2, "0")}`,
@@ -275,6 +280,8 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         totalTonaseLabel,
         totalRitaseLabel,
         actualTripLabel,
+        planDailyTonase,
+        planMonthlyTonase,
         planUnitRunning,
         totalUnitRunning,
         actualTripPerUnit,
@@ -657,6 +664,11 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               {formatNum(summary?.avgPayloadOverall, 1)} Ton/Rit
             </strong>
           </div>
+
+          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between font-medium">
+            <span>Target Plan Harian:</span>
+            <span className="font-bold text-[#e95623]">33.161 Ton/Hari</span>
+          </div>
         </div>
       </div>
 
@@ -674,6 +686,15 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Badge Plan Produksi Nov (Muara Pahu) */}
+            <div
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-950 text-xs font-bold shadow-2xs"
+              title="Plan Produksi Nov Muara Pahu: 1.028.000 Ton (Harian / 31: 33.161,29 Ton/hari)"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#e95623]" />
+              <span>Plan Nov: 1.028.000 Ton (33.161 Ton/Hari)</span>
+            </div>
+
             {/* Mode Stacked / Grouped */}
             <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
               <button
@@ -697,6 +718,20 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                 Berdampingan
               </button>
             </div>
+
+            {/* Toggle Garis Target Plan Harian (33.161 Ton) */}
+            <button
+              onClick={() => setShowPlanTonase(!showPlanTonase)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                showPlanTonase
+                  ? "bg-orange-50 text-orange-900 border-orange-300 shadow-2xs"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+              }`}
+              title="Tampilkan / sembunyikan garis target Plan Harian (33.161 Ton/hari)"
+            >
+              <span className={`w-2 h-2 rounded-full ${showPlanTonase ? "bg-[#e95623]" : "bg-slate-300"}`} />
+              <span>Plan (33.2k)</span>
+            </button>
 
             {/* Toggle Garis Tren Regresi */}
             <button
@@ -768,9 +803,26 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                   stroke="#94a3b8"
                   fontSize={11}
                   tickLine={false}
-                  domain={[0, (dataMax: number) => Math.ceil((dataMax || 1000) * 1.15)]}
+                  domain={[0, (dataMax: number) => Math.ceil(Math.max(dataMax || 1000, showPlanTonase ? 36000 : 1000) * 1.15)]}
                   tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                 />
+
+                {/* Plan Reference Line (Nov Muara Pahu: 33.161,29 Ton/hari) */}
+                {showPlanTonase && (
+                  <ReferenceLine
+                    y={33161.29}
+                    stroke="#e95623"
+                    strokeDasharray="4 4"
+                    strokeWidth={1.5}
+                    label={{
+                      value: "Plan: 33.161 Ton/Hari",
+                      position: "insideTopLeft",
+                      fill: "#c2410c",
+                      fontSize: 10,
+                      fontWeight: 700,
+                    }}
+                  />
+                )}
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
@@ -834,6 +886,17 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                                   Garis Tren:
                                 </span>
                                 <span className="font-mono">{formatNum(data.trendLine, 0)} Ton</span>
+                              </div>
+                            )}
+
+                            {/* Target Plan Produksi Harian */}
+                            {showPlanTonase && (
+                              <div className="border-t border-slate-800/80 pt-1 flex items-center justify-between gap-4 text-orange-400 text-[11px] font-semibold">
+                                <span className="flex items-center gap-1">
+                                  <span className="w-2 h-0.5 bg-orange-400" />
+                                  Target Plan:
+                                </span>
+                                <span className="font-mono">33.161 Ton/Hari</span>
                               </div>
                             )}
 

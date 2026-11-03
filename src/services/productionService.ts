@@ -17,12 +17,14 @@ export const DEFAULT_PRODUCTION_TARGETS: ProductionTargets = {
   payload: 205.0,
   cycleTime: 7.5,
   fuelRatio: 1.55,
-  unitRunning: 43,
+  unitRunning: 70,
   tdp: 2.7,
   dailyProductionBase: 13266.67,
   dailyProductionQ4: 21645.16,
+  dailyProductionNovember: 33161.29,
   monthlyProductionBase: 398000,
   monthlyProductionTarget: 671000,
+  monthlyProductionNovember: 1028000,
 };
 
 function getLocalRecords(): DailyProduction[] {

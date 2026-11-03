@@ -30,6 +30,8 @@ export interface ProductionTargets {
   dailyProductionQ4: number;
   monthlyProductionBase: number;
   monthlyProductionTarget: number;
+  dailyProductionNovember?: number;
+  monthlyProductionNovember?: number;
 }
 
 export interface WeeklyKpiSummary {

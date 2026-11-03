@@ -295,7 +295,7 @@ export const CoalProductionDashboardView: React.FC<CoalProductionDashboardViewPr
       "08": 32000,
       "09": 398000,
       "10": 671000,
-      "11": 700000,
+      "11": 1028000,
       "12": 700000,
     };
 
