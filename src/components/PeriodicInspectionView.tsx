@@ -46,7 +46,15 @@ import {
   FileSpreadsheet,
   Download,
   FileDown,
+  UserCheck,
 } from "lucide-react";
+
+export const LEAD_INSPECTOR_OPTIONS = [
+  "Zulfahmi",
+  "Priyanto",
+  "Angga Z",
+  "Noffan A",
+] as const;
 
 const INDO_MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
@@ -126,6 +134,7 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
   const [targetModalMode, setTargetModalMode] = useState<"global" | "specific">("global");
   const [targetSpecificDate, setTargetSpecificDate] = useState<string>("");
   const [targetInputNumber, setTargetInputNumber] = useState<number>(9);
+  const [targetLeadInspector, setTargetLeadInspector] = useState<string>("");
   const [isSavingTarget, setIsSavingTarget] = useState<boolean>(false);
 
   // Modal: Quick Bulk Add
@@ -566,12 +575,41 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
       setTargetSpecificDate(dateStr);
       const day = scheduleData?.days.find((d) => d.date === dateStr);
       setTargetInputNumber(day?.targetUnits || scheduleData?.defaultDailyTarget || 9);
+      setTargetLeadInspector(day?.leadInspector || "");
     } else {
       setTargetModalMode("global");
       setTargetSpecificDate("");
       setTargetInputNumber(scheduleData?.defaultDailyTarget || 9);
+      setTargetLeadInspector("");
     }
     setIsTargetModalOpen(true);
+  };
+
+  const handleLeadInspectorChange = async (date: string, inspectorName: string) => {
+    try {
+      setScheduleData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          days: prev.days.map((d) =>
+            d.date === date ? { ...d, leadInspector: inspectorName || null } : d
+          ),
+        };
+      });
+
+      await plantService.upsertDailyPlan({
+        date,
+        leadInspector: inspectorName || null,
+      });
+      showSuccess(
+        inspectorName
+          ? `Lead Inspector ${formatIndoDate(date)}: ${inspectorName}`
+          : `Lead Inspector ${formatIndoDate(date)} dikosongkan`
+      );
+    } catch (err: any) {
+      showError(err.message || "Gagal memperbarui Lead Inspector");
+      loadSchedule(currentDateStr, selectedSite);
+    }
   };
 
   const handleSaveTarget = async (e: React.FormEvent) => {
@@ -587,7 +625,11 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
         await plantService.updateSetting("daily_pi_target", String(targetInputNumber));
         showSuccess(`Target plan harian default diperbarui ke ${targetInputNumber} Unit/Hari`);
       } else {
-        await plantService.upsertDailyPlan(targetSpecificDate, targetInputNumber);
+        await plantService.upsertDailyPlan({
+          date: targetSpecificDate,
+          targetUnits: targetInputNumber,
+          leadInspector: targetLeadInspector || null,
+        });
         showSuccess(`Target plan tanggal ${targetSpecificDate} diperbarui ke ${targetInputNumber} Unit`);
       }
       setIsTargetModalOpen(false);
@@ -1191,6 +1233,31 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                               width: `${completionPercent}%`,
                             }}
                           />
+                        </div>
+
+                        {/* Lead Inspector Selection directly below 0/9 / progress bar */}
+                        <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between gap-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 flex items-center gap-1 shrink-0">
+                            <UserCheck size={11} className={day.leadInspector ? "text-[#e95623]" : "text-slate-400"} />
+                            <span>Lead:</span>
+                          </label>
+                          <select
+                            value={day.leadInspector || ""}
+                            onChange={(e) => handleLeadInspectorChange(day.date, e.target.value)}
+                            className={`w-full py-1 px-1.5 text-[10.5px] rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#e95623] truncate ${
+                              day.leadInspector
+                                ? "bg-orange-50 text-orange-950 border-orange-200 font-extrabold"
+                                : "bg-white text-slate-400 border-slate-200 hover:border-slate-300 font-medium"
+                            }`}
+                            title={`Lead Inspector: ${day.leadInspector || "Belum dipilih"}`}
+                          >
+                            <option value="">-- Pilih Lead --</option>
+                            {LEAD_INSPECTOR_OPTIONS.map((name) => (
+                              <option key={name} value={name} className="text-slate-800 font-medium">
+                                {name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
 
@@ -2014,6 +2081,26 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                   <span className="text-xs font-bold text-slate-500">Unit / Hari</span>
                 </div>
               </div>
+
+              {targetModalMode === "specific" && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Lead Inspector
+                  </label>
+                  <select
+                    value={targetLeadInspector}
+                    onChange={(e) => setTargetLeadInspector(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#e95623]"
+                  >
+                    <option value="">-- Belum Dipilih --</option>
+                    {LEAD_INSPECTOR_OPTIONS.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Population explanation */}
               <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3.5 space-y-1.5 text-xs text-amber-900">

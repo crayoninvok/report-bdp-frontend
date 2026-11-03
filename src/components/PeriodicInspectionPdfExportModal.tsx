@@ -834,6 +834,14 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                                   style={{ width: `${completionPercent}%` }}
                                 />
                               </div>
+
+                              {/* Lead Inspector Badge in PDF */}
+                              {day.leadInspector && (
+                                <div className="mt-1 flex items-center justify-between px-1 py-0.5 rounded bg-orange-50 border border-orange-200/60 text-[7px] text-orange-900 font-bold truncate">
+                                  <span>Lead:</span>
+                                  <span className="truncate">{day.leadInspector}</span>
+                                </div>
+                              )}
                             </div>
 
                             {/* Unit Items */}
@@ -1030,7 +1038,10 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                         return (
                           <tr key={d.date} className="hover:bg-slate-50">
                             <td className="py-2 px-3 font-bold text-slate-800">
-                              {d.dayName}, {d.date}
+                              <div>{d.dayName}, {d.date}</div>
+                              {d.leadInspector && (
+                                <div className="text-[9px] font-semibold text-orange-700">Lead: {d.leadInspector}</div>
+                              )}
                             </td>
                             <td className="py-2 px-3 text-center font-mono font-bold">{d.targetUnits} Unit</td>
                             <td className="py-2 px-3 text-center font-mono font-bold text-slate-700">{d.items.length}</td>

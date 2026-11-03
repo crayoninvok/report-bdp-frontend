@@ -56,6 +56,7 @@ export interface DaySchedule {
   isToday: boolean;
   targetUnits: number;
   hasCustomTarget: boolean;
+  leadInspector?: string | null;
   scheduledCount: number;
   completedCount: number;
   inProgressCount: number;
@@ -190,12 +191,22 @@ export const plantService = {
     return json.data;
   },
 
-  // 5. Update Daily Plan Target for a specific date
-  upsertDailyPlan: async (date: string, targetUnits: number, notes?: string): Promise<any> => {
+  // 5. Update Daily Plan Target or Lead Inspector for a specific date
+  upsertDailyPlan: async (
+    arg1: string | { date: string; targetUnits?: number; leadInspector?: string | null; notes?: string },
+    targetUnits?: number,
+    notes?: string
+  ): Promise<any> => {
+    let bodyData: any = {};
+    if (typeof arg1 === "string") {
+      bodyData = { date: arg1, targetUnits, notes };
+    } else {
+      bodyData = arg1;
+    }
     const res = await fetch(`${API_BASE_URL}/plant/periodic-inspection/plan`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ date, targetUnits, notes }),
+      body: JSON.stringify(bodyData),
     });
     if (!res.ok) {
       throw new Error("Failed to update daily plan target");
