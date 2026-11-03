@@ -76,6 +76,64 @@ export interface GLPreviewData {
   sampleTransactions: any[];
 }
 
+
+export interface GLFuelSummary {
+  totalLiters: number;
+  totalCost: number;
+  totalTransactions: number;
+  avgPricePerLiter: number;
+  siteBreakdown: Array<{
+    projectArea: string;
+    liters: number;
+    cost: number;
+    transactionCount: number;
+  }>;
+  accountBreakdown: Array<{
+    accountCode: string;
+    accountName: string;
+    liters: number;
+    cost: number;
+    transactionCount: number;
+  }>;
+}
+
+export interface GLFuelDailyItem {
+  date: string;
+  liters: number;
+  cost: number;
+  transactionCount: number;
+  avgPrice: number;
+}
+
+export interface GLFuelFleetItem {
+  costCenter: string;
+  projectArea: string;
+  totalLiters: number;
+  totalCost: number;
+  transactionCount: number;
+}
+
+export interface GLFuelRecentTransaction {
+  id: string;
+  date: string;
+  regNo?: string;
+  costCenter?: string;
+  projectArea?: string;
+  specification?: string;
+  qty?: number;
+  debet: number;
+  remark?: string;
+  accountName?: string;
+}
+
+export interface GLFuelConsumptionResponse {
+  success: boolean;
+  summary: GLFuelSummary;
+  dailyData: GLFuelDailyItem[];
+  topFleets: GLFuelFleetItem[];
+  recentTransactions: GLFuelRecentTransaction[];
+}
+
 function getAuthHeaders(isFormData = false): Record<string, string> {
   const user = authService.getCurrentUser();
   const headers: Record<string, string> = {};
@@ -193,4 +251,27 @@ export const glService = {
     }
     return data.data;
   },
+
+  async getFuelConsumption(paramsObj?: {
+    periodId?: string;
+    site?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<GLFuelConsumptionResponse> {
+    const params = new URLSearchParams();
+    if (paramsObj?.periodId) params.append("periodId", paramsObj.periodId);
+    if (paramsObj?.site) params.append("site", paramsObj.site);
+    if (paramsObj?.startDate) params.append("startDate", paramsObj.startDate);
+    if (paramsObj?.endDate) params.append("endDate", paramsObj.endDate);
+
+    const res = await fetch(`${API_BASE_URL}/gl/fuel-consumption?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || "Gagal mengambil data konsumsi BBM dari GL");
+    }
+    return data;
+  },
+
 };

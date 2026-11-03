@@ -37,6 +37,7 @@ import {
   BarChart3,
   CalendarDays,
 } from "lucide-react";
+import { FuelConsumptionGLSection } from "./FuelConsumptionGLSection";
 
 interface CoalProductionReportViewProps {
   user: User;
@@ -1829,6 +1830,14 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
           </div>
         </div>
       )}
+
+      {/* GL Fuel Consumption Section */}
+      <FuelConsumptionGLSection
+        initialSite={selectedSite === "all" ? "ALL" : selectedSite}
+        productionTonase={filteredSummary.totalProduction}
+        defaultStartDate={startDate}
+        defaultEndDate={endDate}
+      />
 
       {/* Printable Signature Section (visible only on print) */}
       <div className="hidden print:grid grid-cols-3 gap-8 mt-12 pt-6 border-t border-slate-300 text-center text-xs">
