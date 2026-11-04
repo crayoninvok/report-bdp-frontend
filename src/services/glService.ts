@@ -81,8 +81,10 @@ export interface GLFuelSummary {
   totalProduction: number;
   totalFuelConsumption: number;
   totalCost: number;
+  avgCostPerDay?: number;
   totalTransactions?: number;
   avgPricePerLiter?: number;
+  avgCostPerTon?: number;
   actFuelRatio: number;
   planFuelRatio: number;
   totalLiters?: number;
@@ -105,11 +107,14 @@ export interface GLFuelDailyItem {
   date: string;
   dateLabel: string;
   fuelLiters: number;
+  fuelCost?: number;
+  cost?: number;
+  costPerLiter?: number;
+  costPerTon?: number;
   production: number;
   frGL: number;
   planFR: number;
   liters?: number;
-  cost?: number;
   transactionCount?: number;
   avgPrice?: number;
 }
