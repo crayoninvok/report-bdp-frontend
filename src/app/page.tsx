@@ -16,6 +16,7 @@ import { RiverJournalView } from "../components/RiverJournalView";
 import { InputProductionView } from "../components/InputProductionView";
 import { CoalProductionDashboardView } from "../components/CoalProductionDashboardView";
 import { CoalProductionReportView } from "../components/CoalProductionReportView";
+import { FuelConsumptionGLSection } from "../components/FuelConsumptionGLSection";
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
 import { GLDataView } from "../components/GLDataView";
 import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
@@ -292,6 +293,8 @@ export default function Home() {
                       ? "Coal Hauling • Dashboard Produksi"
                       : activeMenu === "coal-input"
                       ? "Coal Hauling • Input Data Produksi"
+                      : activeMenu === "coal-fuel-gl"
+                      ? "Coal Hauling • Konsumsi Fuel Operasional (Data GL)"
                       : activeMenu === "coal-reports"
                       ? "Coal Hauling • Laporan Produksi"
                       : activeMenu === "assetfindr-dashboard"
@@ -313,8 +316,8 @@ export default function Home() {
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      Maintenance
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeMenu === "coal-fuel-gl" ? "bg-batara-orange-50 text-[#e95623] border border-batara-orange-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                      {activeMenu === "coal-fuel-gl" ? "Data GL" : "Maintenance"}
                     </span>
                   )}
                 </div>
@@ -536,6 +539,10 @@ export default function Home() {
               user={currentUser}
               onNavigateToDashboard={() => setActiveMenu("dashboard")}
             />
+          ) : activeMenu === "coal-fuel-gl" ? (
+            <div className="space-y-6">
+              <FuelConsumptionGLSection />
+            </div>
           ) : activeMenu === "coal-reports" ? (
             <CoalProductionReportView
               user={currentUser}

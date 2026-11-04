@@ -17,6 +17,7 @@ import {
   Truck,
   FileSpreadsheet,
   ClipboardList,
+  Fuel,
   Database,
   Wrench,
   ClipboardCheck,
@@ -93,6 +94,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: "Laporan Produksi",
           icon: ClipboardList,
           badge: "Maintenance",
+        },
+        {
+          id: "coal-fuel-gl",
+          label: "Konsumsi Fuel Operasional",
+          icon: Fuel,
+          badge: "Data GL",
         },
         {
           id: "assetfindr-dashboard",

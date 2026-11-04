@@ -45,7 +45,7 @@ interface CoalProductionReportViewProps {
   onNavigateToDashboard?: () => void;
 }
 
-type ReportTab = "daily" | "weekly" | "monthly";
+type ReportTab = "daily" | "weekly" | "monthly" | "fuel";
 type SortField =
   | "date"
   | "weekNumber"
@@ -678,10 +678,33 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
             <CalendarDays size={14} />
             <span>Rekapitulasi Bulanan ({monthlySummaryList.length} Bulan)</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("fuel")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === "fuel"
+                ? "bg-[#e95623] text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <Fuel size={14} />
+            <span>Konsumsi Fuel Operasional (Data GL)</span>
+          </button>
         </div>
       </div>
 
-      {/* Filter and Search Bar (Screen only) */}
+      {activeTab === "fuel" && (
+        <FuelConsumptionGLSection
+          initialSite={selectedSite === "all" ? "ALL" : selectedSite}
+          productionTonase={filteredSummary.totalProduction}
+          defaultStartDate={startDate}
+          defaultEndDate={endDate}
+        />
+      )}
+
+      {activeTab !== "fuel" && (
+        <>
+          {/* Filter and Search Bar (Screen only) */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3 print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -978,6 +1001,9 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
           </div>
         </div>
       </div>
+
+        </>
+      )}
 
       {/* TAB 1: DAILY PRODUCTION TABLE WITH FULL PAGINATION */}
       {activeTab === "daily" && (
@@ -1832,12 +1858,14 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
       )}
 
       {/* GL Fuel Consumption Section */}
-      <FuelConsumptionGLSection
-        initialSite={selectedSite === "all" ? "ALL" : selectedSite}
-        productionTonase={filteredSummary.totalProduction}
-        defaultStartDate={startDate}
-        defaultEndDate={endDate}
-      />
+      {activeTab !== "fuel" && (
+        <FuelConsumptionGLSection
+          initialSite={selectedSite === "all" ? "ALL" : selectedSite}
+          productionTonase={filteredSummary.totalProduction}
+          defaultStartDate={startDate}
+          defaultEndDate={endDate}
+        />
+      )}
 
       {/* Printable Signature Section (visible only on print) */}
       <div className="hidden print:grid grid-cols-3 gap-8 mt-12 pt-6 border-t border-slate-300 text-center text-xs">
