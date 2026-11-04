@@ -544,13 +544,13 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
           <table className="border-collapse border border-slate-400 text-xs font-sans shadow-2xs">
             <thead>
               <tr className="bg-[#d9ecd9] text-slate-900 font-extrabold">
-                <th className="border border-slate-400 px-8 py-2 text-center min-w-[220px]">
+                <th className="border border-slate-400 px-8 py-2 text-center min-w-55">
                   Kontrol
                 </th>
-                <th className="border border-slate-400 px-6 py-2 text-center min-w-[90px]">
+                <th className="border border-slate-400 px-6 py-2 text-center min-w-22.5">
                   UoM
                 </th>
-                <th className="border border-slate-400 px-8 py-2 text-center min-w-[120px]">
+                <th className="border border-slate-400 px-8 py-2 text-center min-w-30">
                   Total
                 </th>
               </tr>
