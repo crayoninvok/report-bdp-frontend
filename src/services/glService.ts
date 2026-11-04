@@ -78,17 +78,21 @@ export interface GLPreviewData {
 
 
 export interface GLFuelSummary {
-  totalLiters: number;
+  totalProduction: number;
+  totalFuelConsumption: number;
   totalCost: number;
-  totalTransactions: number;
-  avgPricePerLiter: number;
-  siteBreakdown: Array<{
+  totalTransactions?: number;
+  avgPricePerLiter?: number;
+  actFuelRatio: number;
+  planFuelRatio: number;
+  totalLiters?: number;
+  siteBreakdown?: Array<{
     projectArea: string;
     liters: number;
     cost: number;
     transactionCount: number;
   }>;
-  accountBreakdown: Array<{
+  accountBreakdown?: Array<{
     accountCode: string;
     accountName: string;
     liters: number;
@@ -99,10 +103,22 @@ export interface GLFuelSummary {
 
 export interface GLFuelDailyItem {
   date: string;
-  liters: number;
-  cost: number;
-  transactionCount: number;
-  avgPrice: number;
+  dateLabel: string;
+  fuelLiters: number;
+  production: number;
+  frGL: number;
+  planFR: number;
+  liters?: number;
+  cost?: number;
+  transactionCount?: number;
+  avgPrice?: number;
+}
+
+export interface GLFuelWeeklyItem {
+  week: string;
+  frAktual: number | null;
+  frTarget: number;
+  linearTrend: number;
 }
 
 export interface GLFuelFleetItem {
@@ -128,10 +144,15 @@ export interface GLFuelRecentTransaction {
 
 export interface GLFuelConsumptionResponse {
   success: boolean;
+  period?: {
+    startDate: string;
+    endDate: string;
+  };
   summary: GLFuelSummary;
   dailyData: GLFuelDailyItem[];
-  topFleets: GLFuelFleetItem[];
-  recentTransactions: GLFuelRecentTransaction[];
+  weeklyData?: GLFuelWeeklyItem[];
+  topFleets?: GLFuelFleetItem[];
+  recentTransactions?: GLFuelRecentTransaction[];
 }
 
 function getAuthHeaders(isFormData = false): Record<string, string> {
