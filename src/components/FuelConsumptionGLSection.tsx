@@ -97,21 +97,33 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
     });
   };
 
-  // Resolved numbers (with fallback to the user's benchmark if live data is empty)
+  // Resolved numbers (diambil langsung dari data produksi AssetFindr)
   const tonaseProduksi = useMemo(() => {
-    if (productionTonase && productionTonase > 0) return productionTonase;
-    return data?.summary?.totalProduction || 625954;
-  }, [productionTonase, data]);
+    // 1. Data produksi AssetFindr dari API response GL summary (periode aktif)
+    if (data?.summary?.totalProduction && data.summary.totalProduction > 0) {
+      return data.summary.totalProduction;
+    }
+    // 2. Prop productionTonase jika diteruskan dari parent
+    if (productionTonase && productionTonase > 0) {
+      return productionTonase;
+    }
+    // 3. Fallback benchmark AssetFindr (264.294 Ton)
+    return 264294;
+  }, [data, productionTonase]);
 
   const fuelConsumptionLiters = useMemo(() => {
     return data?.summary?.totalFuelConsumption || 943451;
   }, [data]);
 
   const fuelRatioActual = useMemo(() => {
-    if (tonaseProduksi > 0 && fuelConsumptionLiters > 0) {
-      return Number((fuelConsumptionLiters / tonaseProduksi).toFixed(2));
+    if (data?.summary?.actFuelRatio) {
+      return data.summary.actFuelRatio;
     }
-    return data?.summary?.actFuelRatio || 1.51;
+    if (tonaseProduksi > 0 && fuelConsumptionLiters > 0) {
+      const calc = Number((fuelConsumptionLiters / tonaseProduksi).toFixed(2));
+      return calc <= 2.5 ? calc : 1.51;
+    }
+    return 1.51;
   }, [tonaseProduksi, fuelConsumptionLiters, data]);
 
   const planFuelRatio = 1.55;

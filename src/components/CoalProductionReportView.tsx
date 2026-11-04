@@ -696,7 +696,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
       {activeTab === "fuel" && (
         <FuelConsumptionGLSection
           initialSite={selectedSite === "all" ? "ALL" : selectedSite}
-          productionTonase={filteredSummary.totalProduction}
+          productionTonase={startDate || endDate ? filteredSummary.totalProduction : undefined}
           defaultStartDate={startDate}
           defaultEndDate={endDate}
         />
@@ -1861,7 +1861,7 @@ export const CoalProductionReportView: React.FC<CoalProductionReportViewProps> =
       {activeTab !== "fuel" && (
         <FuelConsumptionGLSection
           initialSite={selectedSite === "all" ? "ALL" : selectedSite}
-          productionTonase={filteredSummary.totalProduction}
+          productionTonase={startDate || endDate ? filteredSummary.totalProduction : undefined}
           defaultStartDate={startDate}
           defaultEndDate={endDate}
         />
