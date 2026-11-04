@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { User } from "../types/auth";
 import {
   glService,
@@ -8,35 +8,32 @@ import {
   GLProfitCenterData,
 } from "../services/glService";
 import {
-  TrendingUp,
-  TrendingDown,
   ShieldAlert,
-  ShieldCheck,
   Calendar,
   Building2,
   DollarSign,
   Download,
   RefreshCw,
-  SlidersHorizontal,
-  ChevronDown,
-  ChevronUp,
   Search,
-  PieChart,
   Truck,
-  Layers,
-  FileSpreadsheet,
-  Gauge,
-  Wallet,
-  Sparkles,
-  ArrowRight,
   Lock,
+  ArrowRight,
+  TrendingUp,
+  TrendingDown,
+  Percent,
+  MapPin,
+  Scale,
+  Sparkles,
+  Info,
+  ChevronRight,
+  CheckCircle2,
+  Receipt,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   ResponsiveContainer,
-  ComposedChart,
   BarChart,
   Bar,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -59,13 +56,314 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
   const isAuthorized =
     user?.email?.trim().toLowerCase() === "dzaky.athariqf@bataramining.com";
 
+  // State Management
+  const [periods, setPeriods] = useState<GLPeriodItem[]>([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [profitData, setProfitData] = useState<GLProfitCenterData | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string>("");
+
+  // Rate Kontrak per Ton-KM (Tahun 2026 Default: Rp 1,050.00 ton/km)
+  const [ratePerTonKm, setRatePerTonKm] = useState<number>(1050);
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+
+  // Rata-rata Jarak (KM) dari semua tiket AssetFindr (Default berdasarkan data tiket aktual)
+  const [avgKmOverall, setAvgKmOverall] = useState<number>(82.37);
+  const [avgKmSny, setAvgKmSny] = useState<number>(73.37);
+  const [avgKmMph, setAvgKmMph] = useState<number>(91.37);
+  const [isCustomDistance, setIsCustomDistance] = useState<boolean>(false);
+
+  // Search filter untuk rincian beban GL
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Format currency Rupiah
+  const formatRupiah = (val?: number) => {
+    if (val === undefined || val === null || isNaN(val)) return "Rp 0";
+    return (
+      "Rp " +
+      Math.round(val).toLocaleString("id-ID", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      })
+    );
+  };
+
+  // Format number
+  const formatNum = (val?: number, decimals = 2) => {
+    if (val === undefined || val === null || isNaN(val)) return "0";
+    return val.toLocaleString("id-ID", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  };
+
+  // Load periods on mount
+  useEffect(() => {
+    if (!isAuthorized) return;
+    const loadPeriods = async () => {
+      try {
+        const pList = await glService.getPeriods();
+        setPeriods(pList);
+        if (pList.length > 0 && !selectedPeriodId) {
+          setSelectedPeriodId(pList[0].id);
+        }
+      } catch (err: any) {
+        console.error("Gagal memuat periode GL:", err);
+        setErrorMsg(err.message || "Gagal memuat periode GL");
+      }
+    };
+    loadPeriods();
+  }, [isAuthorized, selectedPeriodId]);
+
+  // Load Profit Center data from API
+  const loadProfitCenterData = useCallback(async () => {
+    if (!isAuthorized) return;
+    try {
+      setIsLoading(true);
+      setErrorMsg("");
+      const res = await glService.getProfitCenter({
+        periodId: selectedPeriodId || undefined,
+        ratePerTonKm,
+        avgKmOverall,
+        avgKmSny,
+        avgKmMph,
+      });
+
+      if (res.success && res.data) {
+        setProfitData(res.data);
+        if (res.data.distances) {
+          if (!isCustomDistance) {
+            setAvgKmOverall(res.data.distances.overall || 82.37);
+            setAvgKmSny(res.data.distances.sny || 73.37);
+            setAvgKmMph(res.data.distances.mph || 91.37);
+          }
+        }
+      } else {
+        setErrorMsg(res.message || "Gagal mengambil data Profit Center.");
+      }
+    } catch (err: any) {
+      console.error("Error loading profit center:", err);
+      setErrorMsg(err.message || "Terjadi kesalahan saat memuat Profit Center.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthorized, selectedPeriodId, ratePerTonKm, avgKmOverall, avgKmSny, avgKmMph, isCustomDistance]);
+
+  useEffect(() => {
+    if (selectedPeriodId) {
+      loadProfitCenterData();
+    }
+  }, [selectedPeriodId, loadProfitCenterData]);
+
+  // ==============================================================
+  // REAL-TIME ENGINE: Kalkulasi rumus instan di client saat slider/input diubah
+  // ==============================================================
+  const calculation = useMemo(() => {
+    // 1. Tonase Produksi (Ton)
+    const tonaseMph = profitData?.production?.mphTon || 0;
+    const tonaseSny = profitData?.production?.snyTon || 0;
+    const totalTonase = profitData?.production?.totalTon || tonaseMph + tonaseSny;
+
+    // 2. Average Distance (KM)
+    const kmSny = avgKmSny;
+    const kmMph = avgKmMph;
+    const weightedAvgKm =
+      totalTonase > 0
+        ? (tonaseSny * kmSny + tonaseMph * kmMph) / totalTonase
+        : avgKmOverall;
+    const kmOverall = isCustomDistance ? avgKmOverall : weightedAvgKm;
+
+    // 3. Rate Kontrak
+    const rate = ratePerTonKm;
+
+    // A. KEUNTUNGAN KOTOR (REVENUE) = Total Tonase * Average Distance (km) * Rate per ton/km
+    const revSny = Math.round(tonaseSny * kmSny * rate);
+    const revMph = Math.round(tonaseMph * kmMph * rate);
+    const keuntunganKotor = revSny + revMph > 0 ? revSny + revMph : Math.round(totalTonase * kmOverall * rate);
+
+    // Beban Biaya GL
+    const opexMph = profitData?.opex?.mph || 0;
+    const opexSny = profitData?.opex?.sny || 0;
+    const opexHof = profitData?.opex?.hof || 0;
+    const totalBebanGL = profitData?.opex?.total || opexMph + opexSny + opexHof;
+
+    // B. KEUNTUNGAN BERSIH = Keuntungan Kotor - Beban Cost yang ada pada GL
+    const keuntunganBersih = keuntunganKotor - totalBebanGL;
+    const keuntunganBersihMph = revMph - opexMph;
+    const keuntunganBersihSny = revSny - opexSny;
+
+    // Margin Persentase (%)
+    const marginPercent = keuntunganKotor > 0 ? (keuntunganBersih / keuntunganKotor) * 100 : 0;
+    const marginMph = revMph > 0 ? (keuntunganBersihMph / revMph) * 100 : 0;
+    const marginSny = revSny > 0 ? (keuntunganBersihSny / revSny) * 100 : 0;
+
+    // Ton-KM
+    const tonKmSny = tonaseSny * kmSny;
+    const tonKmMph = tonaseMph * kmMph;
+    const tonKmTotal = totalTonase * kmOverall;
+
+    // Net Profit per Ton (Rp/Ton)
+    const netPerTon = totalTonase > 0 ? Math.round(keuntunganBersih / totalTonase) : 0;
+    const revPerTon = totalTonase > 0 ? Math.round(keuntunganKotor / totalTonase) : 0;
+    const costPerTon = totalTonase > 0 ? Math.round(totalBebanGL / totalTonase) : 0;
+
+    return {
+      tonaseSny,
+      tonaseMph,
+      totalTonase,
+      kmSny,
+      kmMph,
+      kmOverall,
+      rate,
+      tonKmSny,
+      tonKmMph,
+      tonKmTotal,
+      revSny,
+      revMph,
+      keuntunganKotor,
+      opexMph,
+      opexSny,
+      opexHof,
+      totalBebanGL,
+      keuntunganBersih,
+      keuntunganBersihMph,
+      keuntunganBersihSny,
+      marginPercent,
+      marginMph,
+      marginSny,
+      netPerTon,
+      revPerTon,
+      costPerTon,
+    };
+  }, [profitData, ratePerTonKm, avgKmOverall, avgKmSny, avgKmMph, isCustomDistance]);
+
+  // Chart Data Comparison
+  const chartData = useMemo(() => {
+    return [
+      {
+        name: "Muara Pahu (MPH)",
+        revenue: calculation.revMph,
+        cost: calculation.opexMph,
+        profit: calculation.keuntunganBersihMph,
+      },
+      {
+        name: "Senyiur (SNY)",
+        revenue: calculation.revSny,
+        cost: calculation.opexSny,
+        profit: calculation.keuntunganBersihSny,
+      },
+      {
+        name: "Total Konsolidasi",
+        revenue: calculation.keuntunganKotor,
+        cost: calculation.totalBebanGL,
+        profit: calculation.keuntunganBersih,
+      },
+    ];
+  }, [calculation]);
+
+  // Filtered GL Expense Summaries
+  const filteredSummaries = useMemo(() => {
+    if (!profitData?.summaries) return [];
+    if (!searchQuery.trim()) return profitData.summaries;
+    const q = searchQuery.toLowerCase();
+    return profitData.summaries.filter(
+      (s) =>
+        s.accountCode.toLowerCase().includes(q) ||
+        s.accountName.toLowerCase().includes(q)
+    );
+  }, [profitData?.summaries, searchQuery]);
+
+  // Export Table Data to CSV
+  const handleExportCSV = () => {
+    if (!profitData) return;
+    const rows = [
+      ["PROFIT CENTER - LAPORAN KEUANGAN & REVENUE REAL-TIME"],
+      [`Periode: ${profitData.period?.periodName || "-"}`],
+      [`Tahun Anggaran: ${selectedYear} | Rate: Rp ${ratePerTonKm} / Ton-KM`],
+      [""],
+      ["RUMUS PERHITUNGAN:"],
+      ["A. Keuntungan Kotor = Total Tonase * Average Distance (km) * Rate per ton (1.050)"],
+      ["B. Keuntungan Bersih = Keuntungan Kotor - Beban Cost yang ada pada GL"],
+      [""],
+      [
+        "Jobsite",
+        "Tonase (Ton)",
+        "Avg Distance (KM)",
+        "Total Ton-KM",
+        "Rate (Rp/Ton-KM)",
+        "Keuntungan Kotor / Revenue (Rp)",
+        "Beban Cost GL (Rp)",
+        "Keuntungan Bersih (Rp)",
+        "Margin (%)",
+      ],
+      [
+        "Muara Pahu (MPH)",
+        calculation.tonaseMph,
+        calculation.kmMph.toFixed(2),
+        calculation.tonKmMph.toFixed(0),
+        calculation.rate,
+        calculation.revMph,
+        calculation.opexMph,
+        calculation.keuntunganBersihMph,
+        `${calculation.marginMph.toFixed(2)}%`,
+      ],
+      [
+        "Senyiur (SNY)",
+        calculation.tonaseSny,
+        calculation.kmSny.toFixed(2),
+        calculation.tonKmSny.toFixed(0),
+        calculation.rate,
+        calculation.revSny,
+        calculation.opexSny,
+        calculation.keuntunganBersihSny,
+        `${calculation.marginSny.toFixed(2)}%`,
+      ],
+      [
+        "Head Office (HOF Overhead)",
+        0,
+        0,
+        0,
+        0,
+        0,
+        calculation.opexHof,
+        -calculation.opexHof,
+        "-",
+      ],
+      [
+        "KONSOLIDASI (TOTAL)",
+        calculation.totalTonase,
+        calculation.kmOverall.toFixed(2),
+        calculation.tonKmTotal.toFixed(0),
+        calculation.rate,
+        calculation.keuntunganKotor,
+        calculation.totalBebanGL,
+        calculation.keuntunganBersih,
+        `${calculation.marginPercent.toFixed(2)}%`,
+      ],
+    ];
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((e) => e.map((val) => `"${val}"`).join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `Profit_Center_${selectedYear}_${profitData.period?.periodName || "report"}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // If not authorized, render Access Denied Screen immediately
   if (!isAuthorized) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-2xl border border-rose-200 shadow-xl p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-rose-500 via-amber-500 to-rose-600" />
-          
+
           <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-5 shadow-xs">
             <Lock className="w-8 h-8" />
           </div>
@@ -98,7 +396,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               onClick={onNavigateBack}
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-xs"
             >
-              Kembali ke Dashboard Cost
+              Kembali ke Menu Utama
             </button>
           )}
         </div>
@@ -106,965 +404,750 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     );
   }
 
-  // --- STATE FOR AUTHORIZED USER (DZAKY) ---
-  const [periods, setPeriods] = useState<GLPeriodItem[]>([]);
-  const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
-  const [profitData, setProfitData] = useState<GLProfitCenterData | null>(null);
-  const [selectedSiteFilter, setSelectedSiteFilter] = useState<"ALL" | "MPH" | "SNY" | "HOF">("ALL");
-
-  // Tariff simulation controls (IDR / Ton)
-  const [tariffMph, setTariffMph] = useState<number>(85000);
-  const [tariffSny, setTariffSny] = useState<number>(90000);
-  const [isSimulatorOpen, setIsSimulatorOpen] = useState<boolean>(false);
-
-  // Table filters & controls
-  const [tableSearch, setTableSearch] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Formatters
-  const formatIDR = (val: number | null | undefined, abbreviate = false) => {
-    if (val === null || val === undefined) return "Rp 0";
-    if (abbreviate) {
-      if (Math.abs(val) >= 1_000_000_000) {
-        return `Rp ${(val / 1_000_000_000).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} M`;
-      }
-      if (Math.abs(val) >= 1_000_000) {
-        return `Rp ${(val / 1_000_000).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Jt`;
-      }
-    }
-    return `Rp ${Math.round(val).toLocaleString("id-ID")}`;
-  };
-
-  const formatNumber = (val: number | null | undefined, decimals = 0) => {
-    if (val === null || val === undefined) return "0";
-    return val.toLocaleString("id-ID", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  };
-
-  // Fetch initial periods
-  useEffect(() => {
-    const fetchPeriods = async () => {
-      try {
-        const periodList = await glService.getPeriods();
-        setPeriods(periodList);
-        if (periodList.length > 0) {
-          setSelectedPeriodId(periodList[0].id);
-        }
-      } catch (err: any) {
-        console.error("Error fetching periods:", err);
-      }
-    };
-    fetchPeriods();
-  }, []);
-
-  // Fetch profit center data when period or tariffs change
-  const fetchProfitCenterData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await glService.getProfitCenter({
-        periodId: selectedPeriodId || undefined,
-        tariffMph,
-        tariffSny,
-      });
-
-      if (res.success && res.data) {
-        setProfitData(res.data);
-      } else {
-        setError(res.message || "Gagal memuat data Profit Center.");
-      }
-    } catch (err: any) {
-      console.error("Error loading profit center:", err);
-      setError(err.message || "Gagal memuat data Profit Center dari server.");
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProfitCenterData();
-  }, [selectedPeriodId, tariffMph, tariffSny]);
-
-  // Handle refresh
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchProfitCenterData();
-  };
-
-  // Export to CSV
-  const handleExportCSV = () => {
-    if (!profitData) return;
-
-    const headers = [
-      "Kode Akun",
-      "Nama Akun",
-      "Muara Pahu (MPH)",
-      "Senyiur (SNY)",
-      "Head Office (HOF)",
-      "Total Konsolidasi",
-      "Biaya per Ton (Rp)",
-    ];
-
-    const rows = profitData.summaries.map((s) => [
-      `"${s.accountCode}"`,
-      `"${s.accountName.replace(/"/g, '""')}"`,
-      s.mphAmount,
-      s.snyAmount,
-      s.hofAmount,
-      s.grandTotal,
-      profitData.production.totalTon > 0
-        ? Math.round(s.grandTotal / profitData.production.totalTon)
-        : 0,
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `Profit_Center_Report_${profitData.period.periodName.replace(/[^a-zA-Z0-9]/g, "_")}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Filtered summaries for financial table
-  const filteredSummaries = useMemo(() => {
-    if (!profitData) return [];
-    if (!tableSearch) return profitData.summaries;
-    const q = tableSearch.toLowerCase();
-    return profitData.summaries.filter(
-      (s) =>
-        s.accountCode.toLowerCase().includes(q) ||
-        s.accountName.toLowerCase().includes(q)
-    );
-  }, [profitData, tableSearch]);
-
-  // Chart data: Site Comparison
-  const siteComparisonChartData = useMemo(() => {
-    if (!profitData) return [];
-    return [
-      {
-        site: "Muara Pahu (MPH)",
-        Pendapatan: profitData.revenue.mph,
-        Beban: profitData.opex.mph,
-        Laba: profitData.profit.grossMph,
-        MarginPct: profitData.profit.marginPercentMph,
-      },
-      {
-        site: "Senyiur (SNY)",
-        Pendapatan: profitData.revenue.sny,
-        Beban: profitData.opex.sny,
-        Laba: profitData.profit.grossSny,
-        MarginPct: profitData.profit.marginPercentSny,
-      },
-      {
-        site: "Konsolidasi (Total)",
-        Pendapatan: profitData.revenue.total,
-        Beban: profitData.opex.total,
-        Laba: profitData.profit.netConsolidated,
-        MarginPct: profitData.profit.marginPercentConsolidated,
-      },
-    ];
-  }, [profitData]);
-
-  // Chart data: Account Groups
-  const accountGroupChartData = useMemo(() => {
-    if (!profitData) return [];
-    return profitData.accountGroups.map((g) => ({
-      name: g.group,
-      MPH: g.mph,
-      SNY: g.sny,
-      HOF: g.hof,
-      Total: g.total,
-    }));
-  }, [profitData]);
-
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Top Banner & Security Header */}
-      <div className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-lg border border-slate-700/80 relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-linear-to-l from-emerald-500/10 via-batara-orange-500/5 to-transparent pointer-events-none" />
+    <div className="space-y-6 pb-16">
+      {/* ============================================================== */}
+      {/* 1. TOP HEADER & EXCLUSIVE SECURITY BADGE */}
+      {/* ============================================================== */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 md:p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-emerald-500 via-teal-500 to-[#e95623]" />
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Verified Executive Access
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Executive Confidential • Profit Center
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                Tahun Anggaran {selectedYear}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-mono text-emerald-800 bg-emerald-100/70">
                 dzaky.athariqf@bataramining.com
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
-              <TrendingUp className="w-6 h-6 text-emerald-400 shrink-0" />
-              Profit Center Analytics
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-[#e95623]" />
+              Profit Center & Real-Time Revenue Engine
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              Analisis performa finansial, kontribusi margin laba operasional, dan struktur biaya per unit kerja (Muara Pahu & Senyiur) berbasis data buku besar (GL) aktual.
+            <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Analisis performa finansial otomatis berbasis data produksi AssetFindr, jarak hauling aktual tiket jembatan timbang, dan beban operasional General Ledger (GL).
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Controls: Periode GL Selector & Refresh */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+              <Calendar className="w-4 h-4 text-slate-400" />
+              <select
+                value={selectedPeriodId}
+                onChange={(e) => setSelectedPeriodId(e.target.value)}
+                disabled={isLoading}
+                className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
+              >
+                {periods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.periodName} ({formatRupiah(p.totalDebet)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
-              onClick={() => setIsSimulatorOpen(!isSimulatorOpen)}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${
-                isSimulatorOpen
-                  ? "bg-amber-500 text-slate-950 shadow-amber-500/20"
-                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
-              }`}
+              onClick={loadProfitCenterData}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-xs disabled:opacity-50"
             >
-              <SlidersHorizontal className="w-4 h-4 text-amber-300" />
-              <span>Simulasi Tarif Hauling</span>
-              {isSimulatorOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+              <span>{isLoading ? "Menghitung..." : "Segarkan"}</span>
             </button>
 
             <button
               onClick={handleExportCSV}
-              disabled={!profitData}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+              disabled={isLoading || !profitData}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
-              Export CSV
-            </button>
-
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading || isRefreshing}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors shadow-xs disabled:opacity-50"
-              title="Perbarui Data"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-emerald-400" : ""}`} />
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
             </button>
           </div>
         </div>
 
-        {/* Collapsible Tariff Simulation Box */}
-        {isSimulatorOpen && (
-          <div className="mt-5 pt-5 border-t border-slate-700/80 bg-slate-800/60 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Parameter Simulasi Tarif Kontrak Hauling (Rp / Ton)
-              </span>
-              <span className="text-[11px] text-slate-400">
-                Ubah nilai untuk melihat dampak seketika pada pendapatan dan margin laba rugi
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                  Tarif Site Muara Pahu (MPH)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
-                  <input
-                    type="number"
-                    value={tariffMph}
-                    onChange={(e) => setTariffMph(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-amber-400"
-                    step="1000"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                  Tarif Site Senyiur (SNY)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
-                  <input
-                    type="number"
-                    value={tariffSny}
-                    onChange={(e) => setTariffSny(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-amber-400"
-                    step="1000"
-                  />
-                </div>
-              </div>
-
-              <div className="sm:col-span-2 flex items-end gap-2">
-                <button
-                  onClick={() => {
-                    setTariffMph(85000);
-                    setTariffSny(90000);
-                  }}
-                  className="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition-colors cursor-pointer"
-                >
-                  Reset Standar (MPH 85rb / SNY 90rb)
-                </button>
-                <span className="text-[10px] text-slate-400 leading-tight">
-                  Kalkulasi otomatis mengalikan tonase produksi aktual dengan tarif terpilih.
-                </span>
-              </div>
-            </div>
+        {errorMsg && (
+          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+            <Info className="w-4 h-4 shrink-0 text-rose-600" />
+            <span>{errorMsg}</span>
           </div>
         )}
       </div>
 
-      {/* Filter Bar: GL Period & Profit Center Selector */}
-      <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <Calendar className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
-          <span className="text-xs font-bold text-slate-700 whitespace-nowrap">Periode GL:</span>
-          <select
-            value={selectedPeriodId}
-            onChange={(e) => setSelectedPeriodId(e.target.value)}
-            className="w-full md:w-72 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
-          >
-            {periods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.periodName} ({p.fileName})
-              </option>
-            ))}
-          </select>
+      {/* ============================================================== */}
+      {/* 2. FORMULA BLUEPRINT BANNER (RUMUS RESMI SESUAI REQUEST) */}
+      {/* ============================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Rumus A: Keuntungan Kotor */}
+        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white border border-slate-700/60 shadow-md relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-black text-xs flex items-center justify-center">
+                A
+              </span>
+              <h3 className="text-sm font-bold tracking-tight text-white">
+                Rumus Keuntungan Kotor (Revenue)
+              </h3>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              Real-Time Formula
+            </span>
+          </div>
+
+          <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-700/60 mb-3 font-mono text-xs text-emerald-300 leading-relaxed">
+            <p className="font-bold text-white">
+              Keuntungan Kotor = Total Tonase (Senyiur + Muara Pahu) × Average KM × Rate per Ton (Rp 1.050)
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
+              <p className="text-[10px] text-slate-400">Total Tonase</p>
+              <p className="font-bold text-slate-200 mt-0.5">{formatNum(calculation.totalTonase, 0)} Ton</p>
+            </div>
+            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
+              <p className="text-[10px] text-slate-400">Avg Distance</p>
+              <p className="font-bold text-slate-200 mt-0.5">{formatNum(calculation.kmOverall, 2)} KM</p>
+            </div>
+            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
+              <p className="text-[10px] text-slate-400">Rate Kontrak</p>
+              <p className="font-bold text-emerald-400 mt-0.5">Rp {formatNum(calculation.rate, 0)}/Ton-KM</p>
+            </div>
+          </div>
         </div>
 
-        {/* Site Filter Pills */}
-        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          <span className="text-xs font-bold text-slate-500 mr-1 whitespace-nowrap">Fokus Tampilan:</span>
-          {(["ALL", "MPH", "SNY", "HOF"] as const).map((site) => (
-            <button
-              key={site}
-              onClick={() => setSelectedSiteFilter(site)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                selectedSiteFilter === site
-                  ? "bg-slate-900 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {site === "ALL"
-                ? "Semua Unit (Konsolidasi)"
-                : site === "MPH"
-                ? "Muara Pahu (MPH)"
-                : site === "SNY"
-                ? "Senyiur (SNY)"
-                : "Head Office (HOF)"}
-            </button>
-          ))}
+        {/* Rumus B: Keuntungan Bersih */}
+        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white border border-slate-700/60 shadow-md relative overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-[#e95623]/20 text-[#e95623] border border-[#e95623]/30 font-black text-xs flex items-center justify-center">
+                B
+              </span>
+              <h3 className="text-sm font-bold tracking-tight text-white">
+                Rumus Keuntungan Bersih (Net Profit)
+              </h3>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Final Margin
+            </span>
+          </div>
+
+          <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-700/60 mb-3 font-mono text-xs text-amber-300 leading-relaxed">
+            <p className="font-bold text-white">
+              Keuntungan Bersih = Keuntungan Kotor − Beban Cost yang ada pada GL
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
+              <p className="text-[10px] text-slate-400">Keuntungan Kotor</p>
+              <p className="font-bold text-emerald-400 mt-0.5">{formatRupiah(calculation.keuntunganKotor)}</p>
+            </div>
+            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
+              <p className="text-[10px] text-slate-400">Beban Cost GL</p>
+              <p className="font-bold text-rose-400 mt-0.5">{formatRupiah(calculation.totalBebanGL)}</p>
+            </div>
+            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
+              <p className="text-[10px] text-slate-400">Net Profit Margin</p>
+              <p className={`font-bold mt-0.5 ${calculation.marginPercent >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                {calculation.marginPercent.toFixed(1)}%
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Loading & Error States */}
-      {isLoading && (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-10 h-10 rounded-full border-3 border-emerald-500 border-t-transparent animate-spin" />
-          <p className="text-xs font-bold text-slate-600">Menghitung analitika Profit Center...</p>
+      {/* ============================================================== */}
+      {/* 3. INTERACTIVE PARAMETER CONTROLLER (UBAH RATE & JARAK REAL-TIME) */}
+      {/* ============================================================== */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Scale className="w-4 h-4 text-[#e95623]" />
+              Parameter Kontrak & Jarak Hauling Real-Time
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Sesuaikan rate kontrak tahun 2026 atau simulasi jarak hauling untuk melihat perubahan laba rugi secara langsung.
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+              setRatePerTonKm(1050);
+              setSelectedYear(2026);
+              setIsCustomDistance(false);
+              setAvgKmOverall(profitData?.distances?.overall || 82.37);
+              setAvgKmSny(profitData?.distances?.sny || 73.37);
+              setAvgKmMph(profitData?.distances?.mph || 91.37);
+            }}
+            className="text-xs font-semibold text-[#e95623] hover:underline self-start md:self-auto"
+          >
+            Reset ke Default 2026 (Rp 1.050/Ton-KM)
+          </button>
         </div>
-      )}
 
-      {error && !isLoading && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-          {error}
-        </div>
-      )}
-
-      {/* Main KPI Summary Dashboard */}
-      {!isLoading && profitData && (
-        <>
-          {/* Executive KPI Cards (Row 1) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Revenue */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs relative overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Total Pendapatan (Revenue)
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <DollarSign className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {formatIDR(
-                  selectedSiteFilter === "MPH"
-                    ? profitData.revenue.mph
-                    : selectedSiteFilter === "SNY"
-                    ? profitData.revenue.sny
-                    : profitData.revenue.total
-                )}
-              </div>
-              <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Tonase: {formatNumber(profitData.production.totalTon)} Ton</span>
-                <span className="font-semibold text-emerald-600">
-                  {selectedSiteFilter === "MPH"
-                    ? `Tarif: Rp ${formatNumber(profitData.tariffs.mph)}/T`
-                    : selectedSiteFilter === "SNY"
-                    ? `Tarif: Rp ${formatNumber(profitData.tariffs.sny)}/T`
-                    : `Gabungan 2 Site`}
-                </span>
-              </div>
-            </div>
-
-            {/* Card 2: Operating Expenses (OPEX) */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs relative overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Beban Operasional (GL OPEX)
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                  <Wallet className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-xl sm:text-2xl font-black text-rose-600 tracking-tight">
-                {formatIDR(
-                  selectedSiteFilter === "MPH"
-                    ? profitData.opex.mph
-                    : selectedSiteFilter === "SNY"
-                    ? profitData.opex.sny
-                    : selectedSiteFilter === "HOF"
-                    ? profitData.opex.hof
-                    : profitData.opex.total
-                )}
-              </div>
-              <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Direct Site: {formatIDR(profitData.opex.directSite, true)}</span>
-                <span className="font-semibold text-slate-600">
-                  Cost/Ton: Rp {formatNumber(profitData.profit.costPerTonConsolidated)}
-                </span>
-              </div>
-            </div>
-
-            {/* Card 3: Operating Profit (EBITDA) */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs relative overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Laba Operasional (EBITDA)
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-              </div>
-              <div
-                className={`text-xl sm:text-2xl font-black tracking-tight ${
-                  (selectedSiteFilter === "MPH"
-                    ? profitData.profit.grossMph
-                    : selectedSiteFilter === "SNY"
-                    ? profitData.profit.grossSny
-                    : profitData.profit.netConsolidated) >= 0
-                    ? "text-emerald-600"
-                    : "text-rose-600"
-                }`}
-              >
-                {formatIDR(
-                  selectedSiteFilter === "MPH"
-                    ? profitData.profit.grossMph
-                    : selectedSiteFilter === "SNY"
-                    ? profitData.profit.grossSny
-                    : profitData.profit.netConsolidated
-                )}
-              </div>
-              <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>
-                  Margin:{" "}
-                  <strong className="text-slate-800">
-                    {selectedSiteFilter === "MPH"
-                      ? profitData.profit.marginPercentMph
-                      : selectedSiteFilter === "SNY"
-                      ? profitData.profit.marginPercentSny
-                      : profitData.profit.marginPercentConsolidated}
-                    %
-                  </strong>
-                </span>
-                <span className="font-semibold text-blue-600">
-                  Laba/Ton: Rp {formatNumber(profitData.profit.profitPerTonConsolidated)}
-                </span>
-              </div>
-            </div>
-
-            {/* Card 4: Executive Efficiency Ratio */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs relative overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Rasio Margin & Efisiensi
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <Gauge className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {profitData.profit.marginPercentConsolidated}%
-              </div>
-              <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Cost to Revenue:</span>
-                <span className="font-bold text-slate-700">
-                  {profitData.revenue.total > 0
-                    ? ((profitData.opex.total / profitData.revenue.total) * 100).toFixed(1)
-                    : 0}
-                  %
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Unit Comparison Cards (MPH vs SNY vs HOF) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Muara Pahu (MPH) Card */}
-            <div
-              className={`rounded-2xl p-5 border transition-all ${
-                selectedSiteFilter === "MPH" || selectedSiteFilter === "ALL"
-                  ? "bg-white border-emerald-300 shadow-md ring-1 ring-emerald-400/20"
-                  : "bg-slate-50/70 border-slate-200 opacity-60"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                  <h3 className="font-black text-sm text-slate-900">Site Muara Pahu (MPH)</h3>
-                </div>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Main Operating Hub
-                </span>
-              </div>
-
-              <div className="space-y-2 text-xs pt-1">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Tonase Produksi:</span>
-                  <span className="font-bold text-slate-800">{formatNumber(profitData.production.mphTon)} Ton</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Tarif Kontrak:</span>
-                  <span className="font-bold text-slate-800">Rp {formatNumber(profitData.tariffs.mph)} / Ton</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Pendapatan:</span>
-                  <span className="font-black text-emerald-600">{formatIDR(profitData.revenue.mph, true)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Beban Operasional:</span>
-                  <span className="font-bold text-rose-600">{formatIDR(profitData.opex.mph, true)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Laba Operasi (Margin):</span>
-                  <span className="font-black text-slate-900">{formatIDR(profitData.profit.grossMph, true)}</span>
-                </div>
-                <div className="flex justify-between pt-1 font-bold">
-                  <span className="text-slate-600">Margin Kontribusi:</span>
-                  <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    {profitData.profit.marginPercentMph}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Senyiur (SNY) Card */}
-            <div
-              className={`rounded-2xl p-5 border transition-all ${
-                selectedSiteFilter === "SNY" || selectedSiteFilter === "ALL"
-                  ? "bg-white border-amber-300 shadow-md ring-1 ring-amber-400/20"
-                  : "bg-slate-50/70 border-slate-200 opacity-60"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-amber-500" />
-                  <h3 className="font-black text-sm text-slate-900">Site Senyiur (SNY)</h3>
-                </div>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
-                  Expansion Site
-                </span>
-              </div>
-
-              <div className="space-y-2 text-xs pt-1">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Tonase Produksi:</span>
-                  <span className="font-bold text-slate-800">{formatNumber(profitData.production.snyTon)} Ton</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Tarif Kontrak:</span>
-                  <span className="font-bold text-slate-800">Rp {formatNumber(profitData.tariffs.sny)} / Ton</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Pendapatan:</span>
-                  <span className="font-black text-emerald-600">{formatIDR(profitData.revenue.sny, true)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Beban Operasional:</span>
-                  <span className="font-bold text-rose-600">{formatIDR(profitData.opex.sny, true)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Laba Operasi (Margin):</span>
-                  <span className="font-black text-slate-900">{formatIDR(profitData.profit.grossSny, true)}</span>
-                </div>
-                <div className="flex justify-between pt-1 font-bold">
-                  <span className="text-slate-600">Margin Kontribusi:</span>
-                  <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    {profitData.profit.marginPercentSny}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Head Office (HOF) Corporate Center */}
-            <div
-              className={`rounded-2xl p-5 border transition-all ${
-                selectedSiteFilter === "HOF" || selectedSiteFilter === "ALL"
-                  ? "bg-white border-blue-300 shadow-md ring-1 ring-blue-400/20"
-                  : "bg-slate-50/70 border-slate-200 opacity-60"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-blue-500" />
-                  <h3 className="font-black text-sm text-slate-900">Head Office (HOF)</h3>
-                </div>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-                  Corporate Overhead
-                </span>
-              </div>
-
-              <div className="space-y-2 text-xs pt-1">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Fungsi:</span>
-                  <span className="font-semibold text-slate-800">Shared Services & Management</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Beban Administrasi HOF:</span>
-                  <span className="font-bold text-rose-600">{formatIDR(profitData.opex.hof)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Rasio terhadap OPEX:</span>
-                  <span className="font-bold text-slate-800">
-                    {profitData.opex.total > 0
-                      ? ((profitData.opex.hof / profitData.opex.total) * 100).toFixed(2)
-                      : 0}
-                    %
-                  </span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Beban per Ton:</span>
-                  <span className="font-bold text-slate-800">
-                    Rp{" "}
-                    {profitData.production.totalTon > 0
-                      ? Math.round(profitData.opex.hof / profitData.production.totalTon)
-                      : 0}
-                  </span>
-                </div>
-                <div className="mt-3 p-2 rounded-lg bg-blue-50/80 text-[11px] text-blue-800 border border-blue-200/60 leading-tight">
-                  Overhead HOF dialokasikan secara proporsional untuk mendukung kelancaran operasional 2 site.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Visual Performance Charts (Row 2) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Chart 1: Site Financial Comparison */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-extrabold text-slate-900">
-                    Perbandingan Finansial Profit Center
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Pendapatan vs Beban Operasional vs Laba Kontribusi (Rp)
-                  </p>
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                  Dalam Milyar IDR
-                </span>
-              </div>
-
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={siteComparisonChartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="site" tick={{ fontSize: 11, fill: "#475569" }} />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: "#64748b" }}
-                      tickFormatter={(val) => `${(val / 1_000_000_000).toFixed(1)}M`}
-                    />
-                    <Tooltip
-                      formatter={(value: any, name: any) => [formatIDR(value), name]}
-                      contentStyle={{
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
-                    <Bar dataKey="Pendapatan" fill="#10b981" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Beban" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Laba" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Chart 2: Cost Structure by Account Group */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-extrabold text-slate-900">
-                    Struktur Beban per Kelompok Akun
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Distribusi alokasi biaya terbesar di seluruh Profit Center
-                  </p>
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                  Buku Besar (GL)
-                </span>
-              </div>
-
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={accountGroupChartData.slice(0, 6)}
-                    layout="vertical"
-                    margin={{ top: 5, right: 20, left: 60, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                    <XAxis
-                      type="number"
-                      tick={{ fontSize: 10, fill: "#64748b" }}
-                      tickFormatter={(val) => `${(val / 1_000_000_000).toFixed(1)}M`}
-                    />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      tick={{ fontSize: 9, fill: "#334155" }}
-                      width={100}
-                    />
-                    <Tooltip
-                      formatter={(value: any, name: any) => [formatIDR(value), name]}
-                      contentStyle={{
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "5px" }} />
-                    <Bar dataKey="MPH" stackId="a" fill="#059669" />
-                    <Bar dataKey="SNY" stackId="a" fill="#d97706" />
-                    <Bar dataKey="HOF" stackId="a" fill="#2563eb" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* Top 10 Cost Centers / Armada Unit */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-emerald-600" />
-                  Top Cost Center / Armada Unit Terbesar
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Konsumsi biaya terbesar berdasarkan unit armada Prime Mover (PM) & Support
-                </p>
-              </div>
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                {profitData.topCostCenters.length} Cost Center Terpantau
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Rate per Ton-KM (Tahun 2026) */}
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-700">
+                Rate per Ton/KM (Tahun {selectedYear})
+              </label>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                2026 Rate
               </span>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {profitData.topCostCenters.slice(0, 10).map((cc, idx) => (
-                <div
-                  key={cc.costCenter}
-                  className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 transition-all shadow-2xs"
+            <div className="relative">
+              <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
+              <input
+                type="number"
+                step="25"
+                min="100"
+                value={ratePerTonKm}
+                onChange={(e) => setRatePerTonKm(Math.max(0, parseFloat(e.target.value) || 0))}
+                className="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-3 py-1.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623]"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 mt-2">
+              {[1000, 1050, 1100, 1150].map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => setRatePerTonKm(preset)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                    ratePerTonKm === preset
+                      ? "bg-[#e95623] text-white"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-xs font-black text-slate-900">{cc.costCenter}</span>
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
-                        cc.projectArea === "MPH"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : cc.projectArea === "SNY"
-                          ? "bg-amber-50 text-amber-700"
-                          : "bg-blue-50 text-blue-700"
-                      }`}
-                    >
-                      {cc.projectArea}
-                    </span>
-                  </div>
-                  <div className="text-xs font-black text-slate-800">{formatIDR(cc.totalCost, true)}</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">{cc.transactionCount} Transaksi</div>
-                </div>
+                  {preset}
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Comprehensive P&L Financial Statement Table */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-[#e95623]" />
-                  Laporan Laba Rugi Profit Center (Executive Financial Statement)
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Rincian akun beban GL terpetakan per Profit Center Muara Pahu, Senyiur, dan Head Office
-                </p>
-              </div>
-
-              {/* Search in Table */}
-              <div className="relative w-full md:w-64">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Cari kode atau nama akun..."
-                  value={tableSearch}
-                  onChange={(e) => setTableSearch(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#e95623]"
-                />
-              </div>
+          {/* Rata-rata Jarak Tiket Muara Pahu */}
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-700">
+                Avg Distance Muara Pahu (MPH)
+              </label>
+              <span className="text-[10px] text-slate-400">Tiket Aktif</span>
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="py-2.5 px-3 min-w-25">Kode Akun</th>
-                    <th className="py-2.5 px-3 min-w-55">Nama Akun Beban (GL)</th>
-                    <th className="py-2.5 px-3 text-right min-w-32.5">Muara Pahu (MPH)</th>
-                    <th className="py-2.5 px-3 text-right min-w-32.5">Senyiur (SNY)</th>
-                    <th className="py-2.5 px-3 text-right min-w-27.5">Head Office (HOF)</th>
-                    <th className="py-2.5 px-3 text-right min-w-35 bg-slate-200/50">Konsolidasi (Total)</th>
-                    <th className="py-2.5 px-3 text-right min-w-25">Kontribusi (%)</th>
-                    <th className="py-2.5 px-3 text-right min-w-27.5">Biaya / Ton</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {/* Revenue Summary Row */}
-                  <tr className="bg-emerald-50/70 font-black text-emerald-950 border-b border-emerald-200">
-                    <td className="py-2.5 px-3 font-mono text-[11px]">4000-0000</td>
-                    <td className="py-2.5 px-3">PENDAPATAN HAULING (SIMULASI REVENUE)</td>
-                    <td className="py-2.5 px-3 text-right text-emerald-700 font-mono">
-                      {formatIDR(profitData.revenue.mph)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-emerald-700 font-mono">
-                      {formatIDR(profitData.revenue.sny)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-slate-400 font-mono">-</td>
-                    <td className="py-2.5 px-3 text-right text-emerald-800 font-mono bg-emerald-100/60 font-black">
-                      {formatIDR(profitData.revenue.total)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">100.0%</td>
-                    <td className="py-2.5 px-3 text-right font-mono">
-                      Rp{" "}
-                      {formatNumber(
-                        profitData.production.totalTon > 0
-                          ? Math.round(profitData.revenue.total / profitData.production.totalTon)
-                          : 0
-                      )}
-                    </td>
-                  </tr>
-
-                  {/* List of GL Account Rows */}
-                  {filteredSummaries.map((s) => {
-                    const contributionPct =
-                      profitData.opex.total > 0
-                        ? ((s.grandTotal / profitData.opex.total) * 100).toFixed(2)
-                        : "0";
-                    const costPerTon =
-                      profitData.production.totalTon > 0
-                        ? Math.round(s.grandTotal / profitData.production.totalTon)
-                        : 0;
-
-                    return (
-                      <tr key={s.accountCode} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2 px-3 font-mono text-[11px] text-slate-600 font-bold">
-                          {s.accountCode}
-                        </td>
-                        <td className="py-2 px-3 text-slate-800 font-medium">{s.accountName}</td>
-                        <td className="py-2 px-3 text-right font-mono text-slate-700">
-                          {formatIDR(s.mphAmount)}
-                        </td>
-                        <td className="py-2 px-3 text-right font-mono text-slate-700">
-                          {formatIDR(s.snyAmount)}
-                        </td>
-                        <td className="py-2 px-3 text-right font-mono text-slate-700">
-                          {formatIDR(s.hofAmount)}
-                        </td>
-                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 bg-slate-50">
-                          {formatIDR(s.grandTotal)}
-                        </td>
-                        <td className="py-2 px-3 text-right text-slate-500">{contributionPct}%</td>
-                        <td className="py-2 px-3 text-right font-mono text-slate-600">
-                          Rp {formatNumber(costPerTon)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-
-                  {/* Total OPEX Row */}
-                  <tr className="bg-rose-50/70 font-black text-rose-950 border-t-2 border-rose-200">
-                    <td className="py-2.5 px-3 font-mono text-[11px]">5000-0000</td>
-                    <td className="py-2.5 px-3 uppercase">TOTAL BEBAN OPERASIONAL (GL OPEX)</td>
-                    <td className="py-2.5 px-3 text-right text-rose-700 font-mono">
-                      {formatIDR(profitData.opex.mph)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-rose-700 font-mono">
-                      {formatIDR(profitData.opex.sny)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-rose-700 font-mono">
-                      {formatIDR(profitData.opex.hof)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-rose-800 font-mono bg-rose-100/60 font-black">
-                      {formatIDR(profitData.opex.total)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">100.0%</td>
-                    <td className="py-2.5 px-3 text-right font-mono">
-                      Rp {formatNumber(profitData.profit.costPerTonConsolidated)}
-                    </td>
-                  </tr>
-
-                  {/* Net Operating Profit / EBITDA Row */}
-                  <tr className="bg-slate-900 text-white font-black text-sm">
-                    <td className="py-3 px-3 font-mono text-[11px] text-emerald-400">NET-PROFIT</td>
-                    <td className="py-3 px-3 uppercase text-emerald-300">
-                      LABA BERSIH OPERASIONAL (OPERATING EBITDA)
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-300">
-                      {formatIDR(profitData.profit.grossMph)}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-300">
-                      {formatIDR(profitData.profit.grossSny)}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-rose-300">
-                      ({formatIDR(profitData.opex.hof)})
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-400 bg-slate-950 font-black">
-                      {formatIDR(profitData.profit.netConsolidated)}
-                    </td>
-                    <td className="py-3 px-3 text-right text-emerald-300 font-bold">
-                      {profitData.profit.marginPercentConsolidated}%
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-300">
-                      Rp {formatNumber(profitData.profit.profitPerTonConsolidated)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                value={avgKmMph}
+                onChange={(e) => {
+                  setIsCustomDistance(true);
+                  setAvgKmMph(Math.max(1, parseFloat(e.target.value) || 1));
+                }}
+                className="w-full bg-white border border-slate-300 rounded-lg pl-3 pr-10 py-1.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623]"
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">KM</span>
             </div>
+            <p className="text-[10px] text-slate-500 mt-2">
+              Rute dominan: Coalpad 02 TA → MP Side Dump (91.4 km)
+            </p>
+          </div>
 
-            <div className="p-3 bg-slate-50 border-t border-slate-200 text-slate-500 text-[11px] flex items-center justify-between">
-              <span>Menampilkan {filteredSummaries.length} akun buku besar</span>
-              <span className="font-semibold text-slate-600">
-                PT Batara Dharma Persada • Executive Profit Center Report
+          {/* Rata-rata Jarak Tiket Senyiur */}
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-700">
+                Avg Distance Senyiur (SNY)
+              </label>
+              <span className="text-[10px] text-slate-400">Tiket Aktif</span>
+            </div>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                value={avgKmSny}
+                onChange={(e) => {
+                  setIsCustomDistance(true);
+                  setAvgKmSny(Math.max(1, parseFloat(e.target.value) || 1));
+                }}
+                className="w-full bg-white border border-slate-300 rounded-lg pl-3 pr-10 py-1.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623]"
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">KM</span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2">
+              Rute dominan: Coalpad 01 FSP → SYR Side Dump (71.8 km)
+            </p>
+          </div>
+
+          {/* Rata-rata Jarak Gabungan (Combined All Tickets) */}
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-700">
+                Average Distance (Semua Tiket)
+              </label>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                Weighted
               </span>
             </div>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                value={Number(calculation.kmOverall.toFixed(2))}
+                onChange={(e) => {
+                  setIsCustomDistance(true);
+                  setAvgKmOverall(Math.max(1, parseFloat(e.target.value) || 1));
+                }}
+                className="w-full bg-white border border-slate-300 rounded-lg pl-3 pr-10 py-1.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623]"
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">KM</span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2">
+              Rata-rata tertimbang jarak hauling kedua site
+            </p>
           </div>
-        </>
-      )}
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 4. TIGA HERO METRICS UTAMA (HASIL RUMUS A & B) */}
+      {/* ============================================================== */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* HERO 1: KEUNTUNGAN KOTOR (REVENUE) */}
+        <div className="bg-white rounded-2xl border border-emerald-200 p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-50 rounded-bl-full z-0 opacity-70" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">
+                <Truck className="w-3.5 h-3.5" />
+                Rumus A • Keuntungan Kotor
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">Revenue Hauling</span>
+            </div>
+
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+              Keuntungan Kotor (Revenue)
+            </p>
+            <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+              {formatRupiah(calculation.keuntunganKotor)}
+            </h2>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Site Muara Pahu (MPH):</span>
+                <span className="font-bold text-slate-900">{formatRupiah(calculation.revMph)}</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Site Senyiur (SNY):</span>
+                <span className="font-bold text-slate-900">{formatRupiah(calculation.revSny)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between items-center">
+            <span>Rata-rata per Tonase:</span>
+            <span className="font-bold text-emerald-700">{formatRupiah(calculation.revPerTon)} / Ton</span>
+          </div>
+        </div>
+
+        {/* HERO 2: BEBAN COST GL */}
+        <div className="bg-white rounded-2xl border border-rose-200 p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-28 h-28 bg-rose-50 rounded-bl-full z-0 opacity-70" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-100 text-rose-800">
+                <Receipt className="w-3.5 h-3.5" />
+                Data GL • Beban Biaya
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">Total OPEX</span>
+            </div>
+
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+              Beban Cost yang Ada pada GL
+            </p>
+            <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+              {formatRupiah(calculation.totalBebanGL)}
+            </h2>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Beban Site MPH:</span>
+                <span className="font-bold text-slate-900">{formatRupiah(calculation.opexMph)}</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Beban Site SNY:</span>
+                <span className="font-bold text-slate-900">{formatRupiah(calculation.opexSny)}</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Head Office Overhead:</span>
+                <span className="font-bold text-slate-900">{formatRupiah(calculation.opexHof)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between items-center">
+            <span>Beban per Tonase:</span>
+            <span className="font-bold text-rose-700">{formatRupiah(calculation.costPerTon)} / Ton</span>
+          </div>
+        </div>
+
+        {/* HERO 3: KEUNTUNGAN BERSIH (NET PROFIT) */}
+        <div className={`rounded-2xl p-6 shadow-sm relative overflow-hidden flex flex-col justify-between border ${
+          calculation.keuntunganBersih >= 0
+            ? "bg-linear-to-br from-emerald-500 to-teal-700 text-white border-emerald-400"
+            : "bg-linear-to-br from-rose-600 to-rose-800 text-white border-rose-500"
+        }`}>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-black bg-white/20 text-white backdrop-blur-xs">
+                <Sparkles className="w-3.5 h-3.5" />
+                Rumus B • Keuntungan Bersih
+              </span>
+              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white text-slate-900 shadow-xs">
+                Margin: {calculation.marginPercent.toFixed(1)}%
+              </span>
+            </div>
+
+            <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
+              Keuntungan Bersih (Net Profit)
+            </p>
+            <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
+              {formatRupiah(calculation.keuntunganBersih)}
+            </h2>
+
+            <div className="mt-4 pt-3 border-t border-white/20 space-y-1.5 text-xs text-white/90">
+              <div className="flex justify-between items-center">
+                <span>Laba Bersih MPH:</span>
+                <span className="font-bold">{formatRupiah(calculation.keuntunganBersihMph)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Laba Bersih SNY:</span>
+                <span className="font-bold">{formatRupiah(calculation.keuntunganBersihSny)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
+            <span>Keuntungan per Tonase:</span>
+            <span className="font-black text-white">{formatRupiah(calculation.netPerTon)} / Ton</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 5. TABEL REKAPITULASI FINANCIAL PER JOBSITE */}
+      {/* ============================================================== */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#e95623]" />
+              Rekapitulasi Finansial & Margin per Jobsite
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Penjabaran rumus Keuntungan Kotor dan Keuntungan Bersih per unit operasional dan konsolidasi.
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 self-start sm:self-auto">
+            Periode: {profitData?.period?.periodName || "Aktif"}
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
+                <th className="py-3 px-4">Jobsite Operasional</th>
+                <th className="py-3 px-4 text-right">Tonase (Ton)</th>
+                <th className="py-3 px-4 text-right">Avg Jarak (KM)</th>
+                <th className="py-3 px-4 text-right">Total Ton·KM</th>
+                <th className="py-3 px-4 text-right">Rate / Ton-KM</th>
+                <th className="py-3 px-4 text-right bg-emerald-50/70 text-emerald-900">
+                  Keuntungan Kotor (A)
+                </th>
+                <th className="py-3 px-4 text-right bg-rose-50/70 text-rose-900">
+                  Beban Cost GL
+                </th>
+                <th className="py-3 px-4 text-right bg-amber-50/70 text-amber-900">
+                  Keuntungan Bersih (B)
+                </th>
+                <th className="py-3 px-4 text-right">Net Margin (%)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {/* Site Muara Pahu */}
+              <tr className="hover:bg-slate-50/80 transition-colors">
+                <td className="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  Site Muara Pahu (MPH)
+                </td>
+                <td className="py-3 px-4 text-right font-medium text-slate-800">
+                  {formatNum(calculation.tonaseMph, 0)}
+                </td>
+                <td className="py-3 px-4 text-right font-medium text-slate-700">
+                  {formatNum(calculation.kmMph, 2)} km
+                </td>
+                <td className="py-3 px-4 text-right font-mono text-slate-700">
+                  {formatNum(calculation.tonKmMph, 0)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-slate-800">
+                  Rp {formatNum(calculation.rate, 0)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-emerald-700 bg-emerald-50/40">
+                  {formatRupiah(calculation.revMph)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
+                  {formatRupiah(calculation.opexMph)}
+                </td>
+                <td className="py-3 px-4 text-right font-black text-slate-900 bg-amber-50/40">
+                  {formatRupiah(calculation.keuntunganBersihMph)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-emerald-700">
+                  {calculation.marginMph.toFixed(2)}%
+                </td>
+              </tr>
+
+              {/* Site Senyiur */}
+              <tr className="hover:bg-slate-50/80 transition-colors">
+                <td className="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-teal-500" />
+                  Site Senyiur (SNY)
+                </td>
+                <td className="py-3 px-4 text-right font-medium text-slate-800">
+                  {formatNum(calculation.tonaseSny, 0)}
+                </td>
+                <td className="py-3 px-4 text-right font-medium text-slate-700">
+                  {formatNum(calculation.kmSny, 2)} km
+                </td>
+                <td className="py-3 px-4 text-right font-mono text-slate-700">
+                  {formatNum(calculation.tonKmSny, 0)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-slate-800">
+                  Rp {formatNum(calculation.rate, 0)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-emerald-700 bg-emerald-50/40">
+                  {formatRupiah(calculation.revSny)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
+                  {formatRupiah(calculation.opexSny)}
+                </td>
+                <td className="py-3 px-4 text-right font-black text-slate-900 bg-amber-50/40">
+                  {formatRupiah(calculation.keuntunganBersihSny)}
+                </td>
+                <td className="py-3 px-4 text-right font-bold text-emerald-700">
+                  {calculation.marginSny.toFixed(2)}%
+                </td>
+              </tr>
+
+              {/* Head Office Overhead */}
+              <tr className="hover:bg-slate-50/80 transition-colors text-slate-500">
+                <td className="py-3 px-4 font-medium text-slate-700 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-slate-400" />
+                  Head Office (HOF Overhead)
+                </td>
+                <td className="py-3 px-4 text-right">-</td>
+                <td className="py-3 px-4 text-right">-</td>
+                <td className="py-3 px-4 text-right">-</td>
+                <td className="py-3 px-4 text-right">-</td>
+                <td className="py-3 px-4 text-right text-slate-400 bg-emerald-50/20">-</td>
+                <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
+                  {formatRupiah(calculation.opexHof)}
+                </td>
+                <td className="py-3 px-4 text-right font-medium text-rose-600 bg-amber-50/20">
+                  -{formatRupiah(calculation.opexHof)}
+                </td>
+                <td className="py-3 px-4 text-right text-slate-400">-</td>
+              </tr>
+
+              {/* TOTAL KONSOLIDASI */}
+              <tr className="bg-slate-900 text-white font-black text-[13px] border-t-2 border-slate-700">
+                <td className="py-4 px-4 uppercase tracking-wider text-emerald-400">
+                  TOTAL KONSOLIDASI
+                </td>
+                <td className="py-4 px-4 text-right text-white">
+                  {formatNum(calculation.totalTonase, 0)} Ton
+                </td>
+                <td className="py-4 px-4 text-right text-slate-300">
+                  {formatNum(calculation.kmOverall, 2)} km
+                </td>
+                <td className="py-4 px-4 text-right font-mono text-slate-300">
+                  {formatNum(calculation.tonKmTotal, 0)}
+                </td>
+                <td className="py-4 px-4 text-right text-emerald-400">
+                  Rp {formatNum(calculation.rate, 0)}
+                </td>
+                <td className="py-4 px-4 text-right text-emerald-300 bg-emerald-950/40">
+                  {formatRupiah(calculation.keuntunganKotor)}
+                </td>
+                <td className="py-4 px-4 text-right text-rose-300 bg-rose-950/40">
+                  {formatRupiah(calculation.totalBebanGL)}
+                </td>
+                <td className="py-4 px-4 text-right text-amber-300 bg-amber-950/40 text-sm">
+                  {formatRupiah(calculation.keuntunganBersih)}
+                </td>
+                <td className="py-4 px-4 text-right text-emerald-400">
+                  {calculation.marginPercent.toFixed(2)}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 6. GRAFIK KOMPARASI KEUANGAN (REVENUE VS BEBAN VS LABA BERSIH) */}
+      {/* ============================================================== */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Visualisasi Finansial: Revenue (Kotor), Beban GL & Laba Bersih
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Perbandingan nominal rupiah antara Keuntungan Kotor, Beban Operasional GL, dan Keuntungan Bersih.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 font-bold text-slate-700">
+              <span className="w-3 h-3 rounded bg-emerald-600" /> Keuntungan Kotor
+            </span>
+            <span className="flex items-center gap-1.5 font-bold text-slate-700">
+              <span className="w-3 h-3 rounded bg-rose-600" /> Beban GL
+            </span>
+            <span className="flex items-center gap-1.5 font-bold text-slate-700">
+              <span className="w-3 h-3 rounded bg-amber-500" /> Keuntungan Bersih
+            </span>
+          </div>
+        </div>
+
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} />
+              <YAxis
+                tick={{ fontSize: 10, fill: "#475569" }}
+                tickFormatter={(val) => `Rp ${(val / 1000000000).toFixed(1)}M`}
+              />
+              <Tooltip
+                formatter={(val: any, name: any) => [
+                  formatRupiah(Number(val)),
+                  name === "revenue"
+                    ? "Keuntungan Kotor"
+                    : name === "cost"
+                    ? "Beban GL"
+                    : "Keuntungan Bersih",
+                ]}
+                contentStyle={{
+                  backgroundColor: "#0f172a",
+                  borderColor: "#334155",
+                  borderRadius: "12px",
+                  color: "#fff",
+                  fontSize: "12px",
+                }}
+              />
+              <Bar dataKey="revenue" name="Keuntungan Kotor" fill="#059669" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="cost" name="Beban GL" fill="#e11d48" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="profit" name="Keuntungan Bersih" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 7. RINCIAN BEBAN OPERASIONAL GL (PENGURANG KEUNTUNGAN KOTOR) */}
+      {/* ============================================================== */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-[#e95623]" />
+              Rincian Akun Beban Biaya Operasional GL (Cost Drivers)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Komponen biaya yang mengurangi Keuntungan Kotor menjadi Keuntungan Bersih (Total: {formatRupiah(calculation.totalBebanGL)})
+            </p>
+          </div>
+
+          <div className="relative w-full md:w-72">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari kode atau nama akun beban..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623]"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto max-h-96">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 shadow-xs">
+              <tr className="text-slate-700 font-bold border-b border-slate-200">
+                <th className="py-2.5 px-4">Kode Akun</th>
+                <th className="py-2.5 px-4">Nama Akun Beban GL</th>
+                <th className="py-2.5 px-4 text-right">Muara Pahu (MPH)</th>
+                <th className="py-2.5 px-4 text-right">Senyiur (SNY)</th>
+                <th className="py-2.5 px-4 text-right">Head Office (HOF)</th>
+                <th className="py-2.5 px-4 text-right bg-slate-200/60">Total Beban</th>
+                <th className="py-2.5 px-4 text-right">Porsi (%)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredSummaries.length > 0 ? (
+                filteredSummaries.map((s, idx) => {
+                  const porsi =
+                    calculation.totalBebanGL > 0
+                      ? (s.grandTotal / calculation.totalBebanGL) * 100
+                      : 0;
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-2.5 px-4 font-mono font-bold text-slate-800">
+                        {s.accountCode}
+                      </td>
+                      <td className="py-2.5 px-4 font-medium text-slate-800">
+                        {s.accountName}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-medium text-slate-700">
+                        {formatRupiah(s.mphAmount)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-medium text-slate-700">
+                        {formatRupiah(s.snyAmount)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-medium text-slate-500">
+                        {formatRupiah(s.hofAmount)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-bold text-rose-700 bg-slate-50/50">
+                        {formatRupiah(s.grandTotal)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-bold text-slate-700">
+                        {porsi.toFixed(2)}%
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400">
+                    Tidak ada akun beban GL yang cocok dengan pencarian.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
-

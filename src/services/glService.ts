@@ -157,9 +157,16 @@ export interface GLProfitCenterData {
     startDate?: string;
     endDate?: string;
   };
-  tariffs: {
+  ratePerTonKm?: number;
+  distances?: {
+    overall: number;
     mph: number;
     sny: number;
+  };
+  tariffs?: {
+    mph: number;
+    sny: number;
+    ratePerTonKm?: number;
   };
   production: {
     totalTon: number;
@@ -376,11 +383,19 @@ export const glService = {
 
   async getProfitCenter(paramsObj?: {
     periodId?: string;
+    ratePerTonKm?: number;
+    avgKmOverall?: number;
+    avgKmSny?: number;
+    avgKmMph?: number;
     tariffMph?: number;
     tariffSny?: number;
   }): Promise<GLProfitCenterResponse> {
     const params = new URLSearchParams();
     if (paramsObj?.periodId) params.append("periodId", paramsObj.periodId);
+    if (paramsObj?.ratePerTonKm) params.append("ratePerTonKm", paramsObj.ratePerTonKm.toString());
+    if (paramsObj?.avgKmOverall) params.append("avgKmOverall", paramsObj.avgKmOverall.toString());
+    if (paramsObj?.avgKmSny) params.append("avgKmSny", paramsObj.avgKmSny.toString());
+    if (paramsObj?.avgKmMph) params.append("avgKmMph", paramsObj.avgKmMph.toString());
     if (paramsObj?.tariffMph) params.append("tariffMph", paramsObj.tariffMph.toString());
     if (paramsObj?.tariffSny) params.append("tariffSny", paramsObj.tariffSny.toString());
 
