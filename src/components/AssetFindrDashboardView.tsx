@@ -8,7 +8,7 @@ import {
   DailyProductionResponse,
 } from "../services/assetfindrService";
 import { AssetFindrTokenModal } from "./AssetFindrTokenModal";
-import { FuelConsumptionGLSection } from "./FuelConsumptionGLSection";
+
 import { useNotification } from "../context/NotificationContext";
 import {
   Scale,
@@ -2315,14 +2315,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
           )}
         </div>
       </div>
-
-      {/* GL Fuel Consumption Section */}
-      <FuelConsumptionGLSection
-        initialSite={selectedJobsite}
-        productionTonase={summary?.grandTotalTonase}
-        defaultStartDate={startDate}
-        defaultEndDate={endDate}
-      />
 
       {/* AssetFindr Token Modal */}
       <AssetFindrTokenModal
