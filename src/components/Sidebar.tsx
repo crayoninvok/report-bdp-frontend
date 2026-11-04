@@ -26,6 +26,8 @@ import {
   Scale,
   Table,
   Radio,
+  TrendingUp,
+  Lock,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -44,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const isSuperAdmin = user.role === "SuperAdmin";
+  const isDzaky = user.email?.trim().toLowerCase() === "dzaky.athariqf@bataramining.com";
 
   interface NavItem {
     id: string;
@@ -69,6 +72,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: "reports", label: "Laporan Cost", icon: FileText },
         { id: "summary", label: "Laporan Summary", icon: TableProperties },
         { id: "gl-data", label: "GL Raw Data", icon: Database },
+        {
+          id: "profit-center",
+          label: "Profit Center",
+          icon: isDzaky ? TrendingUp : Lock,
+          badge: isDzaky ? "Special" : "Restricted",
+        },
       ],
     },
     {

@@ -147,6 +147,80 @@ export interface GLFuelRecentTransaction {
   accountName?: string;
 }
 
+export interface GLProfitCenterData {
+  period: {
+    id: string;
+    fileName: string;
+    periodName: string;
+    year: number;
+    month: number;
+    startDate?: string;
+    endDate?: string;
+  };
+  tariffs: {
+    mph: number;
+    sny: number;
+  };
+  production: {
+    totalTon: number;
+    mphTon: number;
+    snyTon: number;
+  };
+  revenue: {
+    total: number;
+    mph: number;
+    sny: number;
+  };
+  opex: {
+    total: number;
+    directSite: number;
+    mph: number;
+    sny: number;
+    hof: number;
+  };
+  profit: {
+    grossMph: number;
+    grossSny: number;
+    netConsolidated: number;
+    marginPercentMph: number;
+    marginPercentSny: number;
+    marginPercentConsolidated: number;
+    costPerTonMph: number;
+    costPerTonSny: number;
+    costPerTonConsolidated: number;
+    profitPerTonMph: number;
+    profitPerTonSny: number;
+    profitPerTonConsolidated: number;
+  };
+  accountGroups: Array<{
+    group: string;
+    hof: number;
+    mph: number;
+    sny: number;
+    total: number;
+  }>;
+  topCostCenters: Array<{
+    costCenter: string;
+    projectArea: string;
+    totalCost: number;
+    transactionCount: number;
+  }>;
+  summaries: Array<{
+    accountCode: string;
+    accountName: string;
+    hofAmount: number;
+    mphAmount: number;
+    snyAmount: number;
+    grandTotal: number;
+  }>;
+}
+
+export interface GLProfitCenterResponse {
+  success: boolean;
+  data: GLProfitCenterData | null;
+  message?: string;
+}
+
 export interface GLFuelConsumptionResponse {
   success: boolean;
   period?: {
@@ -300,4 +374,20 @@ export const glService = {
     return data;
   },
 
+  async getProfitCenter(paramsObj?: {
+    periodId?: string;
+    tariffMph?: number;
+    tariffSny?: number;
+  }): Promise<GLProfitCenterResponse> {
+    const params = new URLSearchParams();
+    if (paramsObj?.periodId) params.append("periodId", paramsObj.periodId);
+    if (paramsObj?.tariffMph) params.append("tariffMph", paramsObj.tariffMph.toString());
+    if (paramsObj?.tariffSny) params.append("tariffSny", paramsObj.tariffSny.toString());
+
+    const res = await fetch(`${API_BASE_URL}/gl/profit-center?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    return data;
+  },
 };

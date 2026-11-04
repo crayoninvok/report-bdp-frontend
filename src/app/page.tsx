@@ -26,6 +26,7 @@ import { DashboardCostOverallView } from "../components/DashboardCostOverallView
 import { AssetFindrDashboardView } from "../components/AssetFindrDashboardView";
 import { AssetFindrDataView } from "../components/AssetFindrDataView";
 import { LiveMonitoringUnitView } from "../components/LiveMonitoringUnitView";
+import { ProfitCenterView } from "../components/ProfitCenterView";
 
 import {
   Menu,
@@ -305,6 +306,8 @@ export default function Home() {
                       ? "Coal Hauling • Live Monitoring Unit"
                       : activeMenu === "gl-data"
                       ? "Cost Analytics • GL Raw Data"
+                      : activeMenu === "profit-center"
+                      ? "Cost Analytics • Profit Center"
                       : activeMenu === "plant-dashboard"
                       ? "Plant & Maintenance • Dashboard Plant"
                       : activeMenu === "periodic-inspection"
@@ -566,6 +569,8 @@ export default function Home() {
             />
           ) : activeMenu === "gl-data" ? (
             <GLDataView user={currentUser} />
+          ) : activeMenu === "profit-center" ? (
+            <ProfitCenterView user={currentUser} onNavigateBack={() => setActiveMenu("dashboard")} />
           ) : activeMenu === "plant-dashboard" ? (
             <UnderDevelopmentView
               user={currentUser}
