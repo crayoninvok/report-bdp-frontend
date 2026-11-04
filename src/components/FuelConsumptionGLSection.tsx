@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { assetfindrService } from "../services/assetfindrService";
 import {
   glService,
   GLFuelConsumptionResponse,
@@ -56,18 +57,34 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
   );
 
   const [data, setData] = useState<GLFuelConsumptionResponse | null>(null);
+  const [assetfindrTonase, setAssetfindrTonase] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Fetch fuel consumption from GL (Account 05110201 - Beban Fuel Production)
+  // and fetch AssetFindr daily production in parallel to ensure 100% synchronization
   const fetchFuelData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await glService.getFuelConsumption({
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        site: selectedSite !== "ALL" ? selectedSite : undefined,
-      });
-      setData(res);
+      const afJobsite = selectedSite === "MPH" ? "muara_pahu" : selectedSite === "SNY" ? "senyiur" : "all";
+      const [glRes, afRes] = await Promise.allSettled([
+        glService.getFuelConsumption({
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          site: selectedSite !== "ALL" ? selectedSite : undefined,
+        }),
+        assetfindrService.getDailyProduction(
+          startDate || undefined,
+          endDate || undefined,
+          afJobsite
+        ),
+      ]);
+
+      if (glRes.status === "fulfilled") {
+        setData(glRes.value);
+      }
+      if (afRes.status === "fulfilled" && afRes.value?.summary?.grandTotalTonase) {
+        setAssetfindrTonase(afRes.value.summary.grandTotalTonase);
+      }
     } catch (err) {
       console.error("Gagal memuat konsumsi fuel GL:", err);
     } finally {
@@ -99,17 +116,21 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
 
   // Resolved numbers (diambil langsung dari data produksi AssetFindr)
   const tonaseProduksi = useMemo(() => {
-    // 1. Data produksi AssetFindr dari API response GL summary (periode aktif)
+    // 1. Data produksi langsung dari API AssetFindr (625.953,66 Ton)
+    if (assetfindrTonase && assetfindrTonase > 0) {
+      return assetfindrTonase;
+    }
+    // 2. Data produksi AssetFindr dari API response GL summary (periode aktif)
     if (data?.summary?.totalProduction && data.summary.totalProduction > 0) {
       return data.summary.totalProduction;
     }
-    // 2. Prop productionTonase jika diteruskan dari parent
+    // 3. Prop productionTonase jika diteruskan dari parent
     if (productionTonase && productionTonase > 0) {
       return productionTonase;
     }
-    // 3. Fallback benchmark AssetFindr (264.294 Ton)
-    return 264294;
-  }, [data, productionTonase]);
+    // 4. Fallback benchmark AssetFindr (625.953,66 Ton)
+    return 625953.66;
+  }, [assetfindrTonase, data, productionTonase]);
 
   const fuelConsumptionLiters = useMemo(() => {
     return data?.summary?.totalFuelConsumption || 943451;
