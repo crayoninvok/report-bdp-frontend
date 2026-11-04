@@ -64,7 +64,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-2xl border border-rose-200 shadow-xl p-8 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600" />
+          <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-rose-500 via-amber-500 to-rose-600" />
           
           <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-5 shadow-xs">
             <Lock className="w-8 h-8" />
@@ -293,8 +293,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Banner & Security Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-lg border border-slate-700/80 relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-emerald-500/10 via-batara-orange-500/5 to-transparent pointer-events-none" />
+      <div className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-lg border border-slate-700/80 relative overflow-hidden">
+        <div className="absolute right-0 top-0 bottom-0 w-96 bg-linear-to-l from-emerald-500/10 via-batara-orange-500/5 to-transparent pointer-events-none" />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
@@ -375,7 +375,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                     type="number"
                     value={tariffMph}
                     onChange={(e) => setTariffMph(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-amber-400"
                     step="1000"
                   />
                 </div>
@@ -391,7 +391,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                     type="number"
                     value={tariffSny}
                     onChange={(e) => setTariffSny(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-amber-400"
                     step="1000"
                   />
                 </div>
@@ -922,7 +922,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   placeholder="Cari kode atau nama akun..."
                   value={tableSearch}
                   onChange={(e) => setTableSearch(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
+                  className="w-full bg-white border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#e95623]"
                 />
               </div>
             </div>
@@ -931,14 +931,14 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="py-2.5 px-3 min-w-[100px]">Kode Akun</th>
-                    <th className="py-2.5 px-3 min-w-[220px]">Nama Akun Beban (GL)</th>
-                    <th className="py-2.5 px-3 text-right min-w-[130px]">Muara Pahu (MPH)</th>
-                    <th className="py-2.5 px-3 text-right min-w-[130px]">Senyiur (SNY)</th>
-                    <th className="py-2.5 px-3 text-right min-w-[110px]">Head Office (HOF)</th>
-                    <th className="py-2.5 px-3 text-right min-w-[140px] bg-slate-200/50">Konsolidasi (Total)</th>
-                    <th className="py-2.5 px-3 text-right min-w-[100px]">Kontribusi (%)</th>
-                    <th className="py-2.5 px-3 text-right min-w-[110px]">Biaya / Ton</th>
+                    <th className="py-2.5 px-3 min-w-25">Kode Akun</th>
+                    <th className="py-2.5 px-3 min-w-55">Nama Akun Beban (GL)</th>
+                    <th className="py-2.5 px-3 text-right min-w-32.5">Muara Pahu (MPH)</th>
+                    <th className="py-2.5 px-3 text-right min-w-32.5">Senyiur (SNY)</th>
+                    <th className="py-2.5 px-3 text-right min-w-27.5">Head Office (HOF)</th>
+                    <th className="py-2.5 px-3 text-right min-w-35 bg-slate-200/50">Konsolidasi (Total)</th>
+                    <th className="py-2.5 px-3 text-right min-w-25">Kontribusi (%)</th>
+                    <th className="py-2.5 px-3 text-right min-w-27.5">Biaya / Ton</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1067,3 +1067,4 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     </div>
   );
 };
+
