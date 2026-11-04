@@ -615,7 +615,7 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
                     if (!active || !payload || !payload.length) return null;
                     const item = payload[0].payload;
                     return (
-                      <div className="bg-slate-900/95 text-white p-3.5 border border-slate-700/80 rounded-2xl shadow-xl text-xs space-y-2 backdrop-blur-md min-w-[220px]">
+                      <div className="bg-slate-900/95 text-white p-3.5 border border-slate-700/80 rounded-2xl shadow-xl text-xs space-y-2 backdrop-blur-md min-w-55">
                         <div className="font-extrabold text-amber-400 border-b border-slate-800 pb-1.5 flex items-center justify-between">
                           <span>{item.dateLabel} ({item.date})</span>
                           <span className="text-[10px] text-slate-400 font-mono">Beban Fuel</span>
@@ -799,7 +799,7 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
                     if (!active || !payload || !payload.length) return null;
                     const item = payload[0].payload;
                     return (
-                      <div className="bg-slate-900/95 text-white p-3 border border-slate-700 rounded-2xl shadow-xl text-xs space-y-1.5 backdrop-blur-md min-w-[190px]">
+                      <div className="bg-slate-900/95 text-white p-3 border border-slate-700 rounded-2xl shadow-xl text-xs space-y-1.5 backdrop-blur-md min-w-47.5">
                         <div className="font-extrabold text-amber-400 border-b border-slate-800 pb-1">
                           Minggu {item.week}
                         </div>
