@@ -323,19 +323,19 @@ export const MasterManpowerView: React.FC<MasterManpowerViewProps> = ({ user }) 
         </div>
 
         {/* Card 3: Karyawan Non-Aktif (Exit / Resign) */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl border border-rose-200 p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
               Karyawan Non-Aktif
             </span>
-            <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center">
-              <UserX className="w-4 h-4 text-slate-500" />
+            <span className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center">
+              <UserX className="w-4 h-4 text-rose-600" />
             </span>
           </div>
           <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-3xl font-black text-rose-600 tracking-tight">
               {stats?.totalExit || 0}
-              <span className="text-xs font-semibold text-slate-500 ml-1.5">
+              <span className="text-xs font-semibold text-rose-500 ml-1.5">
                 {stats?.totalAll ? ((stats.totalExit / stats.totalAll) * 100).toFixed(1) : 0}% Exit
               </span>
             </h2>
@@ -544,18 +544,18 @@ export const MasterManpowerView: React.FC<MasterManpowerViewProps> = ({ user }) 
                       {/* Status Keaktifan */}
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                             isExist
                               ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                              : "bg-slate-100 text-slate-500 border-slate-200"
+                              : "bg-rose-50 text-rose-700 border-rose-200"
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              isExist ? "bg-emerald-500" : "bg-slate-400"
+                              isExist ? "bg-emerald-500" : "bg-rose-500"
                             }`}
                           />
-                          {m.statusKeaktifan || "Exist"}
+                          {m.statusKeaktifan || "Exit"}
                         </span>
                       </td>
 
@@ -700,13 +700,13 @@ export const MasterManpowerView: React.FC<MasterManpowerViewProps> = ({ user }) 
                       {selectedEmployee.fullName}
                     </h2>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                         selectedEmployee.statusKeaktifan?.toLowerCase() === "exist"
                           ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                          : "bg-slate-100 text-slate-600 border-slate-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
                       }`}
                     >
-                      {selectedEmployee.statusKeaktifan || "Exist"}
+                      {selectedEmployee.statusKeaktifan || "Exit"}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
@@ -974,3 +974,4 @@ export const MasterManpowerView: React.FC<MasterManpowerViewProps> = ({ user }) 
     </div>
   );
 };
+

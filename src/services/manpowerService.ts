@@ -199,3 +199,4 @@ export const manpowerService = {
     return res.json();
   },
 };
+
