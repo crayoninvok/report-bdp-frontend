@@ -27,6 +27,7 @@ import { AssetFindrDashboardView } from "../components/AssetFindrDashboardView";
 import { AssetFindrDataView } from "../components/AssetFindrDataView";
 import { LiveMonitoringUnitView } from "../components/LiveMonitoringUnitView";
 import { ProfitCenterView } from "../components/ProfitCenterView";
+import { MasterManpowerView } from "../components/MasterManpowerView";
 
 import {
   Menu,
@@ -602,12 +603,7 @@ export default function Home() {
               onBackToDashboard={() => setActiveMenu("dashboard")}
             />
           ) : activeMenu === "master-manpower" ? (
-            <UnderDevelopmentView
-              user={currentUser}
-              moduleName="Master Manpower Data"
-              moduleCategory="Human Resource & Development"
-              onBackToDashboard={() => setActiveMenu("dashboard")}
-            />
+            <MasterManpowerView user={currentUser} />
           ) : (
             <DashboardView
               user={currentUser}
