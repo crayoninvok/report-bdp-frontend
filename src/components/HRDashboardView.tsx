@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Users,
   UserCheck,
   UserX,
   TrendingDown,
+  TrendingUp,
   Building2,
   GraduationCap,
   Briefcase,
@@ -18,16 +19,37 @@ import {
   Calendar,
   CheckCircle2,
   ArrowRight,
+  Filter,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import {
   manpowerService,
   HRDashboardData,
+  MonthlyManpowerTrendItem,
 } from "../services/manpowerService";
 
 interface HRDashboardViewProps {
   user: any;
   onNavigateToMasterManpower?: () => void;
 }
+
+type TabType = "all" | "trend" | "overview" | "comparison";
+type ChartMode = "active" | "flow" | "branches" | "turnover";
 
 export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
   user,
@@ -36,8 +58,14 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
   const [data, setData] = useState<HRDashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"all" | "overview" | "comparison">("all");
+  const [activeTab, setActiveTab] = useState<TabType>("all");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  // Trend Chart State
+  const [chartMode, setChartMode] = useState<ChartMode>("active");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [selectedBranch, setSelectedBranch] = useState<string>("all");
+  const [showTableDetails, setShowTableDetails] = useState<boolean>(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -84,6 +112,164 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
     tingkatRetensi: 73.5,
   };
 
+  // Monthly trend filtering
+  const monthlyTrend = data?.monthlyTrend || [];
+
+  const filteredTrend = useMemo(() => {
+    let result = monthlyTrend;
+    if (selectedYear !== "all") {
+      const yr = parseInt(selectedYear, 10);
+      result = result.filter((item) => item.year === yr);
+    }
+    return result;
+  }, [monthlyTrend, selectedYear]);
+
+  // Aggregate stats for filtered trend period
+  const trendMetrics = useMemo(() => {
+    let totalJoined = 0;
+    let totalResigned = 0;
+    let maxJoined = { count: 0, label: "-" };
+    let maxResigned = { count: 0, label: "-" };
+
+    filteredTrend.forEach((m) => {
+      let j = m.joined;
+      let r = m.resigned;
+      if (selectedBranch === "HO Jakarta") {
+        j = m.hoJoined;
+        r = m.hoResigned;
+      } else if (selectedBranch === "Site Muara Pahu") {
+        j = m.mpJoined;
+        r = m.mpResigned;
+      } else if (selectedBranch === "Site Senyiur") {
+        j = m.snyJoined;
+        r = m.snyResigned;
+      }
+
+      totalJoined += j;
+      totalResigned += r;
+
+      if (j > maxJoined.count) {
+        maxJoined = { count: j, label: m.label };
+      }
+      if (r > maxResigned.count) {
+        maxResigned = { count: r, label: m.label };
+      }
+    });
+
+    const net = totalJoined - totalResigned;
+    const avgJoined = filteredTrend.length > 0 ? (totalJoined / filteredTrend.length).toFixed(1) : "0";
+    const lastHeadcount = filteredTrend.length > 0 ? filteredTrend[filteredTrend.length - 1].activeEndMonth : 430;
+
+    return {
+      totalJoined,
+      totalResigned,
+      net,
+      avgJoined,
+      maxJoined,
+      maxResigned,
+      lastHeadcount,
+    };
+  }, [filteredTrend, selectedBranch]);
+
+  // Chart data formatted according to branch filter
+  const chartData = useMemo(() => {
+    return filteredTrend.map((m) => {
+      let active = m.activeEndMonth;
+      let joined = m.joined;
+      let resigned = m.resigned;
+
+      if (selectedBranch === "HO Jakarta") {
+        active = m.hoActive;
+        joined = m.hoJoined;
+        resigned = m.hoResigned;
+      } else if (selectedBranch === "Site Muara Pahu") {
+        active = m.muaraPahuActive;
+        joined = m.mpJoined;
+        resigned = m.mpResigned;
+      } else if (selectedBranch === "Site Senyiur") {
+        active = m.senyiurActive;
+        joined = m.snyJoined;
+        resigned = m.snyResigned;
+      }
+
+      return {
+        ...m,
+        displayActive: active,
+        displayJoined: joined,
+        displayResigned: resigned,
+        displayNet: joined - resigned,
+      };
+    });
+  }, [filteredTrend, selectedBranch]);
+
+  // Custom Recharts Tooltip
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const current = payload[0].payload as MonthlyManpowerTrendItem & {
+        displayActive: number;
+        displayJoined: number;
+        displayResigned: number;
+        displayNet: number;
+      };
+
+      return (
+        <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 min-w-48">
+          <p className="font-bold text-slate-900 border-b border-slate-100 pb-1 flex items-center justify-between">
+            <span>{current.label}</span>
+            <span className="text-[10px] text-slate-400 font-mono">Periode</span>
+          </p>
+          <div className="space-y-1 pt-0.5">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#1c3d73]" />
+                Headcount Aktif:
+              </span>
+              <span className="font-bold font-mono text-slate-900">
+                {current.displayActive} orang
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Karyawan Masuk:
+              </span>
+              <span className="font-bold font-mono text-emerald-600">
+                +{current.displayJoined}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                Karyawan Resign:
+              </span>
+              <span className="font-bold font-mono text-rose-600">
+                -{current.displayResigned}
+              </span>
+            </div>
+            <div className="flex justify-between items-center border-t border-slate-100 pt-1">
+              <span className="text-slate-500">Net Pertumbuhan:</span>
+              <span
+                className={`font-bold font-mono ${
+                  current.displayNet >= 0 ? "text-emerald-700" : "text-rose-700"
+                }`}
+              >
+                {current.displayNet > 0 ? `+${current.displayNet}` : current.displayNet}
+              </span>
+            </div>
+            {selectedBranch === "all" && (
+              <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-100 flex justify-between">
+                <span>HO: {current.hoActive}</span>
+                <span>MP: {current.muaraPahuActive}</span>
+                <span>SNY: {current.senyiurActive}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* ============================================================== */}
@@ -105,7 +291,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
             Dashboard Analitika Tenaga Kerja
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Monitoring Demografi, Status Ketenagakerjaan, Turnover Rate, dan Distribusi per Cabang
+            Monitoring Demografi, Status Ketenagakerjaan, Tren Bulan ke Bulan, dan Komparasi Cabang
           </p>
         </div>
 
@@ -121,6 +307,17 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
               }`}
             >
               Semua Analisis
+            </button>
+            <button
+              onClick={() => setActiveTab("trend")}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "trend"
+                  ? "bg-white text-slate-900 shadow-xs text-[#1c3d73]"
+                  : "hover:text-slate-900"
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-[#1c3d73]" />
+              <span>Grafik Tren Bulanan</span>
             </button>
             <button
               onClick={() => setActiveTab("overview")}
@@ -263,7 +460,398 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
       </div>
 
       {/* ============================================================== */}
-      {/* 3. SECTION OVERVIEW & DEMOGRAFI (Matching Image 2) */}
+      {/* 3. SECTION GRAFIK TREN BULAN KE BULAN (NEW USER REQUEST) */}
+      {/* ============================================================== */}
+      {(activeTab === "all" || activeTab === "trend") && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
+          {/* Header of Trend Section */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-[#1c3d73]/10 text-[#1c3d73] flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4" />
+                </span>
+                <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                  Grafik Tren Manpower Bulan ke Bulan
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Visualisasi pergerakan tenaga kerja kumulatif, karyawan masuk (hiring), resignasi, dan pertumbuhan per bulan
+              </p>
+            </div>
+
+            {/* Filter Toolbar (Year, Branch, Mode) */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Year Selector */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
+                <span className="text-[10px] text-slate-400 uppercase font-bold px-1.5">Tahun:</span>
+                {["all", "2024", "2025", "2026"].map((yr) => (
+                  <button
+                    key={yr}
+                    onClick={() => setSelectedYear(yr)}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      selectedYear === yr
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "hover:text-slate-900 text-slate-500"
+                    }`}
+                  >
+                    {yr === "all" ? "Semua" : yr}
+                  </button>
+                ))}
+              </div>
+
+              {/* Branch Selector */}
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                className="bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-xl border-none focus:ring-2 focus:ring-[#1c3d73] cursor-pointer"
+              >
+                <option value="all">Semua Cabang (HO & Sites)</option>
+                <option value="HO Jakarta">HO Jakarta</option>
+                <option value="Site Muara Pahu">Site Muara Pahu</option>
+                <option value="Site Senyiur">Site Senyiur</option>
+              </select>
+
+              {/* Chart Mode Selector */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
+                <button
+                  onClick={() => setChartMode("active")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    chartMode === "active"
+                      ? "bg-[#1c3d73] text-white shadow-xs"
+                      : "hover:text-slate-900 text-slate-600"
+                  }`}
+                  title="Headcount Aktif Kumulatif"
+                >
+                  Headcount Aktif
+                </button>
+                <button
+                  onClick={() => setChartMode("flow")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    chartMode === "flow"
+                      ? "bg-[#1c3d73] text-white shadow-xs"
+                      : "hover:text-slate-900 text-slate-600"
+                  }`}
+                  title="Karyawan Masuk vs Keluar"
+                >
+                  Masuk vs Keluar
+                </button>
+                <button
+                  onClick={() => setChartMode("branches")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    chartMode === "branches"
+                      ? "bg-[#1c3d73] text-white shadow-xs"
+                      : "hover:text-slate-900 text-slate-600"
+                  }`}
+                  title="Sebaran Cabang per Bulan"
+                >
+                  Komposisi Cabang
+                </button>
+                <button
+                  onClick={() => setChartMode("turnover")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    chartMode === "turnover"
+                      ? "bg-[#1c3d73] text-white shadow-xs"
+                      : "hover:text-slate-900 text-slate-600"
+                  }`}
+                  title="Turnover Rate Bulanan"
+                >
+                  Turnover Rate
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics of Filtered Horizon */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Masuk</span>
+              <span className="text-xl font-black text-emerald-600 font-mono">
+                +{trendMetrics.totalJoined}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">di periode terpilih</span>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Resign</span>
+              <span className="text-xl font-black text-rose-600 font-mono">
+                -{trendMetrics.totalResigned}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">di periode terpilih</span>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Net Pertumbuhan</span>
+              <span
+                className={`text-xl font-black font-mono ${
+                  trendMetrics.net >= 0 ? "text-emerald-700" : "text-rose-700"
+                }`}
+              >
+                {trendMetrics.net > 0 ? `+${trendMetrics.net}` : trendMetrics.net}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">selisih masuk - keluar</span>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Rata-rata Masuk</span>
+              <span className="text-xl font-black text-slate-900 font-mono">
+                {trendMetrics.avgJoined}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">karyawan / bulan</span>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Puncak Masuk</span>
+              <span className="text-sm font-black text-slate-900 truncate block">
+                {trendMetrics.maxJoined.label}
+              </span>
+              <span className="text-[10px] font-mono text-emerald-600 font-bold">
+                +{trendMetrics.maxJoined.count} orang
+              </span>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Headcount Terkini</span>
+              <span className="text-xl font-black text-[#1c3d73] font-mono">
+                {trendMetrics.lastHeadcount}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">tenaga kerja aktif</span>
+            </div>
+          </div>
+
+          {/* Chart Rendering Container */}
+          <div className="w-full h-80 min-h-[320px] bg-white rounded-xl pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              {chartMode === "active" ? (
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="headcountGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#1c3d73" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#1c3d73" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e2e8f0" }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={["auto", "auto"]}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="displayActive"
+                    name="Headcount Aktif"
+                    stroke="#1c3d73"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#headcountGrad)"
+                    dot={{ fill: "#1c3d73", r: 3, strokeWidth: 1 }}
+                    activeDot={{ r: 6, fill: "#e95623", stroke: "#fff", strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              ) : chartMode === "flow" ? (
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e2e8f0" }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: 11, paddingBottom: 10 }}
+                  />
+                  <Bar
+                    dataKey="displayJoined"
+                    name="Karyawan Masuk (Join)"
+                    fill="#10b981"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="displayResigned"
+                    name="Karyawan Keluar (Resign)"
+                    fill="#f43f5e"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              ) : chartMode === "branches" ? (
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="senyiurGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#1c3d73" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#1c3d73" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="mpGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="hoGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0284c7" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#0284c7" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e2e8f0" }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: 11, paddingBottom: 10 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="senyiurActive"
+                    name="Site Senyiur"
+                    stackId="1"
+                    stroke="#1c3d73"
+                    fill="url(#senyiurGrad)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="muaraPahuActive"
+                    name="Site Muara Pahu"
+                    stackId="1"
+                    stroke="#f59e0b"
+                    fill="url(#mpGrad)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="hoActive"
+                    name="HO Jakarta"
+                    stackId="1"
+                    stroke="#0284c7"
+                    fill="url(#hoGrad)"
+                  />
+                </AreaChart>
+              ) : (
+                <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e2e8f0" }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    unit="%"
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="turnoverRate"
+                    name="Turnover Rate Bulanan (%)"
+                    stroke="#f43f5e"
+                    strokeWidth={3}
+                    dot={{ fill: "#f43f5e", r: 3 }}
+                    activeDot={{ r: 6, fill: "#e95623", stroke: "#fff", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+
+          {/* Collapsible Monthly Breakdown Table */}
+          <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <button
+              onClick={() => setShowTableDetails(!showTableDetails)}
+              className="w-full flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-bold text-slate-700 cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#1c3d73]" />
+                <span>
+                  {showTableDetails ? "Sembunyikan" : "Tampilkan"} Tabel Rincian Data Bulanan ({filteredTrend.length} Bulan)
+                </span>
+              </div>
+              {showTableDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {showTableDetails && (
+              <div className="p-0 overflow-x-auto max-h-80 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-[#1c3d73] text-white font-bold">
+                    <tr>
+                      <th className="py-2.5 px-4 text-left">Periode</th>
+                      <th className="py-2.5 px-3 text-right">Masuk</th>
+                      <th className="py-2.5 px-3 text-right">Keluar</th>
+                      <th className="py-2.5 px-3 text-right">Net Growth</th>
+                      <th className="py-2.5 px-4 text-right">Headcount Aktif</th>
+                      <th className="py-2.5 px-3 text-right">HO Jakarta</th>
+                      <th className="py-2.5 px-3 text-right">Muara Pahu</th>
+                      <th className="py-2.5 px-3 text-right">Senyiur</th>
+                      <th className="py-2.5 px-4 text-right">Turnover</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {chartData.map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 font-mono">
+                        <td className="py-2 px-4 font-sans font-bold text-slate-800">{row.label}</td>
+                        <td className="py-2 px-3 text-right font-bold text-emerald-600">
+                          {row.displayJoined > 0 ? `+${row.displayJoined}` : "0"}
+                        </td>
+                        <td className="py-2 px-3 text-right font-bold text-rose-600">
+                          {row.displayResigned > 0 ? `-${row.displayResigned}` : "0"}
+                        </td>
+                        <td
+                          className={`py-2 px-3 text-right font-bold ${
+                            row.displayNet >= 0 ? "text-emerald-700" : "text-rose-700"
+                          }`}
+                        >
+                          {row.displayNet > 0 ? `+${row.displayNet}` : row.displayNet}
+                        </td>
+                        <td className="py-2 px-4 text-right font-black text-slate-900 bg-slate-50/50">
+                          {row.displayActive}
+                        </td>
+                        <td className="py-2 px-3 text-right text-slate-600">{row.hoActive}</td>
+                        <td className="py-2 px-3 text-right text-slate-600">{row.muaraPahuActive}</td>
+                        <td className="py-2 px-3 text-right text-slate-600">{row.senyiurActive}</td>
+                        <td className="py-2 px-4 text-right text-slate-500 font-sans">
+                          {row.turnoverRate.toFixed(1).replace(".", ",")}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 4. SECTION OVERVIEW & DEMOGRAFI (Matching Image 2) */}
       {/* ============================================================== */}
       {(activeTab === "all" || activeTab === "overview") && (
         <div className="space-y-6">
@@ -621,7 +1209,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* 4. SECTION KOMPARASI CABANG / SITE (Matching Image 3) */}
+      {/* 5. SECTION KOMPARASI CABANG / SITE (Matching Image 3) */}
       {/* ============================================================== */}
       {(activeTab === "all" || activeTab === "comparison") && (
         <div className="space-y-6 pt-2">

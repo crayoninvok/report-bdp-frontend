@@ -174,6 +174,27 @@ export interface BranchComparisonData {
   usia: Array<{ kelompok: string; ho: number; mp: number; sny: number }>;
 }
 
+export interface MonthlyManpowerTrendItem {
+  period: string;
+  year: number;
+  month: number;
+  label: string;
+  joined: number;
+  resigned: number;
+  netGrowth: number;
+  activeEndMonth: number;
+  hoActive: number;
+  muaraPahuActive: number;
+  senyiurActive: number;
+  hoJoined: number;
+  hoResigned: number;
+  mpJoined: number;
+  mpResigned: number;
+  snyJoined: number;
+  snyResigned: number;
+  turnoverRate: number;
+}
+
 export interface HRDashboardData {
   kpi: HRDashboardKPI;
   statusKetenagakerjaan: StatusKetenagakerjaanRow[];
@@ -186,6 +207,7 @@ export interface HRDashboardData {
   jobLevel: JobLevelRow[];
   pendidikan: PendidikanRow[];
   branchComparison: BranchComparisonData;
+  monthlyTrend?: MonthlyManpowerTrendItem[];
   lastSync: string | null;
 }
 
