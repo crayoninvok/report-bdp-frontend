@@ -117,6 +117,78 @@ export interface ManpowerSyncResponse {
   errors?: string[];
 }
 
+
+export interface HRDashboardKPI {
+  totalKaryawan: number;
+  karyawanAktif: number;
+  karyawanResign: number;
+  turnoverRate: number;
+  pctLokal: number;
+  pctNonLokal: number;
+  tingkatRetensi: number;
+}
+
+export interface StatusKetenagakerjaanRow {
+  status: string;
+  aktif: number;
+  resign: number;
+  total: number;
+}
+
+export interface DemografiItem {
+  label: string;
+  count: number;
+  ratio: number;
+  color?: string;
+}
+
+export interface DepartemenRow {
+  name: string;
+  aktif: number;
+  ratio: number;
+}
+
+export interface JobLevelRow {
+  level: string;
+  ho: number;
+  mp: number;
+  sny: number;
+  total: number;
+  ratio: number;
+}
+
+export interface PendidikanRow {
+  name: string;
+  count: number;
+  ratio: number;
+  color: string;
+}
+
+export interface BranchComparisonData {
+  metrikUtama: Array<{ branch: string; aktif: number; resign: number; turnoverRate: number }>;
+  lokalitas: Array<{ branch: string; lokal: number; nonLokal: number; pctLokal: number }>;
+  gender: Array<{ branch: string; ratioStr: string; male: number; female: number }>;
+  jobLevel: JobLevelRow[];
+  statusKerja: Array<{ status: string; ho: number; mp: number; sny: number }>;
+  departemen: Array<{ departemen: string; ho: number; mp: number; sny: number }>;
+  usia: Array<{ kelompok: string; ho: number; mp: number; sny: number }>;
+}
+
+export interface HRDashboardData {
+  kpi: HRDashboardKPI;
+  statusKetenagakerjaan: StatusKetenagakerjaanRow[];
+  demografi: {
+    gender: DemografiItem[];
+    lokalitas: DemografiItem[];
+    usia: DemografiItem[];
+  };
+  departemen: DepartemenRow[];
+  jobLevel: JobLevelRow[];
+  pendidikan: PendidikanRow[];
+  branchComparison: BranchComparisonData;
+  lastSync: string | null;
+}
+
 export const manpowerService = {
   /**
    * Fetch paginated manpower records with filters
@@ -185,6 +257,23 @@ export const manpowerService = {
   /**
    * Get single employee detail dossier
    */
+  /**
+   * Fetch complete HR analytics dashboard data
+   */
+  async getDashboard(): Promise<{ success: boolean; data: HRDashboardData }> {
+    const res = await fetch(`${API_BASE_URL}/manpower/dashboard`, {
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal memuat analitika dashboard HR.");
+    }
+
+    return res.json();
+  },
+
   async getById(id: string): Promise<{ success: boolean; data: MasterManpowerItem }> {
     const res = await fetch(`${API_BASE_URL}/manpower/${id}`, {
       headers: { "Content-Type": "application/json" },

@@ -28,6 +28,7 @@ import { AssetFindrDataView } from "../components/AssetFindrDataView";
 import { LiveMonitoringUnitView } from "../components/LiveMonitoringUnitView";
 import { ProfitCenterView } from "../components/ProfitCenterView";
 import { MasterManpowerView } from "../components/MasterManpowerView";
+import { HRDashboardView } from "../components/HRDashboardView";
 
 import {
   Menu,
@@ -596,11 +597,9 @@ export default function Home() {
               onNavigateToPI={() => setActiveMenu("periodic-inspection")}
             />
           ) : activeMenu === "hr-dashboard" ? (
-            <UnderDevelopmentView
+            <HRDashboardView
               user={currentUser}
-              moduleName="Dashboard"
-              moduleCategory="Human Resource & Development"
-              onBackToDashboard={() => setActiveMenu("dashboard")}
+              onNavigateToMasterManpower={() => setActiveMenu("master-manpower")}
             />
           ) : activeMenu === "master-manpower" ? (
             <MasterManpowerView user={currentUser} />
