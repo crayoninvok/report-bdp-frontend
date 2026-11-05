@@ -316,6 +316,10 @@ export default function Home() {
                       ? "Plant & Maintenance • Tyre & Rim Usage"
                       : activeMenu === "master-unit"
                       ? "Plant & Maintenance • Master Data Unit"
+                      : activeMenu === "hr-dashboard"
+                      ? "Human Resource & Development • Dashboard"
+                      : activeMenu === "master-manpower"
+                      ? "Human Resource & Development • Master Manpower Data"
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
@@ -589,6 +593,20 @@ export default function Home() {
             <MasterUnitView
               user={currentUser}
               onNavigateToPI={() => setActiveMenu("periodic-inspection")}
+            />
+          ) : activeMenu === "hr-dashboard" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Dashboard"
+              moduleCategory="Human Resource & Development"
+              onBackToDashboard={() => setActiveMenu("dashboard")}
+            />
+          ) : activeMenu === "master-manpower" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Master Manpower Data"
+              moduleCategory="Human Resource & Development"
+              onBackToDashboard={() => setActiveMenu("dashboard")}
             />
           ) : (
             <DashboardView

@@ -154,6 +154,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
+      title: "Human Resource & Development",
+      items: [
+        {
+          id: "hr-dashboard",
+          label: "Dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          id: "master-manpower",
+          label: "Master Manpower Data",
+          icon: Users,
+        },
+      ],
+    },
+    {
       title: "Water Depth",
       items: [
         {
