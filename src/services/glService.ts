@@ -209,6 +209,7 @@ export interface GLProfitCenterData {
     };
     profit: {
       ppnPercent?: number;
+    year?: number;
       ppnAmount?: number;
       ppnAmountMph?: number;
       ppnAmountSny?: number;
@@ -455,6 +456,7 @@ export const glService = {
     tariffMph?: number;
     tariffSny?: number;
     ppnPercent?: number;
+    year?: number;
   }): Promise<GLProfitCenterResponse> {
     const params = new URLSearchParams();
     if (paramsObj?.periodId) params.append("periodId", paramsObj.periodId);
@@ -465,6 +467,7 @@ export const glService = {
     if (paramsObj?.tariffMph) params.append("tariffMph", paramsObj.tariffMph.toString());
     if (paramsObj?.tariffSny) params.append("tariffSny", paramsObj.tariffSny.toString());
     if (paramsObj?.ppnPercent !== undefined) params.append("ppnPercent", paramsObj.ppnPercent.toString());
+    if (paramsObj?.year) params.append("year", paramsObj.year.toString());
 
     const res = await fetch(`${API_BASE_URL}/gl/profit-center?${params.toString()}`, {
       headers: getAuthHeaders(),

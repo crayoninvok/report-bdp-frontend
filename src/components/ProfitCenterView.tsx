@@ -129,6 +129,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       setIsLoading(true);
       setErrorMsg("");
       const res = await glService.getProfitCenter({
+        year: selectedYear,
         periodId: selectedPeriodId || undefined,
         ratePerTonKm,
         ppnPercent,
@@ -155,25 +156,23 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthorized, selectedPeriodId, ratePerTonKm, ppnPercent, avgKmOverall, avgKmSny, avgKmMph, isCustomDistance]);
+  }, [isAuthorized, selectedYear, ratePerTonKm, ppnPercent, avgKmOverall, avgKmSny, avgKmMph, isCustomDistance]);
 
   useEffect(() => {
-    if (selectedPeriodId) {
-      loadProfitCenterData();
-    }
-  }, [selectedPeriodId, loadProfitCenterData]);
+    loadProfitCenterData();
+  }, [loadProfitCenterData]);
 
   // ==============================================================
   // REAL-TIME ENGINE: Kalkulasi rumus instan di client saat slider/input diubah
   // ==============================================================
   const calculation = useMemo(() => {
     // 0. Data Tonase Tahun 2026 Penuh (YTD dari AssetFindr Jan - Des 2026)
-    const yearlyTotalTon = profitData?.yearlyProduction?.totalTon || 6420926.35;
-    const yearlySnyTon = profitData?.yearlyProduction?.snyTon || 5174053.1;
-    const yearlyMphTon = profitData?.yearlyProduction?.mphTon || 1246872.65;
-    const yearlyTotalRit = profitData?.yearlyProduction?.totalRit || 30153;
-    const yearlySnyRit = profitData?.yearlyProduction?.snyRit || 24110;
-    const yearlyMphRit = profitData?.yearlyProduction?.mphRit || 6041;
+    const yearlyTotalTon = profitData?.yearlyProduction?.totalTon || (selectedYear === 2026 ? 6420926.35 : selectedYear === 2025 ? 7186966 : 7209153);
+    const yearlySnyTon = profitData?.yearlyProduction?.snyTon || (selectedYear === 2026 ? 5174053.1 : selectedYear === 2025 ? 5125437 : 5147624);
+    const yearlyMphTon = profitData?.yearlyProduction?.mphTon || (selectedYear === 2026 ? 1246872.65 : 2061965);
+    const yearlyTotalRit = profitData?.yearlyProduction?.totalRit || (selectedYear === 2026 ? 30153 : selectedYear === 2025 ? 32945 : 33045);
+    const yearlySnyRit = profitData?.yearlyProduction?.snyRit || (selectedYear === 2026 ? 24110 : 23500);
+    const yearlyMphRit = profitData?.yearlyProduction?.mphRit || (selectedYear === 2026 ? 6041 : 9445);
 
     // 1. Tonase Produksi Periode GL Aktif (Ton)
     const periodTonaseMph = profitData?.production?.mphTon || 0;
@@ -182,10 +181,10 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       profitData?.production?.totalTon || periodTonaseMph + periodTonaseSny;
 
     // Tentukan tonase yang aktif berdasarkan scope tampilan
-    const isYearlyScope = viewScope === "yearly";
-    const tonaseMph = isYearlyScope ? yearlyMphTon : periodTonaseMph;
-    const tonaseSny = isYearlyScope ? yearlySnyTon : periodTonaseSny;
-    const totalTonase = isYearlyScope ? yearlyTotalTon : periodTotalTonase;
+    const isYearlyScope = true;
+    const tonaseMph = yearlyMphTon;
+    const tonaseSny = yearlySnyTon;
+    const totalTonase = yearlyTotalTon;
 
     // 2. Average Distance (KM)
     const kmSny = avgKmSny;
@@ -367,11 +366,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
   // Filtered GL Expense Summaries (Beban Biaya YTD 2026 atau Periode Tertentu)
   const activeSummaries = useMemo(() => {
-    if (viewScope === "yearly" && profitData?.ytd?.summaries) {
-      return profitData.ytd.summaries;
-    }
-    return profitData?.summaries || [];
-  }, [viewScope, profitData]);
+    return profitData?.ytd?.summaries || profitData?.summaries || [];
+  }, [profitData]);
 
   const filteredSummaries = useMemo(() => {
     if (!activeSummaries || activeSummaries.length === 0) return [];
@@ -390,7 +386,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     const rows = [
       ["PROFIT CENTER - LAPORAN KEUANGAN & REVENUE REAL-TIME"],
       [`Periode GL: ${profitData.period?.periodName || "-"}`],
-      [`Tahun Anggaran: ${selectedYear} | Rate: Rp ${ratePerTonKm} / Ton-KM | Tarif PPN: \%`],
+      [`Tahun Anggaran: ${selectedYear} | Rate: Rp ${ratePerTonKm} / Ton-KM | Tarif PPN: ${ppnPercent}%`],
       [`TOTAL TONASE TAHUN 2026 (YTD): ${calculation.yearlyTotalTon.toLocaleString("id-ID")} Ton`],
       [`  - Senyiur 2026: ${calculation.yearlySnyTon.toLocaleString("id-ID")} Ton (${calculation.yearlySnyRit} Rit)`],
       [`  - Muara Pahu 2026: ${calculation.yearlyMphTon.toLocaleString("id-ID")} Ton (${calculation.yearlyMphRit} Rit)`],
@@ -555,27 +551,38 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               <DollarSign className="w-6 h-6 text-[#e95623]" />
               Profit Center & Real-Time Revenue Engine
             </h1>
-            <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
-              Analisis performa finansial otomatis berbasis data produksi AssetFindr, jarak hauling aktual tiket jembatan timbang, dan beban operasional General Ledger (GL).
-            </p>
+            
           </div>
 
           {/* Controls: Periode GL Selector, Scope Selector & Refresh */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
-              <Calendar className="w-4 h-4 text-slate-400" />
-              <select
-                value={selectedPeriodId}
-                onChange={(e) => setSelectedPeriodId(e.target.value)}
-                disabled={isLoading}
-                className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
-              >
-                {periods.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.periodName} ({formatRupiah(p.totalDebet)})
-                  </option>
+            {/* Filter Periode per Tahun: 2026 / 2025 / 2024 */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-2xs">
+              <span className="text-xs font-black text-slate-700 px-2 flex items-center gap-1.5 uppercase tracking-wider">
+                <Calendar className="w-3.5 h-3.5 text-[#e95623]" />
+                Pilih Tahun:
+              </span>
+              <div className="flex items-center gap-1">
+                {[2026, 2025, 2024].map((year) => (
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => {
+                      setSelectedYear(year);
+                      if (year === 2026) setRatePerTonKm(1050);
+                      else if (year === 2025) setRatePerTonKm(1000);
+                      else if (year === 2024) setRatePerTonKm(950);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      selectedYear === year
+                        ? "bg-[#e95623] text-white shadow-xs"
+                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Tahun {year}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <button
@@ -617,15 +624,15 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                Total Produksi Tahun 2026 (YTD)
+                Total Produksi Tahun {selectedYear} (YTD)
               </span>
               <span className="text-xs text-slate-400 font-medium">
-                Data Resmi AssetFindr • Jan s/d Des 2026
+                Data Resmi AssetFindr • Jan s/d Des {selectedYear}
               </span>
             </div>
 
             <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-              Total Tonase Hauling PT Batara Dharma Persada (Tahun 2026)
+              Total Tonase Hauling PT Batara Dharma Persada (Tahun {selectedYear})
             </p>
             <div className="flex items-baseline gap-3 mt-1">
               <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
@@ -637,7 +644,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5">
-              Estimasi Revenue Tahun 2026:{" "}
+              Estimasi Revenue Tahun {selectedYear}:{" "}
               <span className="font-bold text-emerald-400">
                 {formatRupiah(calculation.yearlyGrossRevenue)}
               </span>{" "}
@@ -684,37 +691,6 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 {formatNum(calculation.yearlyMphRit, 0)} Rit • Operasi Agu - Nov
               </p>
             </div>
-
-            {/* Scope Switcher Button */}
-            <div className="flex flex-col gap-1 w-full sm:w-auto self-stretch sm:self-auto justify-center bg-slate-950/70 p-1 rounded-xl border border-slate-800">
-              <span className="text-[10px] font-bold text-slate-400 px-2 py-0.5 text-center">
-                Mode Analisis Finansial:
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setViewScope("yearly")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    viewScope === "yearly"
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  YTD 2026 Konsolidasi ({formatNum(calculation.yearlyTotalTon, 0)} T)
-                </button>
-                <button
-                  onClick={() => setViewScope("period")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    viewScope === "period"
-                      ? "bg-[#e95623] text-white shadow-xs"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  Bulan GL Aktif ({formatNum(calculation.periodTotalTonase, 0)} T)
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -735,7 +711,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               </h3>
             </div>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              {calculation.isYearlyScope ? "Scope: Full Year 2026" : "Scope: Periode GL"}
+              Scope: Tahun {selectedYear}
             </span>
           </div>
 
@@ -748,7 +724,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
               <p className="text-[10px] text-slate-400">
-                {calculation.isYearlyScope ? "Tonase Tahun 2026" : "Tonase Periode"}
+                Tonase Tahun {selectedYear}
               </p>
               <p className="font-bold text-slate-200 mt-0.5">{formatNum(calculation.totalTonase, 0)} Ton</p>
             </div>
@@ -1014,7 +990,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 Rumus A • Revenue
               </span>
               <span className="text-[11px] text-slate-400 font-medium">
-                {calculation.isYearlyScope ? "Full Year 2026" : "Periode GL"}
+                Tahun {selectedYear}
               </span>
             </div>
 
@@ -1143,10 +1119,10 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#e95623]" />
-              Rekapitulasi Finansial & Tonase per Jobsite (Revenue, Cost & Profit)
+              Rekapitulasi Finansial & Tonase per Jobsite (Tahun {selectedYear})
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Penjabaran Revenue, Cost operasional GL, potongan PPN (%), dan Profit bersih per unit operasional, perbandingan tonase periode berjalan vs total akumulasi tahun 2026.
+              Penjabaran Revenue, Cost operasional GL, potongan PPN ({ppnPercent}%), dan Profit bersih per unit operasional, perbandingan tonase periode berjalan vs total akumulasi tahun 2026.
             </p>
           </div>
           <span className={`text-xs font-bold px-3 py-1 rounded-lg border self-start sm:self-auto flex items-center gap-1.5 ${
@@ -1157,7 +1133,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             {calculation.isYearlyScope ? (
               <>
                 <Globe className="w-3.5 h-3.5 text-emerald-600" />
-                Scope: Akumulasi YTD 2026 (Konsolidasi Penuh)
+                Scope: Akumulasi Penuh Tahun {selectedYear}
               </>
             ) : (
               <>
@@ -1175,7 +1151,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <th className="py-3 px-4">Jobsite Operasional</th>
                 <th className="py-3 px-4 text-right">Tonase Periode (Ton)</th>
                 <th className="py-3 px-4 text-right bg-emerald-50/50 text-emerald-900">
-                  Total Tonase 2026 (Ton)
+                  Total Tonase {selectedYear} (Ton)
                 </th>
                 <th className="py-3 px-4 text-right">Avg Jarak (KM)</th>
                 <th className="py-3 px-4 text-right">Total Ton·KM</th>
@@ -1342,7 +1318,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               Visualisasi Finansial: Revenue, Cost & Profit (Setelah PPN)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Perbandingan nominal rupiah antara Revenue, Cost operasional GL, dan Profit setelah PPN (Scope: {calculation.isYearlyScope ? "Akumulasi Tahun 2026 Penuh" : "Periode GL Terpilih"}).
+              Perbandingan nominal rupiah antara Revenue, Cost operasional GL, dan Profit setelah PPN (Scope: Akumulasi Tahun {selectedYear}).
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs">
@@ -1396,7 +1372,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-[#e95623]" />
-              Rincian Akun Cost Operasional GL (Cost Drivers)
+              Rincian Akun Cost Operasional GL (Cost Drivers Tahun {selectedYear})
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Komponen biaya yang mengurangi Revenue menjadi Profit ({calculation.isYearlyScope ? "Sumber: Akumulasi YTD Resmi Laporan Keuangan" : `Sumber: GL Periode ${profitData?.period?.periodName || ""}`} • Total: {formatRupiah(calculation.cost)})
