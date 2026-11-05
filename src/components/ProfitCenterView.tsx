@@ -1269,8 +1269,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           {/* Result 1: TOTAL BONUS UNTUK SELURUH KARYAWAN */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-slate-900 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-200 text-slate-700 mb-2">
-                <Coins className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200 mb-2">
+                <Coins className="w-3.5 h-3.5 text-sky-600" />
                 Total Alokasi Bonus
               </span>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -1289,14 +1289,14 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           {/* Result 2: BONUS RATA-RATA TIAP KARYAWAN */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-slate-900 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-200 text-slate-700 mb-2">
-                <Users className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200 mb-2">
+                <Users className="w-3.5 h-3.5 text-sky-600" />
                 Bagi Rata per Individu
               </span>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Bonus Tiap Karyawan
               </p>
-              <h3 className="text-2xl font-black text-[#e95623] tracking-tight">
+              <h3 className="text-2xl font-black text-sky-600 tracking-tight">
                 {formatRupiah(bonusCalculation.perEmployee)}
                 <span className="text-xs font-normal text-slate-500 ml-1.5">/ Orang</span>
               </h3>
@@ -1310,14 +1310,14 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           {/* Result 3: SISA PROFIT UNTUK PERUSAHAAN / OWNER */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-slate-900 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-200 text-slate-700 mb-2">
-                <Wallet className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 mb-2">
+                <Wallet className="w-3.5 h-3.5 text-emerald-600" />
                 Retained Profit
               </span>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Sisa Profit Perusahaan (Owner)
               </p>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+              <h3 className="text-2xl font-black text-emerald-700 tracking-tight">
                 {formatRupiah(bonusCalculation.retainedProfit)}
               </h3>
             </div>
@@ -1332,23 +1332,27 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold mb-1.5 gap-1">
             <span className="text-slate-700 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-500 shrink-0" />
-              Sisa Profit Perusahaan: {bonusCalculation.ownerPercent.toFixed(1)}% ({formatRupiah(bonusCalculation.retainedProfit)})
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 shadow-xs" />
+              <span>Sisa Profit Perusahaan:</span>
+              <span className="text-emerald-700 font-black">{bonusCalculation.ownerPercent.toFixed(1)}%</span>
+              <span className="text-slate-500 font-semibold">({formatRupiah(bonusCalculation.retainedProfit)})</span>
             </span>
             <span className="text-slate-700 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#e95623] shrink-0" />
-              Bonus Karyawan: {bonusPercent}% ({formatRupiah(bonusCalculation.totalBonus)})
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0 shadow-xs" />
+              <span>Bonus Karyawan:</span>
+              <span className="text-sky-700 font-black">{bonusPercent}%</span>
+              <span className="text-slate-500 font-semibold">({formatRupiah(bonusCalculation.totalBonus)})</span>
             </span>
           </div>
           <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex">
             <div
               style={{ width: `${bonusCalculation.ownerPercent}%` }}
-              className="bg-slate-400 h-full transition-all duration-300"
-              title={`Owner: ${bonusCalculation.ownerPercent.toFixed(1)}%`}
+              className="bg-emerald-400 h-full transition-all duration-300"
+              title={`Sisa Profit Perusahaan: ${bonusCalculation.ownerPercent.toFixed(1)}%`}
             />
             <div
               style={{ width: `${bonusPercent}%` }}
-              className="bg-[#e95623] h-full transition-all duration-300"
+              className="bg-sky-400 h-full transition-all duration-300"
               title={`Bonus Karyawan: ${bonusPercent}%`}
             />
           </div>
