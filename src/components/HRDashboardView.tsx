@@ -368,7 +368,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                           <span className="font-medium text-slate-800 w-36 truncate">{item.label}</span>
                           <span className="font-mono font-bold text-slate-900 w-12 text-right">{item.count}</span>
                           <span className="font-mono text-slate-500 w-12 text-right">{item.ratio}%</span>
-                          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden min-w-[60px]">
+                          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden min-w-15">
                             <div
                               className={`h-full rounded-full ${item.color || "bg-[#1c3d73]"}`}
                               style={{ width: `${Math.min(item.ratio, 100)}%` }}
@@ -395,7 +395,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                           <span className="font-medium text-slate-800 w-36 truncate">{item.label}</span>
                           <span className="font-mono font-bold text-slate-900 w-12 text-right">{item.count}</span>
                           <span className="font-mono text-slate-500 w-12 text-right">{item.ratio}%</span>
-                          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden min-w-[60px]">
+                          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden min-w-15">
                             <div
                               className={`h-full rounded-full ${item.color || "bg-emerald-600"}`}
                               style={{ width: `${Math.min(item.ratio, 100)}%` }}
@@ -424,7 +424,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                           <span className="font-medium text-slate-800 w-36 truncate">{item.label}</span>
                           <span className="font-mono font-bold text-slate-900 w-12 text-right">{item.count}</span>
                           <span className="font-mono text-slate-500 w-12 text-right">{item.ratio}%</span>
-                          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden min-w-[60px]">
+                          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden min-w-15">
                             <div
                               className={`h-full rounded-full ${item.color || "bg-indigo-600"}`}
                               style={{ width: `${Math.min(item.ratio, 100)}%` }}
