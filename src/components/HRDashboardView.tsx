@@ -18,6 +18,7 @@ import {
   MapPin,
   Calendar,
   CheckCircle2,
+  FileDown,
   Filter,
   ChevronDown,
   ChevronUp,
@@ -42,6 +43,7 @@ import {
   Legend,
   ReferenceLine,
 } from "recharts";
+import { HRDashboardPdfExportModal } from "./HRDashboardPdfExportModal";
 import {
   manpowerService,
   HRDashboardData,
@@ -63,6 +65,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
 
   // Trend Chart State
   const [chartMode, setChartMode] = useState<ChartMode>("active");
@@ -499,7 +502,17 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5">
+          {/* Download PDF Button */}
+          <button
+            onClick={() => setIsPdfModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
+            title="Download Laporan Eksekutif Manpower (PDF Landscape)"
+          >
+            <FileDown className="w-3.5 h-3.5 text-[#1c3d73]" />
+            <span>Download PDF</span>
+          </button>
+
           {/* Sync Button */}
           <button
             onClick={handleSync}
@@ -2106,6 +2119,21 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
             </div>
           </div>
         </div>
+
+      {/* Professional Multi-Page PDF Export Modal */}
+      <HRDashboardPdfExportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        data={data}
+        user={user}
+        processedTrendData={chartData}
+        trendMetrics={trendMetrics}
+        branchProportionData={branchProportionData}
+        localityProportionData={localityProportionData}
+        localityPerBranchData={localityPerBranchData}
+        deptDistributionData={deptDistributionData}
+        jobLevelStackedData={jobLevelStackedData}
+      />
     </div>
   );
 };
