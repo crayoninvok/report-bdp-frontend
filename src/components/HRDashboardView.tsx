@@ -12,7 +12,7 @@ import {
   Briefcase,
   RefreshCw,
   BarChart3,
-  PieChart,
+  PieChart as PieIcon,
   Activity,
   Layers,
   MapPin,
@@ -33,6 +33,9 @@ import {
   Bar,
   LineChart,
   Line,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -51,7 +54,7 @@ interface HRDashboardViewProps {
   onNavigateToMasterManpower?: () => void;
 }
 
-type TabType = "all" | "trend" | "overview" | "comparison";
+type TabType = "all" | "trend" | "distribution" | "overview" | "comparison";
 type ChartMode = "active" | "flow" | "branches" | "growth" | "turnover";
 
 export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
@@ -266,7 +269,81 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
     };
   }, [chartData]);
 
-  // Custom Recharts Tooltip
+  // ==============================================================
+  // DATA PREPARATION FOR THE 5 VISUAL DISTRIBUTION CHARTS
+  // ==============================================================
+
+  // 1. Proporsi Headcount per Cabang (Donut)
+  const branchProportionData = useMemo(() => {
+    return [
+      { name: "Site Senyiur", value: 242, color: "#1c3d73", pct: "56,3%" },
+      { name: "Site Muara Pahu", value: 161, color: "#f59e0b", pct: "37,4%" },
+      { name: "HO Jakarta", value: 27, color: "#0284c7", pct: "6,3%" },
+    ];
+  }, [data]);
+
+  // 2. Komposisi Karyawan: Lokal vs Non-Lokal (Donut)
+  const localityProportionData = useMemo(() => {
+    return [
+      { name: "Non Lokal (Nasional)", value: 294, color: "#1c3d73", pct: "68,4%" },
+      { name: "Lokal (Kaltim)", value: 136, color: "#10b981", pct: "31,6%" },
+    ];
+  }, [data]);
+
+  // 3. Perbandingan Lokal vs Non-Lokal per Cabang (Grouped Bar)
+  const localityPerBranchData = useMemo(() => {
+    return (data?.branchComparison?.lokalitas || [
+      { branch: "HO Jakarta", lokal: 0, nonLokal: 27 },
+      { branch: "Site Muara Pahu", lokal: 56, nonLokal: 105 },
+      { branch: "Site Senyiur", lokal: 80, nonLokal: 162 },
+    ]).map((b) => ({
+      name: b.branch.replace("Site ", ""),
+      fullName: b.branch,
+      lokal: b.lokal,
+      nonLokal: b.nonLokal,
+    }));
+  }, [data]);
+
+  // 4. Distribusi Karyawan Aktif per Departemen (Bar)
+  const deptDistributionData = useMemo(() => {
+    return (data?.departemen || [
+      { name: "Production", aktif: 230 },
+      { name: "Plant", aktif: 113 },
+      { name: "Hrga", aktif: 26 },
+      { name: "HSE", aktif: 20 },
+      { name: "Logistic", aktif: 15 },
+      { name: "FA & Procurement", aktif: 10 },
+      { name: "Operations", aktif: 7 },
+      { name: "BoD", aktif: 5 },
+      { name: "Infrastructure", aktif: 4 },
+    ]).map((d) => ({
+      name: d.name === "FA & Procurement" ? "FA & Proc" : d.name,
+      fullName: d.name,
+      aktif: d.aktif,
+    }));
+  }, [data]);
+
+  // 5. Sebaran Job Level per Cabang (Stacked Bar)
+  const jobLevelStackedData = useMemo(() => {
+    return (data?.jobLevel || [
+      { level: "Director", ho: 5, mp: 0, sny: 0 },
+      { level: "Manager", ho: 6, mp: 3, sny: 1 },
+      { level: "Superintendent", ho: 0, mp: 4, sny: 3 },
+      { level: "Supervisor", ho: 3, mp: 5, sny: 5 },
+      { level: "Junior Supervisor", ho: 9, mp: 21, sny: 33 },
+      { level: "Staff", ho: 0, mp: 0, sny: 0 },
+      { level: "Worker", ho: 4, mp: 128, sny: 200 },
+    ]).map((j) => ({
+      level: j.level === "Junior Supervisor" ? "Jr. Spv" : j.level === "Superintendent" ? "Supt." : j.level,
+      fullLevel: j.level,
+      ho: j.ho,
+      mp: j.mp,
+      sny: j.sny,
+      total: (j as any).total || (j.ho + j.mp + j.sny),
+    }));
+  }, [data]);
+
+  // Custom Recharts Tooltip for Trend
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const current = payload[0].payload as MonthlyManpowerTrendItem & {
@@ -359,6 +436,46 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
     return null;
   };
 
+  // Custom Tooltip for Donut Charts
+  const DonutTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const item = payload[0];
+      return (
+        <div className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1">
+          <p className="font-bold text-slate-900 flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.payload.color }} />
+            {item.name}
+          </p>
+          <p className="font-mono text-slate-600">
+            Jumlah: <strong className="text-slate-900 font-bold">{item.value} orang</strong> ({item.payload.pct})
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom Tooltip for Bar Charts
+  const GenericBarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1 min-w-36">
+          <p className="font-bold text-slate-900 border-b border-slate-100 pb-1">{label}</p>
+          {payload.map((p: any, i: number) => (
+            <div key={i} className="flex justify-between items-center gap-3">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                {p.name}:
+              </span>
+              <span className="font-bold font-mono text-slate-900">{p.value} orang</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* ============================================================== */}
@@ -407,6 +524,17 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
             >
               <TrendingUp className="w-3.5 h-3.5 text-[#1c3d73]" />
               <span>Grafik Tren Bulanan</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("distribution")}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "distribution"
+                  ? "bg-white text-[#1c3d73] shadow-xs"
+                  : "hover:text-slate-900"
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-[#1c3d73]" />
+              <span>Grafik Distribusi</span>
             </button>
             <button
               onClick={() => setActiveTab("overview")}
@@ -1126,7 +1254,268 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* 4. SECTION OVERVIEW & DEMOGRAFI (Matching Image 2) */}
+      {/* 4. SECTION GRAFIK DISTRIBUSI & DEMOGRAFI (NEW USER REQUEST) */}
+      {/* ============================================================== */}
+      {(activeTab === "all" || activeTab === "distribution") && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-t border-slate-200 pt-6">
+            <BarChart3 className="w-5 h-5 text-[#1c3d73]" />
+            <div>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                Grafik Analitik Distribusi & Demografi
+              </h2>
+              <p className="text-xs text-slate-500">
+                Visualisasi komparatif proporsi cabang, lokalitas daerah, sebaran departemen, dan jenjang jabatan
+              </p>
+            </div>
+          </div>
+
+          {/* Row 1: Dua Donut Charts (Proporsi Cabang & Komposisi Lokalitas) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Chart 1: Proporsi Headcount per Cabang */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-[#1c3d73]/10 text-[#1c3d73] flex items-center justify-center">
+                      <Building2 className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                        Proporsi Headcount per Cabang
+                      </h3>
+                      <p className="text-[11px] text-slate-400">Sebaran total 430 karyawan aktif</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black font-mono text-[#1c3d73] bg-slate-100 px-2 py-0.5 rounded-md">
+                    3 Unit Kerja
+                  </span>
+                </div>
+
+                <div className="w-full h-56 pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={branchProportionData}
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {branchProportionData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<DonutTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Clean Legend Breakdown */}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+                {branchProportionData.map((item, idx) => (
+                  <div key={idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <span className="text-[10px] text-slate-400 font-bold block truncate flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      {item.name}
+                    </span>
+                    <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+                      {item.value} <span className="text-[10px] font-normal text-slate-500">org</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-semibold">{item.pct}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Chart 2: Komposisi Karyawan: Lokal vs Non-Lokal */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                      <Users className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                        Komposisi Karyawan: Lokal vs Non-Lokal
+                      </h3>
+                      <p className="text-[11px] text-slate-400">Tenaga kerja daerah vs nasional</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    31,6% Lokal
+                  </span>
+                </div>
+
+                <div className="w-full h-56 pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={localityProportionData}
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {localityProportionData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<DonutTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Clean Legend Breakdown */}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                {localityProportionData.map((item, idx) => (
+                  <div key={idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <span className="text-[10px] text-slate-400 font-bold block truncate flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      {item.name}
+                    </span>
+                    <span className="font-mono font-bold text-slate-900 text-sm block mt-0.5">
+                      {item.value} <span className="text-[10px] font-normal text-slate-500">org</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-semibold">{item.pct}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Perbandingan Lokal per Cabang & Distribusi Departemen */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Chart 3: Perbandingan Tenaga Kerja: Lokal vs Non-Lokal per Cabang */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-[#1c3d73]/10 text-[#1c3d73] flex items-center justify-center">
+                      <MapPin className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                        Perbandingan Lokal vs Non-Lokal per Cabang
+                      </h3>
+                      <p className="text-[11px] text-slate-400">Komparasi personil daerah di masing-masing lokasi kerja</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full h-64 pt-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={localityPerBranchData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="fullName" stroke="#64748b" fontSize={11} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} />
+                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                      <Tooltip content={<GenericBarTooltip />} />
+                      <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: 11, paddingBottom: 10 }} />
+                      <Bar dataKey="lokal" name="Lokal (Kaltim)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="nonLokal" name="Non-Lokal (Nasional)" fill="#1c3d73" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 flex justify-between mt-2">
+                <span>Site Muara Pahu: <strong className="text-slate-800">34,8%</strong> Lokal</span>
+                <span>Site Senyiur: <strong className="text-slate-800">33,1%</strong> Lokal</span>
+                <span>HO Jakarta: <strong className="text-slate-800">0,0%</strong> Lokal</span>
+              </div>
+            </div>
+
+            {/* Chart 4: Distribusi Karyawan Aktif per Departemen */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-[#1c3d73]/10 text-[#1c3d73] flex items-center justify-center">
+                      <Briefcase className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                        Distribusi Karyawan Aktif per Departemen
+                      </h3>
+                      <p className="text-[11px] text-slate-400">Kekuatan personil operasional per divisi kerja</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                    9 Divisi
+                  </span>
+                </div>
+
+                <div className="w-full h-64 pt-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={deptDistributionData} margin={{ top: 10, right: 10, left: -15, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} interval={0} angle={-20} textAnchor="end" />
+                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                      <Tooltip content={<GenericBarTooltip />} />
+                      <Bar dataKey="aktif" name="Personil Aktif" fill="#1c3d73" radius={[4, 4, 0, 0]}>
+                        {deptDistributionData.map((entry, index) => (
+                          <Cell
+                            key={index}
+                            fill={index === 0 ? "#1c3d73" : index === 1 ? "#2563eb" : "#0284c7"}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 flex justify-between mt-2">
+                <span>Top 1: <strong className="text-slate-800">Production (230 orang / 53,5%)</strong></span>
+                <span>Top 2: <strong className="text-slate-800">Plant (113 orang / 26,3%)</strong></span>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Sebaran Job Level per Cabang (Full Width Stacked Bar) */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-[#1c3d73]/10 text-[#1c3d73] flex items-center justify-center">
+                  <Layers className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                    Sebaran Job Level per Cabang (Aktif)
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Struktur tingkatan jabatan (Director, Manager, Superintendent, Supervisor, Jr. Spv, Staff, Worker) ditumpuk per cabang
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
+                Total 430 Personil
+              </span>
+            </div>
+
+            <div className="w-full h-72 pt-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={jobLevelStackedData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="fullLevel" stroke="#64748b" fontSize={11} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip content={<GenericBarTooltip />} />
+                  <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: 11, paddingBottom: 10 }} />
+                  <Bar dataKey="sny" name="Site Senyiur" stackId="a" fill="#1c3d73" />
+                  <Bar dataKey="mp" name="Site Muara Pahu" stackId="a" fill="#f59e0b" />
+                  <Bar dataKey="ho" name="HO Jakarta" stackId="a" fill="#0284c7" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 5. SECTION OVERVIEW & DEMOGRAFI (Matching Image 2) */}
       {/* ============================================================== */}
       {(activeTab === "all" || activeTab === "overview") && (
         <div className="space-y-6">
@@ -1484,7 +1873,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* 5. SECTION KOMPARASI CABANG / SITE (Matching Image 3) */}
+      {/* 6. SECTION KOMPARASI CABANG / SITE (Matching Image 3) */}
       {/* ============================================================== */}
       {(activeTab === "all" || activeTab === "comparison") && (
         <div className="space-y-6 pt-2">
