@@ -1300,7 +1300,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               </p>
               <h3 className="text-2xl font-black text-white tracking-tight">
                 {formatRupiah(bonusCalculation.perEmployee)}
-                <span className="text-xs font-bold text-white/80 ml-1.5 font-normal">/ Orang</span>
+                <span className="text-xs font-normal text-white/80 ml-1.5">/ Orang</span>
               </h3>
             </div>
             <div className="mt-3 pt-2.5 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
