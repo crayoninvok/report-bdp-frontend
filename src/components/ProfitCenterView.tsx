@@ -65,8 +65,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
   const [profitData, setProfitData] = useState<GLProfitCenterData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
-  // Scope Tampilan: 'period' (Periode GL aktif) atau 'yearly' (Akumulasi Penuh Tahun 2026)
-  const [viewScope, setViewScope] = useState<"period" | "yearly">("period");
+  // Scope Tampilan: 'yearly' (Default YTD Akumulasi Penuh Tahun 2026) atau 'period' (Periode GL aktif)
+  const [viewScope, setViewScope] = useState<"period" | "yearly">("yearly");
 
   // Rate Kontrak per Ton-KM (Tahun 2026 Default: Rp 1,050.00 ton/km)
   const [ratePerTonKm, setRatePerTonKm] = useState<number>(1050);
@@ -210,11 +210,21 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     const yearlyRevMph = Math.round(yearlyTonKmMph * rate);
     const yearlyGrossRevenue = yearlyRevSny + yearlyRevMph;
 
-    // Beban Biaya GL
-    const opexMph = profitData?.opex?.mph || 0;
-    const opexSny = profitData?.opex?.sny || 0;
-    const opexHof = profitData?.opex?.hof || 0;
-    const totalBebanGL = profitData?.opex?.total || opexMph + opexSny + opexHof;
+    // Beban Biaya GL (Tergantung Scope: YTD Akumulasi 2026 Resmi atau Periode GL Berjalan)
+    const ytdOpexMph = profitData?.ytd?.opex?.mph ?? 59012938902;
+    const ytdOpexSny = profitData?.ytd?.opex?.sny ?? 317033436148;
+    const ytdOpexHof = profitData?.ytd?.opex?.hof ?? 13514226;
+    const ytdTotalOpex = profitData?.ytd?.opex?.total ?? (ytdOpexMph + ytdOpexSny + ytdOpexHof);
+
+    const periodOpexMph = profitData?.opex?.mph || 0;
+    const periodOpexSny = profitData?.opex?.sny || 0;
+    const periodOpexHof = profitData?.opex?.hof || 0;
+    const periodTotalOpex = profitData?.opex?.total || (periodOpexMph + periodOpexSny + periodOpexHof);
+
+    const opexMph = isYearlyScope ? ytdOpexMph : periodOpexMph;
+    const opexSny = isYearlyScope ? ytdOpexSny : periodOpexSny;
+    const opexHof = isYearlyScope ? ytdOpexHof : periodOpexHof;
+    const totalBebanGL = isYearlyScope ? ytdTotalOpex : periodTotalOpex;
 
     // B. KEUNTUNGAN BERSIH = Keuntungan Kotor - Beban Cost yang ada pada GL
     const keuntunganBersih = keuntunganKotor - totalBebanGL;
@@ -321,17 +331,24 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     ];
   }, [calculation]);
 
-  // Filtered GL Expense Summaries
+  // Filtered GL Expense Summaries (Beban Biaya YTD 2026 atau Periode Tertentu)
+  const activeSummaries = useMemo(() => {
+    if (viewScope === "yearly" && profitData?.ytd?.summaries) {
+      return profitData.ytd.summaries;
+    }
+    return profitData?.summaries || [];
+  }, [viewScope, profitData]);
+
   const filteredSummaries = useMemo(() => {
-    if (!profitData?.summaries) return [];
-    if (!searchQuery.trim()) return profitData.summaries;
+    if (!activeSummaries || activeSummaries.length === 0) return [];
+    if (!searchQuery.trim()) return activeSummaries;
     const q = searchQuery.toLowerCase();
-    return profitData.summaries.filter(
+    return activeSummaries.filter(
       (s) =>
         s.accountCode.toLowerCase().includes(q) ||
         s.accountName.toLowerCase().includes(q)
     );
-  }, [profitData?.summaries, searchQuery]);
+  }, [activeSummaries, searchQuery]);
 
   // Export Table Data to CSV
   const handleExportCSV = () => {
@@ -636,17 +653,6 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               </span>
               <div className="flex gap-1">
                 <button
-                  onClick={() => setViewScope("period")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    viewScope === "period"
-                      ? "bg-[#e95623] text-white shadow-xs"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  Periode GL Aktif ({formatNum(calculation.periodTotalTonase, 0)} T)
-                </button>
-                <button
                   onClick={() => setViewScope("yearly")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                     viewScope === "yearly"
@@ -655,7 +661,18 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   }`}
                 >
                   <Globe className="w-3.5 h-3.5" />
-                  Full Year 2026 ({formatNum(calculation.yearlyTotalTon, 0)} T)
+                  YTD 2026 Konsolidasi ({formatNum(calculation.yearlyTotalTon, 0)} T)
+                </button>
+                <button
+                  onClick={() => setViewScope("period")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    viewScope === "period"
+                      ? "bg-[#e95623] text-white shadow-xs"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  Bulan GL Aktif ({formatNum(calculation.periodTotalTonase, 0)} T)
                 </button>
               </div>
             </div>
@@ -1043,8 +1060,22 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               Penjabaran rumus Keuntungan Kotor dan Keuntungan Bersih per unit operasional, perbandingan tonase periode berjalan vs total akumulasi tahun 2026.
             </p>
           </div>
-          <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 self-start sm:self-auto">
-            Periode: {profitData?.period?.periodName || "Aktif"}
+          <span className={`text-xs font-bold px-3 py-1 rounded-lg border self-start sm:self-auto flex items-center gap-1.5 ${
+            calculation.isYearlyScope
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-slate-100 text-slate-700 border-slate-200"
+          }`}>
+            {calculation.isYearlyScope ? (
+              <>
+                <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                Scope: Akumulasi YTD 2026 (Konsolidasi Penuh)
+              </>
+            ) : (
+              <>
+                <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                Scope: Periode GL {profitData?.period?.periodName || "Aktif"}
+              </>
+            )}
           </span>
         </div>
 
@@ -1273,7 +1304,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               Rincian Akun Beban Biaya Operasional GL (Cost Drivers)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Komponen biaya yang mengurangi Keuntungan Kotor menjadi Keuntungan Bersih (Total: {formatRupiah(calculation.totalBebanGL)})
+              Komponen biaya yang mengurangi Keuntungan Kotor menjadi Keuntungan Bersih ({calculation.isYearlyScope ? "Sumber: Akumulasi YTD Resmi Laporan Keuangan" : `Sumber: GL Periode ${profitData?.period?.periodName || ""}`} • Total: {formatRupiah(calculation.totalBebanGL)})
             </p>
           </div>
 

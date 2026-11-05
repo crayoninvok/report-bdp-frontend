@@ -184,6 +184,46 @@ export interface GLProfitCenterData {
     totalTonKm: number;
     grossRevenue: number;
   };
+  ytd?: {
+    year: number;
+    production: {
+      totalTon: number;
+      mphTon: number;
+      snyTon: number;
+      totalRit: number;
+      mphRit: number;
+      snyRit: number;
+      totalTonKm: number;
+    };
+    revenue: {
+      total: number;
+      mph: number;
+      sny: number;
+    };
+    opex: {
+      total: number;
+      directSite: number;
+      mph: number;
+      sny: number;
+      hof: number;
+    };
+    profit: {
+      netConsolidated: number;
+      netMph: number;
+      netSny: number;
+      marginPercentConsolidated: number;
+      marginPercentMph: number;
+      marginPercentSny: number;
+    };
+    summaries: Array<{
+      accountCode: string;
+      accountName: string;
+      hofAmount: number;
+      mphAmount: number;
+      snyAmount: number;
+      grandTotal: number;
+    }>;
+  };
   revenue: {
     total: number;
     mph: number;
