@@ -70,6 +70,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
   // Rate Kontrak per Ton-KM (Tahun 2026 Default: Rp 1,050.00 ton/km)
   const [ratePerTonKm, setRatePerTonKm] = useState<number>(1050);
+  // Tarif Pajak PPN (Default 15%, rentang 15% - 20%)
+  const [ppnPercent, setPpnPercent] = useState<number>(15);
   const [selectedYear, setSelectedYear] = useState<number>(2026);
 
   // Rata-rata Jarak (KM) dari semua tiket AssetFindr (Default berdasarkan data tiket aktual)
@@ -129,6 +131,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       const res = await glService.getProfitCenter({
         periodId: selectedPeriodId || undefined,
         ratePerTonKm,
+        ppnPercent,
         avgKmOverall,
         avgKmSny,
         avgKmMph,
@@ -152,7 +155,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthorized, selectedPeriodId, ratePerTonKm, avgKmOverall, avgKmSny, avgKmMph, isCustomDistance]);
+  }, [isAuthorized, selectedPeriodId, ratePerTonKm, ppnPercent, avgKmOverall, avgKmSny, avgKmMph, isCustomDistance]);
 
   useEffect(() => {
     if (selectedPeriodId) {
@@ -196,11 +199,12 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     // 3. Rate Kontrak
     const rate = ratePerTonKm;
 
-    // A. KEUNTUNGAN KOTOR (REVENUE) = Total Tonase * Average Distance (km) * Rate per ton/km
+    // A. REVENUE = Total Tonase * Average Distance (km) * Rate per ton/km
     const revSny = Math.round(tonaseSny * kmSny * rate);
     const revMph = Math.round(tonaseMph * kmMph * rate);
-    const keuntunganKotor =
+    const revenue =
       revSny + revMph > 0 ? revSny + revMph : Math.round(totalTonase * kmOverall * rate);
+    const keuntunganKotor = revenue;
 
     // Perhitungan Khusus Tahun 2026 Penuh
     const yearlyTonKmSny = yearlySnyTon * kmSny;
@@ -210,7 +214,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     const yearlyRevMph = Math.round(yearlyTonKmMph * rate);
     const yearlyGrossRevenue = yearlyRevSny + yearlyRevMph;
 
-    // Beban Biaya GL (Tergantung Scope: YTD Akumulasi 2026 Resmi atau Periode GL Berjalan)
+    // COST (Beban Biaya Operasional GL)
     const ytdOpexMph = profitData?.ytd?.opex?.mph ?? 59012938902;
     const ytdOpexSny = profitData?.ytd?.opex?.sny ?? 317033436148;
     const ytdOpexHof = profitData?.ytd?.opex?.hof ?? 13514226;
@@ -224,18 +228,32 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     const opexMph = isYearlyScope ? ytdOpexMph : periodOpexMph;
     const opexSny = isYearlyScope ? ytdOpexSny : periodOpexSny;
     const opexHof = isYearlyScope ? ytdOpexHof : periodOpexHof;
-    const totalBebanGL = isYearlyScope ? ytdTotalOpex : periodTotalOpex;
+    const cost = isYearlyScope ? ytdTotalOpex : periodTotalOpex;
+    const totalBebanGL = cost;
 
-    // B. KEUNTUNGAN BERSIH = Keuntungan Kotor - Beban Cost yang ada pada GL
-    const keuntunganBersih = keuntunganKotor - totalBebanGL;
-    const keuntunganBersihMph = revMph - opexMph;
-    const keuntunganBersihSny = revSny - opexSny;
+    // B. PROFIT = (Revenue - Cost) - PPN (15% - 20%)
+    const profitBeforePpn = revenue - cost;
+    const profitBeforePpnMph = revMph - opexMph;
+    const profitBeforePpnSny = revSny - opexSny;
+
+    // Potongan PPN (sekitar 15-20%)
+    const ppnAmount = Math.round(Math.max(0, profitBeforePpn) * (ppnPercent / 100));
+    const ppnAmountMph = Math.round(Math.max(0, profitBeforePpnMph) * (ppnPercent / 100));
+    const ppnAmountSny = Math.round(Math.max(0, profitBeforePpnSny) * (ppnPercent / 100));
+
+    // Profit Final (Setelah PPN)
+    const profit = profitBeforePpn - ppnAmount;
+    const profitMph = profitBeforePpnMph - ppnAmountMph;
+    const profitSny = profitBeforePpnSny - ppnAmountSny;
+    const keuntunganBersih = profit;
+    const keuntunganBersihMph = profitMph;
+    const keuntunganBersihSny = profitSny;
 
     // Margin Persentase (%)
     const marginPercent =
-      keuntunganKotor > 0 ? (keuntunganBersih / keuntunganKotor) * 100 : 0;
-    const marginMph = revMph > 0 ? (keuntunganBersihMph / revMph) * 100 : 0;
-    const marginSny = revSny > 0 ? (keuntunganBersihSny / revSny) * 100 : 0;
+      revenue > 0 ? (profit / revenue) * 100 : 0;
+    const marginMph = revMph > 0 ? (profitMph / revMph) * 100 : 0;
+    const marginSny = revSny > 0 ? (profitSny / revSny) * 100 : 0;
 
     // Ton-KM
     const tonKmSny = tonaseSny * kmSny;
@@ -244,11 +262,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
     // Per Ton metrics (Rp/Ton)
     const netPerTon =
-      totalTonase > 0 ? Math.round(keuntunganBersih / totalTonase) : 0;
+      totalTonase > 0 ? Math.round(profit / totalTonase) : 0;
     const revPerTon =
-      totalTonase > 0 ? Math.round(keuntunganKotor / totalTonase) : 0;
+      totalTonase > 0 ? Math.round(revenue / totalTonase) : 0;
     const costPerTon =
-      totalTonase > 0 ? Math.round(totalBebanGL / totalTonase) : 0;
+      totalTonase > 0 ? Math.round(cost / totalTonase) : 0;
+    const ppnPerTon =
+      totalTonase > 0 ? Math.round(ppnAmount / totalTonase) : 0;
 
     return {
       // Periode Aktif
@@ -281,25 +301,39 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       tonKmTotal,
       revSny,
       revMph,
-      keuntunganKotor,
+      revenue,
+      keuntunganKotor: revenue,
       opexMph,
       opexSny,
       opexHof,
-      totalBebanGL,
-      keuntunganBersih,
-      keuntunganBersihMph,
-      keuntunganBersihSny,
+      cost,
+      totalBebanGL: cost,
+      profitBeforePpn,
+      profitBeforePpnMph,
+      profitBeforePpnSny,
+      ppnPercent,
+      ppnAmount,
+      ppnAmountMph,
+      ppnAmountSny,
+      profit,
+      keuntunganBersih: profit,
+      profitMph,
+      keuntunganBersihMph: profitMph,
+      profitSny,
+      keuntunganBersihSny: profitSny,
       marginPercent,
       marginMph,
       marginSny,
       netPerTon,
       revPerTon,
       costPerTon,
+      ppnPerTon,
       isYearlyScope,
     };
   }, [
     profitData,
     ratePerTonKm,
+    ppnPercent,
     avgKmOverall,
     avgKmSny,
     avgKmMph,
@@ -314,19 +348,19 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         name: "Muara Pahu (MPH)",
         revenue: calculation.revMph,
         cost: calculation.opexMph,
-        profit: calculation.keuntunganBersihMph,
+        profit: calculation.profitMph,
       },
       {
         name: "Senyiur (SNY)",
         revenue: calculation.revSny,
         cost: calculation.opexSny,
-        profit: calculation.keuntunganBersihSny,
+        profit: calculation.profitSny,
       },
       {
         name: calculation.isYearlyScope ? "Total 2026 (YTD)" : "Total Konsolidasi",
-        revenue: calculation.keuntunganKotor,
-        cost: calculation.totalBebanGL,
-        profit: calculation.keuntunganBersih,
+        revenue: calculation.revenue,
+        cost: calculation.cost,
+        profit: calculation.profit,
       },
     ];
   }, [calculation]);
@@ -356,14 +390,14 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     const rows = [
       ["PROFIT CENTER - LAPORAN KEUANGAN & REVENUE REAL-TIME"],
       [`Periode GL: ${profitData.period?.periodName || "-"}`],
-      [`Tahun Anggaran: ${selectedYear} | Rate: Rp ${ratePerTonKm} / Ton-KM`],
+      [`Tahun Anggaran: ${selectedYear} | Rate: Rp ${ratePerTonKm} / Ton-KM | Tarif PPN: \%`],
       [`TOTAL TONASE TAHUN 2026 (YTD): ${calculation.yearlyTotalTon.toLocaleString("id-ID")} Ton`],
       [`  - Senyiur 2026: ${calculation.yearlySnyTon.toLocaleString("id-ID")} Ton (${calculation.yearlySnyRit} Rit)`],
       [`  - Muara Pahu 2026: ${calculation.yearlyMphTon.toLocaleString("id-ID")} Ton (${calculation.yearlyMphRit} Rit)`],
       [""],
       ["RUMUS PERHITUNGAN:"],
-      ["A. Keuntungan Kotor = Total Tonase * Average Distance (km) * Rate per ton (1.050)"],
-      ["B. Keuntungan Bersih = Keuntungan Kotor - Beban Cost yang ada pada GL"],
+      ["A. Revenue = Total Tonase * Average Distance (km) * Rate per ton (1.050)"],
+      ["B. Profit = (Revenue - Cost) - PPN (\%)"],
       [""],
       [
         "Jobsite",
@@ -372,9 +406,10 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         "Avg Distance (KM)",
         "Total Ton-KM",
         "Rate (Rp/Ton-KM)",
-        "Keuntungan Kotor / Revenue (Rp)",
-        "Beban Cost GL (Rp)",
-        "Keuntungan Bersih (Rp)",
+        "Revenue (Rp)",
+        "Cost (Rp)",
+        "PPN \% (Rp)",
+        "Profit (Rp)",
         "Margin (%)",
       ],
       [
@@ -386,7 +421,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         calculation.rate,
         calculation.revMph,
         calculation.opexMph,
-        calculation.keuntunganBersihMph,
+        calculation.ppnAmountMph,
+        calculation.profitMph,
         `${calculation.marginMph.toFixed(2)}%`,
       ],
       [
@@ -398,7 +434,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         calculation.rate,
         calculation.revSny,
         calculation.opexSny,
-        calculation.keuntunganBersihSny,
+        calculation.ppnAmountSny,
+        calculation.profitSny,
         `${calculation.marginSny.toFixed(2)}%`,
       ],
       [
@@ -410,6 +447,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         0,
         0,
         calculation.opexHof,
+        0,
         -calculation.opexHof,
         "-",
       ],
@@ -420,9 +458,10 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         calculation.kmOverall.toFixed(2),
         calculation.tonKmTotal.toFixed(0),
         calculation.rate,
-        calculation.keuntunganKotor,
-        calculation.totalBebanGL,
-        calculation.keuntunganBersih,
+        calculation.revenue,
+        calculation.cost,
+        calculation.ppnAmount,
+        calculation.profit,
         `${calculation.marginPercent.toFixed(2)}%`,
       ],
     ];
@@ -598,7 +637,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5">
-              Estimasi Revenue Kotor Tahun 2026:{" "}
+              Estimasi Revenue Tahun 2026:{" "}
               <span className="font-bold text-emerald-400">
                 {formatRupiah(calculation.yearlyGrossRevenue)}
               </span>{" "}
@@ -684,7 +723,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       {/* 3. FORMULA BLUEPRINT BANNER (RUMUS RESMI SESUAI REQUEST) */}
       {/* ============================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Rumus A: Keuntungan Kotor */}
+        {/* Rumus A: Revenue */}
         <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white border border-slate-700/60 shadow-md relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -692,7 +731,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 A
               </span>
               <h3 className="text-sm font-bold tracking-tight text-white">
-                Rumus Keuntungan Kotor (Revenue)
+                Rumus Revenue
               </h3>
             </div>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -702,7 +741,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
           <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-700/60 mb-3 font-mono text-xs text-emerald-300 leading-relaxed">
             <p className="font-bold text-white">
-              Keuntungan Kotor = Total Tonase (Senyiur + Muara Pahu) × Average KM × Rate per Ton (Rp 1.050)
+              Revenue = Total Tonase (Senyiur + Muara Pahu) × Average KM × Rate per Ton (Rp 1.050)
             </p>
           </div>
 
@@ -724,7 +763,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
         </div>
 
-        {/* Rumus B: Keuntungan Bersih */}
+        {/* Rumus B: Profit (Setelah PPN) */}
         <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white border border-slate-700/60 shadow-md relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -732,7 +771,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 B
               </span>
               <h3 className="text-sm font-bold tracking-tight text-white">
-                Rumus Keuntungan Bersih (Net Profit)
+                Rumus Profit (Setelah PPN \%)
               </h3>
             </div>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -742,21 +781,21 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
           <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-700/60 mb-3 font-mono text-xs text-amber-300 leading-relaxed">
             <p className="font-bold text-white">
-              Keuntungan Bersih = Keuntungan Kotor − Beban Cost yang ada pada GL
+              Profit = (Revenue − Cost) − PPN (\%)
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Keuntungan Kotor</p>
-              <p className="font-bold text-emerald-400 mt-0.5">{formatRupiah(calculation.keuntunganKotor)}</p>
+              <p className="text-[10px] text-slate-400">Revenue</p>
+              <p className="font-bold text-emerald-400 mt-0.5">{formatRupiah(calculation.revenue)}</p>
             </div>
             <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Beban Cost GL</p>
-              <p className="font-bold text-rose-400 mt-0.5">{formatRupiah(calculation.totalBebanGL)}</p>
+              <p className="text-[10px] text-slate-400">Cost</p>
+              <p className="font-bold text-rose-400 mt-0.5">{formatRupiah(calculation.cost)}</p>
             </div>
             <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Net Profit Margin</p>
+              <p className="text-[10px] text-slate-400">Profit Margin</p>
               <p className={`font-bold mt-0.5 ${calculation.marginPercent >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                 {calculation.marginPercent.toFixed(1)}%
               </p>
@@ -795,7 +834,49 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          {/* Tarif Pajak PPN (15% - 20%) */}
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-700">
+                Tarif Pajak PPN
+              </label>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                15% - 20%
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                max="50"
+                value={ppnPercent}
+                onChange={(e) => setPpnPercent(Math.max(0, parseFloat(e.target.value) || 0))}
+                className="w-full bg-white border border-slate-300 rounded-lg pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623]"
+              />
+              <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
+            </div>
+            <div className="flex items-center gap-1 mt-2">
+              {[15, 16, 17.5, 18, 20].map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => setPpnPercent(preset)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                    ppnPercent === preset
+                      ? "bg-[#e95623] text-white"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {preset}%
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2">
+              Potongan: {formatRupiah(calculation.ppnAmount)}
+            </p>
+          </div>
+
           {/* Rate per Ton-KM (Tahun 2026) */}
           <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
             <div className="flex items-center justify-between mb-1.5">
@@ -923,14 +1004,14 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       {/* 5. TIGA HERO METRICS UTAMA (HASIL RUMUS A & B) */}
       {/* ============================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* HERO 1: KEUNTUNGAN KOTOR (REVENUE) */}
+        {/* HERO 1: REVENUE */}
         <div className="bg-white rounded-2xl border border-emerald-200 p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-50 rounded-bl-full z-0 opacity-70" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">
                 <Truck className="w-3.5 h-3.5" />
-                Rumus A • Keuntungan Kotor
+                Rumus A • Revenue
               </span>
               <span className="text-[11px] text-slate-400 font-medium">
                 {calculation.isYearlyScope ? "Full Year 2026" : "Periode GL"}
@@ -938,10 +1019,10 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             </div>
 
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Keuntungan Kotor (Revenue)
+              Revenue
             </p>
             <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-              {formatRupiah(calculation.keuntunganKotor)}
+              {formatRupiah(calculation.revenue)}
             </h2>
 
             <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
@@ -957,37 +1038,37 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between items-center">
-            <span>Rata-rata per Tonase:</span>
+            <span>Rata-rata Revenue per Ton:</span>
             <span className="font-bold text-emerald-700">{formatRupiah(calculation.revPerTon)} / Ton</span>
           </div>
         </div>
 
-        {/* HERO 2: BEBAN COST GL */}
+        {/* HERO 2: COST */}
         <div className="bg-white rounded-2xl border border-rose-200 p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-28 h-28 bg-rose-50 rounded-bl-full z-0 opacity-70" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-100 text-rose-800">
                 <Receipt className="w-3.5 h-3.5" />
-                Data GL • Beban Biaya
+                Data GL • Cost
               </span>
               <span className="text-[11px] text-slate-400 font-medium">Total OPEX</span>
             </div>
 
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Beban Cost yang Ada pada GL
+              Cost
             </p>
             <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-              {formatRupiah(calculation.totalBebanGL)}
+              {formatRupiah(calculation.cost)}
             </h2>
 
             <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
               <div className="flex justify-between items-center text-slate-600">
-                <span>Beban Site MPH:</span>
+                <span>Cost Site MPH:</span>
                 <span className="font-bold text-slate-900">{formatRupiah(calculation.opexMph)}</span>
               </div>
               <div className="flex justify-between items-center text-slate-600">
-                <span>Beban Site SNY:</span>
+                <span>Cost Site SNY:</span>
                 <span className="font-bold text-slate-900">{formatRupiah(calculation.opexSny)}</span>
               </div>
               <div className="flex justify-between items-center text-slate-600">
@@ -998,12 +1079,12 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between items-center">
-            <span>Beban per Tonase:</span>
+            <span>Cost per Tonase:</span>
             <span className="font-bold text-rose-700">{formatRupiah(calculation.costPerTon)} / Ton</span>
           </div>
         </div>
 
-        {/* HERO 3: KEUNTUNGAN BERSIH (NET PROFIT) */}
+        {/* HERO 3: PROFIT (SETELAH PPN) */}
         <div className={`rounded-2xl p-6 shadow-sm relative overflow-hidden flex flex-col justify-between border ${
           calculation.keuntunganBersih >= 0
             ? "bg-linear-to-br from-emerald-500 to-teal-700 text-white border-emerald-400"
@@ -1013,7 +1094,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             <div className="flex items-center justify-between mb-3">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-black bg-white/20 text-white backdrop-blur-xs">
                 <Sparkles className="w-3.5 h-3.5" />
-                Rumus B • Keuntungan Bersih
+                Rumus B • Profit (Setelah PPN \%)
               </span>
               <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white text-slate-900 shadow-xs">
                 Margin: {calculation.marginPercent.toFixed(1)}%
@@ -1021,26 +1102,34 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             </div>
 
             <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
-              Keuntungan Bersih (Net Profit)
+              Profit
             </p>
             <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
-              {formatRupiah(calculation.keuntunganBersih)}
+              {formatRupiah(calculation.profit)}
             </h2>
 
             <div className="mt-4 pt-3 border-t border-white/20 space-y-1.5 text-xs text-white/90">
-              <div className="flex justify-between items-center">
-                <span>Laba Bersih MPH:</span>
-                <span className="font-bold">{formatRupiah(calculation.keuntunganBersihMph)}</span>
+              <div className="flex justify-between items-center text-white/75 text-[11px]">
+                <span>Profit Sebelum Pajak:</span>
+                <span className="font-semibold">{formatRupiah(calculation.profitBeforePpn)}</span>
+              </div>
+              <div className="flex justify-between items-center text-amber-200 text-[11px]">
+                <span>Potongan PPN ({calculation.ppnPercent}%):</span>
+                <span className="font-semibold">-{formatRupiah(calculation.ppnAmount)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span>Laba Bersih SNY:</span>
-                <span className="font-bold">{formatRupiah(calculation.keuntunganBersihSny)}</span>
+                <span>Profit MPH (Setelah PPN):</span>
+                <span className="font-bold">{formatRupiah(calculation.profitMph)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Profit SNY (Setelah PPN):</span>
+                <span className="font-bold">{formatRupiah(calculation.profitSny)}</span>
               </div>
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
-            <span>Keuntungan per Tonase:</span>
+            <span>Profit per Tonase:</span>
             <span className="font-black text-white">{formatRupiah(calculation.netPerTon)} / Ton</span>
           </div>
         </div>
@@ -1054,10 +1143,10 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#e95623]" />
-              Rekapitulasi Finansial & Tonase per Jobsite (Periode vs Tahun 2026)
+              Rekapitulasi Finansial & Tonase per Jobsite (Revenue, Cost & Profit)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Penjabaran rumus Keuntungan Kotor dan Keuntungan Bersih per unit operasional, perbandingan tonase periode berjalan vs total akumulasi tahun 2026.
+              Penjabaran Revenue, Cost operasional GL, potongan PPN (%), dan Profit bersih per unit operasional, perbandingan tonase periode berjalan vs total akumulasi tahun 2026.
             </p>
           </div>
           <span className={`text-xs font-bold px-3 py-1 rounded-lg border self-start sm:self-auto flex items-center gap-1.5 ${
@@ -1092,15 +1181,18 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <th className="py-3 px-4 text-right">Total Ton·KM</th>
                 <th className="py-3 px-4 text-right">Rate / Ton-KM</th>
                 <th className="py-3 px-4 text-right bg-emerald-50/70 text-emerald-900">
-                  Keuntungan Kotor (A)
+                  Revenue (A)
                 </th>
                 <th className="py-3 px-4 text-right bg-rose-50/70 text-rose-900">
-                  Beban Cost GL
+                  Cost (GL)
                 </th>
-                <th className="py-3 px-4 text-right bg-amber-50/70 text-amber-900">
-                  Keuntungan Bersih (B)
+                <th className="py-3 px-4 text-right bg-amber-50/60 text-amber-900">
+                  PPN ({calculation.ppnPercent}%)
                 </th>
-                <th className="py-3 px-4 text-right">Net Margin (%)</th>
+                <th className="py-3 px-4 text-right bg-emerald-100/70 text-emerald-950">
+                  Profit (B)
+                </th>
+                <th className="py-3 px-4 text-right">Profit Margin (%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -1131,8 +1223,11 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
                   {formatRupiah(calculation.opexMph)}
                 </td>
-                <td className="py-3 px-4 text-right font-black text-slate-900 bg-amber-50/40">
-                  {formatRupiah(calculation.keuntunganBersihMph)}
+                <td className="py-3 px-4 text-right font-medium text-amber-700 bg-amber-50/30">
+                  -{formatRupiah(calculation.ppnAmountMph)}
+                </td>
+                <td className="py-3 px-4 text-right font-black text-slate-900 bg-emerald-50/40">
+                  {formatRupiah(calculation.profitMph)}
                 </td>
                 <td className="py-3 px-4 text-right font-bold text-emerald-700">
                   {calculation.marginMph.toFixed(2)}%
@@ -1166,8 +1261,11 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
                   {formatRupiah(calculation.opexSny)}
                 </td>
-                <td className="py-3 px-4 text-right font-black text-slate-900 bg-amber-50/40">
-                  {formatRupiah(calculation.keuntunganBersihSny)}
+                <td className="py-3 px-4 text-right font-medium text-amber-700 bg-amber-50/30">
+                  -{formatRupiah(calculation.ppnAmountSny)}
+                </td>
+                <td className="py-3 px-4 text-right font-black text-slate-900 bg-emerald-50/40">
+                  {formatRupiah(calculation.profitSny)}
                 </td>
                 <td className="py-3 px-4 text-right font-bold text-emerald-700">
                   {calculation.marginSny.toFixed(2)}%
@@ -1189,7 +1287,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
                   {formatRupiah(calculation.opexHof)}
                 </td>
-                <td className="py-3 px-4 text-right font-medium text-rose-600 bg-amber-50/20">
+                <td className="py-3 px-4 text-right text-slate-400 bg-amber-50/10">-</td>
+                <td className="py-3 px-4 text-right font-medium text-rose-600 bg-emerald-50/20">
                   -{formatRupiah(calculation.opexHof)}
                 </td>
                 <td className="py-3 px-4 text-right text-slate-400">-</td>
@@ -1216,13 +1315,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   Rp {formatNum(calculation.rate, 0)}
                 </td>
                 <td className="py-4 px-4 text-right text-emerald-300 bg-emerald-950/40">
-                  {formatRupiah(calculation.keuntunganKotor)}
+                  {formatRupiah(calculation.revenue)}
                 </td>
                 <td className="py-4 px-4 text-right text-rose-300 bg-rose-950/40">
-                  {formatRupiah(calculation.totalBebanGL)}
+                  {formatRupiah(calculation.cost)}
                 </td>
                 <td className="py-4 px-4 text-right text-amber-300 bg-amber-950/40 text-sm">
-                  {formatRupiah(calculation.keuntunganBersih)}
+                  {formatRupiah(calculation.profit)}
                 </td>
                 <td className="py-4 px-4 text-right text-emerald-400">
                   {calculation.marginPercent.toFixed(2)}%
@@ -1240,21 +1339,21 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
-              Visualisasi Finansial: Revenue (Kotor), Beban GL & Laba Bersih
+              Visualisasi Finansial: Revenue, Cost & Profit (Setelah PPN)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Perbandingan nominal rupiah antara Keuntungan Kotor, Beban Operasional GL, dan Keuntungan Bersih (Scope: {calculation.isYearlyScope ? "Akumulasi Tahun 2026 Penuh" : "Periode GL Terpilih"}).
+              Perbandingan nominal rupiah antara Revenue, Cost operasional GL, dan Profit setelah PPN (Scope: {calculation.isYearlyScope ? "Akumulasi Tahun 2026 Penuh" : "Periode GL Terpilih"}).
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5 font-bold text-slate-700">
-              <span className="w-3 h-3 rounded bg-emerald-600" /> Keuntungan Kotor
+              <span className="w-3 h-3 rounded bg-emerald-600" /> Revenue
             </span>
             <span className="flex items-center gap-1.5 font-bold text-slate-700">
-              <span className="w-3 h-3 rounded bg-rose-600" /> Beban GL
+              <span className="w-3 h-3 rounded bg-rose-600" /> Cost
             </span>
             <span className="flex items-center gap-1.5 font-bold text-slate-700">
-              <span className="w-3 h-3 rounded bg-amber-500" /> Keuntungan Bersih
+              <span className="w-3 h-3 rounded bg-amber-500" /> Profit
             </span>
           </div>
         </div>
@@ -1271,11 +1370,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               <Tooltip
                 formatter={(val: any, name: any) => [
                   formatRupiah(Number(val)),
-                  name === "revenue"
-                    ? "Keuntungan Kotor"
-                    : name === "cost"
-                    ? "Beban GL"
-                    : "Keuntungan Bersih",
+                  name === "revenue" ? "Revenue" : name === "cost" ? "Cost" : "Profit",
                 ]}
                 contentStyle={{
                   backgroundColor: "#0f172a",
@@ -1285,26 +1380,26 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   fontSize: "12px",
                 }}
               />
-              <Bar dataKey="revenue" name="Keuntungan Kotor" fill="#059669" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="cost" name="Beban GL" fill="#e11d48" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="profit" name="Keuntungan Bersih" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="revenue" name="Revenue" fill="#059669" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="cost" name="Cost" fill="#e11d48" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="profit" name="Profit" fill="#f59e0b" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* ============================================================== */}
-      {/* 8. RINCIAN BEBAN OPERASIONAL GL (PENGURANG KEUNTUNGAN KOTOR) */}
+      {/* 8. RINCIAN COST OPERASIONAL GL (PENGURANG REVENUE) */}
       {/* ============================================================== */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-[#e95623]" />
-              Rincian Akun Beban Biaya Operasional GL (Cost Drivers)
+              Rincian Akun Cost Operasional GL (Cost Drivers)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Komponen biaya yang mengurangi Keuntungan Kotor menjadi Keuntungan Bersih ({calculation.isYearlyScope ? "Sumber: Akumulasi YTD Resmi Laporan Keuangan" : `Sumber: GL Periode ${profitData?.period?.periodName || ""}`} • Total: {formatRupiah(calculation.totalBebanGL)})
+              Komponen biaya yang mengurangi Revenue menjadi Profit ({calculation.isYearlyScope ? "Sumber: Akumulasi YTD Resmi Laporan Keuangan" : `Sumber: GL Periode ${profitData?.period?.periodName || ""}`} • Total: {formatRupiah(calculation.cost)})
             </p>
           </div>
 
@@ -1325,11 +1420,11 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             <thead className="sticky top-0 z-10 bg-slate-100 shadow-xs">
               <tr className="text-slate-700 font-bold border-b border-slate-200">
                 <th className="py-2.5 px-4">Kode Akun</th>
-                <th className="py-2.5 px-4">Nama Akun Beban GL</th>
+                <th className="py-2.5 px-4">Nama Akun Cost GL</th>
                 <th className="py-2.5 px-4 text-right">Muara Pahu (MPH)</th>
                 <th className="py-2.5 px-4 text-right">Senyiur (SNY)</th>
                 <th className="py-2.5 px-4 text-right">Head Office (HOF)</th>
-                <th className="py-2.5 px-4 text-right bg-slate-200/60">Total Beban</th>
+                <th className="py-2.5 px-4 text-right bg-slate-200/60">Total Cost</th>
                 <th className="py-2.5 px-4 text-right">Porsi (%)</th>
               </tr>
             </thead>

@@ -208,6 +208,13 @@ export interface GLProfitCenterData {
       hof: number;
     };
     profit: {
+      ppnPercent?: number;
+      ppnAmount?: number;
+      ppnAmountMph?: number;
+      ppnAmountSny?: number;
+      profitBeforePpn?: number;
+      profitBeforePpnMph?: number;
+      profitBeforePpnSny?: number;
       netConsolidated: number;
       netMph: number;
       netSny: number;
@@ -237,6 +244,13 @@ export interface GLProfitCenterData {
     hof: number;
   };
   profit: {
+    ppnPercent?: number;
+    ppnAmount?: number;
+    ppnAmountMph?: number;
+    ppnAmountSny?: number;
+    profitBeforePpn?: number;
+    profitBeforePpnMph?: number;
+    profitBeforePpnSny?: number;
     grossMph: number;
     grossSny: number;
     netConsolidated: number;
@@ -440,6 +454,7 @@ export const glService = {
     avgKmMph?: number;
     tariffMph?: number;
     tariffSny?: number;
+    ppnPercent?: number;
   }): Promise<GLProfitCenterResponse> {
     const params = new URLSearchParams();
     if (paramsObj?.periodId) params.append("periodId", paramsObj.periodId);
@@ -449,6 +464,7 @@ export const glService = {
     if (paramsObj?.avgKmMph) params.append("avgKmMph", paramsObj.avgKmMph.toString());
     if (paramsObj?.tariffMph) params.append("tariffMph", paramsObj.tariffMph.toString());
     if (paramsObj?.tariffSny) params.append("tariffSny", paramsObj.tariffSny.toString());
+    if (paramsObj?.ppnPercent !== undefined) params.append("ppnPercent", paramsObj.ppnPercent.toString());
 
     const res = await fetch(`${API_BASE_URL}/gl/profit-center?${params.toString()}`, {
       headers: getAuthHeaders(),
