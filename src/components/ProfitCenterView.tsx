@@ -31,6 +31,10 @@ import {
   FileSpreadsheet,
   Globe,
   Layers,
+  Users,
+  Award,
+  Wallet,
+  Coins,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -73,6 +77,10 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
   // Tarif Pajak PPN (Default 15%, rentang 15% - 20%)
   const [ppnPercent, setPpnPercent] = useState<number>(15);
   const [selectedYear, setSelectedYear] = useState<number>(2026);
+
+  // Kalkulator Bonus Karyawan States
+  const [bonusPercent, setBonusPercent] = useState<number>(5);
+  const [employeeCount, setEmployeeCount] = useState<number>(250);
 
   // Rata-rata Jarak (KM) dari semua tiket AssetFindr (Default berdasarkan data tiket aktual)
   const [avgKmOverall, setAvgKmOverall] = useState<number>(82.37);
@@ -339,6 +347,28 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
     isCustomDistance,
     viewScope,
   ]);
+
+
+  // ==============================================================
+  // KALKULASI BONUS KARYAWAN (PROFIT SHARING ENGINE)
+  // ==============================================================
+  const bonusCalculation = useMemo(() => {
+    const profitBase = Math.max(0, calculation.profit);
+    const totalBonus = Math.round(profitBase * (bonusPercent / 100));
+    const perEmployee = employeeCount > 0 ? Math.round(totalBonus / employeeCount) : 0;
+    const retainedProfit = calculation.profit - totalBonus;
+    const ownerPercent = Math.max(0, 100 - bonusPercent);
+
+    return {
+      profitBase,
+      bonusPercent,
+      employeeCount,
+      totalBonus,
+      perEmployee,
+      retainedProfit,
+      ownerPercent,
+    };
+  }, [calculation.profit, bonusPercent, employeeCount]);
 
   // Chart Data Comparison
   const chartData = useMemo(() => {
@@ -1070,7 +1100,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             <div className="flex items-center justify-between mb-3">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-black bg-white/20 text-white backdrop-blur-xs">
                 <Sparkles className="w-3.5 h-3.5" />
-                Rumus B • Profit (Setelah PPN \%)
+                Rumus B • Profit (Setelah PPN {calculation.ppnPercent}%)
               </span>
               <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white text-slate-900 shadow-xs">
                 Margin: {calculation.marginPercent.toFixed(1)}%
@@ -1110,6 +1140,224 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
         </div>
       </div>
+      {/* ============================================================== */}
+      {/* 5B. KALKULATOR BONUS KARYAWAN (PROFIT SHARING ENGINE) */}
+      {/* ============================================================== */}
+      <div className="bg-white rounded-2xl border border-amber-200 shadow-md p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-amber-500 via-orange-500 to-emerald-500" />
+        <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-100/50 rounded-full blur-2xl pointer-events-none" />
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
+                <Award className="w-3.5 h-3.5 text-amber-700" />
+                Profit Sharing • Kalkulator Bonus Karyawan
+              </span>
+              <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
+                Tahun Anggaran {selectedYear}
+              </span>
+            </div>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <Coins className="w-5 h-5 text-amber-600" />
+              Simulasi Alokasi Bonus dari Profit Bersih
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Tentukan persentase bonus yang ingin dialokasikan dari Profit ({formatRupiah(calculation.profit)}) dan tentukan jumlah karyawan untuk pembagian merata.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2 text-right self-start md:self-auto">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
+              Basis Laba Bersih (Profit)
+            </span>
+            <span className="text-base font-black text-slate-900">
+              {formatRupiah(calculation.profit)}
+            </span>
+          </div>
+        </div>
+
+        {/* Control Inputs: Persentase Bonus & Total Karyawan */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 relative z-10">
+          {/* Input 1: Persentase Bonus dari Profit */}
+          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <Percent className="w-4 h-4 text-amber-600" />
+                Persentase Bonus dari Profit (%)
+              </label>
+              <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                Input Owner
+              </span>
+            </div>
+            <div className="relative mb-2.5">
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                max="100"
+                value={bonusPercent}
+                onChange={(e) => setBonusPercent(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-10 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs"
+                placeholder="Contoh: 5"
+              />
+              <span className="absolute right-4 top-3 text-sm font-bold text-slate-400">%</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold text-slate-400 mr-1">Preset Cepat:</span>
+              {[1, 2.5, 5, 7.5, 10, 15].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setBonusPercent(preset)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    bonusPercent === preset
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {preset}%
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Input 2: Jumlah Total Karyawan (Bagi Rata) */}
+          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-600" />
+                Total Jumlah Karyawan (Penerima Bonus)
+              </label>
+              <span className="text-[11px] font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">
+                Bagi Rata
+              </span>
+            </div>
+            <div className="relative mb-2.5">
+              <input
+                type="number"
+                step="1"
+                min="1"
+                value={employeeCount}
+                onChange={(e) => setEmployeeCount(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-16 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                placeholder="Contoh: 250"
+              />
+              <span className="absolute right-4 top-3 text-xs font-bold text-slate-400">Orang</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold text-slate-400 mr-1">Preset Karyawan:</span>
+              {[100, 250, 350, 500, 1000].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setEmployeeCount(count)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    employeeCount === count
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {count} Org
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 3 Highlight Result Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5 relative z-10">
+          {/* Result 1: TOTAL BONUS UNTUK SELURUH KARYAWAN */}
+          <div className="bg-linear-to-br from-amber-500 via-amber-600 to-orange-600 rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between">
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-black bg-white/20 text-white backdrop-blur-xs mb-2">
+                <Coins className="w-3.5 h-3.5" />
+                Total Alokasi Bonus
+              </span>
+              <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
+                Bonus Seluruh Karyawan
+              </p>
+              <h3 className="text-2xl font-black text-white tracking-tight">
+                {formatRupiah(bonusCalculation.totalBonus)}
+              </h3>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
+              <span>Porsi dari Profit:</span>
+              <span className="font-bold">{bonusPercent}%</span>
+            </div>
+          </div>
+
+          {/* Result 2: BONUS RATA-RATA TIAP KARYAWAN */}
+          <div className="bg-linear-to-br from-blue-600 via-indigo-600 to-indigo-700 rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between">
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-black bg-white/20 text-white backdrop-blur-xs mb-2">
+                <Users className="w-3.5 h-3.5" />
+                Bagi Rata per Individu
+              </span>
+              <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
+                Bonus Tiap Karyawan
+              </p>
+              <h3 className="text-2xl font-black text-white tracking-tight">
+                {formatRupiah(bonusCalculation.perEmployee)}
+                <span className="text-xs font-bold text-white/80 ml-1.5 font-normal">/ Orang</span>
+              </h3>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
+              <span>Dibagi untuk:</span>
+              <span className="font-bold">{employeeCount} Karyawan</span>
+            </div>
+          </div>
+
+          {/* Result 3: SISA PROFIT UNTUK PERUSAHAAN / OWNER */}
+          <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between border border-slate-700">
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-black bg-white/10 text-emerald-400 border border-emerald-500/30 backdrop-blur-xs mb-2">
+                <Wallet className="w-3.5 h-3.5" />
+                Retained Profit
+              </span>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Sisa Profit Perusahaan (Owner)
+              </p>
+              <h3 className="text-2xl font-black text-emerald-400 tracking-tight">
+                {formatRupiah(bonusCalculation.retainedProfit)}
+              </h3>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-slate-700 text-[11px] text-slate-300 flex justify-between items-center">
+              <span>Porsi Perusahaan:</span>
+              <span className="font-bold text-emerald-400">{bonusCalculation.ownerPercent.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Visual Progress Bar of Distribution */}
+        <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold mb-1.5 gap-1">
+            <span className="text-slate-700 flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-900 shrink-0" />
+              Sisa Profit Perusahaan: {bonusCalculation.ownerPercent.toFixed(1)}% ({formatRupiah(bonusCalculation.retainedProfit)})
+            </span>
+            <span className="text-amber-800 flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+              Bonus Karyawan: {bonusPercent}% ({formatRupiah(bonusCalculation.totalBonus)})
+            </span>
+          </div>
+          <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
+            <div
+              style={{ width: `${bonusCalculation.ownerPercent}%` }}
+              className="bg-slate-800 h-full transition-all duration-300"
+              title={`Owner: ${bonusCalculation.ownerPercent.toFixed(1)}%`}
+            />
+            <div
+              style={{ width: `${bonusPercent}%` }}
+              className="bg-linear-to-r from-amber-500 to-orange-500 h-full transition-all duration-300"
+              title={`Bonus Karyawan: ${bonusPercent}%`}
+            />
+          </div>
+        </div>
+      </div>
+
+
 
       {/* ============================================================== */}
       {/* 6. TABEL REKAPITULASI FINANCIAL PER JOBSITE (DENGAN TONASE 2026) */}
