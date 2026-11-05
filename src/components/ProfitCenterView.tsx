@@ -386,7 +386,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         profit: calculation.profitSny,
       },
       {
-        name: calculation.isYearlyScope ? "Total 2026 (YTD)" : "Total Konsolidasi",
+        name: calculation.isYearlyScope ? `Total ${selectedYear} (YTD)` : "Total Konsolidasi",
         revenue: calculation.revenue,
         cost: calculation.cost,
         profit: calculation.profit,
@@ -560,19 +560,19 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       {/* 1. TOP HEADER & EXCLUSIVE SECURITY BADGE */}
       {/* ============================================================== */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 md:p-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-emerald-500 via-teal-500 to-[#e95623]" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#e95623]" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Executive Confidential • Profit Center
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                 Tahun Anggaran {selectedYear}
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-mono text-emerald-800 bg-emerald-100/70">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-mono text-slate-700 bg-slate-100 border border-slate-200">
                 dzaky.athariqf@bataramining.com
               </span>
             </div>
@@ -618,7 +618,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             <button
               onClick={loadProfitCenterData}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold transition-colors shadow-2xs disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
               <span>{isLoading ? "Menghitung..." : "Segarkan"}</span>
@@ -627,7 +627,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             <button
               onClick={handleExportCSV}
               disabled={isLoading || !profitData}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold transition-colors shadow-2xs disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export CSV</span>
@@ -646,78 +646,76 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       {/* ============================================================== */}
       {/* 2. DEDICATED HERO CARD: TOTAL TONASE TAHUN 2026 (YTD ASSETFINDR) */}
       {/* ============================================================== */}
-      <div className="bg-linear-to-r from-slate-950 via-slate-900 to-emerald-950 rounded-2xl p-5 md:p-6 text-white border border-emerald-500/30 shadow-lg relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="bg-white rounded-2xl p-5 md:p-6 text-slate-900 border border-slate-200 shadow-xs relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                <Globe className="w-3.5 h-3.5 text-[#e95623]" />
                 Total Produksi Tahun {selectedYear} (YTD)
               </span>
-              <span className="text-xs text-slate-400 font-medium">
+              <span className="text-xs text-slate-500 font-medium">
                 Data Resmi AssetFindr • Jan s/d Des {selectedYear}
               </span>
             </div>
 
-            <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Total Tonase Hauling PT Batara Dharma Persada (Tahun {selectedYear})
             </p>
             <div className="flex items-baseline gap-3 mt-1">
-              <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+              <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
                 {formatNum(calculation.yearlyTotalTon, 2)}
-                <span className="text-xl md:text-2xl font-bold text-emerald-400 ml-1.5">Ton</span>
+                <span className="text-xl md:text-2xl font-bold text-slate-500 ml-1.5">Ton</span>
               </h2>
-              <span className="text-xs font-bold text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60">
+              <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
                 {formatNum(calculation.yearlyTotalRit, 0)} Ritase
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1.5">
+            <p className="text-[11px] text-slate-500 mt-1.5">
               Estimasi Revenue Tahun {selectedYear}:{" "}
-              <span className="font-bold text-emerald-400">
+              <span className="font-bold text-slate-900">
                 {formatRupiah(calculation.yearlyGrossRevenue)}
               </span>{" "}
               (pada Rate Rp {formatNum(calculation.rate, 0)}/Ton-KM)
             </p>
           </div>
 
-          {/* Breakdown Per Site (Senyiur vs Muara Pahu) & Scope Toggle */}
+          {/* Breakdown Per Site (Senyiur vs Muara Pahu) */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {/* Site Senyiur Chip */}
-            <div className="bg-slate-800/90 border border-teal-500/30 rounded-xl p-3 min-w-42.5">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-w-42.5">
               <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="font-bold text-teal-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-teal-400" />
+                <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-500" />
                   Site Senyiur (SNY)
                 </span>
-                <span className="font-mono text-[10px] text-slate-400">
+                <span className="font-mono text-[10px] text-slate-500">
                   {((calculation.yearlySnyTon / calculation.yearlyTotalTon) * 100).toFixed(1)}%
                 </span>
               </div>
-              <p className="text-base font-black text-white">
-                {formatNum(calculation.yearlySnyTon, 0)} <span className="text-xs font-normal text-slate-400">Ton</span>
+              <p className="text-base font-black text-slate-900">
+                {formatNum(calculation.yearlySnyTon, 0)} <span className="text-xs font-normal text-slate-500">Ton</span>
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {formatNum(calculation.yearlySnyRit, 0)} Rit • Operasi Jan - Agu
               </p>
             </div>
 
             {/* Site Muara Pahu Chip */}
-            <div className="bg-slate-800/90 border border-blue-500/30 rounded-xl p-3 min-w-42.5">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-w-42.5">
               <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="font-bold text-blue-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-400" />
+                <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-500" />
                   Muara Pahu (MPH)
                 </span>
-                <span className="font-mono text-[10px] text-slate-400">
+                <span className="font-mono text-[10px] text-slate-500">
                   {((calculation.yearlyMphTon / calculation.yearlyTotalTon) * 100).toFixed(1)}%
                 </span>
               </div>
-              <p className="text-base font-black text-white">
-                {formatNum(calculation.yearlyMphTon, 0)} <span className="text-xs font-normal text-slate-400">Ton</span>
+              <p className="text-base font-black text-slate-900">
+                {formatNum(calculation.yearlyMphTon, 0)} <span className="text-xs font-normal text-slate-500">Ton</span>
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {formatNum(calculation.yearlyMphRit, 0)} Rit • Operasi Agu - Nov
               </p>
             </div>
@@ -730,79 +728,79 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       {/* ============================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Rumus A: Revenue */}
-        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white border border-slate-700/60 shadow-md relative overflow-hidden">
+        <div className="bg-white rounded-2xl p-5 text-slate-900 border border-slate-200 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-black text-xs flex items-center justify-center">
+              <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-black text-xs flex items-center justify-center">
                 A
               </span>
-              <h3 className="text-sm font-bold tracking-tight text-white">
+              <h3 className="text-sm font-bold tracking-tight text-slate-900">
                 Rumus Revenue
               </h3>
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">
               Scope: Tahun {selectedYear}
             </span>
           </div>
 
-          <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-700/60 mb-3 font-mono text-xs text-emerald-300 leading-relaxed">
-            <p className="font-bold text-white">
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 mb-3 font-mono text-xs text-slate-800 leading-relaxed">
+            <p className="font-bold text-slate-900">
               Revenue = Total Tonase (Senyiur + Muara Pahu) × Average KM × Rate per Ton (Rp 1.050)
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">
+            <div className="bg-slate-50 rounded-lg p-2 border border-slate-200">
+              <p className="text-[10px] text-slate-500">
                 Tonase Tahun {selectedYear}
               </p>
-              <p className="font-bold text-slate-200 mt-0.5">{formatNum(calculation.totalTonase, 0)} Ton</p>
+              <p className="font-bold text-slate-800 mt-0.5">{formatNum(calculation.totalTonase, 0)} Ton</p>
             </div>
-            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Avg Distance</p>
-              <p className="font-bold text-slate-200 mt-0.5">{formatNum(calculation.kmOverall, 2)} KM</p>
+            <div className="bg-slate-50 rounded-lg p-2 border border-slate-200">
+              <p className="text-[10px] text-slate-500">Avg Distance</p>
+              <p className="font-bold text-slate-800 mt-0.5">{formatNum(calculation.kmOverall, 2)} KM</p>
             </div>
-            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Rate Kontrak</p>
-              <p className="font-bold text-emerald-400 mt-0.5">Rp {formatNum(calculation.rate, 0)}/Ton-KM</p>
+            <div className="bg-slate-50 rounded-lg p-2 border border-slate-200">
+              <p className="text-[10px] text-slate-500">Rate Kontrak</p>
+              <p className="font-bold text-slate-800 mt-0.5">Rp {formatNum(calculation.rate, 0)}/Ton-KM</p>
             </div>
           </div>
         </div>
 
         {/* Rumus B: Profit (Setelah PPN) */}
-        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white border border-slate-700/60 shadow-md relative overflow-hidden">
+        <div className="bg-white rounded-2xl p-5 text-slate-900 border border-slate-200 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-[#e95623]/20 text-[#e95623] border border-[#e95623]/30 font-black text-xs flex items-center justify-center">
+              <span className="w-7 h-7 rounded-lg bg-slate-100 text-[#e95623] border border-slate-200 font-black text-xs flex items-center justify-center">
                 B
               </span>
-              <h3 className="text-sm font-bold tracking-tight text-white">
-                Rumus Profit (Setelah PPN \%)
+              <h3 className="text-sm font-bold tracking-tight text-slate-900">
+                Rumus Profit (Setelah PPN)
               </h3>
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">
               Final Margin
             </span>
           </div>
 
-          <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-700/60 mb-3 font-mono text-xs text-amber-300 leading-relaxed">
-            <p className="font-bold text-white">
-              Profit = (Revenue − Cost) − PPN (\%)
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 mb-3 font-mono text-xs text-slate-800 leading-relaxed">
+            <p className="font-bold text-slate-900">
+              Profit = (Revenue − Cost) − PPN (%)
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Revenue</p>
-              <p className="font-bold text-emerald-400 mt-0.5">{formatRupiah(calculation.revenue)}</p>
+            <div className="bg-slate-50 rounded-lg p-2 border border-slate-200">
+              <p className="text-[10px] text-slate-500">Revenue</p>
+              <p className="font-bold text-slate-800 mt-0.5">{formatRupiah(calculation.revenue)}</p>
             </div>
-            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Cost</p>
-              <p className="font-bold text-rose-400 mt-0.5">{formatRupiah(calculation.cost)}</p>
+            <div className="bg-slate-50 rounded-lg p-2 border border-slate-200">
+              <p className="text-[10px] text-slate-500">Cost</p>
+              <p className="font-bold text-slate-800 mt-0.5">{formatRupiah(calculation.cost)}</p>
             </div>
-            <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-[10px] text-slate-400">Profit Margin</p>
-              <p className={`font-bold mt-0.5 ${calculation.marginPercent >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+            <div className="bg-slate-50 rounded-lg p-2 border border-slate-200">
+              <p className="text-[10px] text-slate-500">Profit Margin</p>
+              <p className="font-bold text-slate-800 mt-0.5">
                 {calculation.marginPercent.toFixed(1)}%
               </p>
             </div>
@@ -847,7 +845,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               <label className="text-[11px] font-bold text-slate-700">
                 Tarif Pajak PPN
               </label>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
                 15% - 20%
               </span>
             </div>
@@ -889,7 +887,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               <label className="text-[11px] font-bold text-slate-700">
                 Rate per Ton/KM (Tahun {selectedYear})
               </label>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
                 2026 Rate
               </span>
             </div>
@@ -981,7 +979,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               <label className="text-[11px] font-bold text-slate-700">
                 Average Distance (Semua Tiket)
               </label>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded">
                 Weighted
               </span>
             </div>
@@ -1011,15 +1009,14 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       {/* ============================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* HERO 1: REVENUE */}
-        <div className="bg-white rounded-2xl border border-emerald-200 p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-50 rounded-bl-full z-0 opacity-70" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs relative overflow-hidden flex flex-col justify-between">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">
-                <Truck className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                <Truck className="w-3.5 h-3.5 text-slate-600" />
                 Rumus A • Revenue
               </span>
-              <span className="text-[11px] text-slate-400 font-medium">
+              <span className="text-[11px] text-slate-500 font-medium">
                 Tahun {selectedYear}
               </span>
             </div>
@@ -1045,20 +1042,19 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between items-center">
             <span>Rata-rata Revenue per Ton:</span>
-            <span className="font-bold text-emerald-700">{formatRupiah(calculation.revPerTon)} / Ton</span>
+            <span className="font-bold text-slate-900">{formatRupiah(calculation.revPerTon)} / Ton</span>
           </div>
         </div>
 
         {/* HERO 2: COST */}
-        <div className="bg-white rounded-2xl border border-rose-200 p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-28 h-28 bg-rose-50 rounded-bl-full z-0 opacity-70" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs relative overflow-hidden flex flex-col justify-between">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-100 text-rose-800">
-                <Receipt className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                <Receipt className="w-3.5 h-3.5 text-slate-600" />
                 Data GL • Cost
               </span>
-              <span className="text-[11px] text-slate-400 font-medium">Total OPEX</span>
+              <span className="text-[11px] text-slate-500 font-medium">Total OPEX</span>
             </div>
 
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -1086,73 +1082,66 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between items-center">
             <span>Cost per Tonase:</span>
-            <span className="font-bold text-rose-700">{formatRupiah(calculation.costPerTon)} / Ton</span>
+            <span className="font-bold text-slate-900">{formatRupiah(calculation.costPerTon)} / Ton</span>
           </div>
         </div>
 
-        {/* HERO 3: PROFIT (SETELAH PPN) */}
-        <div className={`rounded-2xl p-6 shadow-sm relative overflow-hidden flex flex-col justify-between border ${
-          calculation.keuntunganBersih >= 0
-            ? "bg-linear-to-br from-emerald-500 to-teal-700 text-white border-emerald-400"
-            : "bg-linear-to-br from-rose-600 to-rose-800 text-white border-rose-500"
-        }`}>
+        {/* HERO 3: PROFIT (SETELAH PPN) - Clean Executive Light Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs relative overflow-hidden flex flex-col justify-between">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-black bg-white/20 text-white backdrop-blur-xs">
-                <Sparkles className="w-3.5 h-3.5" />
-                Rumus B • Profit (Setelah PPN {calculation.ppnPercent}%)
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                <Sparkles className="w-3.5 h-3.5 text-[#e95623]" />
+                Rumus B • Profit (PPN {calculation.ppnPercent}%)
               </span>
-              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white text-slate-900 shadow-xs">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
                 Margin: {calculation.marginPercent.toFixed(1)}%
               </span>
             </div>
 
-            <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
               Profit
             </p>
-            <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
+            <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
               {formatRupiah(calculation.profit)}
             </h2>
 
-            <div className="mt-4 pt-3 border-t border-white/20 space-y-1.5 text-xs text-white/90">
-              <div className="flex justify-between items-center text-white/75 text-[11px]">
+            <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+              <div className="flex justify-between items-center text-[11px]">
                 <span>Profit Sebelum Pajak:</span>
-                <span className="font-semibold">{formatRupiah(calculation.profitBeforePpn)}</span>
+                <span className="font-semibold text-slate-800">{formatRupiah(calculation.profitBeforePpn)}</span>
               </div>
-              <div className="flex justify-between items-center text-amber-200 text-[11px]">
+              <div className="flex justify-between items-center text-[11px]">
                 <span>Potongan PPN ({calculation.ppnPercent}%):</span>
-                <span className="font-semibold">-{formatRupiah(calculation.ppnAmount)}</span>
+                <span className="font-semibold text-slate-800">-{formatRupiah(calculation.ppnAmount)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Profit MPH (Setelah PPN):</span>
-                <span className="font-bold">{formatRupiah(calculation.profitMph)}</span>
+                <span className="font-bold text-slate-900">{formatRupiah(calculation.profitMph)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Profit SNY (Setelah PPN):</span>
-                <span className="font-bold">{formatRupiah(calculation.profitSny)}</span>
+                <span className="font-bold text-slate-900">{formatRupiah(calculation.profitSny)}</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex justify-between items-center">
             <span>Profit per Tonase:</span>
-            <span className="font-black text-white">{formatRupiah(calculation.netPerTon)} / Ton</span>
+            <span className="font-bold text-slate-900">{formatRupiah(calculation.netPerTon)} / Ton</span>
           </div>
         </div>
       </div>
       {/* ============================================================== */}
       {/* 5B. KALKULATOR BONUS KARYAWAN (PROFIT SHARING ENGINE) */}
       {/* ============================================================== */}
-      <div className="bg-white rounded-2xl border border-amber-200 shadow-md p-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-amber-500 via-orange-500 to-emerald-500" />
-        <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-100/50 rounded-full blur-2xl pointer-events-none" />
-
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 relative overflow-hidden">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
-                <Award className="w-3.5 h-3.5 text-amber-700" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                <Award className="w-3.5 h-3.5 text-slate-600" />
                 Profit Sharing • Kalkulator Bonus Karyawan
               </span>
               <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
@@ -1160,7 +1149,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               </span>
             </div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <Coins className="w-5 h-5 text-amber-600" />
+              <Coins className="w-5 h-5 text-[#e95623]" />
               Simulasi Alokasi Bonus dari Profit Bersih
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -1168,8 +1157,8 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             </p>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2 text-right self-start md:self-auto">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-right self-start md:self-auto">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
               Basis Laba Bersih (Profit)
             </span>
             <span className="text-base font-black text-slate-900">
@@ -1181,13 +1170,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         {/* Control Inputs: Persentase Bonus & Total Karyawan */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 relative z-10">
           {/* Input 1: Persentase Bonus dari Profit */}
-          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
+          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                <Percent className="w-4 h-4 text-amber-600" />
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Percent className="w-4 h-4 text-slate-600" />
                 Persentase Bonus dari Profit (%)
               </label>
-              <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md">
                 Input Owner
               </span>
             </div>
@@ -1199,7 +1188,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 max="100"
                 value={bonusPercent}
                 onChange={(e) => setBonusPercent(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
-                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-10 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs"
+                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-10 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623] shadow-2xs"
                 placeholder="Contoh: 5"
               />
               <span className="absolute right-4 top-3 text-sm font-bold text-slate-400">%</span>
@@ -1213,7 +1202,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   onClick={() => setBonusPercent(preset)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     bonusPercent === preset
-                      ? "bg-amber-500 text-white shadow-xs"
+                      ? "bg-[#e95623] text-white shadow-xs"
                       : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                   }`}
                 >
@@ -1224,13 +1213,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
 
           {/* Input 2: Jumlah Total Karyawan (Bagi Rata) */}
-          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
+          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-blue-600" />
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-slate-600" />
                 Total Jumlah Karyawan (Penerima Bonus)
               </label>
-              <span className="text-[11px] font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md">
                 Bagi Rata
               </span>
             </div>
@@ -1241,7 +1230,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 min="1"
                 value={employeeCount}
                 onChange={(e) => setEmployeeCount(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-16 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-16 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623] shadow-2xs"
                 placeholder="Contoh: 250"
               />
               <span className="absolute right-4 top-3 text-xs font-bold text-slate-400">Orang</span>
@@ -1255,7 +1244,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   onClick={() => setEmployeeCount(count)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     employeeCount === count
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-[#e95623] text-white shadow-xs"
                       : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                   }`}
                 >
@@ -1266,66 +1255,66 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
         </div>
 
-        {/* 3 Highlight Result Cards */}
+        {/* 3 Highlight Result Cards - Clean Light Executive Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5 relative z-10">
           {/* Result 1: TOTAL BONUS UNTUK SELURUH KARYAWAN */}
-          <div className="bg-linear-to-br from-amber-500 via-amber-600 to-orange-600 rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-slate-900 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-black bg-white/20 text-white backdrop-blur-xs mb-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-200 text-slate-700 mb-2">
                 <Coins className="w-3.5 h-3.5" />
                 Total Alokasi Bonus
               </span>
-              <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Bonus Seluruh Karyawan
               </p>
-              <h3 className="text-2xl font-black text-white tracking-tight">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
                 {formatRupiah(bonusCalculation.totalBonus)}
               </h3>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
+            <div className="mt-3 pt-2.5 border-t border-slate-200 text-[11px] text-slate-600 flex justify-between items-center">
               <span>Porsi dari Profit:</span>
-              <span className="font-bold">{bonusPercent}%</span>
+              <span className="font-bold text-slate-900">{bonusPercent}%</span>
             </div>
           </div>
 
           {/* Result 2: BONUS RATA-RATA TIAP KARYAWAN */}
-          <div className="bg-linear-to-br from-blue-600 via-indigo-600 to-indigo-700 rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-slate-900 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-black bg-white/20 text-white backdrop-blur-xs mb-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-200 text-slate-700 mb-2">
                 <Users className="w-3.5 h-3.5" />
                 Bagi Rata per Individu
               </span>
-              <p className="text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Bonus Tiap Karyawan
               </p>
-              <h3 className="text-2xl font-black text-white tracking-tight">
+              <h3 className="text-2xl font-black text-[#e95623] tracking-tight">
                 {formatRupiah(bonusCalculation.perEmployee)}
-                <span className="text-xs font-normal text-white/80 ml-1.5">/ Orang</span>
+                <span className="text-xs font-normal text-slate-500 ml-1.5">/ Orang</span>
               </h3>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-white/20 text-[11px] text-white/90 flex justify-between items-center">
+            <div className="mt-3 pt-2.5 border-t border-slate-200 text-[11px] text-slate-600 flex justify-between items-center">
               <span>Dibagi untuk:</span>
-              <span className="font-bold">{employeeCount} Karyawan</span>
+              <span className="font-bold text-slate-900">{employeeCount} Karyawan</span>
             </div>
           </div>
 
           {/* Result 3: SISA PROFIT UNTUK PERUSAHAAN / OWNER */}
-          <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 text-white shadow-sm relative overflow-hidden flex flex-col justify-between border border-slate-700">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-slate-900 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-black bg-white/10 text-emerald-400 border border-emerald-500/30 backdrop-blur-xs mb-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-200 text-slate-700 mb-2">
                 <Wallet className="w-3.5 h-3.5" />
                 Retained Profit
               </span>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Sisa Profit Perusahaan (Owner)
               </p>
-              <h3 className="text-2xl font-black text-emerald-400 tracking-tight">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
                 {formatRupiah(bonusCalculation.retainedProfit)}
               </h3>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-slate-700 text-[11px] text-slate-300 flex justify-between items-center">
+            <div className="mt-3 pt-2.5 border-t border-slate-200 text-[11px] text-slate-600 flex justify-between items-center">
               <span>Porsi Perusahaan:</span>
-              <span className="font-bold text-emerald-400">{bonusCalculation.ownerPercent.toFixed(1)}%</span>
+              <span className="font-bold text-slate-900">{bonusCalculation.ownerPercent.toFixed(1)}%</span>
             </div>
           </div>
         </div>
@@ -1334,23 +1323,23 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
         <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold mb-1.5 gap-1">
             <span className="text-slate-700 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-900 shrink-0" />
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-500 shrink-0" />
               Sisa Profit Perusahaan: {bonusCalculation.ownerPercent.toFixed(1)}% ({formatRupiah(bonusCalculation.retainedProfit)})
             </span>
-            <span className="text-amber-800 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+            <span className="text-slate-700 flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#e95623] shrink-0" />
               Bonus Karyawan: {bonusPercent}% ({formatRupiah(bonusCalculation.totalBonus)})
             </span>
           </div>
-          <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex shadow-inner">
+          <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex">
             <div
               style={{ width: `${bonusCalculation.ownerPercent}%` }}
-              className="bg-slate-800 h-full transition-all duration-300"
+              className="bg-slate-400 h-full transition-all duration-300"
               title={`Owner: ${bonusCalculation.ownerPercent.toFixed(1)}%`}
             />
             <div
               style={{ width: `${bonusPercent}%` }}
-              className="bg-linear-to-r from-amber-500 to-orange-500 h-full transition-all duration-300"
+              className="bg-[#e95623] h-full transition-all duration-300"
               title={`Bonus Karyawan: ${bonusPercent}%`}
             />
           </div>
@@ -1375,12 +1364,12 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
           <span className={`text-xs font-bold px-3 py-1 rounded-lg border self-start sm:self-auto flex items-center gap-1.5 ${
             calculation.isYearlyScope
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              ? "bg-slate-100 text-slate-700 border-slate-200"
               : "bg-slate-100 text-slate-700 border-slate-200"
           }`}>
             {calculation.isYearlyScope ? (
               <>
-                <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                <Globe className="w-3.5 h-3.5 text-slate-600" />
                 Scope: Akumulasi Penuh Tahun {selectedYear}
               </>
             ) : (
@@ -1398,22 +1387,22 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               <tr className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
                 <th className="py-3 px-4">Jobsite Operasional</th>
                 <th className="py-3 px-4 text-right">Tonase Periode (Ton)</th>
-                <th className="py-3 px-4 text-right bg-emerald-50/50 text-emerald-900">
+                <th className="py-3 px-4 text-right">
                   Total Tonase {selectedYear} (Ton)
                 </th>
                 <th className="py-3 px-4 text-right">Avg Jarak (KM)</th>
                 <th className="py-3 px-4 text-right">Total Ton·KM</th>
                 <th className="py-3 px-4 text-right">Rate / Ton-KM</th>
-                <th className="py-3 px-4 text-right bg-emerald-50/70 text-emerald-900">
+                <th className="py-3 px-4 text-right">
                   Revenue (A)
                 </th>
-                <th className="py-3 px-4 text-right bg-rose-50/70 text-rose-900">
+                <th className="py-3 px-4 text-right">
                   Cost (GL)
                 </th>
-                <th className="py-3 px-4 text-right bg-amber-50/60 text-amber-900">
+                <th className="py-3 px-4 text-right">
                   PPN ({calculation.ppnPercent}%)
                 </th>
-                <th className="py-3 px-4 text-right bg-emerald-100/70 text-emerald-950">
+                <th className="py-3 px-4 text-right">
                   Profit (B)
                 </th>
                 <th className="py-3 px-4 text-right">Profit Margin (%)</th>
@@ -1423,13 +1412,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               {/* Site Muara Pahu */}
               <tr className="hover:bg-slate-50/80 transition-colors">
                 <td className="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="w-2 h-2 rounded-full bg-slate-500" />
                   Site Muara Pahu (MPH)
                 </td>
                 <td className="py-3 px-4 text-right font-medium text-slate-800">
                   {formatNum(calculation.periodTonaseMph, 0)}
                 </td>
-                <td className="py-3 px-4 text-right font-black text-emerald-800 bg-emerald-50/30">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatNum(calculation.yearlyMphTon, 2)}
                 </td>
                 <td className="py-3 px-4 text-right font-medium text-slate-700">
@@ -1441,19 +1430,19 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <td className="py-3 px-4 text-right font-bold text-slate-800">
                   Rp {formatNum(calculation.rate, 0)}
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-700 bg-emerald-50/40">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatRupiah(calculation.revMph)}
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatRupiah(calculation.opexMph)}
                 </td>
-                <td className="py-3 px-4 text-right font-medium text-amber-700 bg-amber-50/30">
+                <td className="py-3 px-4 text-right font-medium text-slate-700">
                   -{formatRupiah(calculation.ppnAmountMph)}
                 </td>
-                <td className="py-3 px-4 text-right font-black text-slate-900 bg-emerald-50/40">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatRupiah(calculation.profitMph)}
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-700">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {calculation.marginMph.toFixed(2)}%
                 </td>
               </tr>
@@ -1461,13 +1450,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
               {/* Site Senyiur */}
               <tr className="hover:bg-slate-50/80 transition-colors">
                 <td className="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-teal-500" />
+                  <span className="w-2 h-2 rounded-full bg-slate-500" />
                   Site Senyiur (SNY)
                 </td>
                 <td className="py-3 px-4 text-right font-medium text-slate-800">
                   {formatNum(calculation.periodTonaseSny, 0)}
                 </td>
-                <td className="py-3 px-4 text-right font-black text-emerald-800 bg-emerald-50/30">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatNum(calculation.yearlySnyTon, 2)}
                 </td>
                 <td className="py-3 px-4 text-right font-medium text-slate-700">
@@ -1479,19 +1468,19 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <td className="py-3 px-4 text-right font-bold text-slate-800">
                   Rp {formatNum(calculation.rate, 0)}
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-700 bg-emerald-50/40">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatRupiah(calculation.revSny)}
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatRupiah(calculation.opexSny)}
                 </td>
-                <td className="py-3 px-4 text-right font-medium text-amber-700 bg-amber-50/30">
+                <td className="py-3 px-4 text-right font-medium text-slate-700">
                   -{formatRupiah(calculation.ppnAmountSny)}
                 </td>
-                <td className="py-3 px-4 text-right font-black text-slate-900 bg-emerald-50/40">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatRupiah(calculation.profitSny)}
                 </td>
-                <td className="py-3 px-4 text-right font-bold text-emerald-700">
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {calculation.marginSny.toFixed(2)}%
                 </td>
               </tr>
@@ -1503,51 +1492,51 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   Head Office (HOF Overhead)
                 </td>
                 <td className="py-3 px-4 text-right">-</td>
-                <td className="py-3 px-4 text-right bg-emerald-50/10">-</td>
+                <td className="py-3 px-4 text-right text-slate-400">-</td>
                 <td className="py-3 px-4 text-right">-</td>
                 <td className="py-3 px-4 text-right">-</td>
                 <td className="py-3 px-4 text-right">-</td>
-                <td className="py-3 px-4 text-right text-slate-400 bg-emerald-50/20">-</td>
-                <td className="py-3 px-4 text-right font-bold text-rose-700 bg-rose-50/40">
+                <td className="py-3 px-4 text-right text-slate-400">-</td>
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
                   {formatRupiah(calculation.opexHof)}
                 </td>
-                <td className="py-3 px-4 text-right text-slate-400 bg-amber-50/10">-</td>
-                <td className="py-3 px-4 text-right font-medium text-rose-600 bg-emerald-50/20">
+                <td className="py-3 px-4 text-right text-slate-400">-</td>
+                <td className="py-3 px-4 text-right font-medium text-slate-700">
                   -{formatRupiah(calculation.opexHof)}
                 </td>
                 <td className="py-3 px-4 text-right text-slate-400">-</td>
               </tr>
 
               {/* TOTAL KONSOLIDASI */}
-              <tr className="bg-slate-900 text-white font-black text-[13px] border-t-2 border-slate-700">
-                <td className="py-4 px-4 uppercase tracking-wider text-emerald-400">
+              <tr className="bg-slate-100 text-slate-900 font-black text-[13px] border-t-2 border-slate-300">
+                <td className="py-4 px-4 uppercase tracking-wider text-slate-900">
                   TOTAL KONSOLIDASI
                 </td>
-                <td className="py-4 px-4 text-right text-slate-200">
+                <td className="py-4 px-4 text-right text-slate-800">
                   {formatNum(calculation.periodTotalTonase, 0)} Ton
                 </td>
-                <td className="py-4 px-4 text-right text-emerald-300 bg-emerald-950/60 font-black">
+                <td className="py-4 px-4 text-right text-slate-900 font-black">
                   {formatNum(calculation.yearlyTotalTon, 2)} Ton
                 </td>
-                <td className="py-4 px-4 text-right text-slate-300">
+                <td className="py-4 px-4 text-right text-slate-800">
                   {formatNum(calculation.kmOverall, 2)} km
                 </td>
-                <td className="py-4 px-4 text-right font-mono text-slate-300">
+                <td className="py-4 px-4 text-right font-mono text-slate-800">
                   {formatNum(calculation.tonKmTotal, 0)}
                 </td>
-                <td className="py-4 px-4 text-right text-emerald-400">
+                <td className="py-4 px-4 text-right text-slate-800">
                   Rp {formatNum(calculation.rate, 0)}
                 </td>
-                <td className="py-4 px-4 text-right text-emerald-300 bg-emerald-950/40">
+                <td className="py-4 px-4 text-right text-slate-900 font-bold">
                   {formatRupiah(calculation.revenue)}
                 </td>
-                <td className="py-4 px-4 text-right text-rose-300 bg-rose-950/40">
+                <td className="py-4 px-4 text-right text-slate-900 font-bold">
                   {formatRupiah(calculation.cost)}
                 </td>
-                <td className="py-4 px-4 text-right text-amber-300 bg-amber-950/40 text-sm">
+                <td className="py-4 px-4 text-right text-slate-900 font-bold text-sm">
                   {formatRupiah(calculation.profit)}
                 </td>
-                <td className="py-4 px-4 text-right text-emerald-400">
+                <td className="py-4 px-4 text-right text-slate-900">
                   {calculation.marginPercent.toFixed(2)}%
                 </td>
               </tr>
@@ -1571,13 +1560,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </div>
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5 font-bold text-slate-700">
-              <span className="w-3 h-3 rounded bg-emerald-600" /> Revenue
+              <span className="w-3 h-3 rounded bg-slate-700" /> Revenue
             </span>
             <span className="flex items-center gap-1.5 font-bold text-slate-700">
-              <span className="w-3 h-3 rounded bg-rose-600" /> Cost
+              <span className="w-3 h-3 rounded bg-slate-400" /> Cost
             </span>
             <span className="flex items-center gap-1.5 font-bold text-slate-700">
-              <span className="w-3 h-3 rounded bg-amber-500" /> Profit
+              <span className="w-3 h-3 rounded bg-[#e95623]" /> Profit
             </span>
           </div>
         </div>
@@ -1597,16 +1586,17 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                   name === "revenue" ? "Revenue" : name === "cost" ? "Cost" : "Profit",
                 ]}
                 contentStyle={{
-                  backgroundColor: "#0f172a",
-                  borderColor: "#334155",
+                  backgroundColor: "#ffffff",
+                  borderColor: "#e2e8f0",
                   borderRadius: "12px",
-                  color: "#fff",
+                  color: "#0f172a",
                   fontSize: "12px",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                 }}
               />
-              <Bar dataKey="revenue" name="Revenue" fill="#059669" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="cost" name="Cost" fill="#e11d48" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="profit" name="Profit" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="revenue" name="Revenue" fill="#334155" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="cost" name="Cost" fill="#94a3b8" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="profit" name="Profit" fill="#e95623" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -1676,7 +1666,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                       <td className="py-2.5 px-4 text-right font-medium text-slate-500">
                         {formatRupiah(s.hofAmount)}
                       </td>
-                      <td className="py-2.5 px-4 text-right font-bold text-rose-700 bg-slate-50/50">
+                      <td className="py-2.5 px-4 text-right font-bold text-slate-900 bg-slate-50/50">
                         {formatRupiah(s.grandTotal)}
                       </td>
                       <td className="py-2.5 px-4 text-right font-bold text-slate-700">
