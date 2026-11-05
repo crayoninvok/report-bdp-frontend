@@ -14,6 +14,7 @@ import {
   YAxis,
   CartesianGrid,
   Legend,
+  LabelList,
 } from "recharts";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
@@ -576,7 +577,7 @@ function Slide1Content({
             width={1066}
             height={380}
             data={processedTrendData}
-            margin={{ top: 15, right: 20, left: 0, bottom: 25 }}
+            margin={{ top: 25, right: 25, left: 0, bottom: 25 }}
           >
             <defs>
               <linearGradient id="pdfTrendGrad" x1="0" y1="0" x2="0" y2="1">
@@ -590,7 +591,7 @@ function Slide1Content({
               stroke="#64748b"
               fontSize={10}
               tickLine={false}
-              interval={1}
+              interval={processedTrendData && processedTrendData.length > 18 ? 1 : 0}
               angle={-25}
               textAnchor="end"
               height={50}
@@ -600,7 +601,7 @@ function Slide1Content({
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              domain={[(dataMin: number) => Math.max(0, dataMin - 15), (dataMax: number) => dataMax + 15]}
+              domain={[(dataMin: number) => Math.max(0, dataMin - 15), (dataMax: number) => dataMax + 25]}
             />
             <Area
               type="monotone"
@@ -610,7 +611,33 @@ function Slide1Content({
               strokeWidth={3}
               fill="url(#pdfTrendGrad)"
               isAnimationActive={false}
-            />
+              dot={{ r: 4, fill: "#1c3d73", stroke: "#ffffff", strokeWidth: 2 }}
+            >
+              <LabelList
+                dataKey="displayActive"
+                position="top"
+                content={({ x, y, value }: any) => {
+                  if (value === undefined || value === null) return null;
+                  return (
+                    <text
+                      key={`lbl-${x}-${y}`}
+                      x={x}
+                      y={Number(y) - 8}
+                      fill="#1c3d73"
+                      textAnchor="middle"
+                      fontSize={10}
+                      fontWeight="800"
+                      fontFamily="monospace"
+                      stroke="#ffffff"
+                      strokeWidth={3}
+                      paintOrder="stroke fill"
+                    >
+                      {value}
+                    </text>
+                  );
+                }}
+              />
+            </Area>
             <Line
               type="linear"
               dataKey="trendline"
@@ -738,6 +765,12 @@ function Slide2Content({
                       <Cell key={index} fill={entry.color} />
                     ))}
                   </Pie>
+                  <text x={75} y={56} textAnchor="middle" dominantBaseline="central" className="font-mono text-xs font-black fill-slate-800">
+                    430
+                  </text>
+                  <text x={75} y={69} textAnchor="middle" dominantBaseline="central" className="text-[9px] font-bold fill-slate-400">
+                    Aktif
+                  </text>
                 </PieChart>
               </div>
               <div className="flex-1 space-y-1.5 text-[11px]">
@@ -779,6 +812,12 @@ function Slide2Content({
                       <Cell key={index} fill={entry.color} />
                     ))}
                   </Pie>
+                  <text x={75} y={56} textAnchor="middle" dominantBaseline="central" className="font-mono text-xs font-black fill-slate-800">
+                    430
+                  </text>
+                  <text x={75} y={69} textAnchor="middle" dominantBaseline="central" className="text-[9px] font-bold fill-slate-400">
+                    Total
+                  </text>
                 </PieChart>
               </div>
               <div className="flex-1 space-y-1.5 text-[11px]">
@@ -807,13 +846,17 @@ function Slide2Content({
                 width={500}
                 height={155}
                 data={localityPerBranchData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                margin={{ top: 16, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="fullName" stroke="#64748b" fontSize={10} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <Bar dataKey="lokal" name="Lokal (Kaltim)" fill="#10b981" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="nonLokal" name="Non-Lokal (Nasional)" fill="#1c3d73" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="lokal" name="Lokal (Kaltim)" fill="#10b981" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                  <LabelList dataKey="lokal" position="top" fill="#047857" fontSize={9.5} fontWeight="bold" offset={3} />
+                </Bar>
+                <Bar dataKey="nonLokal" name="Non-Lokal (Nasional)" fill="#1c3d73" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                  <LabelList dataKey="nonLokal" position="top" fill="#1c3d73" fontSize={9.5} fontWeight="bold" offset={3} />
+                </Bar>
               </BarChart>
             </div>
             <div className="flex justify-around text-[10px] text-slate-500 pt-1 font-semibold">
@@ -833,12 +876,13 @@ function Slide2Content({
                 width={500}
                 height={155}
                 data={deptDistributionData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 25 }}
+                margin={{ top: 16, right: 10, left: -20, bottom: 25 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} interval={0} angle={-20} textAnchor="end" />
                 <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                 <Bar dataKey="aktif" fill="#1c3d73" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                  <LabelList dataKey="aktif" position="top" fill="#1c3d73" fontSize={9.5} fontWeight="bold" offset={3} />
                   {deptDistributionData.map((_, index) => (
                     <Cell key={index} fill={index === 0 ? "#1c3d73" : index === 1 ? "#2563eb" : "#0284c7"} />
                   ))}
@@ -867,14 +911,21 @@ function Slide2Content({
               width={1040}
               height={170}
               data={jobLevelStackedData}
-              margin={{ top: 10, right: 15, left: -15, bottom: 5 }}
+              margin={{ top: 16, right: 15, left: -15, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
               <XAxis dataKey="fullLevel" stroke="#64748b" fontSize={10} tickLine={false} />
               <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-              <Bar dataKey="sny" name="Site Senyiur" stackId="a" fill="#1c3d73" isAnimationActive={false} />
-              <Bar dataKey="mp" name="Site Muara Pahu" stackId="a" fill="#f59e0b" isAnimationActive={false} />
-              <Bar dataKey="ho" name="HO Jakarta" stackId="a" fill="#0284c7" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="sny" name="Site Senyiur" stackId="a" fill="#1c3d73" isAnimationActive={false}>
+                <LabelList dataKey="sny" position="center" fill="#ffffff" fontSize={9} fontWeight="bold" formatter={(v: any) => v >= 10 ? v : ""} />
+              </Bar>
+              <Bar dataKey="mp" name="Site Muara Pahu" stackId="a" fill="#f59e0b" isAnimationActive={false}>
+                <LabelList dataKey="mp" position="center" fill="#ffffff" fontSize={9} fontWeight="bold" formatter={(v: any) => v >= 10 ? v : ""} />
+              </Bar>
+              <Bar dataKey="ho" name="HO Jakarta" stackId="a" fill="#0284c7" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                <LabelList dataKey="ho" position="center" fill="#ffffff" fontSize={9} fontWeight="bold" formatter={(v: any) => v >= 10 ? v : ""} />
+                <LabelList dataKey="total" position="top" fill="#1e293b" fontSize={10} fontWeight="bold" offset={4} />
+              </Bar>
             </BarChart>
           </div>
         </div>
