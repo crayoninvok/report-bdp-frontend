@@ -13,10 +13,7 @@ import {
   RefreshCw,
   Download,
   Filter,
-  Building2,
   Briefcase,
-  UserCheck,
-  UserX,
   FileSpreadsheet,
   CheckCircle2,
   Calendar,
@@ -274,101 +271,6 @@ export const MasterManpowerView: React.FC<MasterManpowerViewProps> = ({ user }) 
         )}
       </div>
 
-      {/* ============================================================== */}
-      {/* 2. EXECUTIVE SUMMARY CARDS (HEADCOUNT & DEMOGRAPHICS) */}
-      {/* ============================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Manpower Terdaftar */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Total Terdaftar
-            </span>
-            <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </span>
-          </div>
-          <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-              {stats?.totalAll || 0}
-              <span className="text-xs font-semibold text-slate-500 ml-1.5">Orang</span>
-            </h2>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Akumulasi keseluruhan data historis karyawan
-            </p>
-          </div>
-        </div>
-
-        {/* Card 2: Karyawan Aktif (Exist) */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Karyawan Aktif
-            </span>
-            <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center">
-              <UserCheck className="w-4 h-4 text-emerald-600" />
-            </span>
-          </div>
-          <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-              {stats?.totalExist || 0}
-              <span className="text-xs font-semibold text-emerald-700 ml-1.5 font-bold">
-                {stats?.totalAll ? ((stats.totalExist / stats.totalAll) * 100).toFixed(1) : 0}% Aktif
-              </span>
-            </h2>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Status Keaktifan: <strong className="text-slate-700">Exist</strong> (operasional berjalan)
-            </p>
-          </div>
-        </div>
-
-        {/* Card 3: Karyawan Non-Aktif (Exit / Resign) */}
-        <div className="bg-white rounded-2xl border border-rose-200 p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
-              Karyawan Non-Aktif
-            </span>
-            <span className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center">
-              <UserX className="w-4 h-4 text-rose-600" />
-            </span>
-          </div>
-          <div>
-            <h2 className="text-3xl font-black text-rose-600 tracking-tight">
-              {stats?.totalExit || 0}
-              <span className="text-xs font-semibold text-rose-500 ml-1.5">
-                {stats?.totalAll ? ((stats.totalExit / stats.totalAll) * 100).toFixed(1) : 0}% Exit
-              </span>
-            </h2>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Resign / masa kontrak berakhir
-            </p>
-          </div>
-        </div>
-
-        {/* Card 4: Sebaran Site Operasional */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Sebaran Jobsite
-            </span>
-            <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-[#e95623]" />
-            </span>
-          </div>
-          <div className="space-y-1 text-xs">
-            {stats?.byBranch && stats.byBranch.length > 0 ? (
-              stats.byBranch.slice(0, 3).map((b, i) => (
-                <div key={i} className="flex justify-between items-center text-slate-700">
-                  <span className="truncate max-w-[120px]">{b.name}:</span>
-                  <span className="font-bold text-slate-900">{b.exist} Aktif</span>
-                </div>
-              ))
-            ) : (
-              <span className="text-slate-400 text-xs">Memuat data site...</span>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* ============================================================== */}
       {/* 3. FILTER TOOLBAR & REAL-TIME SEARCH */}
