@@ -472,7 +472,7 @@ export const MasterManpowerView: React.FC<MasterManpowerViewProps> = ({ user }) 
                           {m.fullName}
                         </p>
                         {m.email && (
-                          <p className="text-[10px] text-slate-400 truncate max-w-[180px]">
+                          <p className="text-[10px] text-slate-400 truncate max-w-45">
                             {m.email}
                           </p>
                         )}

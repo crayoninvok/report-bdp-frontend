@@ -1244,7 +1244,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
                 {branchProportionData.map((item, idx) => (
                   <div key={idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-bold block truncate flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-bold truncate flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                       {item.name}
                     </span>
@@ -1301,7 +1301,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                 {localityProportionData.map((item, idx) => (
                   <div key={idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <span className="text-[10px] text-slate-400 font-bold block truncate flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-bold truncate flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                       {item.name}
                     </span>
