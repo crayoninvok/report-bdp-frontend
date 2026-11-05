@@ -401,7 +401,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
               onClick={() => setActiveTab("trend")}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === "trend"
-                  ? "bg-white text-slate-900 shadow-xs text-[#1c3d73]"
+                  ? "bg-white text-[#1c3d73] shadow-xs"
                   : "hover:text-slate-900"
               }`}
             >
@@ -803,7 +803,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
           )}
 
           {/* Chart Rendering Container */}
-          <div className="w-full h-80 min-h-[320px] bg-white rounded-xl pt-2">
+          <div className="w-full h-80 min-h-80 bg-white rounded-xl pt-2">
             <ResponsiveContainer width="100%" height="100%">
               {chartMode === "active" ? (
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
