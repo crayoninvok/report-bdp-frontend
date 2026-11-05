@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { User } from "../types/auth";
+import { manpowerService } from "../services/manpowerService";
 import {
   glService,
   GLPeriodItem,
@@ -84,7 +85,9 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
 
   // Kalkulator Bonus Karyawan States
   const [bonusPercent, setBonusPercent] = useState<number>(5);
-  const [employeeCount, setEmployeeCount] = useState<number>(250);
+  const [employeeCount, setEmployeeCount] = useState<number>(430);
+  const [activeManpowerCount, setActiveManpowerCount] = useState<number>(430);
+  const [loadingManpower, setLoadingManpower] = useState<boolean>(false);
 
   // Rata-rata Jarak (KM) dari semua tiket AssetFindr (Default berdasarkan data tiket aktual)
   const [avgKmOverall, setAvgKmOverall] = useState<number>(82.37);
@@ -115,6 +118,25 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
       maximumFractionDigits: decimals,
     });
   };
+  // Fetch active employee count from Master Manpower Data
+  useEffect(() => {
+    if (!isAuthorized) return;
+    const fetchActiveManpower = async () => {
+      try {
+        setLoadingManpower(true);
+        const res = await manpowerService.getStats();
+        if (res.success && res.stats?.totalExist) {
+          setActiveManpowerCount(res.stats.totalExist);
+          setEmployeeCount(res.stats.totalExist);
+        }
+      } catch (err) {
+        console.warn("Gagal memuat statistik Master Manpower:", err);
+      } finally {
+        setLoadingManpower(false);
+      }
+    };
+    fetchActiveManpower();
+  }, [isAuthorized]);
 
   // Load periods on mount
   useEffect(() => {
@@ -1228,32 +1250,59 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 <Users className="w-4 h-4 text-slate-600" />
                 Total Jumlah Karyawan (Penerima Bonus)
               </label>
-              <span className="text-[11px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md">
-                Bagi Rata
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  Master Manpower Aktif
+                </span>
+                <span className="text-[11px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md">
+                  Bagi Rata
+                </span>
+              </div>
             </div>
-            <div className="relative mb-2.5">
+            <div className="relative mb-2">
               <input
                 type="number"
                 step="1"
                 min="1"
                 value={employeeCount}
                 onChange={(e) => setEmployeeCount(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-16 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-[#e95623] shadow-2xs"
-                placeholder="Contoh: 250"
+                className="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-16 py-2.5 text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-[#1c3d73] shadow-2xs"
+                placeholder="Contoh: 430"
               />
               <span className="absolute right-4 top-3 text-xs font-bold text-slate-400">Orang</span>
             </div>
+            <p className="text-[11px] text-slate-500 mb-2.5 flex items-center gap-1">
+              <span>Sumber Data:</span>
+              <strong className="text-slate-700">Master Data Manpower</strong>
+              <span>• Status Exist:</span>
+              <strong className="text-emerald-700">{activeManpowerCount} Karyawan Aktif</strong>
+            </p>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-bold text-slate-400 mr-1">Preset Karyawan:</span>
-              {[100, 250, 350, 500, 1000].map((count) => (
+              <span className="text-[10px] font-bold text-slate-400 mr-1">Opsi Karyawan:</span>
+              {activeManpowerCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setEmployeeCount(activeManpowerCount)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    employeeCount === activeManpowerCount
+                      ? "bg-[#1c3d73] text-white shadow-xs"
+                      : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                  }`}
+                  title="Ambil data aktual karyawan aktif dari Master Manpower"
+                >
+                  <Users className="w-3 h-3" />
+                  <span>{activeManpowerCount} Org (Aktif Master Data)</span>
+                </button>
+              )}
+              {[100, 250, 350, 500].filter((c) => c !== activeManpowerCount).map((count) => (
                 <button
                   key={count}
                   type="button"
                   onClick={() => setEmployeeCount(count)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     employeeCount === count
-                      ? "bg-[#e95623] text-white shadow-xs"
+                      ? "bg-[#1c3d73] text-white shadow-xs"
                       : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                   }`}
                 >
