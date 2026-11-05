@@ -22,6 +22,8 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  Compass,
+  Zap,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -36,6 +38,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import {
   manpowerService,
@@ -49,7 +52,7 @@ interface HRDashboardViewProps {
 }
 
 type TabType = "all" | "trend" | "overview" | "comparison";
-type ChartMode = "active" | "flow" | "branches" | "turnover";
+type ChartMode = "active" | "flow" | "branches" | "growth" | "turnover";
 
 export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
   user,
@@ -65,6 +68,8 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
   const [chartMode, setChartMode] = useState<ChartMode>("active");
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
+  const [showTrendline, setShowTrendline] = useState<boolean>(true);
+  const [showMA, setShowMA] = useState<boolean>(true);
   const [showTableDetails, setShowTableDetails] = useState<boolean>(false);
 
   const fetchDashboardData = async () => {
@@ -171,9 +176,9 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
     };
   }, [filteredTrend, selectedBranch]);
 
-  // Chart data formatted according to branch filter
+  // Chart data formatted according to branch filter with Trendline & Moving Average
   const chartData = useMemo(() => {
-    return filteredTrend.map((m) => {
+    const raw = filteredTrend.map((m) => {
       let active = m.activeEndMonth;
       let joined = m.joined;
       let resigned = m.resigned;
@@ -200,7 +205,66 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
         displayNet: joined - resigned,
       };
     });
+
+    // Linear Regression on displayActive: y = slope * x + intercept
+    const n = raw.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    raw.forEach((d, i) => {
+      sumX += i;
+      sumY += d.displayActive;
+      sumXY += i * d.displayActive;
+      sumXX += i * i;
+    });
+
+    const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX) : 0;
+    const intercept = n > 1 ? (sumY - slope * sumX) / n : (sumY / (n || 1));
+
+    return raw.map((d, i) => {
+      // 3-Month Moving Average
+      let sumMA = 0;
+      let countMA = 0;
+      for (let k = Math.max(0, i - 2); k <= i; k++) {
+        sumMA += raw[k].displayActive;
+        countMA++;
+      }
+      const movingAverage = countMA > 0 ? Math.round(sumMA / countMA) : d.displayActive;
+
+      // Linear regression trendline value
+      const trendline = Math.round(slope * i + intercept);
+
+      // MoM Growth %
+      const prevActive = i > 0 ? raw[i - 1].displayActive : d.displayActive;
+      const momGrowth = prevActive > 0 ? Number((((d.displayActive - prevActive) / prevActive) * 100).toFixed(1)) : 0;
+
+      return {
+        ...d,
+        movingAverage,
+        trendline,
+        momGrowth,
+        slope,
+      };
+    });
   }, [filteredTrend, selectedBranch]);
+
+  // Trend direction & velocity analysis
+  const trendVelocity = useMemo(() => {
+    if (chartData.length < 2) {
+      return { slope: 0, direction: "Stabil", label: "Headcount stabil", lastMoM: 0 };
+    }
+    const slope = chartData[0]?.slope || 0;
+    let direction = "Pertumbuhan Stabil";
+    if (slope > 2) direction = "Tren Pertumbuhan Cepat (Ekspansi)";
+    else if (slope > 0.5) direction = "Tren Pertumbuhan Moderat";
+    else if (slope < -0.5) direction = "Tren Penurunan";
+
+    const lastMoM = chartData[chartData.length - 1]?.momGrowth || 0;
+
+    return {
+      slope: Number(slope.toFixed(1)),
+      direction,
+      lastMoM,
+    };
+  }, [chartData]);
 
   // Custom Recharts Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -210,13 +274,16 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
         displayJoined: number;
         displayResigned: number;
         displayNet: number;
+        trendline: number;
+        movingAverage: number;
+        momGrowth: number;
       };
 
       return (
-        <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 min-w-48">
+        <div className="bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 min-w-56">
           <p className="font-bold text-slate-900 border-b border-slate-100 pb-1 flex items-center justify-between">
             <span>{current.label}</span>
-            <span className="text-[10px] text-slate-400 font-mono">Periode</span>
+            <span className="text-[10px] text-slate-400 font-mono">Periode Bulanan</span>
           </p>
           <div className="space-y-1 pt-0.5">
             <div className="flex justify-between items-center">
@@ -228,6 +295,28 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                 {current.displayActive} orang
               </span>
             </div>
+            {showTrendline && (
+              <div className="flex justify-between items-center text-[#e95623]">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-0.5 bg-[#e95623]" />
+                  Garis Tren Regresi:
+                </span>
+                <span className="font-bold font-mono">
+                  {current.trendline} orang
+                </span>
+              </div>
+            )}
+            {showMA && (
+              <div className="flex justify-between items-center text-cyan-600">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-0.5 bg-cyan-500" />
+                  Moving Avg (3-Bln):
+                </span>
+                <span className="font-bold font-mono">
+                  {current.movingAverage} orang
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-slate-500 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -247,13 +336,13 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
               </span>
             </div>
             <div className="flex justify-between items-center border-t border-slate-100 pt-1">
-              <span className="text-slate-500">Net Pertumbuhan:</span>
+              <span className="text-slate-500">Pertumbuhan MoM:</span>
               <span
                 className={`font-bold font-mono ${
-                  current.displayNet >= 0 ? "text-emerald-700" : "text-rose-700"
+                  current.momGrowth >= 0 ? "text-emerald-700" : "text-rose-700"
                 }`}
               >
-                {current.displayNet > 0 ? `+${current.displayNet}` : current.displayNet}
+                {current.momGrowth > 0 ? `+${current.momGrowth}%` : `${current.momGrowth}%`}
               </span>
             </div>
             {selectedBranch === "all" && (
@@ -460,7 +549,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
       </div>
 
       {/* ============================================================== */}
-      {/* 3. SECTION GRAFIK TREN BULAN KE BULAN (NEW USER REQUEST) */}
+      {/* 3. SECTION GRAFIK TREN BULAN KE BULAN & TREND INTELLIGENCE */}
       {/* ============================================================== */}
       {(activeTab === "all" || activeTab === "trend") && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
@@ -472,11 +561,11 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                   <TrendingUp className="w-4 h-4" />
                 </span>
                 <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                  Grafik Tren Manpower Bulan ke Bulan
+                  Grafik & Analisis Tren Manpower Bulan ke Bulan
                 </h2>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Visualisasi pergerakan tenaga kerja kumulatif, karyawan masuk (hiring), resignasi, dan pertumbuhan per bulan
+                Visualisasi pergerakan tenaga kerja kumulatif, garis tren linier, moving average, karyawan masuk, dan pertumbuhan per bulan
               </p>
             </div>
 
@@ -521,9 +610,9 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                       ? "bg-[#1c3d73] text-white shadow-xs"
                       : "hover:text-slate-900 text-slate-600"
                   }`}
-                  title="Headcount Aktif Kumulatif"
+                  title="Headcount Aktif & Garis Tren"
                 >
-                  Headcount Aktif
+                  Headcount & Tren
                 </button>
                 <button
                   onClick={() => setChartMode("flow")}
@@ -535,6 +624,17 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                   title="Karyawan Masuk vs Keluar"
                 >
                   Masuk vs Keluar
+                </button>
+                <button
+                  onClick={() => setChartMode("growth")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    chartMode === "growth"
+                      ? "bg-[#1c3d73] text-white shadow-xs"
+                      : "hover:text-slate-900 text-slate-600"
+                  }`}
+                  title="Pertumbuhan MoM (%)"
+                >
+                  MoM Growth (%)
                 </button>
                 <button
                   onClick={() => setChartMode("branches")}
@@ -614,6 +714,94 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
             </div>
           </div>
 
+          {/* Trend Intelligence / Executive Insight Banner */}
+          <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div className="flex items-start gap-3">
+              <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                <TrendingUp className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Arah Tren Bisnis</span>
+                <p className="font-bold text-slate-900 text-sm mt-0.5">{trendVelocity.direction}</p>
+                <p className="text-[11px] text-slate-500">Laju rerata +{trendVelocity.slope} orang/bln</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                <Activity className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Pertumbuhan MoM Terakhir</span>
+                <p className="font-bold text-slate-900 text-sm mt-0.5">
+                  {trendVelocity.lastMoM > 0 ? `+${trendVelocity.lastMoM}%` : `${trendVelocity.lastMoM}%`}
+                </p>
+                <p className="text-[11px] text-slate-500">Kapasitas tenaga kerja optimal</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <span className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 mt-0.5">
+                <Zap className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Rasio Rekrutmen vs Resign</span>
+                <p className="font-bold text-slate-900 text-sm mt-0.5">
+                  {(trendMetrics.totalJoined / (trendMetrics.totalResigned || 1)).toFixed(2)}x
+                </p>
+                <p className="text-[11px] text-slate-500">+{trendMetrics.totalJoined} masuk / -{trendMetrics.totalResigned} keluar</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <span className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                <Compass className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Proyeksi Kuartal Depan</span>
+                <p className="font-bold text-slate-900 text-sm mt-0.5 font-mono">
+                  {Math.round(trendMetrics.lastHeadcount + trendVelocity.slope * 3)} orang
+                </p>
+                <p className="text-[11px] text-slate-500">Estimasi berbasis regresi linier</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Chart Controls: Toggle Trendline & Moving Average when applicable */}
+          {chartMode === "active" && (
+            <div className="flex items-center justify-between text-xs pt-1">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showTrendline}
+                    onChange={(e) => setShowTrendline(e.target.checked)}
+                    className="rounded border-slate-300 text-[#e95623] focus:ring-[#e95623]"
+                  />
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <span className="w-3 h-0.5 bg-[#e95623] inline-block" />
+                    Garis Tren Linier (Linear Trendline)
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showMA}
+                    onChange={(e) => setShowMA(e.target.checked)}
+                    className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-600"
+                  />
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <span className="w-3 h-0.5 bg-cyan-500 inline-block" />
+                    Moving Average (MA 3-Bulan)
+                  </span>
+                </label>
+              </div>
+              <span className="text-[11px] text-slate-400 italic">
+                Arah tren: <strong className="text-slate-600 font-semibold">{trendVelocity.direction}</strong> (+{trendVelocity.slope}/bulan)
+              </span>
+            </div>
+          )}
+
           {/* Chart Rendering Container */}
           <div className="w-full h-80 min-h-[320px] bg-white rounded-xl pt-2">
             <ResponsiveContainer width="100%" height="100%">
@@ -641,6 +829,12 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                     domain={["auto", "auto"]}
                   />
                   <Tooltip content={<CustomTooltip />} />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: 11, paddingBottom: 10 }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="displayActive"
@@ -652,6 +846,29 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                     dot={{ fill: "#1c3d73", r: 3, strokeWidth: 1 }}
                     activeDot={{ r: 6, fill: "#e95623", stroke: "#fff", strokeWidth: 2 }}
                   />
+                  {showTrendline && (
+                    <Line
+                      type="monotone"
+                      dataKey="trendline"
+                      name="Garis Tren (Linear Regression)"
+                      stroke="#e95623"
+                      strokeWidth={2.5}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      activeDot={false}
+                    />
+                  )}
+                  {showMA && (
+                    <Line
+                      type="monotone"
+                      dataKey="movingAverage"
+                      name="Moving Average (3-Bulan)"
+                      stroke="#06b6d4"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={false}
+                    />
+                  )}
                 </AreaChart>
               ) : chartMode === "flow" ? (
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -687,6 +904,54 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                     name="Karyawan Keluar (Resign)"
                     fill="#f43f5e"
                     radius={[4, 4, 0, 0]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="displayNet"
+                    name="Net Growth (+/-)"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={{ fill: "#8b5cf6", r: 3 }}
+                  />
+                </BarChart>
+              ) : chartMode === "growth" ? (
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e2e8f0" }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    unit="%"
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <ReferenceLine y={0} stroke="#94a3b8" />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: 11, paddingBottom: 10 }}
+                  />
+                  <Bar
+                    dataKey="momGrowth"
+                    name="Pertumbuhan MoM (%)"
+                    fill="#0284c7"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="momGrowth"
+                    name="Kurva Pertumbuhan"
+                    stroke="#1c3d73"
+                    strokeWidth={2}
+                    dot={{ fill: "#1c3d73", r: 3 }}
                   />
                 </BarChart>
               ) : chartMode === "branches" ? (
@@ -783,7 +1048,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
             </ResponsiveContainer>
           </div>
 
-          {/* Collapsible Monthly Breakdown Table */}
+          {/* Collapsible Monthly Breakdown Table with Trend Columns */}
           <div className="border border-slate-200 rounded-xl overflow-hidden">
             <button
               onClick={() => setShowTableDetails(!showTableDetails)}
@@ -792,7 +1057,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#1c3d73]" />
                 <span>
-                  {showTableDetails ? "Sembunyikan" : "Tampilkan"} Tabel Rincian Data Bulanan ({filteredTrend.length} Bulan)
+                  {showTableDetails ? "Sembunyikan" : "Tampilkan"} Tabel Rincian Data & Tren Bulanan ({filteredTrend.length} Bulan)
                 </span>
               </div>
               {showTableDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -808,15 +1073,15 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                       <th className="py-2.5 px-3 text-right">Keluar</th>
                       <th className="py-2.5 px-3 text-right">Net Growth</th>
                       <th className="py-2.5 px-4 text-right">Headcount Aktif</th>
-                      <th className="py-2.5 px-3 text-right">HO Jakarta</th>
-                      <th className="py-2.5 px-3 text-right">Muara Pahu</th>
-                      <th className="py-2.5 px-3 text-right">Senyiur</th>
+                      <th className="py-2.5 px-3 text-right">Garis Tren</th>
+                      <th className="py-2.5 px-3 text-right">Moving Avg</th>
+                      <th className="py-2.5 px-3 text-right">MoM Growth</th>
                       <th className="py-2.5 px-4 text-right">Turnover</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 font-mono">
                     {chartData.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50 font-mono">
+                      <tr key={idx} className="hover:bg-slate-50">
                         <td className="py-2 px-4 font-sans font-bold text-slate-800">{row.label}</td>
                         <td className="py-2 px-3 text-right font-bold text-emerald-600">
                           {row.displayJoined > 0 ? `+${row.displayJoined}` : "0"}
@@ -834,9 +1099,19 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                         <td className="py-2 px-4 text-right font-black text-slate-900 bg-slate-50/50">
                           {row.displayActive}
                         </td>
-                        <td className="py-2 px-3 text-right text-slate-600">{row.hoActive}</td>
-                        <td className="py-2 px-3 text-right text-slate-600">{row.muaraPahuActive}</td>
-                        <td className="py-2 px-3 text-right text-slate-600">{row.senyiurActive}</td>
+                        <td className="py-2 px-3 text-right text-[#e95623] font-bold">
+                          {row.trendline}
+                        </td>
+                        <td className="py-2 px-3 text-right text-cyan-700 font-bold">
+                          {row.movingAverage}
+                        </td>
+                        <td
+                          className={`py-2 px-3 text-right font-bold ${
+                            row.momGrowth >= 0 ? "text-emerald-600" : "text-rose-600"
+                          }`}
+                        >
+                          {row.momGrowth > 0 ? `+${row.momGrowth}%` : `${row.momGrowth}%`}
+                        </td>
                         <td className="py-2 px-4 text-right text-slate-500 font-sans">
                           {row.turnoverRate.toFixed(1).replace(".", ",")}%
                         </td>
