@@ -58,9 +58,13 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
   onNavigateBack,
 }) => {
   // STRICT AUTHORIZATION CHECK:
-  // Only dzaky.athariqf@bataramining.com can open / view this module
+  // Only dzaky.athariqf@bataramining.com & dellafajar@bataramining.com can open / view this module
+  const allowedProfitCenterEmails = [
+    "dzaky.athariqf@bataramining.com",
+    "dellafajar@bataramining.com",
+  ];
   const isAuthorized =
-    user?.email?.trim().toLowerCase() === "dzaky.athariqf@bataramining.com";
+    !!user?.email && allowedProfitCenterEmails.includes(user.email.trim().toLowerCase());
 
   // State Management
   const [periods, setPeriods] = useState<GLPeriodItem[]>([]);
@@ -528,10 +532,15 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           </h2>
 
           <p className="text-xs text-slate-600 leading-relaxed mb-6">
-            Halaman <span className="font-bold text-slate-800">Profit Center</span> memuat analisis performa finansial strategis dan margin laba rugi perusahaan. Modul ini secara ketat hanya dapat dibuka oleh akun eksekutif:
+            Halaman <span className="font-bold text-slate-800">Profit Center</span> memuat analisis performa finansial strategis dan margin laba rugi perusahaan. Modul ini secara ketat hanya dapat dibuka oleh akun eksekutif yang berwenang:
             <br />
-            <span className="inline-block mt-2 font-mono font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200 text-xs">
-              dzaky.athariqf@bataramining.com
+            <span className="inline-flex flex-wrap justify-center gap-1.5 mt-2">
+              <span className="font-mono font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 text-[11px]">
+                dzaky.athariqf@bataramining.com
+              </span>
+              <span className="font-mono font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 text-[11px]">
+                dellafajar@bataramining.com
+              </span>
             </span>
           </p>
 
@@ -573,7 +582,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
                 Tahun Anggaran {selectedYear}
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-mono text-slate-700 bg-slate-100 border border-slate-200">
-                dzaky.athariqf@bataramining.com
+                {user.email}
               </span>
             </div>
 
