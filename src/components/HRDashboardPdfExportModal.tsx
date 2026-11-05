@@ -572,7 +572,7 @@ function Slide1Content({
         </div>
 
         {/* High Resolution Recharts Trendline with Explicit Dimensions & isAnimationActive=false */}
-        <div className="w-full h-[380px] pt-3 flex justify-center">
+        <div className="w-full h-95 pt-3 flex justify-center">
           <AreaChart
             width={1066}
             height={380}
@@ -749,7 +749,7 @@ function Slide2Content({
               <span className="text-[10px] font-semibold text-slate-500">Total 430</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-[150px] h-[120px] flex justify-center items-center">
+              <div className="w-37.5 h-30 flex justify-center items-center">
                 <PieChart width={150} height={120}>
                   <Pie
                     data={branchProportionData}
@@ -796,7 +796,7 @@ function Slide2Content({
               <span className="text-[10px] font-semibold text-slate-500">Daerah vs Nasional</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-[150px] h-[120px] flex justify-center items-center">
+              <div className="w-37.5 h-30 flex justify-center items-center">
                 <PieChart width={150} height={120}>
                   <Pie
                     data={localityProportionData}
@@ -841,7 +841,7 @@ function Slide2Content({
             <span className="text-xs font-bold text-slate-800 block mb-1">
               3. Perbandingan Tenaga Kerja: Lokal vs Non-Lokal per Cabang
             </span>
-            <div className="w-full h-[155px] flex justify-center">
+            <div className="w-full h-38.75 flex justify-center">
               <BarChart
                 width={500}
                 height={155}
@@ -871,7 +871,7 @@ function Slide2Content({
             <span className="text-xs font-bold text-slate-800 block mb-1">
               4. Distribusi Karyawan Aktif per Departemen (9 Divisi)
             </span>
-            <div className="w-full h-[155px] flex justify-center">
+            <div className="w-full h-38.75 flex justify-center">
               <BarChart
                 width={500}
                 height={155}
@@ -906,7 +906,7 @@ function Slide2Content({
               Site Senyiur (Navy) &bull; Site Muara Pahu (Amber) &bull; HO Jakarta (Sky)
             </span>
           </div>
-          <div className="w-full h-[170px] flex justify-center">
+          <div className="w-full h-42.5 flex justify-center">
             <BarChart
               width={1040}
               height={170}
