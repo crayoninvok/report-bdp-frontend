@@ -328,9 +328,10 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
       { level: "Superintendent", ho: 0, mp: 4, sny: 3 },
       { level: "Supervisor", ho: 3, mp: 5, sny: 5 },
       { level: "Junior Supervisor", ho: 9, mp: 21, sny: 33 },
-      { level: "Staff", ho: 0, mp: 0, sny: 0 },
       { level: "Worker", ho: 4, mp: 128, sny: 200 },
-    ]).map((j) => ({
+    ])
+      .filter((j) => j.level.toLowerCase() !== "staff")
+      .map((j) => ({
       level: j.level === "Junior Supervisor" ? "Jr. Spv" : j.level === "Superintendent" ? "Supt." : j.level,
       fullLevel: j.level,
       ho: j.ho,
@@ -1415,7 +1416,7 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                     Sebaran Job Level per Cabang (Aktif)
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    Struktur tingkatan jabatan (Director, Manager, Superintendent, Supervisor, Jr. Spv, Staff, Worker) ditumpuk per cabang
+                    Struktur tingkatan jabatan (Director, Manager, Superintendent, Supervisor, Jr. Spv, Worker) ditumpuk per cabang
                   </p>
                 </div>
               </div>
@@ -1707,9 +1708,10 @@ export const HRDashboardView: React.FC<HRDashboardViewProps> = ({
                       { level: "Superintendent", ho: 0, mp: 4, sny: 3, total: 7, ratio: 1.6 },
                       { level: "Supervisor", ho: 3, mp: 5, sny: 5, total: 13, ratio: 3.0 },
                       { level: "Junior Supervisor", ho: 9, mp: 21, sny: 33, total: 63, ratio: 14.7 },
-                      { level: "Staff", ho: 0, mp: 0, sny: 0, total: 0, ratio: 0.0 },
                       { level: "Worker", ho: 4, mp: 128, sny: 200, total: 332, ratio: 77.2 },
-                    ]).map((row, idx) => (
+                    ])
+                      .filter((row) => row.level.toLowerCase() !== "staff")
+                      .map((row, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/70">
                         <td className="py-2 px-4 font-medium text-slate-800">{row.level}</td>
                         <td className="py-2 px-3 text-right font-mono text-slate-600">{row.ho}</td>
