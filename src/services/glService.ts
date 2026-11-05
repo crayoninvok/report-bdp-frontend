@@ -173,6 +173,17 @@ export interface GLProfitCenterData {
     mphTon: number;
     snyTon: number;
   };
+  yearlyProduction?: {
+    year: number;
+    totalTon: number;
+    mphTon: number;
+    snyTon: number;
+    totalRit: number;
+    mphRit: number;
+    snyRit: number;
+    totalTonKm: number;
+    grossRevenue: number;
+  };
   revenue: {
     total: number;
     mph: number;
