@@ -592,7 +592,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
           {/* Breakdown Per Site (Senyiur vs Muara Pahu) & Scope Toggle */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {/* Site Senyiur Chip */}
-            <div className="bg-slate-800/90 border border-teal-500/30 rounded-xl p-3 min-w-[170px]">
+            <div className="bg-slate-800/90 border border-teal-500/30 rounded-xl p-3 min-w-42.5">
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <span className="font-bold text-teal-400 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-teal-400" />
@@ -611,7 +611,7 @@ export const ProfitCenterView: React.FC<ProfitCenterViewProps> = ({
             </div>
 
             {/* Site Muara Pahu Chip */}
-            <div className="bg-slate-800/90 border border-blue-500/30 rounded-xl p-3 min-w-[170px]">
+            <div className="bg-slate-800/90 border border-blue-500/30 rounded-xl p-3 min-w-42.5">
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <span className="font-bold text-blue-400 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-blue-400" />
