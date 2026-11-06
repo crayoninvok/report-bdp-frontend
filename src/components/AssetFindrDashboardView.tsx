@@ -2617,7 +2617,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                       {/* Bottom Row: Progress Relative to Leader & Notes */}
                       <div className="space-y-1">
                         <div className="flex justify-between items-center text-[10px]">
-                          <span className="text-slate-500 italic truncate max-w-[240px]">
+                          <span className="text-slate-500 italic truncate max-w-60">
                             {unit.notes || "Operasional hauling optimal tanpa kendala teknis"}
                           </span>
                           <span className="font-mono font-bold text-emerald-700 shrink-0">
@@ -2770,7 +2770,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                       {/* Bottom Row: Progress Relative to Fleet Average & Cause */}
                       <div className="space-y-1">
                         <div className="flex justify-between items-center text-[10px]">
-                          <span className="text-rose-600/90 font-medium truncate max-w-[240px]">
+                          <span className="text-rose-600/90 font-medium truncate max-w-60">
                             {unit.notes || "Perlu pengecekan ketersediaan armada & sparepart"}
                           </span>
                           <span className="font-mono font-bold text-rose-600 shrink-0">
