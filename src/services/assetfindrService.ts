@@ -127,6 +127,25 @@ export interface DailyProductionItem {
   planProductionMonthly?: number;
 }
 
+export interface UnitProductionPerformance {
+  unitCode: string;
+  vehicleName: string;
+  category?: string;
+  model?: string;
+  totalTonase: number;
+  totalRitase: number;
+  tonaseDS: number;
+  ritaseDS: number;
+  tonaseNS: number;
+  ritaseNS: number;
+  avgPayload: number;
+  avgTripPerDay: number;
+  activeDays: number;
+  status: "Optimal" | "Good" | "Needs Attention" | "Underperforming";
+  rank?: number;
+  notes?: string;
+}
+
 export interface DailyProductionResponse {
   success: boolean;
   isLive: boolean;
@@ -153,6 +172,9 @@ export interface DailyProductionResponse {
     planProductionMonthly?: number;
   };
   data: DailyProductionItem[];
+  topPerformingUnits?: UnitProductionPerformance[];
+  lowestPerformingUnits?: UnitProductionPerformance[];
+  allUnitsPerformance?: UnitProductionPerformance[];
 }
 
 
