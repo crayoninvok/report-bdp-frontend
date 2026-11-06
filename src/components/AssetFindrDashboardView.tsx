@@ -701,6 +701,20 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
     needleAngle = -30 + (over / 20) * 30;
   }
 
+  // Speedometer Needle Trigonometry Coordinates (Center: 120, 105; Radius: 64)
+  const needleRad = (needleAngle * Math.PI) / 180;
+  const needlePerpRad = needleRad + Math.PI / 2;
+  const tipX = +(120 + 64 * Math.cos(needleRad)).toFixed(2);
+  const tipY = +(105 + 64 * Math.sin(needleRad)).toFixed(2);
+  const baseRadius = 4.5;
+  const baseLeftX = +(120 + baseRadius * Math.cos(needlePerpRad)).toFixed(2);
+  const baseLeftY = +(105 + baseRadius * Math.sin(needlePerpRad)).toFixed(2);
+  const baseRightX = +(120 - baseRadius * Math.cos(needlePerpRad)).toFixed(2);
+  const baseRightY = +(105 - baseRadius * Math.sin(needlePerpRad)).toFixed(2);
+  const tailRadius = 12;
+  const tailX = +(120 - tailRadius * Math.cos(needleRad)).toFixed(2);
+  const tailY = +(105 - tailRadius * Math.sin(needleRad)).toFixed(2);
+
   // Speedometer Status & Color Theme:
   // 0-95% = merah
   // 95-99% = kuning
@@ -1284,21 +1298,34 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                 <text x="166" y="27" textAnchor="middle" fontSize="9" fontWeight="700" fill="#f59e0b">95%</text>
                 <text x="195" y="56" textAnchor="start" fontSize="9.5" fontWeight="800" fill="#10b981">100%</text>
 
-                {/* Needle */}
-                <g
-                  transform={`rotate(${needleAngle}, 120, 105)`}
-                  style={{
-                    transition: "transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                    transformOrigin: "120px 105px",
-                  }}
-                >
-                  <polygon points="120,102.5 192,105 120,107.5" fill={themeColor} />
-                  <polygon points="120,103 160,105 120,107" fill="#1e293b" opacity="0.35" />
+                {/* Needle Indicator */}
+                <g className="transition-all duration-700 ease-out">
+                  {/* Needle Body */}
+                  <polygon
+                    points={`${tipX},${tipY} ${baseLeftX},${baseLeftY} ${tailX},${tailY} ${baseRightX},${baseRightY}`}
+                    fill={themeColor}
+                    stroke="#ffffff"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  {/* Needle Spine Line for High-End Dashboard Finish */}
+                  <line
+                    x1="120"
+                    y1="105"
+                    x2={tipX}
+                    y2={tipY}
+                    stroke="#ffffff"
+                    strokeWidth="0.8"
+                    opacity="0.85"
+                    strokeLinecap="round"
+                  />
+                  {/* Needle Tip Indicator */}
+                  <circle cx={tipX} cy={tipY} r="2.5" fill={themeColor} stroke="#ffffff" strokeWidth="0.8" />
                 </g>
 
                 {/* Center Hub */}
-                <circle cx="120" cy="105" r="9" fill="#1e293b" />
-                <circle cx="120" cy="105" r="7" fill={themeColor} />
+                <circle cx="120" cy="105" r="9" fill="#0f172a" />
+                <circle cx="120" cy="105" r="6.5" fill={themeColor} />
                 <circle cx="120" cy="105" r="2.5" fill="#ffffff" />
 
                 {/* Percentage Readout */}
