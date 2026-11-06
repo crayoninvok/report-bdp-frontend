@@ -146,6 +146,26 @@ export interface UnitProductionPerformance {
   notes?: string;
 }
 
+export interface OperatorProductionPerformance {
+  operatorName: string;
+  employeeId?: string;
+  jobPosition?: string;
+  branchName?: string;
+  totalTonase: number;
+  totalRitase: number;
+  tonaseDS: number;
+  ritaseDS: number;
+  tonaseNS: number;
+  ritaseNS: number;
+  avgPayload: number;
+  avgTripPerDay: number;
+  activeDays: number;
+  assignedUnit?: string;
+  status: "Top Performer" | "Optimal" | "Good" | "Needs Coaching" | "Standby / Rotasi";
+  rank?: number;
+  notes?: string;
+}
+
 export interface DailyProductionResponse {
   success: boolean;
   isLive: boolean;
@@ -175,6 +195,8 @@ export interface DailyProductionResponse {
   topPerformingUnits?: UnitProductionPerformance[];
   lowestPerformingUnits?: UnitProductionPerformance[];
   allUnitsPerformance?: UnitProductionPerformance[];
+  topPerformingOperators?: OperatorProductionPerformance[];
+  lowestPerformingOperators?: OperatorProductionPerformance[];
 }
 
 
