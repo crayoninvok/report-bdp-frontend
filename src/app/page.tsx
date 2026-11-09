@@ -321,6 +321,8 @@ export default function Home() {
                       ? "Plant & Maintenance • Master Data Unit"
                       : activeMenu === "hr-dashboard"
                       ? "Human Resource & Development • Dashboard"
+                      : activeMenu === "atr-dashboard"
+                      ? "Human Resource & Development • ATR Dashboard"
                       : activeMenu === "master-manpower"
                       ? "Human Resource & Development • Master Manpower Data"
                       : "Dashboard Cost"}
