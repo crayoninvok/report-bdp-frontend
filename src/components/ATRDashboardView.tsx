@@ -1782,11 +1782,11 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 (Attendance Tracking &amp; Ratio)
               </span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-2xl font-medium">
-              {selectedScope === "headoffice"
-                ? "Monitoring kepatuhan presensi 19 personil aktif Head Office Jakarta (BoD & staf jam kerja tidak menentu Naufal, Hendri, Iwan dieksklusi). Jam kerja 8 jam fleksibel, toleransi masuk maksimal 08:15 WIB, dan tanggal merah libur resmi."
-                : "Monitoring rasio kehadiran 400 personil aktif Jobsite Muara Pahu & Senyiur per sheet bulanan G-Form. Terintegrasi dengan analitika shift operasional dan ranking departemen."}
-            </p>
+            {selectedScope === "jobsite" && (
+              <p className="text-xs sm:text-sm text-slate-500 max-w-2xl font-medium">
+                Monitoring rasio kehadiran 400 personil aktif Jobsite Muara Pahu &amp; Senyiur per sheet bulanan G-Form. Terintegrasi dengan analitika shift operasional dan ranking departemen.
+              </p>
+            )}
           </div>
 
           {/* Scope Switcher & Quick Navigation */}
@@ -1855,51 +1855,8 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* BANNER KHUSUS HEAD OFFICE ATURAN KERJA & EXCLUSIONS                       */}
-        {/* ========================================================================= */}
-        {selectedScope === "headoffice" ? (
-          <div className="space-y-3">
-            <div className="p-4 bg-linear-to-r from-blue-50/80 via-indigo-50/50 to-slate-50 rounded-2xl border border-blue-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                  <Clock size={16} />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-slate-900 font-extrabold text-xs sm:text-sm">
-                      Ketentuan Jam Kerja &amp; Libur Head Office (Jakarta)
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">
-                      8 Jam Kerja + 1 Jam Istirahat
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
-                      Batas Masuk: 08:15 WIB
-                    </span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    ⏰ <strong>Batas Maksimum Masuk:</strong> Pukul <strong>08:15 WIB</strong> (masuk &gt; 08:15 tercatat sebagai Terlambat / <code className="text-orange-700 font-bold">TL</code>).
-                    <br />
-                    ⏳ <strong>Fleksibilitas Jam Pulang (8 Jam Kerja):</strong> Jika masuk <strong>07:00</strong> boleh pulang <strong>16:00</strong>; jika masuk <strong>08:00</strong> pulang <strong>17:00</strong>; jika masuk <strong>08:15</strong> pulang <strong>17:15</strong>.
-                    <br />
-                    🗓️ <strong>Hari Libur:</strong> Tanggal Merah (Hari Libur Nasional &amp; Cuti Bersama) serta akhir pekan (Sabtu-Minggu) adalah <strong>LIBUR RESMI (<code className="text-purple-700 font-bold">L</code>)</strong> dan tidak memotong rasio kehadiran.
-                  </p>
-                </div>
-              </div>
-
-              {/* Exclusion Badges */}
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
-                  BoD Excluded (0 Direksi)
-                </span>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
-                  Jam Tidak Menentu Excluded (Naufal, Hendri, Iwan)
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Jobsite Banner */
+        {/* Banner Operasional Jobsite (Hanya tampil saat scope Jobsite) */}
+        {selectedScope === "jobsite" && (
           <div className="p-3.5 bg-linear-to-r from-orange-50/60 via-amber-50/40 to-slate-50 rounded-2xl border border-orange-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-lg bg-orange-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
