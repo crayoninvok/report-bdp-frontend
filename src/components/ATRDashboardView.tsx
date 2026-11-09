@@ -39,6 +39,12 @@ import {
   UserMinus,
   Sparkles,
   Info,
+  CalendarDays,
+  BookOpen,
+  HelpCircle,
+  Calculator,
+  Building,
+  CheckCircle,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -60,7 +66,6 @@ import {
   ReferenceLine,
   LabelList,
 } from "recharts";
-import { manpowerService } from "../services/manpowerService";
 
 interface ATRDashboardViewProps {
   user: User;
@@ -81,29 +86,194 @@ export type SheetMonthKey =
   | "okt-26"
   | "nov-26";
 
+export type ATRScope = "jobsite" | "headoffice";
+
 // =========================================================================
-// 1. DATA HISTORIS ATR JOBSITE DENGAN TREND LINE & MOVING AVERAGE
+// 1. ATTENDANCE CODE DICTIONARY & MASTER REFERENCE (HO & JOBSITE)
 // =========================================================================
-interface JobsiteMonthlyATR {
+export interface AttendanceCodeDefinition {
+  code: string;
+  label: string;
+  category: "hadir" | "cuti" | "izin" | "pelanggaran" | "libur";
+  description: string;
+  scope: "all" | "jobsite" | "headoffice";
+  affectsATR: boolean;
+  isPaid: boolean;
+  colorBg: string;
+  colorText: string;
+  colorBorder: string;
+}
+
+export const ATTENDANCE_CODES: AttendanceCodeDefinition[] = [
+  {
+    code: "H",
+    label: "Hadir Tepat Waktu",
+    category: "hadir",
+    description: "Karyawan hadir bekerja tepat waktu (HO: Masuk ≤ 08:15; Jobsite: Hadir shift / briefing) dan memenuhi durasi kerja 8 jam.",
+    scope: "all",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-emerald-50",
+    colorText: "text-emerald-700",
+    colorBorder: "border-emerald-200",
+  },
+  {
+    code: "CT",
+    label: "Cuti Tahunan",
+    category: "cuti",
+    description: "Cuti tahunan resmi yang disetujui atasan & HRD (tidak mengurangi ATR operasional).",
+    scope: "all",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-blue-50",
+    colorText: "text-blue-700",
+    colorBorder: "border-blue-200",
+  },
+  {
+    code: "S",
+    label: "Sakit",
+    category: "izin",
+    description: "Ketidakhadiran karena kondisi kesehatan medis, wajib melampirkan Surat Keterangan Dokter (SKD) sah.",
+    scope: "all",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-amber-50",
+    colorText: "text-amber-700",
+    colorBorder: "border-amber-200",
+  },
+  {
+    code: "I",
+    label: "Izin Resmi",
+    category: "izin",
+    description: "Izin tidak masuk kerja untuk keperluan penting/keluarga dengan persetujuan atasan sebelumnya.",
+    scope: "all",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-indigo-50",
+    colorText: "text-indigo-700",
+    colorBorder: "border-indigo-200",
+  },
+  {
+    code: "TL",
+    label: "Terlambat (Late In)",
+    category: "pelanggaran",
+    description: "Masuk kerja melewati batas maksimum toleransi (HO: Masuk > 08:15 WIB; Jobsite: Terlambat shift / P5M).",
+    scope: "all",
+    affectsATR: true,
+    isPaid: true,
+    colorBg: "bg-orange-50",
+    colorText: "text-orange-700",
+    colorBorder: "border-orange-200",
+  },
+  {
+    code: "PA",
+    label: "Pulang Awal (Early Out)",
+    category: "pelanggaran",
+    description: "Pulang sebelum menyelesaikan kewajiban 8 jam kerja efektif (contoh HO: Masuk 08:00 pulang 16:30).",
+    scope: "all",
+    affectsATR: true,
+    isPaid: true,
+    colorBg: "bg-amber-50",
+    colorText: "text-amber-800",
+    colorBorder: "border-amber-300",
+  },
+  {
+    code: "DL",
+    label: "Dinas Luar (Business Trip)",
+    category: "hadir",
+    description: "Penugasan dinas di luar kantor (kunjungan site tambang Muara Pahu/Senyiur, meeting vendor/klien).",
+    scope: "all",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-teal-50",
+    colorText: "text-teal-700",
+    colorBorder: "border-teal-200",
+  },
+  {
+    code: "A",
+    label: "Alpha / Mangkir",
+    category: "pelanggaran",
+    description: "Tidak hadir bekerja tanpa pemberitahuan dan tanpa keterangan yang sah (langsung memotong rasio ATR).",
+    scope: "all",
+    affectsATR: true,
+    isPaid: false,
+    colorBg: "bg-rose-50",
+    colorText: "text-rose-700",
+    colorBorder: "border-rose-200",
+  },
+  {
+    code: "R",
+    label: "Roster / Off Lapangan",
+    category: "libur",
+    description: "Jadwal cuti periodik / off roster pekerja tambang lapangan di Site Muara Pahu & Senyiur.",
+    scope: "jobsite",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-slate-100",
+    colorText: "text-slate-700",
+    colorBorder: "border-slate-200",
+  },
+  {
+    code: "L",
+    label: "Libur Tanggal Merah",
+    category: "libur",
+    description: "Hari Libur Nasional & Cuti Bersama resmi kalender pemerintah untuk karyawan Head Office Jakarta.",
+    scope: "headoffice",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-purple-50",
+    colorText: "text-purple-700",
+    colorBorder: "border-purple-200",
+  },
+  {
+    code: "CM",
+    label: "Cuti Melahirkan (Maternity)",
+    category: "cuti",
+    description: "Hak cuti melahirkan selama 3 bulan sesuai UU Ketenagakerjaan.",
+    scope: "all",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-pink-50",
+    colorText: "text-pink-700",
+    colorBorder: "border-pink-200",
+  },
+  {
+    code: "CK",
+    label: "Cuti Khusus",
+    category: "cuti",
+    description: "Cuti pernikahan, anggota keluarga meninggal dunia, atau ibadah keagamaan (sesuai PP/PKB).",
+    scope: "all",
+    affectsATR: false,
+    isPaid: true,
+    colorBg: "bg-cyan-50",
+    colorText: "text-cyan-700",
+    colorBorder: "border-cyan-200",
+  },
+];
+
+// =========================================================================
+// 2. DATA HISTORIS ATR JOBSITE (400 PERSONIL LAPANGAN)
+// =========================================================================
+export interface MonthlyATRData {
   sheetName: SheetMonthKey;
   label: string;
   monthNum: number;
   workDays: number;
-  headcount: number; // 400 personil aktif Jobsite
-  totalWorkDays: number; // headcount * workDays
+  headcount: number;
+  totalWorkDays: number;
   present: number;
   leave: number;
   sick: number;
   alpha: number;
   lateIn: number;
-  atrPercent: number; // Realisasi
-  trendlineLinear: number; // Regresi Linier
-  movingAverage3M: number | null; // MA 3-Bulan
-  target: number; // 95%
-  avgHoursPerDay: number; // Jam kerja real rata-rata
+  atrPercent: number;
+  trendlineLinear: number;
+  movingAverage3M: number | null;
+  target: number;
+  avgHoursPerDay: number;
 }
 
-const JOBSITE_MONTHLY_ATR: JobsiteMonthlyATR[] = [
+const JOBSITE_MONTHLY_ATR: MonthlyATRData[] = [
   {
     sheetName: "jan-26",
     label: "Jan-26",
@@ -304,13 +474,11 @@ const JOBSITE_MONTHLY_ATR: JobsiteMonthlyATR[] = [
   },
 ];
 
-// =========================================================================
-// 2. DATA DEPARTEMEN JOBSITE (SESUAI DENGAN DATABASE, DIURUTKAN TERBAIK KE TERENDAH)
-// =========================================================================
-export interface JobsiteDepartmentATR {
+// 7 Departemen Riil di Jobsite Muara Pahu & Senyiur (Total 400 personil)
+export interface DepartmentATR {
   rank: number;
-  organization: string; // Persis sesuai database MasterManpower
-  headcount: number; // Total riil Jobsite
+  organization: string;
+  headcount: number;
   workDays: number;
   totalWorkDays: number;
   present: number;
@@ -319,14 +487,12 @@ export interface JobsiteDepartmentATR {
   alpha: number;
   lateIn: number;
   avgHours: number;
-  atrPercent: number; // Persentase ATR
+  atrPercent: number;
   status: "Sangat Disiplin" | "Optimal" | "Perlu Perhatian";
   primaryPositions: string;
 }
 
-// 7 Departemen Riil di Jobsite Muara Pahu & Senyiur (Total 400 personil)
-// Diurutkan dari ATR TERBAIK ke TERENDAH:
-export const JOBSITE_DEPARTMENTS_RANKED: JobsiteDepartmentATR[] = [
+export const JOBSITE_DEPARTMENTS_RANKED: DepartmentATR[] = [
   {
     rank: 1,
     organization: "HSE",
@@ -357,7 +523,7 @@ export const JOBSITE_DEPARTMENTS_RANKED: JobsiteDepartmentATR[] = [
     avgHours: 8.12,
     atrPercent: 98.1,
     status: "Sangat Disiplin",
-    primaryPositions: "Spv Human Resource, GA, Camp Coordinator, Cook",
+    primaryPositions: "Spv Human Resource, Admin Site, Cook Helper",
   },
   {
     rank: 3,
@@ -373,7 +539,7 @@ export const JOBSITE_DEPARTMENTS_RANKED: JobsiteDepartmentATR[] = [
     avgHours: 8.18,
     atrPercent: 97.7,
     status: "Sangat Disiplin",
-    primaryPositions: "Operation Supervisor, Dispatcher Utama",
+    primaryPositions: "Spv Operation Site, Mine Dispatcher, Radio Operator",
   },
   {
     rank: 4,
@@ -386,10 +552,10 @@ export const JOBSITE_DEPARTMENTS_RANKED: JobsiteDepartmentATR[] = [
     sick: 1,
     alpha: 0,
     lateIn: 0,
-    avgHours: 8.10,
+    avgHours: 8.14,
     atrPercent: 97.0,
     status: "Optimal",
-    primaryPositions: "Road Maintenance, Civil Worker Site",
+    primaryPositions: "Spv Civil & Road Maintenance, Surveyor",
   },
   {
     rank: 5,
@@ -398,14 +564,14 @@ export const JOBSITE_DEPARTMENTS_RANKED: JobsiteDepartmentATR[] = [
     workDays: 22,
     totalWorkDays: 5060,
     present: 4898,
-    leave: 88,
-    sick: 48,
-    alpha: 26,
+    leave: 98,
+    sick: 39,
+    alpha: 25,
     lateIn: 17,
-    avgHours: 8.08,
+    avgHours: 8.12,
     atrPercent: 96.8,
     status: "Optimal",
-    primaryPositions: "Driver Double Trailer, Pit Controller, Side Dump Spotter",
+    primaryPositions: "Driver Double Trailer, Operator Excavator, Pit Controller",
   },
   {
     rank: 6,
@@ -418,10 +584,10 @@ export const JOBSITE_DEPARTMENTS_RANKED: JobsiteDepartmentATR[] = [
     sick: 4,
     alpha: 2,
     lateIn: 2,
-    avgHours: 8.04,
-    atrPercent: 96.4,
+    avgHours: 8.10,
+    atrPercent: 96.5,
     status: "Optimal",
-    primaryPositions: "Fuel Attendant, Warehouse, Dispatcher Logistic",
+    primaryPositions: "Spv Logistic, Fuel Attendant, Warehouse Admin",
   },
   {
     rank: 7,
@@ -429,24 +595,311 @@ export const JOBSITE_DEPARTMENTS_RANKED: JobsiteDepartmentATR[] = [
     headcount: 109,
     workDays: 22,
     totalWorkDays: 2398,
-    present: 2297,
-    leave: 51,
-    sick: 30,
-    alpha: 20,
-    lateIn: 12,
-    avgHours: 8.01,
+    present: 2298,
+    leave: 61,
+    sick: 28,
+    alpha: 11,
+    lateIn: 8,
+    avgHours: 8.08,
     atrPercent: 95.8,
     status: "Optimal",
-    primaryPositions: "Mechanic, Auto Electrician, Welder, Spv Plant",
+    primaryPositions: "Spv Plant, Mechanic Heavy Equipment, Auto Electrician, Welder",
   },
 ];
 
 // =========================================================================
-// 3. TOP 10 KARYAWAN ABSENSI TERBAIK (PRIMA & TEPAT WAKTU)
-// Kriteria: Waktu Masuk On-Time (Late In 0), Jam Kerja Terpenuhi (≥ 8.0 Jam),
-//           Kehadiran 100%, Zero Alpha
+// 3. DATA HISTORIS ATR HEAD OFFICE (JAKARTA) - TANGGAL MERAH LIBUR
+// BoD Excluded (0 Direksi) & 7 Mantan Karyawan Dihapus (22 Personil Aktif)
 // =========================================================================
-export interface EmployeeAttendanceLeaderboardItem {
+const HEADOFFICE_MONTHLY_ATR: MonthlyATRData[] = [
+  {
+    sheetName: "jan-26",
+    label: "Jan-26",
+    monthNum: 1,
+    workDays: 21, // Libur Tahun Baru & Isra Miraj
+    headcount: 22,
+    totalWorkDays: 462,
+    present: 450,
+    leave: 6,
+    sick: 4,
+    alpha: 2,
+    lateIn: 3,
+    atrPercent: 97.4,
+    trendlineLinear: 97.40,
+    movingAverage3M: null,
+    target: 95.0,
+    avgHoursPerDay: 8.16,
+  },
+  {
+    sheetName: "feb-26",
+    label: "Feb-26",
+    monthNum: 2,
+    workDays: 19, // Libur Tahun Baru Imlek
+    headcount: 22,
+    totalWorkDays: 418,
+    present: 408,
+    leave: 5,
+    sick: 3,
+    alpha: 2,
+    lateIn: 2,
+    atrPercent: 97.6,
+    trendlineLinear: 97.60,
+    movingAverage3M: null,
+    target: 95.0,
+    avgHoursPerDay: 8.18,
+  },
+  {
+    sheetName: "mar-26",
+    label: "Mar-26",
+    monthNum: 3,
+    workDays: 21, // Libur Hari Suci Nyepi & Idul Fitri
+    headcount: 22,
+    totalWorkDays: 462,
+    present: 452,
+    leave: 6,
+    sick: 3,
+    alpha: 1,
+    lateIn: 2,
+    atrPercent: 97.8,
+    trendlineLinear: 97.80,
+    movingAverage3M: 97.60,
+    target: 95.0,
+    avgHoursPerDay: 8.19,
+  },
+  {
+    sheetName: "apr-26",
+    label: "Apr-26",
+    monthNum: 4,
+    workDays: 20, // Libur Bersama Idul Fitri & Wafat Isa Almasih
+    headcount: 22,
+    totalWorkDays: 440,
+    present: 431,
+    leave: 5,
+    sick: 3,
+    alpha: 1,
+    lateIn: 1,
+    atrPercent: 98.0,
+    trendlineLinear: 98.00,
+    movingAverage3M: 97.80,
+    target: 95.0,
+    avgHoursPerDay: 8.20,
+  },
+  {
+    sheetName: "mei-26",
+    label: "Mei-26",
+    monthNum: 5,
+    workDays: 19, // Libur Hari Buruh, Kenaikan Isa Almasih, Waisak
+    headcount: 22,
+    totalWorkDays: 418,
+    present: 410,
+    leave: 4,
+    sick: 3,
+    alpha: 1,
+    lateIn: 2,
+    atrPercent: 98.1,
+    trendlineLinear: 98.20,
+    movingAverage3M: 97.97,
+    target: 95.0,
+    avgHoursPerDay: 8.20,
+  },
+  {
+    sheetName: "jun-26",
+    label: "Jun-26",
+    monthNum: 6,
+    workDays: 21, // Libur Hari Lahir Pancasila & Idul Adha
+    headcount: 22,
+    totalWorkDays: 462,
+    present: 454,
+    leave: 5,
+    sick: 2,
+    alpha: 1,
+    lateIn: 1,
+    atrPercent: 98.3,
+    trendlineLinear: 98.40,
+    movingAverage3M: 98.13,
+    target: 95.0,
+    avgHoursPerDay: 8.21,
+  },
+  {
+    sheetName: "jul-26",
+    label: "Jul-26",
+    monthNum: 7,
+    workDays: 22, // Libur Tahun Baru Islam
+    headcount: 22,
+    totalWorkDays: 484,
+    present: 477,
+    leave: 4,
+    sick: 2,
+    alpha: 1,
+    lateIn: 1,
+    atrPercent: 98.6,
+    trendlineLinear: 98.60,
+    movingAverage3M: 98.33,
+    target: 95.0,
+    avgHoursPerDay: 8.22,
+  },
+  {
+    sheetName: "agu-26",
+    label: "Agu-26",
+    monthNum: 8,
+    workDays: 21, // Libur HUT Kemerdekaan RI
+    headcount: 22,
+    totalWorkDays: 462,
+    present: 456,
+    leave: 4,
+    sick: 1,
+    alpha: 1,
+    lateIn: 1,
+    atrPercent: 98.7,
+    trendlineLinear: 98.70,
+    movingAverage3M: 98.53,
+    target: 95.0,
+    avgHoursPerDay: 8.23,
+  },
+  {
+    sheetName: "sep-26",
+    label: "Sep-26",
+    monthNum: 9,
+    workDays: 21, // Libur Maulid Nabi Muhammad SAW
+    headcount: 22,
+    totalWorkDays: 462,
+    present: 457,
+    leave: 3,
+    sick: 2,
+    alpha: 0,
+    lateIn: 1,
+    atrPercent: 98.9,
+    trendlineLinear: 98.90,
+    movingAverage3M: 98.73,
+    target: 95.0,
+    avgHoursPerDay: 8.24,
+  },
+  {
+    sheetName: "okt-26",
+    label: "Okt-26",
+    monthNum: 10,
+    workDays: 22, // Full 22 hari kerja
+    headcount: 22,
+    totalWorkDays: 484,
+    present: 480,
+    leave: 3,
+    sick: 1,
+    alpha: 0,
+    lateIn: 0,
+    atrPercent: 99.2,
+    trendlineLinear: 99.10,
+    movingAverage3M: 98.93,
+    target: 95.0,
+    avgHoursPerDay: 8.25,
+  },
+  {
+    sheetName: "nov-26",
+    label: "Nov-26",
+    monthNum: 11,
+    workDays: 5, // Cutoff 1-5 Nov 2026
+    headcount: 22,
+    totalWorkDays: 110,
+    present: 109,
+    leave: 1,
+    sick: 0,
+    alpha: 0,
+    lateIn: 0,
+    atrPercent: 99.1,
+    trendlineLinear: 99.30,
+    movingAverage3M: 99.07,
+    target: 95.0,
+    avgHoursPerDay: 8.24,
+  },
+];
+
+// 5 Departemen Riil di Head Office Jakarta (Total 22 personil aktif non-BoD)
+export const HEADOFFICE_DEPARTMENTS_RANKED: DepartmentATR[] = [
+  {
+    rank: 1,
+    organization: "Operations",
+    headcount: 3,
+    workDays: 22,
+    totalWorkDays: 66,
+    present: 65,
+    leave: 1,
+    sick: 0,
+    alpha: 0,
+    lateIn: 0,
+    avgHours: 8.28,
+    atrPercent: 99.2,
+    status: "Sangat Disiplin",
+    primaryPositions: "Manager Operation, Spv PMO & IT Programmer",
+  },
+  {
+    rank: 2,
+    organization: "Infrastructure",
+    headcount: 1,
+    workDays: 22,
+    totalWorkDays: 22,
+    present: 22,
+    leave: 0,
+    sick: 0,
+    alpha: 0,
+    lateIn: 0,
+    avgHours: 8.25,
+    atrPercent: 98.9,
+    status: "Sangat Disiplin",
+    primaryPositions: "Manager Infrastructure (HO Jakarta)",
+  },
+  {
+    rank: 3,
+    organization: "FA & Procurement",
+    headcount: 10,
+    workDays: 22,
+    totalWorkDays: 220,
+    present: 218,
+    leave: 2,
+    sick: 0,
+    alpha: 0,
+    lateIn: 0,
+    avgHours: 8.22,
+    atrPercent: 98.4,
+    status: "Sangat Disiplin",
+    primaryPositions: "Manager Finance, Manager Proc & Log, Spv Accounting, Spv Finance, Spv Procurement",
+  },
+  {
+    rank: 4,
+    organization: "Plant",
+    headcount: 1,
+    workDays: 22,
+    totalWorkDays: 22,
+    present: 22,
+    leave: 0,
+    sick: 0,
+    alpha: 0,
+    lateIn: 0,
+    avgHours: 8.20,
+    atrPercent: 98.2,
+    status: "Sangat Disiplin",
+    primaryPositions: "Manager Plant (HO Jakarta)",
+  },
+  {
+    rank: 5,
+    organization: "Hrga",
+    headcount: 7,
+    workDays: 22,
+    totalWorkDays: 154,
+    present: 151,
+    leave: 2,
+    sick: 1,
+    alpha: 0,
+    lateIn: 0,
+    avgHours: 8.16,
+    atrPercent: 97.9,
+    status: "Optimal",
+    primaryPositions: "Spv General Affair, Spv System & Dev, Spv C&B, Spv Recruitment, Driver Sarana, OB",
+  },
+];
+
+// =========================================================================
+// 4. LEADERBOARD KARYAWAN JOBSITE
+// =========================================================================
+export interface BestAttendanceItem {
   rank: number;
   employeeId: string;
   fullName: string;
@@ -456,18 +909,38 @@ export interface EmployeeAttendanceLeaderboardItem {
   totalPresentDays: number;
   workDaysTotal: number;
   lateInCount: number;
-  avgClockInTime: string; // e.g. "05:48" atau "17:45"
-  avgWorkingHours: number; // Jam
+  avgClockInTime: string;
+  avgClockOutTime: string;
+  avgWorkingHours: number;
   alphaDays: number;
   sickDays: number;
-  atrScore: number; // 100%
+  atrScore: number;
   highlight: string;
 }
 
-const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
+export interface UnderperformingAttendanceItem {
+  rank: number;
+  employeeId: string;
+  fullName: string;
+  jobPosition: string;
+  organization: string;
+  branchName: string;
+  totalPresentDays: number;
+  workDaysTotal: number;
+  lateInCount: number;
+  avgLateDuration: string;
+  avgWorkingHours: number;
+  alphaDays: number;
+  sickDays: number;
+  atrScore: number;
+  violationReason: string;
+  recommendedAction: string;
+}
+
+const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
   {
     rank: 1,
-    employeeId: "98250367",
+    employeeId: "98250495",
     fullName: "Abraham Nur Fadli Rahman",
     jobPosition: "Driver Double Trailer",
     organization: "Production",
@@ -476,23 +949,25 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "05:42 (18 mnt awal)",
+    avgClockOutTime: "14:15",
     avgWorkingHours: 8.25,
     alphaDays: 0,
     sickDays: 0,
     atrScore: 100.0,
-    highlight: "Disiplin shift hauling sempurna, 0 keterlambatan, utilisasi 8.25 jam/shift",
+    highlight: "Disiplin shift 1 hauling, tapping absensi selalu sebelum safety talk",
   },
   {
     rank: 2,
-    employeeId: "98260538",
-    fullName: "A. Arya Sumange Rizal., S.Kom",
-    jobPosition: "Spv Operational Hse",
+    employeeId: "88250262",
+    fullName: "A. Arya Sumange Rizal",
+    jobPosition: "Spv Operational HSE",
     organization: "HSE",
     branchName: "Muara Pahu",
     totalPresentDays: 22,
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "06:45 (15 mnt awal)",
+    avgClockOutTime: "15:10",
     avgWorkingHours: 8.22,
     alphaDays: 0,
     sickDays: 0,
@@ -510,6 +985,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "05:46 (14 mnt awal)",
+    avgClockOutTime: "14:12",
     avgWorkingHours: 8.20,
     alphaDays: 0,
     sickDays: 0,
@@ -527,6 +1003,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "06:48 (12 mnt awal)",
+    avgClockOutTime: "15:08",
     avgWorkingHours: 8.18,
     alphaDays: 0,
     sickDays: 0,
@@ -544,6 +1021,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "05:49 (11 mnt awal)",
+    avgClockOutTime: "14:10",
     avgWorkingHours: 8.16,
     alphaDays: 0,
     sickDays: 0,
@@ -561,6 +1039,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "06:50 (10 mnt awal)",
+    avgClockOutTime: "15:05",
     avgWorkingHours: 8.15,
     alphaDays: 0,
     sickDays: 0,
@@ -578,6 +1057,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "06:51 (9 mnt awal)",
+    avgClockOutTime: "15:08",
     avgWorkingHours: 8.14,
     alphaDays: 0,
     sickDays: 0,
@@ -595,6 +1075,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "06:52 (8 mnt awal)",
+    avgClockOutTime: "15:07",
     avgWorkingHours: 8.12,
     alphaDays: 0,
     sickDays: 0,
@@ -612,6 +1093,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "05:52 (8 mnt awal)",
+    avgClockOutTime: "14:08",
     avgWorkingHours: 8.12,
     alphaDays: 0,
     sickDays: 0,
@@ -629,6 +1111,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
     workDaysTotal: 22,
     lateInCount: 0,
     avgClockInTime: "06:54 (6 mnt awal)",
+    avgClockOutTime: "15:06",
     avgWorkingHours: 8.10,
     alphaDays: 0,
     sickDays: 0,
@@ -637,31 +1120,7 @@ const TOP_10_BEST_ATTENDANCE: EmployeeAttendanceLeaderboardItem[] = [
   },
 ];
 
-// =========================================================================
-// 4. TOP 10 KARYAWAN ABSENSI PALING KURANG / BUTUH PEMBINAAN
-// Kriteria: Terlambat Masuk (Late In) Tinggi, Jam Kerja Tidak Memenuhi (<7.5 Jam),
-//           Mangkir (Alpha > 1 hari), ATR Terendah
-// =========================================================================
-export interface UnderperformingAttendanceItem {
-  rank: number;
-  employeeId: string;
-  fullName: string;
-  jobPosition: string;
-  organization: string;
-  branchName: string;
-  totalPresentDays: number;
-  workDaysTotal: number;
-  lateInCount: number;
-  avgLateDuration: string; // e.g. "24 mnt"
-  avgWorkingHours: number; // Jam
-  alphaDays: number;
-  sickDays: number;
-  atrScore: number;
-  violationReason: string;
-  recommendedAction: string;
-}
-
-const TOP_10_LOWEST_ATTENDANCE: UnderperformingAttendanceItem[] = [
+const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
   {
     rank: 1,
     employeeId: "98250499",
@@ -844,38 +1303,362 @@ const TOP_10_LOWEST_ATTENDANCE: UnderperformingAttendanceItem[] = [
   },
 ];
 
+// =========================================================================
+// 5. LEADERBOARD KARYAWAN HEAD OFFICE (JAKARTA)
+// Aturan: Jam Kerja 8 Jam, Batas Maksimal Masuk 08:15 WIB.
+// Jam Pulang Fleksibel = Jam Masuk + 9 Jam (8 jam kerja + 1 jam istirahat).
+// Tanggal Merah & Weekend Libur Resmi.
+// =========================================================================
+const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
+  {
+    rank: 1,
+    employeeId: "99250227",
+    fullName: "Dzaky Athariq Ferreira",
+    jobPosition: "Spv Pmo & IT Programmer",
+    organization: "Operations",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "07:15 (On-Time)",
+    avgClockOutTime: "16:30 (Memenuhi 8.25h)",
+    avgWorkingHours: 8.25,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Masuk 07:15 pulang 16:30 (8 jam kerja + istirahat terpenuhi penuh), zero Late In (TL)",
+  },
+  {
+    rank: 2,
+    employeeId: "99240008",
+    fullName: "Berliana Raudhatu Nisa Utami",
+    jobPosition: "Spv Finance",
+    organization: "FA & Procurement",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "07:30 (On-Time)",
+    avgClockOutTime: "16:45 (Memenuhi 8.25h)",
+    avgWorkingHours: 8.25,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Presensi keuangan konsisten, masuk 07:30 pulang 16:45, rekapitulasi cash flow tepat waktu",
+  },
+  {
+    rank: 3,
+    employeeId: "99250372",
+    fullName: "Kemal Musthafa Rajabi",
+    jobPosition: "Spv Pmo & IT Programmer",
+    organization: "Operations",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "07:45 (On-Time)",
+    avgClockOutTime: "17:00 (Memenuhi 8.25h)",
+    avgWorkingHours: 8.25,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Masuk 07:45 pulang 17:00, jam kerja efektif harian selalu di atas 8 jam standar",
+  },
+  {
+    rank: 4,
+    employeeId: "99250164",
+    fullName: "Susanto",
+    jobPosition: "Manager Finance",
+    organization: "FA & Procurement",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "07:50 (On-Time)",
+    avgClockOutTime: "17:10 (Memenuhi 8.33h)",
+    avgWorkingHours: 8.33,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Disiplin manajerial prima, kepatuhan batas masuk 08:15 sempurna, 0 hari mangkir",
+  },
+  {
+    rank: 5,
+    employeeId: "99250360",
+    fullName: "Aldi Mezofanti",
+    jobPosition: "Manager Infrastructure",
+    organization: "Infrastructure",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "07:55 (On-Time)",
+    avgClockOutTime: "17:15 (Memenuhi 8.33h)",
+    avgWorkingHours: 8.33,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Masuk sebelum 08:00, koordinasi proyek jalan hauling site konsisten tepat waktu",
+  },
+  {
+    rank: 6,
+    employeeId: "99240004",
+    fullName: "Dio Tragitza Rescha",
+    jobPosition: "Manager Operation",
+    organization: "Operations",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "08:00 (Normal)",
+    avgClockOutTime: "17:20 (Memenuhi 8.33h)",
+    avgWorkingHours: 8.33,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Masuk jam 08:00 normal dan checkout di atas jam 17:00, kepatuhan SOP 100%",
+  },
+  {
+    rank: 7,
+    employeeId: "99240019",
+    fullName: "Dadang Setyawan",
+    jobPosition: "Manager Plant",
+    organization: "Plant",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "08:00 (Normal)",
+    avgClockOutTime: "17:15 (Memenuhi 8.25h)",
+    avgWorkingHours: 8.25,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Monitoring maintenance unit HO konsisten, zero deviasi batas masuk 08:15",
+  },
+  {
+    rank: 8,
+    employeeId: "99260464",
+    fullName: "Atep Supriatna",
+    jobPosition: "Spv Accounting",
+    organization: "FA & Procurement",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "08:05 (On-Time)",
+    avgClockOutTime: "17:15 (Memenuhi 8.17h)",
+    avgWorkingHours: 8.17,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Masuk sebelum batas toleransi 08:15, jam kerja harian terpenuhi 8.17 jam",
+  },
+  {
+    rank: 9,
+    employeeId: "99240018",
+    fullName: "Della Fajar Lestari",
+    jobPosition: "Spv System & Development",
+    organization: "Hrga",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "08:10 (On-Time)",
+    avgClockOutTime: "17:25 (Memenuhi 8.25h)",
+    avgWorkingHours: 8.25,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Masuk 08:10 (dalam batas toleransi) dan checkout 17:25 (8.25 jam kerja), zero TL",
+  },
+  {
+    rank: 10,
+    employeeId: "99250268",
+    fullName: "Blasius Foera Era Telaumbanua",
+    jobPosition: "Spv Procurement",
+    organization: "FA & Procurement",
+    branchName: "HO Jakarta",
+    totalPresentDays: 22,
+    workDaysTotal: 22,
+    lateInCount: 0,
+    avgClockInTime: "08:12 (On-Time)",
+    avgClockOutTime: "17:30 (Memenuhi 8.30h)",
+    avgWorkingHours: 8.30,
+    alphaDays: 0,
+    sickDays: 0,
+    atrScore: 100.0,
+    highlight: "Presensi pengadaan barang tepat waktu, jam pulang selalu disesuaikan jam masuk",
+  },
+];
+
+const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
+  {
+    rank: 1,
+    employeeId: "99260521",
+    fullName: "Hilmy Naufal",
+    jobPosition: "Driver Sarana",
+    organization: "Hrga",
+    branchName: "HO Jakarta",
+    totalPresentDays: 21,
+    workDaysTotal: 22,
+    lateInCount: 3,
+    avgLateDuration: "14 mnt (>08:15)",
+    avgWorkingHours: 7.75,
+    alphaDays: 0,
+    sickDays: 1,
+    atrScore: 95.5,
+    violationReason: "3x masuk di atas 08:15 WIB (kode TL: rata-rata 08:29) karena traffic penjemputan bandara",
+    recommendedAction: "Penyesuaian jadwal tugas luar (DL) atau revisi jam standby pool sarana",
+  },
+  {
+    rank: 2,
+    employeeId: "99260463",
+    fullName: "Henri Hendriansah",
+    jobPosition: "Office Boy",
+    organization: "Hrga",
+    branchName: "HO Jakarta",
+    totalPresentDays: 21,
+    workDaysTotal: 22,
+    lateInCount: 2,
+    avgLateDuration: "11 mnt (>08:15)",
+    avgWorkingHours: 7.80,
+    alphaDays: 0,
+    sickDays: 1,
+    atrScore: 95.5,
+    violationReason: "2x terlambat tapping masuk (kode TL) dan 1x pulang lebih awal (kode PA) untuk belanja operasional",
+    recommendedAction: "Penggunaan form Izin Keluar Kantor / Dinas Luar (DL) oleh Spv GA",
+  },
+  {
+    rank: 3,
+    employeeId: "99250415",
+    fullName: "Adi Susanto",
+    jobPosition: "Spv General Affair",
+    organization: "Hrga",
+    branchName: "HO Jakarta",
+    totalPresentDays: 21,
+    workDaysTotal: 22,
+    lateInCount: 2,
+    avgLateDuration: "8 mnt (>08:15)",
+    avgWorkingHours: 7.90,
+    alphaDays: 0,
+    sickDays: 1,
+    atrScore: 95.5,
+    violationReason: "2x tapping masuk pukul 08:23 WIB akibat inspeksi logistik gudang luar",
+    recommendedAction: "Pencatatan status Dinas Luar (DL) untuk tugas lapangan sebelum jam kantor",
+  },
+  {
+    rank: 4,
+    employeeId: "99260529",
+    fullName: "Kayla Azzahra Jasmine",
+    jobPosition: "Magang - Finance",
+    organization: "FA & Procurement",
+    branchName: "HO Jakarta",
+    totalPresentDays: 21,
+    workDaysTotal: 22,
+    lateInCount: 2,
+    avgLateDuration: "9 mnt (>08:15)",
+    avgWorkingHours: 7.85,
+    alphaDays: 0,
+    sickDays: 1,
+    atrScore: 95.5,
+    violationReason: "Masuk pukul 08:24 WIB dan pulang 16:45 (jam kerja kurang dari 8 jam standar)",
+    recommendedAction: "Sosialisasi aturan jam kerja fleksibel (Clock-out = Clock-in + 9 Jam)",
+  },
+];
+
 export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
   user,
   onNavigateToMasterManpower,
   onNavigateToHRDashboard,
 }) => {
-  // Pilihan Sheet Bulan (Format G-Form: jan-26, feb-26, ...)
+  // 1. Primary Scope Switcher: "jobsite" | "headoffice"
+  const [selectedScope, setSelectedScope] = useState<ATRScope>("headoffice");
+
+  // 2. Sheet Month Selection (jan-26 ... nov-26)
   const [selectedSheet, setSelectedSheet] = useState<SheetMonthKey>("okt-26");
 
-  // Chart Mode State
+  // 3. Chart Toggles
   const [showTrendline, setShowTrendline] = useState<boolean>(true);
   const [showMA3, setShowMA3] = useState<boolean>(true);
   const [showTargetLine, setShowTargetLine] = useState<boolean>(true);
 
-  // Tab Table Leaderboard State: "best" | "lowest"
+  // 4. Leaderboard Tab: "best" | "lowest"
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<"best" | "lowest">("best");
 
-  // Filter Sub-Lokasi Jobsite: "all" | "Muara Pahu" | "Senyiur"
+  // 5. Filter Sub-Lokasi Jobsite (jika scope = jobsite): "all" | "Muara Pahu" | "Senyiur"
   const [jobsiteSubFilter, setJobsiteSubFilter] = useState<"all" | "Muara Pahu" | "Senyiur">("all");
 
-  // Search Karyawan
+  // 6. Search Employee
   const [searchEmployeeQuery, setSearchEmployeeQuery] = useState<string>("");
 
-  // Record Data Terpilih
-  const activeRecord: JobsiteMonthlyATR = useMemo(() => {
-    const found = JOBSITE_MONTHLY_ATR.find((r) => r.sheetName === selectedSheet);
-    return found || JOBSITE_MONTHLY_ATR[9]; // Default Okt-26
-  }, [selectedSheet]);
+  // 7. Attendance Code Modal / Dictionary Toggle
+  const [isAttendanceCodeModalOpen, setIsAttendanceCodeModalOpen] = useState<boolean>(false);
+  const [selectedCodeCategoryFilter, setSelectedCodeCategoryFilter] = useState<string>("all");
 
-  // Filter Leaderboard List
+  // 8. Interactive Head Office Working Hours Calculator State
+  const [simClockIn, setSimClockIn] = useState<string>("07:30");
+
+  // Calculate Flexible Working Hours for Head Office
+  const hoWorkHourCalculation = useMemo(() => {
+    const [hh, mm] = simClockIn.split(":").map(Number);
+    if (isNaN(hh) || isNaN(mm)) {
+      return {
+        isValid: false,
+        isLate: false,
+        lateMinutes: 0,
+        allowedClockOut: "17:00",
+        effectiveWorkHours: "8.0",
+        message: "Format jam tidak valid",
+      };
+    }
+
+    const totalMinutesIn = hh * 60 + mm;
+    const maxThreshold = 8 * 60 + 15; // 08:15 WIB
+    const isLate = totalMinutesIn > maxThreshold;
+    const lateMinutes = isLate ? totalMinutesIn - maxThreshold : 0;
+
+    // Required span: 8 hours work + 1 hour break = 9 hours = 540 minutes
+    const totalMinutesOut = totalMinutesIn + 540;
+    const outH = Math.floor(totalMinutesOut / 60) % 24;
+    const outM = totalMinutesOut % 60;
+    const allowedClockOut = `${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}`;
+
+    return {
+      isValid: true,
+      isLate,
+      lateMinutes,
+      allowedClockOut,
+      effectiveWorkHours: "8.0",
+      statusText: isLate
+        ? `Terlambat ${lateMinutes} menit (Batas maksimal masuk 08:15 WIB)`
+        : "Tepat Waktu (On-Time)",
+    };
+  }, [simClockIn]);
+
+  // Active Monthly Record according to Scope
+  const activeRecord: MonthlyATRData = useMemo(() => {
+    const list = selectedScope === "jobsite" ? JOBSITE_MONTHLY_ATR : HEADOFFICE_MONTHLY_ATR;
+    const found = list.find((r) => r.sheetName === selectedSheet);
+    return found || list[9]; // Default Okt-26
+  }, [selectedScope, selectedSheet]);
+
+  const activeMonthlyList = useMemo(() => {
+    return selectedScope === "jobsite" ? JOBSITE_MONTHLY_ATR : HEADOFFICE_MONTHLY_ATR;
+  }, [selectedScope]);
+
+  const activeDepartmentList = useMemo(() => {
+    return selectedScope === "jobsite" ? JOBSITE_DEPARTMENTS_RANKED : HEADOFFICE_DEPARTMENTS_RANKED;
+  }, [selectedScope]);
+
+  // Filtered Leaderboard
   const filteredBest = useMemo(() => {
-    return TOP_10_BEST_ATTENDANCE.filter((emp) => {
-      const matchSite = jobsiteSubFilter === "all" || emp.branchName === jobsiteSubFilter;
+    const source = selectedScope === "jobsite" ? JOBSITE_TOP_10_BEST : HEADOFFICE_TOP_10_BEST;
+    return source.filter((emp) => {
+      const matchSite =
+        selectedScope === "headoffice" ||
+        jobsiteSubFilter === "all" ||
+        emp.branchName === jobsiteSubFilter;
       const matchQuery =
         !searchEmployeeQuery ||
         emp.fullName.toLowerCase().includes(searchEmployeeQuery.toLowerCase()) ||
@@ -883,11 +1666,15 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
         emp.jobPosition.toLowerCase().includes(searchEmployeeQuery.toLowerCase());
       return matchSite && matchQuery;
     });
-  }, [jobsiteSubFilter, searchEmployeeQuery]);
+  }, [selectedScope, jobsiteSubFilter, searchEmployeeQuery]);
 
   const filteredLowest = useMemo(() => {
-    return TOP_10_LOWEST_ATTENDANCE.filter((emp) => {
-      const matchSite = jobsiteSubFilter === "all" || emp.branchName === jobsiteSubFilter;
+    const source = selectedScope === "jobsite" ? JOBSITE_TOP_10_LOWEST : HEADOFFICE_COACHING_LIST;
+    return source.filter((emp) => {
+      const matchSite =
+        selectedScope === "headoffice" ||
+        jobsiteSubFilter === "all" ||
+        emp.branchName === jobsiteSubFilter;
       const matchQuery =
         !searchEmployeeQuery ||
         emp.fullName.toLowerCase().includes(searchEmployeeQuery.toLowerCase()) ||
@@ -895,20 +1682,48 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
         emp.jobPosition.toLowerCase().includes(searchEmployeeQuery.toLowerCase());
       return matchSite && matchQuery;
     });
-  }, [jobsiteSubFilter, searchEmployeeQuery]);
+  }, [selectedScope, jobsiteSubFilter, searchEmployeeQuery]);
+
+  // Filter Attendance Codes
+  const filteredAttendanceCodes = useMemo(() => {
+    return ATTENDANCE_CODES.filter((item) => {
+      const matchScope =
+        item.scope === "all" ||
+        (selectedScope === "jobsite" && item.scope === "jobsite") ||
+        (selectedScope === "headoffice" && item.scope === "headoffice");
+      const matchCat =
+        selectedCodeCategoryFilter === "all" || item.category === selectedCodeCategoryFilter;
+      return matchScope && matchCat;
+    });
+  }, [selectedScope, selectedCodeCategoryFilter]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300 font-sans">
       {/* ========================================================================= */}
-      {/* 1. HEADER EXECUTIVE HERO & BANNER JOBSITE FOCUS                           */}
+      {/* 1. EXECUTIVE HERO WITH SCOPE SWITCHER (HEAD OFFICE VS JOBSITE)            */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-xs space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-orange-100 text-[#e95623] border border-orange-200 flex items-center gap-1.5">
-                <HardHat size={14} className="text-[#e95623]" />
-                Jobsite Operations (Muara Pahu &amp; Senyiur)
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5 border ${
+                  selectedScope === "headoffice"
+                    ? "bg-blue-100 text-blue-800 border-blue-200"
+                    : "bg-orange-100 text-[#e95623] border-orange-200"
+                }`}
+              >
+                {selectedScope === "headoffice" ? (
+                  <>
+                    <Building size={14} className="text-blue-700" />
+                    Head Office (Jakarta)
+                  </>
+                ) : (
+                  <>
+                    <HardHat size={14} className="text-[#e95623]" />
+                    Jobsite Operations (Muara Pahu &amp; Senyiur)
+                  </>
+                )}
               </span>
               <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
                 PT Batara Dharma Persada
@@ -920,87 +1735,180 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-              ATR Dashboard Jobsite
+              {selectedScope === "headoffice" ? "ATR Dashboard Head Office" : "ATR Dashboard Jobsite"}
               <span className="text-base font-semibold text-slate-500">
                 (Attendance Tracking &amp; Ratio)
               </span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 max-w-2xl font-medium">
-              Monitoring tingkat kehadiran 400 personil aktif Jobsite per sheet bulanan G-Form. Terintegrasi dengan analitika jam kerja, kepatuhan tepat waktu, dan perankingan kehadiran.
+              {selectedScope === "headoffice"
+                ? "Monitoring kepatuhan presensi 22 personil aktif Head Office Jakarta. Jam kerja 8 jam fleksibel, toleransi masuk maksimal 08:15 WIB, dan tanggal merah libur resmi."
+                : "Monitoring rasio kehadiran 400 personil aktif Jobsite Muara Pahu & Senyiur per sheet bulanan G-Form. Terintegrasi dengan analitika shift operasional dan ranking departemen."}
             </p>
           </div>
 
-          {/* Quick Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Scope Switcher & Quick Navigation */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 flex-wrap">
+            {/* Primary Toggle: HO vs Jobsite */}
+            <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setSelectedScope("headoffice")}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+                  selectedScope === "headoffice"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Building size={14} />
+                Head Office
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${selectedScope === "headoffice" ? "bg-blue-700 text-white" : "bg-slate-200 text-slate-700"}`}>
+                  22
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedScope("jobsite")}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+                  selectedScope === "jobsite"
+                    ? "bg-orange-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <HardHat size={14} />
+                Jobsite
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${selectedScope === "jobsite" ? "bg-orange-700 text-white" : "bg-slate-200 text-slate-700"}`}>
+                  400
+                </span>
+              </button>
+            </div>
+
+            {/* Attendance Code Dictionary Button */}
+            <button
+              onClick={() => setIsAttendanceCodeModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              title="Lihat kamus dan arti kode kehadiran (H, CT, S, I, TL, PA, DL, A, R, L)"
+            >
+              <BookOpen size={14} className="text-purple-600" />
+              Kode Presensi
+            </button>
+
             {onNavigateToHRDashboard && (
               <button
                 onClick={onNavigateToHRDashboard}
-                className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
                 <BarChart3 size={14} className="text-blue-600" />
-                HR Dashboard
-              </button>
-            )}
-
-            {onNavigateToMasterManpower && (
-              <button
-                onClick={onNavigateToMasterManpower}
-                className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <Users size={14} className="text-emerald-600" />
-                Master Manpower
+                HR
               </button>
             )}
 
             <button
               onClick={() => window.print()}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Printer size={14} />
-              Cetak Laporan
+              Cetak
             </button>
           </div>
         </div>
 
-        {/* Highlight Banner: BoD Excluded & Focus on Jobsite Workforce */}
-        <div className="p-3.5 bg-linear-to-r from-orange-50/60 via-amber-50/40 to-slate-50 rounded-2xl border border-orange-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-orange-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <ShieldCheck size={15} />
+        {/* ========================================================================= */}
+        {/* BANNER KHUSUS HEAD OFFICE ATURAN KERJA & EXCLUSIONS                       */}
+        {/* ========================================================================= */}
+        {selectedScope === "headoffice" ? (
+          <div className="space-y-3">
+            <div className="p-4 bg-linear-to-r from-blue-50/80 via-indigo-50/50 to-slate-50 rounded-2xl border border-blue-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                  <Clock size={16} />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-slate-900 font-extrabold text-xs sm:text-sm">
+                      Ketentuan Jam Kerja &amp; Libur Head Office (Jakarta)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">
+                      8 Jam Kerja + 1 Jam Istirahat
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                      Batas Masuk: 08:15 WIB
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    ⏰ <strong>Batas Maksimum Masuk:</strong> Pukul <strong>08:15 WIB</strong> (masuk &gt; 08:15 tercatat sebagai Terlambat / <code className="text-orange-700 font-bold">TL</code>).
+                    <br />
+                    ⏳ <strong>Fleksibilitas Jam Pulang (8 Jam Kerja):</strong> Jika masuk <strong>07:00</strong> boleh pulang <strong>16:00</strong>; jika masuk <strong>08:00</strong> pulang <strong>17:00</strong>; jika masuk <strong>08:15</strong> pulang <strong>17:15</strong>.
+                    <br />
+                    🗓️ <strong>Hari Libur:</strong> Tanggal Merah (Hari Libur Nasional &amp; Cuti Bersama) serta akhir pekan (Sabtu-Minggu) adalah <strong>LIBUR RESMI (<code className="text-purple-700 font-bold">L</code>)</strong> dan tidak memotong rasio kehadiran.
+                  </p>
+                </div>
+              </div>
+
+              {/* Exclusion Badges */}
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+                  BoD Excluded (0 Direksi)
+                </span>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  7 Mantan Karyawan Dihapus
+                </span>
+              </div>
             </div>
-            <div className="space-y-0.5">
-              <span className="text-slate-900 font-bold block">
-                Fokus Operasional Jobsite (400 Personil Aktif Lapangan)
+
+            {/* Notice of 7 Removed Names */}
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-center justify-between flex-wrap gap-2">
+              <span className="flex items-center gap-1.5">
+                <Info size={13} className="text-slate-400 shrink-0" />
+                Daftar nama yang telah dihapus permanen dari daftar presensi HO:{" "}
+                <strong className="text-slate-800">
+                  A. Kurnia, Yohanes Cahyo Wibowo, Ratna Dewi, Dara Yunia, Hari Setiawan, Heru Prastowo, Dalfa Anggraeni
+                </strong>.
               </span>
-              <p className="text-[11px] text-slate-600">
-                Mencakup 7 departemen operasional site. Jajaran <strong>BoD (Direksi)</strong> dan staf Head Office Jakarta telah dipisahkan.
-              </p>
+              <span className="text-[10px] font-mono text-slate-400">Database Synchronized</span>
             </div>
           </div>
-          <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
-            BoD Excluded (0 Direksi)
-          </span>
-        </div>
+        ) : (
+          /* Jobsite Banner */
+          <div className="p-3.5 bg-linear-to-r from-orange-50/60 via-amber-50/40 to-slate-50 rounded-2xl border border-orange-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-orange-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <ShieldCheck size={15} />
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-slate-900 font-bold block">
+                  Fokus Operasional Jobsite (400 Personil Aktif Lapangan)
+                </span>
+                <p className="text-[11px] text-slate-600">
+                  Mencakup 7 departemen operasional Site Muara Pahu (306) &amp; Senyiur (94). Jajaran <strong>BoD (Direksi)</strong> dan staf HO Jakarta telah dipisahkan.
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
+              BoD Excluded (0 Direksi)
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. FILTER CONTROLS BAR (SHEET SELECTION & SITE FILTER)                    */}
+      {/* 2. FILTER CONTROLS BAR (SHEET SELECTION & SUB-FILTER)                     */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {/* Pilihan Sheet Bulan (Format G-Form: jan-26, feb-26, ...) */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-black text-slate-700 flex items-center gap-1.5">
-              <Calendar size={14} className="text-[#e95623]" />
+              <Calendar size={14} className={selectedScope === "headoffice" ? "text-blue-600" : "text-[#e95623]"} />
               Sheet Bulan:
             </span>
             <select
               value={selectedSheet}
               onChange={(e) => setSelectedSheet(e.target.value as SheetMonthKey)}
               aria-label="Pilih Sheet Bulan G-Form"
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-black text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]"
+              className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-black text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             >
-              {JOBSITE_MONTHLY_ATR.map((item) => (
+              {activeMonthlyList.map((item) => (
                 <option key={item.sheetName} value={item.sheetName}>
                   {item.sheetName} ({item.label})
                 </option>
@@ -1010,64 +1918,89 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
-          {/* Sub-Filter Site Lapangan: Semua | Muara Pahu | Senyiur */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-500">Site:</span>
-            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setJobsiteSubFilter("all")}
-                className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                  jobsiteSubFilter === "all"
-                    ? "bg-white text-slate-900 shadow-2xs"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                Semua Jobsite (400)
-              </button>
-              <button
-                type="button"
-                onClick={() => setJobsiteSubFilter("Muara Pahu")}
-                className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                  jobsiteSubFilter === "Muara Pahu"
-                    ? "bg-orange-600 text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Muara Pahu (306)
-              </button>
-              <button
-                type="button"
-                onClick={() => setJobsiteSubFilter("Senyiur")}
-                className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                  jobsiteSubFilter === "Senyiur"
-                    ? "bg-blue-600 text-white shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Senyiur (94)
-              </button>
+          {/* Sub-Filter jika Jobsite */}
+          {selectedScope === "jobsite" ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-500">Site:</span>
+              <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setJobsiteSubFilter("all")}
+                  className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                    jobsiteSubFilter === "all"
+                      ? "bg-white text-slate-900 shadow-2xs"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  Semua (400)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJobsiteSubFilter("Muara Pahu")}
+                  className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                    jobsiteSubFilter === "Muara Pahu"
+                      ? "bg-orange-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Muara Pahu (306)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJobsiteSubFilter("Senyiur")}
+                  className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                    jobsiteSubFilter === "Senyiur"
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Senyiur (94)
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold flex items-center gap-1">
+                <Building size={12} />
+                Kantor Pusat: Gedung BDP Jakarta (22 Karyawan)
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Quick Month Metrics Badge */}
         <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-semibold text-slate-500">
-          <span>Hari Kerja: <strong className="text-slate-800">{activeRecord.workDays} Hari</strong></span>
+          <span>
+            Hari Kerja Efektif: <strong className="text-slate-800">{activeRecord.workDays} Hari</strong>
+            {selectedScope === "headoffice" && (
+              <span className="text-[10px] text-blue-600 ml-1 font-bold">(Tanggal Merah Libur)</span>
+            )}
+          </span>
           <span>•</span>
-          <span>Jam Kerja Ideal: <strong className="text-slate-800 font-mono">{(activeRecord.totalWorkDays * 8).toLocaleString("id-ID")} Jam</strong></span>
+          <span>
+            Total Jam Standar:{" "}
+            <strong className="text-slate-800 font-mono">
+              {(activeRecord.totalWorkDays * 8).toLocaleString("id-ID")} Jam
+            </strong>
+          </span>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. SPEEDOMETER GAUGE & TOP KPI CARDS (DASHBOARD LEBIH BAGUS)             */}
+      {/* 3. SPEEDOMETER GAUGE & TOP KPI CARDS                                      */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Speedometer Radial Card (Jobsite ATR Gauge) */}
+        {/* Speedometer Radial Card */}
         <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-5 text-white shadow-sm flex flex-col justify-between relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center">
+              <div
+                className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                  selectedScope === "headoffice"
+                    ? "bg-blue-500/20 text-blue-400"
+                    : "bg-orange-500/20 text-orange-400"
+                }`}
+              >
                 <Gauge size={16} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">
@@ -1075,7 +2008,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               </span>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              OPTIMAL
+              PRIMA (≥95%)
             </span>
           </div>
 
@@ -1094,10 +2027,12 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               <path
                 d="M 20 100 A 80 80 0 0 1 180 100"
                 fill="none"
-                stroke="#10b981"
+                stroke={selectedScope === "headoffice" ? "#3b82f6" : "#10b981"}
                 strokeWidth="14"
                 strokeDasharray="251.2"
-                strokeDashoffset={251.2 - (251.2 * Math.min(100, Math.max(0, (activeRecord.atrPercent - 90) / 10)))}
+                strokeDashoffset={
+                  251.2 - 251.2 * Math.min(100, Math.max(0, (activeRecord.atrPercent - 90) / 10))
+                }
                 strokeLinecap="round"
               />
             </svg>
@@ -1147,8 +2082,10 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             </span>
           </div>
           <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-400 font-mono flex items-center justify-between">
-            <span>400 Personil Aktif</span>
-            <span className="text-emerald-700 font-bold">+{(activeRecord.atrPercent - 95.0).toFixed(1)}% vs Target</span>
+            <span>{activeRecord.headcount} Personil Aktif</span>
+            <span className="text-emerald-700 font-bold">
+              +{(activeRecord.atrPercent - 95.0).toFixed(1)}% vs Target SLA
+            </span>
           </div>
         </div>
 
@@ -1172,16 +2109,16 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 mt-1">
-              <span className="text-blue-600">Cuti: {activeRecord.leave}</span>
+              <span className="text-blue-600">CT: {activeRecord.leave}</span>
               <span>•</span>
-              <span className="text-amber-600">Sakit: {activeRecord.sick}</span>
+              <span className="text-amber-600">S: {activeRecord.sick}</span>
               <span>•</span>
-              <span className="text-rose-600 font-black">Alpha: {activeRecord.alpha}</span>
+              <span className="text-rose-600 font-black">A: {activeRecord.alpha}</span>
             </div>
           </div>
           <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-400 font-semibold flex items-center justify-between">
-            <span>Alpha Terkendali di bawah 1.0%</span>
-            <span className="text-rose-600 font-bold">{activeRecord.alpha} Mandays</span>
+            <span>Alpha Terkendali</span>
+            <span className="text-rose-600 font-bold font-mono">{activeRecord.alpha} Mandays</span>
           </div>
         </div>
 
@@ -1203,31 +2140,171 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               <span className="text-xs font-bold text-slate-500">Jam / Hari</span>
             </div>
             <span className="text-xs font-bold text-slate-500 block mt-1">
-              SOP Standar: 8.00 Jam / Shift (Memenuhi 101.5%)
+              {selectedScope === "headoffice"
+                ? "Standar HO: 8.00 Jam Kerja Fleksibel"
+                : "Standar Lapangan: 8.00 Jam Shift"}
             </span>
           </div>
           <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-semibold flex items-center justify-between">
-            <span className="text-amber-600 font-bold">{activeRecord.lateIn} Terlambat (Late In)</span>
-            <span className="text-emerald-700 font-bold">On-Time: 99.6%</span>
+            <span className="text-amber-600 font-bold">
+              {activeRecord.lateIn}x Terlambat ({selectedScope === "headoffice" ? ">08:15" : "Late In"})
+            </span>
+            <span className="text-emerald-700 font-bold">On-Time: 99.7%</span>
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. GRAFIK TREN ATR DENGAN GARIS REGRESI LINIER & MOVING AVERAGE           */}
+      {/* 4. KALKULATOR JAM KERJA FLEKSIBEL HEAD OFFICE (INTERACTIVE WIDGET)         */}
+      {/* ========================================================================= */}
+      {selectedScope === "headoffice" && (
+        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white shadow-md border border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                <Calculator size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
+                  Kalkulator Jam Kerja Fleksibel Head Office
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    SOP Batara Jakarta
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Simulasikan jam masuk karyawan untuk mengetahui batas jam pulang yang memenuhi 8 jam kerja efektif (+1 jam istirahat).
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-slate-400 font-bold">Preset:</span>
+              <button
+                type="button"
+                onClick={() => setSimClockIn("07:00")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  simClockIn === "07:00" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                07:00 (Pagi)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSimClockIn("07:30")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  simClockIn === "07:30" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                07:30
+              </button>
+              <button
+                type="button"
+                onClick={() => setSimClockIn("08:00")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  simClockIn === "08:00" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                08:00 (Normal)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSimClockIn("08:15")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  simClockIn === "08:15" ? "bg-amber-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                08:15 (Batas Maks)
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Input Jam Masuk */}
+            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Clock size={13} className="text-blue-400" />
+                1. Masukkan Jam Masuk:
+              </label>
+              <input
+                type="time"
+                value={simClockIn}
+                onChange={(e) => setSimClockIn(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-600 text-xl font-black text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-mono"
+              />
+              <span className="text-[10px] text-slate-400">
+                Batas maksimum tepat waktu: <strong>08:15 WIB</strong>
+              </span>
+            </div>
+
+            {/* Status Masuk */}
+            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <ShieldCheck size={13} className={hoWorkHourCalculation.isLate ? "text-rose-400" : "text-emerald-400"} />
+                2. Status Kepatuhan:
+              </span>
+              <div>
+                <span
+                  className={`text-lg font-black block ${
+                    hoWorkHourCalculation.isLate ? "text-rose-400" : "text-emerald-400"
+                  }`}
+                >
+                  {hoWorkHourCalculation.isLate ? "TERLAMBAT (TL)" : "TEPAT WAKTU (H)"}
+                </span>
+                <span className="text-xs text-slate-300 font-medium block mt-0.5">
+                  {hoWorkHourCalculation.statusText}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400">
+                {hoWorkHourCalculation.isLate
+                  ? "Melewati toleransi jam 08:15 WIB"
+                  : "Memenuhi batas jam masuk HO"}
+              </span>
+            </div>
+
+            {/* Jam Pulang Minimum yang Diperbolehkan */}
+            <div className="bg-linear-to-br from-blue-900/60 to-indigo-900/60 p-4 rounded-2xl border border-blue-500/30 flex flex-col justify-between space-y-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
+                <CheckCircle size={13} className="text-emerald-400" />
+                3. Boleh Pulang Pukul:
+              </span>
+              <div>
+                <span className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight block">
+                  {hoWorkHourCalculation.allowedClockOut} WIB
+                </span>
+                <span className="text-[11px] text-blue-200 font-semibold block mt-0.5">
+                  Durasi: 8 Jam Kerja Efektif + 1 Jam Istirahat
+                </span>
+              </div>
+              <span className="text-[10px] text-blue-300/80">
+                Checkout sebelum jam ini dikategorikan <strong>Pulang Awal (PA)</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. GRAFIK TREN ATR DENGAN GARIS REGRESI LINIER & MOVING AVERAGE           */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <TrendingUp size={18} className="text-[#e95623]" />
-              Tren ATR Jobsite Bulan ke Bulan (Jan-26 s/d Nov-26)
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 border border-orange-200 text-[#e95623]">
-                Trend Line &amp; Moving Average
+              <TrendingUp size={18} className={selectedScope === "headoffice" ? "text-blue-600" : "text-[#e95623]"} />
+              Tren ATR {selectedScope === "headoffice" ? "Head Office Jakarta" : "Jobsite Operasional"} Bulan ke Bulan
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  selectedScope === "headoffice"
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : "bg-orange-50 border-orange-200 text-[#e95623]"
+                }`}
+              >
+                Jan-26 s/d Nov-26
               </span>
             </h3>
             <p className="text-xs text-slate-500">
-              Analisis pergerakan tingkat kehadiran aktual, garis tren linier, dan moving average 3-bulan
+              Analisis pergerakan persentase kehadiran aktual, garis tren linier, dan moving average 3-bulan
             </p>
           </div>
 
@@ -1268,11 +2345,19 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
 
         <div className="h-75 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={JOBSITE_MONTHLY_ATR} margin={{ top: 15, right: 20, left: 0, bottom: 5 }}>
+            <ComposedChart data={activeMonthlyList} margin={{ top: 15, right: 20, left: 0, bottom: 5 }}>
               <defs>
-                <linearGradient id="jobsiteAtrGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#e95623" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#e95623" stopOpacity={0.0} />
+                <linearGradient id="scopeAtrGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor={selectedScope === "headoffice" ? "#3b82f6" : "#e95623"}
+                    stopOpacity={0.25}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor={selectedScope === "headoffice" ? "#3b82f6" : "#e95623"}
+                    stopOpacity={0.0}
+                  />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -1283,7 +2368,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 tickLine={false}
               />
               <YAxis
-                domain={[94.5, 98.0]}
+                domain={[94.5, 100.0]}
                 tick={{ fontSize: 11, fill: "#64748b" }}
                 tickFormatter={(val) => `${val}%`}
                 axisLine={{ stroke: "#e2e8f0" }}
@@ -1331,17 +2416,26 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 type="monotone"
                 dataKey="atrPercent"
                 name="Realisasi ATR"
-                stroke="#e95623"
+                stroke={selectedScope === "headoffice" ? "#2563eb" : "#e95623"}
                 strokeWidth={2.5}
                 fillOpacity={1}
-                fill="url(#jobsiteAtrGradient)"
-                dot={{ r: 4, fill: "#e95623", strokeWidth: 2, stroke: "#fff" }}
+                fill="url(#scopeAtrGradient)"
+                dot={{
+                  r: 4,
+                  fill: selectedScope === "headoffice" ? "#2563eb" : "#e95623",
+                  strokeWidth: 2,
+                  stroke: "#fff",
+                }}
               >
                 <LabelList
                   dataKey="atrPercent"
                   position="top"
                   formatter={(v: any) => `${Number(v).toFixed(1)}%`}
-                  style={{ fontSize: "10px", fontWeight: "bold", fill: "#e95623" }}
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    fill: selectedScope === "headoffice" ? "#2563eb" : "#e95623",
+                  }}
                 />
               </Area>
 
@@ -1376,8 +2470,16 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
         {/* Chart Legend */}
         <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 font-bold text-[#e95623]">
-              <span className="w-3 h-3 rounded-full bg-[#e95623]" />
+            <span
+              className={`flex items-center gap-1.5 font-bold ${
+                selectedScope === "headoffice" ? "text-blue-700" : "text-[#e95623]"
+              }`}
+            >
+              <span
+                className={`w-3 h-3 rounded-full ${
+                  selectedScope === "headoffice" ? "bg-blue-600" : "bg-[#e95623]"
+                }`}
+              />
               Realisasi ATR Bulanan
             </span>
             {showTrendline && (
@@ -1394,27 +2496,36 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             )}
           </div>
           <span className="text-[11px] font-semibold text-slate-400">
-            Arah Pertumbuhan: <strong className="text-emerald-700 font-bold">Tren Meningkat (+1.3% YTD)</strong>
+            Kinerja Presensi:{" "}
+            <strong className="text-emerald-700 font-bold">
+              {selectedScope === "headoffice"
+                ? "Sangat Prima (Rata-rata 98.3% di atas SLA)"
+                : "Konsisten Naik (+1.3% YTD)"}
+            </strong>
           </span>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. TABEL DEPARTEMEN JOBSITE (URUT DARI ATR TERBAIK HINGGA TERENDAH)        */}
+      {/* 6. TABEL DEPARTEMEN (URUT DARI ATR TERBAIK HINGGA TERENDAH)                */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Trophy size={18} className="text-amber-500" />
-              Peringkat Departemen Jobsite (ATR Terbaik ke Terendah)
+              Peringkat Departemen {selectedScope === "headoffice" ? "Head Office" : "Jobsite"} (ATR Terbaik ke Terendah)
             </h3>
             <p className="text-xs text-slate-500">
-              Disamakan persis dengan data organisasi Master Manpower Jobsite Muara Pahu &amp; Senyiur (Total 400 Personil)
+              {selectedScope === "headoffice"
+                ? "Mencakup 5 departemen aktif Head Office Jakarta (Total 22 personil non-BoD)"
+                : "Disamakan persis dengan data organisasi Master Manpower Jobsite Muara Pahu & Senyiur (Total 400 Personil)"}
             </p>
           </div>
           <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
-            Seluruh 7 Departemen Melampaui SLA 95%
+            {selectedScope === "headoffice"
+              ? "Seluruh 5 Departemen HO Melampaui 97.5%"
+              : "Seluruh 7 Departemen Jobsite Melampaui SLA 95%"}
           </span>
         </div>
 
@@ -1437,7 +2548,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {JOBSITE_DEPARTMENTS_RANKED.map((row) => (
+              {activeDepartmentList.map((row) => (
                 <tr key={row.organization} className="hover:bg-slate-50 transition-colors">
                   <td className="py-3 px-3 text-center">
                     <span
@@ -1456,7 +2567,9 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                   </td>
                   <td className="py-3 px-3">
                     <strong className="text-slate-900 font-bold block">{row.organization}</strong>
-                    <span className="text-[10px] text-slate-400">Site MP &amp; SNY</span>
+                    <span className="text-[10px] text-slate-400">
+                      {selectedScope === "headoffice" ? "HO Jakarta" : "Site MP & SNY"}
+                    </span>
                   </td>
                   <td className="py-3 px-3 text-slate-500 text-[11px] max-w-xs truncate">
                     {row.primaryPositions}
@@ -1504,18 +2617,20 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 6. TOP 10 KARYAWAN ABSEN TERBAIK VS TOP 10 ABSEN PALING JELEK             */}
+      {/* 7. TOP 10 KARYAWAN ABSEN TERBAIK VS PERLU PEMBINAAN                       */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
         {/* Header & Leaderboard Tab Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <Award size={18} className="text-[#e95623]" />
-              Leaderboard Presensi: Top 10 Terbaik vs 10 Perlu Pembinaan
+              <Award size={18} className={selectedScope === "headoffice" ? "text-blue-600" : "text-[#e95623]"} />
+              Leaderboard Presensi {selectedScope === "headoffice" ? "Head Office" : "Jobsite"}: Top Terbaik vs Perlu Pembinaan
             </h3>
             <p className="text-xs text-slate-500">
-              Evaluasi akurasi waktu masuk, pemenuhan 8 jam kerja, tingkat Alpha, dan ATR individu karyawan Jobsite
+              {selectedScope === "headoffice"
+                ? "Evaluasi ketepatan waktu masuk (≤08:15 WIB), pemenuhan 8 jam kerja fleksibel, dan ketiadaan deviasi absensi di HO Jakarta"
+                : "Evaluasi akurasi waktu masuk, pemenuhan 8 jam kerja, tingkat Alpha, dan ATR individu karyawan Jobsite"}
             </p>
           </div>
 
@@ -1528,7 +2643,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 placeholder="Cari NIK / Nama Karyawan..."
                 value={searchEmployeeQuery}
                 onChange={(e) => setSearchEmployeeQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623] w-52 sm:w-60"
+                className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500 w-52 sm:w-60"
               />
             </div>
 
@@ -1556,7 +2671,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 }`}
               >
                 <AlertTriangle size={13} />
-                10 Perlu Pembinaan
+                {selectedScope === "headoffice" ? "Perlu Pembinaan HO" : "10 Perlu Pembinaan"}
               </button>
             </div>
           </div>
@@ -1565,13 +2680,15 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
         {/* TABEL 1: 10 KARYAWAN ABSEN PALING BAGUS */}
         {activeLeaderboardTab === "best" && (
           <div className="space-y-3">
-            <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
+            <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between flex-wrap gap-2">
               <span className="font-semibold flex items-center gap-1.5">
                 <Sparkles size={14} className="text-emerald-600" />
-                Kriteria: Waktu masuk tepat waktu (0 Late In), jam kerja rata-rata ≥ 8.1 Jam, kehadiran 100% (22/22 hari kerja), nihil pelanggaran.
+                {selectedScope === "headoffice"
+                  ? "Kriteria HO: Masuk tepat waktu (≤ 08:15 WIB), jam kerja harian terpenuhi ≥ 8.1 Jam, 100% kehadiran hari kerja, zero Late In (TL)."
+                  : "Kriteria Jobsite: Waktu masuk tepat waktu (0 Late In), jam kerja harian ≥ 8.1 Jam, kehadiran 100%, zero pelanggaran."}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-200 text-emerald-900">
-                Zero Late In
+                Zero Late In (0x TL)
               </span>
             </div>
 
@@ -1583,11 +2700,11 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                     <th className="py-3 px-3">NIK</th>
                     <th className="py-3 px-3">Nama Lengkap</th>
                     <th className="py-3 px-3">Posisi &amp; Organisasi</th>
-                    <th className="py-3 px-3">Site</th>
+                    <th className="py-3 px-3">Site / Lokasi</th>
                     <th className="py-3 px-3 text-center">Hadir</th>
                     <th className="py-3 px-3 text-center text-emerald-700">Waktu Masuk</th>
-                    <th className="py-3 px-3 text-center text-purple-700">Jam Kerja / Hari</th>
-                    <th className="py-3 px-3 text-center">Late In</th>
+                    <th className="py-3 px-3 text-center text-blue-700">Waktu Pulang</th>
+                    <th className="py-3 px-3 text-center text-purple-700">Jam Kerja</th>
                     <th className="py-3 px-3 text-center font-black">ATR</th>
                     <th className="py-3 px-3">Catatan Disiplin</th>
                   </tr>
@@ -1623,13 +2740,11 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                       <td className="py-3 px-3 text-center font-bold text-emerald-700 font-mono text-[11px]">
                         {emp.avgClockInTime}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-purple-700 font-mono">
-                        {emp.avgWorkingHours.toFixed(2)} Jam
+                      <td className="py-3 px-3 text-center font-bold text-blue-700 font-mono text-[11px]">
+                        {emp.avgClockOutTime}
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
-                          0x (Nihil)
-                        </span>
+                      <td className="py-3 px-3 text-center font-bold text-purple-700 font-mono">
+                        {emp.avgWorkingHours.toFixed(2)}h
                       </td>
                       <td className="py-3 px-3 text-center">
                         <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
@@ -1647,13 +2762,15 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
           </div>
         )}
 
-        {/* TABEL 2: 10 KARYAWAN ABSEN PALING KURANG / BUTUH PEMBINAAN */}
+        {/* TABEL 2: KARYAWAN ABSEN PERLU PEMBINAAN */}
         {activeLeaderboardTab === "lowest" && (
           <div className="space-y-3">
-            <div className="p-3 bg-rose-50/80 rounded-xl border border-rose-200 text-xs text-rose-900 flex items-center justify-between">
+            <div className="p-3 bg-rose-50/80 rounded-xl border border-rose-200 text-xs text-rose-900 flex items-center justify-between flex-wrap gap-2">
               <span className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle size={14} className="text-rose-600" />
-                Kriteria: Sering terlambat (Late In &gt; 3x), jam kerja di bawah standar 8 jam, terdapat Alpha (1-3 hari), atau ATR &lt; 87%.
+                {selectedScope === "headoffice"
+                  ? "Kriteria HO: Masuk kerja melewati batas 08:15 WIB (kode TL), pulang awal sebelum 8 jam (kode PA), atau jam kerja harian kurang."
+                  : "Kriteria Jobsite: Sering terlambat (Late In > 3x), jam kerja di bawah standar 8 jam, terdapat Alpha (1-3 hari), atau ATR < 87%."}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-200 text-rose-900">
                 Needs Coaching
@@ -1668,13 +2785,13 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                     <th className="py-3 px-3">NIK</th>
                     <th className="py-3 px-3">Nama Lengkap</th>
                     <th className="py-3 px-3">Posisi &amp; Organisasi</th>
-                    <th className="py-3 px-3">Site</th>
+                    <th className="py-3 px-3">Site / Lokasi</th>
                     <th className="py-3 px-3 text-center">Hadir</th>
                     <th className="py-3 px-3 text-center text-rose-700">Alpha</th>
-                    <th className="py-3 px-3 text-center text-amber-700">Late In</th>
+                    <th className="py-3 px-3 text-center text-amber-700">Late In (TL)</th>
                     <th className="py-3 px-3 text-center text-slate-700">Jam / Hari</th>
                     <th className="py-3 px-3 text-center font-black">ATR</th>
-                    <th className="py-3 px-3">Indikasi Pelanggaran &amp; Rekomendasi</th>
+                    <th className="py-3 px-3">Indikasi Pelanggaran &amp; Rekomendasi HR</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -1733,21 +2850,215 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 7. OPERATIONAL INTELLIGENCE FOOTER                                       */}
+      {/* 8. ATTENDANCE CODE MASTER REFERENCE CARD (HO & JOBSITE)                   */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <BookOpen size={18} className="text-purple-600" />
+              Kamus Kode Presensi (Attendance Code Reference)
+            </h3>
+            <p className="text-xs text-slate-500">
+              Standar kode absensi resmi PT Batara Dharma Persada yang berlaku untuk Head Office Jakarta dan Jobsite Operasional
+            </p>
+          </div>
+
+          {/* Category Filter */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-bold text-slate-500">Kategori:</span>
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setSelectedCodeCategoryFilter("all")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCodeCategoryFilter === "all" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-500"
+                }`}
+              >
+                Semua
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCodeCategoryFilter("hadir")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCodeCategoryFilter === "hadir" ? "bg-emerald-600 text-white" : "text-slate-600"
+                }`}
+              >
+                Hadir
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCodeCategoryFilter("cuti")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCodeCategoryFilter === "cuti" ? "bg-blue-600 text-white" : "text-slate-600"
+                }`}
+              >
+                Cuti
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCodeCategoryFilter("izin")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCodeCategoryFilter === "izin" ? "bg-amber-600 text-white" : "text-slate-600"
+                }`}
+              >
+                Izin/Sakit
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCodeCategoryFilter("pelanggaran")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCodeCategoryFilter === "pelanggaran" ? "bg-rose-600 text-white" : "text-slate-600"
+                }`}
+              >
+                Deviasi/TL
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCodeCategoryFilter("libur")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCodeCategoryFilter === "libur" ? "bg-purple-600 text-white" : "text-slate-600"
+                }`}
+              >
+                Libur/Roster
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Code Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredAttendanceCodes.map((item) => (
+            <div
+              key={item.code}
+              className={`p-3.5 rounded-2xl border transition-all ${item.colorBg} ${item.colorBorder} flex flex-col justify-between space-y-2`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center justify-center w-8 h-8 rounded-xl font-black text-sm shadow-2xs font-mono ${
+                      item.category === "hadir"
+                        ? "bg-emerald-600 text-white"
+                        : item.category === "cuti"
+                        ? "bg-blue-600 text-white"
+                        : item.category === "pelanggaran"
+                        ? "bg-rose-600 text-white"
+                        : item.category === "libur"
+                        ? "bg-purple-600 text-white"
+                        : "bg-amber-600 text-white"
+                    }`}
+                  >
+                    {item.code}
+                  </span>
+                  <div>
+                    <strong className="text-xs font-black text-slate-900 block">{item.label}</strong>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">
+                      {item.scope === "all" ? "HO & Jobsite" : item.scope === "headoffice" ? "Khusus Head Office" : "Khusus Jobsite"}
+                    </span>
+                  </div>
+                </div>
+
+                <span
+                  className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                    item.affectsATR
+                      ? "bg-rose-100 text-rose-800 border-rose-300"
+                      : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                  }`}
+                >
+                  {item.affectsATR ? "Memotong ATR" : "Sesuai Standar"}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
+                {item.description}
+              </p>
+
+              <div className="flex items-center justify-between text-[10px] text-slate-500 pt-2 border-t border-slate-200/60 font-semibold">
+                <span>Kategori: <strong className="capitalize text-slate-800">{item.category}</strong></span>
+                <span>Gaji: <strong className={item.isPaid ? "text-emerald-700" : "text-rose-700"}>{item.isPaid ? "Dibayar" : "Potong Gaji"}</strong></span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 9. OPERATIONAL INTELLIGENCE FOOTER                                       */}
       {/* ========================================================================= */}
       <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
         <div className="flex items-center gap-2">
           <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
           <span>
-            Data presensi Jobsite disinkronkan dari respon G-Form sheet (<code className="text-slate-800 font-bold">{selectedSheet}</code>). 7 Departemen sesuai database Master Manpower.
+            {selectedScope === "headoffice"
+              ? "Data presensi Head Office Jakarta: 22 personil aktif. Jam kerja 8 jam fleksibel (+1h istirahat), batas masuk 08:15 WIB, tanggal merah libur resmi."
+              : `Data presensi Jobsite disinkronkan dari G-Form sheet (${selectedSheet}). 7 Departemen sesuai database Master Manpower.`}
           </span>
         </div>
         <div className="flex items-center gap-3 shrink-0 text-[11px]">
-          <span>Eksklusi: <strong>Direksi (BoD) 0</strong></span>
+          <span>Eksklusi: <strong>BoD (Direksi) 0</strong></span>
           <span>•</span>
           <span className="text-emerald-700 font-bold">Status: Terverifikasi Aktif</span>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 10. MODAL KAMUS ATTENDANCE CODE (JIKA DIKLIK DARI HEADER)                 */}
+      {/* ========================================================================= */}
+      {isAttendanceCodeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <BookOpen size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    Buku Panduan Kode Presensi (Attendance Codes)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Sistem singkatan absensi PT Batara Dharma Persada
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAttendanceCodeModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {ATTENDANCE_CODES.map((c) => (
+                <div key={c.code} className="py-3 flex items-start gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-slate-900 text-white font-mono font-black text-xs flex items-center justify-center shrink-0">
+                    {c.code}
+                  </span>
+                  <div className="space-y-0.5 flex-1">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-xs font-black text-slate-900">{c.label}</strong>
+                      <span className="text-[10px] text-slate-400 capitalize">{c.scope === "all" ? "HO & Jobsite" : c.scope}</span>
+                    </div>
+                    <p className="text-xs text-slate-600">{c.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsAttendanceCodeModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                Tutup Panduan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
