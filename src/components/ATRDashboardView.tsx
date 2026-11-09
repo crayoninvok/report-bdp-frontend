@@ -2031,7 +2031,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold flex items-center gap-1">
                 <Building size={12} />
-                Kantor Pusat: Gedung BDP Jakarta (22 Karyawan)
+                Head Office : BDP Jakarta (22 Karyawan)
               </span>
             </div>
           )}
