@@ -1195,7 +1195,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             </div>
           </div>
 
-          <div className="h-[300px] w-full">
+          <div className="h-75 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyTrendComparison} margin={{ top: 15, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
