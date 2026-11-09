@@ -609,7 +609,8 @@ export const JOBSITE_DEPARTMENTS_RANKED: DepartmentATR[] = [
 
 // =========================================================================
 // 3. DATA HISTORIS ATR HEAD OFFICE (JAKARTA) - TANGGAL MERAH LIBUR
-// BoD Excluded (0 Direksi) & 7 Mantan Karyawan Dihapus (22 Personil Aktif)
+// BoD Excluded (0 Direksi), 7 Mantan Karyawan & 3 Mobile/OB (Naufal, Hendri, Iwan)
+// Total Headcount Aktif Terjadwal = 19 Personil Non-BoD
 // =========================================================================
 const HEADOFFICE_MONTHLY_ATR: MonthlyATRData[] = [
   {
@@ -617,202 +618,202 @@ const HEADOFFICE_MONTHLY_ATR: MonthlyATRData[] = [
     label: "Jan-26",
     monthNum: 1,
     workDays: 21, // Libur Tahun Baru & Isra Miraj
-    headcount: 22,
-    totalWorkDays: 462,
-    present: 450,
-    leave: 6,
-    sick: 4,
+    headcount: 19,
+    totalWorkDays: 399,
+    present: 389,
+    leave: 5,
+    sick: 3,
     alpha: 2,
-    lateIn: 3,
-    atrPercent: 97.4,
-    trendlineLinear: 97.40,
+    lateIn: 2,
+    atrPercent: 97.5,
+    trendlineLinear: 97.50,
     movingAverage3M: null,
     target: 95.0,
-    avgHoursPerDay: 8.16,
+    avgHoursPerDay: 8.18,
   },
   {
     sheetName: "feb-26",
     label: "Feb-26",
     monthNum: 2,
     workDays: 19, // Libur Tahun Baru Imlek
-    headcount: 22,
-    totalWorkDays: 418,
-    present: 408,
-    leave: 5,
-    sick: 3,
+    headcount: 19,
+    totalWorkDays: 361,
+    present: 353,
+    leave: 4,
+    sick: 2,
     alpha: 2,
-    lateIn: 2,
-    atrPercent: 97.6,
-    trendlineLinear: 97.60,
+    lateIn: 1,
+    atrPercent: 97.8,
+    trendlineLinear: 97.70,
     movingAverage3M: null,
     target: 95.0,
-    avgHoursPerDay: 8.18,
+    avgHoursPerDay: 8.20,
   },
   {
     sheetName: "mar-26",
     label: "Mar-26",
     monthNum: 3,
     workDays: 21, // Libur Hari Suci Nyepi & Idul Fitri
-    headcount: 22,
-    totalWorkDays: 462,
-    present: 452,
-    leave: 6,
-    sick: 3,
+    headcount: 19,
+    totalWorkDays: 399,
+    present: 391,
+    leave: 5,
+    sick: 2,
     alpha: 1,
-    lateIn: 2,
-    atrPercent: 97.8,
-    trendlineLinear: 97.80,
-    movingAverage3M: 97.60,
+    lateIn: 1,
+    atrPercent: 98.0,
+    trendlineLinear: 97.90,
+    movingAverage3M: 97.77,
     target: 95.0,
-    avgHoursPerDay: 8.19,
+    avgHoursPerDay: 8.21,
   },
   {
     sheetName: "apr-26",
     label: "Apr-26",
     monthNum: 4,
     workDays: 20, // Libur Bersama Idul Fitri & Wafat Isa Almasih
-    headcount: 22,
-    totalWorkDays: 440,
-    present: 431,
-    leave: 5,
-    sick: 3,
+    headcount: 19,
+    totalWorkDays: 380,
+    present: 373,
+    leave: 4,
+    sick: 2,
     alpha: 1,
     lateIn: 1,
-    atrPercent: 98.0,
-    trendlineLinear: 98.00,
-    movingAverage3M: 97.80,
+    atrPercent: 98.2,
+    trendlineLinear: 98.10,
+    movingAverage3M: 98.00,
     target: 95.0,
-    avgHoursPerDay: 8.20,
+    avgHoursPerDay: 8.22,
   },
   {
     sheetName: "mei-26",
     label: "Mei-26",
     monthNum: 5,
     workDays: 19, // Libur Hari Buruh, Kenaikan Isa Almasih, Waisak
-    headcount: 22,
-    totalWorkDays: 418,
-    present: 410,
-    leave: 4,
-    sick: 3,
+    headcount: 19,
+    totalWorkDays: 361,
+    present: 355,
+    leave: 3,
+    sick: 2,
     alpha: 1,
-    lateIn: 2,
-    atrPercent: 98.1,
-    trendlineLinear: 98.20,
-    movingAverage3M: 97.97,
+    lateIn: 1,
+    atrPercent: 98.3,
+    trendlineLinear: 98.30,
+    movingAverage3M: 98.17,
     target: 95.0,
-    avgHoursPerDay: 8.20,
+    avgHoursPerDay: 8.22,
   },
   {
     sheetName: "jun-26",
     label: "Jun-26",
     monthNum: 6,
     workDays: 21, // Libur Hari Lahir Pancasila & Idul Adha
-    headcount: 22,
-    totalWorkDays: 462,
-    present: 454,
-    leave: 5,
-    sick: 2,
+    headcount: 19,
+    totalWorkDays: 399,
+    present: 393,
+    leave: 4,
+    sick: 1,
     alpha: 1,
     lateIn: 1,
-    atrPercent: 98.3,
-    trendlineLinear: 98.40,
-    movingAverage3M: 98.13,
+    atrPercent: 98.5,
+    trendlineLinear: 98.50,
+    movingAverage3M: 98.33,
     target: 95.0,
-    avgHoursPerDay: 8.21,
+    avgHoursPerDay: 8.23,
   },
   {
     sheetName: "jul-26",
     label: "Jul-26",
     monthNum: 7,
     workDays: 22, // Libur Tahun Baru Islam
-    headcount: 22,
-    totalWorkDays: 484,
-    present: 477,
-    leave: 4,
-    sick: 2,
+    headcount: 19,
+    totalWorkDays: 418,
+    present: 413,
+    leave: 3,
+    sick: 1,
     alpha: 1,
-    lateIn: 1,
-    atrPercent: 98.6,
-    trendlineLinear: 98.60,
-    movingAverage3M: 98.33,
+    lateIn: 0,
+    atrPercent: 98.8,
+    trendlineLinear: 98.70,
+    movingAverage3M: 98.53,
     target: 95.0,
-    avgHoursPerDay: 8.22,
+    avgHoursPerDay: 8.24,
   },
   {
     sheetName: "agu-26",
     label: "Agu-26",
     monthNum: 8,
     workDays: 21, // Libur HUT Kemerdekaan RI
-    headcount: 22,
-    totalWorkDays: 462,
-    present: 456,
-    leave: 4,
+    headcount: 19,
+    totalWorkDays: 399,
+    present: 394,
+    leave: 3,
     sick: 1,
     alpha: 1,
     lateIn: 1,
     atrPercent: 98.7,
-    trendlineLinear: 98.70,
-    movingAverage3M: 98.53,
+    trendlineLinear: 98.80,
+    movingAverage3M: 98.67,
     target: 95.0,
-    avgHoursPerDay: 8.23,
+    avgHoursPerDay: 8.24,
   },
   {
     sheetName: "sep-26",
     label: "Sep-26",
     monthNum: 9,
     workDays: 21, // Libur Maulid Nabi Muhammad SAW
-    headcount: 22,
-    totalWorkDays: 462,
-    present: 457,
-    leave: 3,
+    headcount: 19,
+    totalWorkDays: 399,
+    present: 395,
+    leave: 2,
     sick: 2,
     alpha: 0,
     lateIn: 1,
-    atrPercent: 98.9,
-    trendlineLinear: 98.90,
-    movingAverage3M: 98.73,
+    atrPercent: 99.0,
+    trendlineLinear: 99.00,
+    movingAverage3M: 98.83,
     target: 95.0,
-    avgHoursPerDay: 8.24,
+    avgHoursPerDay: 8.25,
   },
   {
     sheetName: "okt-26",
     label: "Okt-26",
     monthNum: 10,
     workDays: 22, // Full 22 hari kerja
-    headcount: 22,
-    totalWorkDays: 484,
-    present: 480,
-    leave: 3,
+    headcount: 19,
+    totalWorkDays: 418,
+    present: 415,
+    leave: 2,
     sick: 1,
     alpha: 0,
     lateIn: 0,
-    atrPercent: 99.2,
-    trendlineLinear: 99.10,
-    movingAverage3M: 98.93,
+    atrPercent: 99.3,
+    trendlineLinear: 99.20,
+    movingAverage3M: 99.00,
     target: 95.0,
-    avgHoursPerDay: 8.25,
+    avgHoursPerDay: 8.26,
   },
   {
     sheetName: "nov-26",
     label: "Nov-26",
     monthNum: 11,
     workDays: 5, // Cutoff 1-5 Nov 2026
-    headcount: 22,
-    totalWorkDays: 110,
-    present: 109,
+    headcount: 19,
+    totalWorkDays: 95,
+    present: 94,
     leave: 1,
     sick: 0,
     alpha: 0,
     lateIn: 0,
-    atrPercent: 99.1,
+    atrPercent: 98.9,
     trendlineLinear: 99.30,
     movingAverage3M: 99.07,
     target: 95.0,
-    avgHoursPerDay: 8.24,
+    avgHoursPerDay: 8.25,
   },
 ];
 
-// 5 Departemen Riil di Head Office Jakarta (Total 22 personil aktif non-BoD)
+// 5 Departemen Riil di Head Office Jakarta (Total 19 personil aktif non-BoD)
 export const HEADOFFICE_DEPARTMENTS_RANKED: DepartmentATR[] = [
   {
     rank: 1,
@@ -849,16 +850,16 @@ export const HEADOFFICE_DEPARTMENTS_RANKED: DepartmentATR[] = [
   {
     rank: 3,
     organization: "FA & Procurement",
-    headcount: 10,
+    headcount: 9,
     workDays: 22,
-    totalWorkDays: 220,
-    present: 218,
+    totalWorkDays: 198,
+    present: 196,
     leave: 2,
     sick: 0,
     alpha: 0,
     lateIn: 0,
     avgHours: 8.22,
-    atrPercent: 98.4,
+    atrPercent: 98.5,
     status: "Sangat Disiplin",
     primaryPositions: "Manager Finance, Manager Proc & Log, Spv Accounting, Spv Finance, Spv Procurement",
   },
@@ -881,18 +882,18 @@ export const HEADOFFICE_DEPARTMENTS_RANKED: DepartmentATR[] = [
   {
     rank: 5,
     organization: "Hrga",
-    headcount: 7,
+    headcount: 5,
     workDays: 22,
-    totalWorkDays: 154,
-    present: 151,
-    leave: 2,
+    totalWorkDays: 110,
+    present: 108,
+    leave: 1,
     sick: 1,
     alpha: 0,
     lateIn: 0,
-    avgHours: 8.16,
-    atrPercent: 97.9,
-    status: "Optimal",
-    primaryPositions: "Spv General Affair, Spv System & Dev, Spv C&B, Spv Recruitment, Driver Sarana, OB",
+    avgHours: 8.20,
+    atrPercent: 98.2,
+    status: "Sangat Disiplin",
+    primaryPositions: "Spv General Affair, Spv System & Dev, Spv C&B, Spv Recruitment",
   },
 ];
 
@@ -1504,44 +1505,6 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
 const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
   {
     rank: 1,
-    employeeId: "99260521",
-    fullName: "Hilmy Naufal",
-    jobPosition: "Driver Sarana",
-    organization: "Hrga",
-    branchName: "HO Jakarta",
-    workDaysTotal: 22,
-    totalPresentDays: 21,
-    leaveDays: 0,
-    sickDays: 1,
-    alphaDays: 0,
-    lateInCount: 3,
-    totalMonthlyHours: 162.8,
-    avgWorkingHours: 7.75,
-    atrScore: 95.5,
-    violationReason: "Rekap bulanan: 3x masuk > 08:15 WIB (kode TL) dan 1 hari Sakit (S). Total hadir 21/22 HK.",
-    recommendedAction: "Penyesuaian jadwal tugas luar (DL) atau revisi jam standby pool sarana",
-  },
-  {
-    rank: 2,
-    employeeId: "99260463",
-    fullName: "Henri Hendriansah",
-    jobPosition: "Office Boy",
-    organization: "Hrga",
-    branchName: "HO Jakarta",
-    workDaysTotal: 22,
-    totalPresentDays: 21,
-    leaveDays: 0,
-    sickDays: 1,
-    alphaDays: 0,
-    lateInCount: 2,
-    totalMonthlyHours: 163.8,
-    avgWorkingHours: 7.80,
-    atrScore: 95.5,
-    violationReason: "Rekap bulanan: 2x terlambat tapping masuk (kode TL), 1x pulang awal (PA), dan 1 hari Sakit (S). Total hadir 21/22 HK.",
-    recommendedAction: "Penggunaan form Izin Keluar Kantor / Dinas Luar (DL) oleh Spv GA",
-  },
-  {
-    rank: 3,
     employeeId: "99250415",
     fullName: "Adi Susanto",
     jobPosition: "Spv General Affair",
@@ -1560,7 +1523,7 @@ const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
     recommendedAction: "Pencatatan status Dinas Luar (DL) untuk tugas lapangan sebelum jam kantor HO",
   },
   {
-    rank: 4,
+    rank: 2,
     employeeId: "99260529",
     fullName: "Kayla Azzahra Jasmine",
     jobPosition: "Magang - Finance",
@@ -1821,7 +1784,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 max-w-2xl font-medium">
               {selectedScope === "headoffice"
-                ? "Monitoring kepatuhan presensi 22 personil aktif Head Office Jakarta. Jam kerja 8 jam fleksibel, toleransi masuk maksimal 08:15 WIB, dan tanggal merah libur resmi."
+                ? "Monitoring kepatuhan presensi 19 personil aktif Head Office Jakarta (BoD & staf jam kerja tidak menentu Naufal, Hendri, Iwan dieksklusi). Jam kerja 8 jam fleksibel, toleransi masuk maksimal 08:15 WIB, dan tanggal merah libur resmi."
                 : "Monitoring rasio kehadiran 400 personil aktif Jobsite Muara Pahu & Senyiur per sheet bulanan G-Form. Terintegrasi dengan analitika shift operasional dan ranking departemen."}
             </p>
           </div>
@@ -1842,7 +1805,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 <Building size={14} />
                 Head Office
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${selectedScope === "headoffice" ? "bg-blue-700 text-white" : "bg-slate-200 text-slate-700"}`}>
-                  22
+                  19
                 </span>
               </button>
               <button
@@ -1928,6 +1891,9 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               <div className="flex flex-col items-end gap-1.5 shrink-0">
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
                   BoD Excluded (0 Direksi)
+                </span>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                  Jam Tidak Menentu Excluded (Naufal, Hendri, Iwan)
                 </span>
               </div>
             </div>
@@ -2031,7 +1997,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold flex items-center gap-1">
                 <Building size={12} />
-                Head Office : BDP Jakarta (22 Karyawan)
+                Head Office : BDP Jakarta (19 Karyawan)
               </span>
             </div>
           )}
@@ -2980,7 +2946,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
           <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
           <span>
             {selectedScope === "headoffice"
-              ? "Data presensi Head Office Jakarta: 22 personil aktif. Jam kerja 8 jam fleksibel (+1h istirahat), batas masuk 08:15 WIB, tanggal merah libur resmi."
+              ? "Data presensi Head Office Jakarta: 19 personil aktif (BoD & karyawan jam kerja tidak menentu Naufal, Hendri, Iwan dieksklusi). Jam kerja 8 jam fleksibel (+1h istirahat), batas masuk 08:15 WIB, tanggal merah libur resmi."
               : `Data presensi Jobsite disinkronkan dari G-Form sheet (${selectedSheet}). 7 Departemen sesuai database Master Manpower.`}
           </span>
         </div>
