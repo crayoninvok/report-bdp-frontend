@@ -42,7 +42,6 @@ import {
   CalendarDays,
   BookOpen,
   HelpCircle,
-  Calculator,
   Building,
   CheckCircle,
 } from "lucide-react";
@@ -1597,46 +1596,6 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
   const [isAttendanceCodeModalOpen, setIsAttendanceCodeModalOpen] = useState<boolean>(false);
   const [selectedCodeCategoryFilter, setSelectedCodeCategoryFilter] = useState<string>("all");
 
-  // 8. Interactive Head Office Working Hours Calculator State
-  const [simClockIn, setSimClockIn] = useState<string>("07:30");
-
-  // Calculate Flexible Working Hours for Head Office
-  const hoWorkHourCalculation = useMemo(() => {
-    const [hh, mm] = simClockIn.split(":").map(Number);
-    if (isNaN(hh) || isNaN(mm)) {
-      return {
-        isValid: false,
-        isLate: false,
-        lateMinutes: 0,
-        allowedClockOut: "17:00",
-        effectiveWorkHours: "8.0",
-        message: "Format jam tidak valid",
-      };
-    }
-
-    const totalMinutesIn = hh * 60 + mm;
-    const maxThreshold = 8 * 60 + 15; // 08:15 WIB
-    const isLate = totalMinutesIn > maxThreshold;
-    const lateMinutes = isLate ? totalMinutesIn - maxThreshold : 0;
-
-    // Required span: 8 hours work + 1 hour break = 9 hours = 540 minutes
-    const totalMinutesOut = totalMinutesIn + 540;
-    const outH = Math.floor(totalMinutesOut / 60) % 24;
-    const outM = totalMinutesOut % 60;
-    const allowedClockOut = `${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}`;
-
-    return {
-      isValid: true,
-      isLate,
-      lateMinutes,
-      allowedClockOut,
-      effectiveWorkHours: "8.0",
-      statusText: isLate
-        ? `Terlambat ${lateMinutes} menit (Batas maksimal masuk 08:15 WIB)`
-        : "Tepat Waktu (On-Time)",
-    };
-  }, [simClockIn]);
-
   // Active Monthly Record according to Scope
   const activeRecord: MonthlyATRData = useMemo(() => {
     const list = selectedScope === "jobsite" ? JOBSITE_MONTHLY_ATR : HEADOFFICE_MONTHLY_ATR;
@@ -2161,137 +2120,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. KALKULATOR JAM KERJA FLEKSIBEL HEAD OFFICE (INTERACTIVE WIDGET)         */}
-      {/* ========================================================================= */}
-      {selectedScope === "headoffice" && (
-        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white shadow-md border border-slate-800 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700/60">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                <Calculator size={18} />
-              </div>
-              <div>
-                <h3 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
-                  Kalkulator Jam Kerja Fleksibel Head Office
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                    SOP Batara Jakarta
-                  </span>
-                </h3>
-                <p className="text-[11px] text-slate-400">
-                  Simulasikan jam masuk karyawan untuk mengetahui batas jam pulang yang memenuhi 8 jam kerja efektif (+1 jam istirahat).
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Presets */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-slate-400 font-bold">Preset:</span>
-              <button
-                type="button"
-                onClick={() => setSimClockIn("07:00")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                  simClockIn === "07:00" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                07:00 (Pagi)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSimClockIn("07:30")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                  simClockIn === "07:30" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                07:30
-              </button>
-              <button
-                type="button"
-                onClick={() => setSimClockIn("08:00")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                  simClockIn === "08:00" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                08:00 (Normal)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSimClockIn("08:15")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                  simClockIn === "08:15" ? "bg-amber-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                08:15 (Batas Maks)
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Input Jam Masuk */}
-            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
-              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Clock size={13} className="text-blue-400" />
-                1. Masukkan Jam Masuk:
-              </label>
-              <input
-                type="time"
-                value={simClockIn}
-                onChange={(e) => setSimClockIn(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-600 text-xl font-black text-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-mono"
-              />
-              <span className="text-[10px] text-slate-400">
-                Batas maksimum tepat waktu: <strong>08:15 WIB</strong>
-              </span>
-            </div>
-
-            {/* Status Masuk */}
-            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <ShieldCheck size={13} className={hoWorkHourCalculation.isLate ? "text-rose-400" : "text-emerald-400"} />
-                2. Status Kepatuhan:
-              </span>
-              <div>
-                <span
-                  className={`text-lg font-black block ${
-                    hoWorkHourCalculation.isLate ? "text-rose-400" : "text-emerald-400"
-                  }`}
-                >
-                  {hoWorkHourCalculation.isLate ? "TERLAMBAT (TL)" : "TEPAT WAKTU (H)"}
-                </span>
-                <span className="text-xs text-slate-300 font-medium block mt-0.5">
-                  {hoWorkHourCalculation.statusText}
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-400">
-                {hoWorkHourCalculation.isLate
-                  ? "Melewati toleransi jam 08:15 WIB"
-                  : "Memenuhi batas jam masuk HO"}
-              </span>
-            </div>
-
-            {/* Jam Pulang Minimum yang Diperbolehkan */}
-            <div className="bg-linear-to-br from-blue-900/60 to-indigo-900/60 p-4 rounded-2xl border border-blue-500/30 flex flex-col justify-between space-y-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
-                <CheckCircle size={13} className="text-emerald-400" />
-                3. Boleh Pulang Pukul:
-              </span>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight block">
-                  {hoWorkHourCalculation.allowedClockOut} WIB
-                </span>
-                <span className="text-[11px] text-blue-200 font-semibold block mt-0.5">
-                  Durasi: 8 Jam Kerja Efektif + 1 Jam Istirahat
-                </span>
-              </div>
-              <span className="text-[10px] text-blue-300/80">
-                Checkout sebelum jam ini dikategorikan <strong>Pulang Awal (PA)</strong>
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 5. GRAFIK TREN ATR DENGAN GARIS REGRESI LINIER & MOVING AVERAGE           */}
+      {/* 4. GRAFIK TREN ATR DENGAN GARIS REGRESI LINIER & MOVING AVERAGE           */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
