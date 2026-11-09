@@ -316,6 +316,16 @@ export const RAW_WEEKLY_SENYIUR: FullPeriodRecord[] = [
     ovh: { budget: 76, realisasi: 149, deviasi: -73 },
     produksi: { budget: 0, realisasi: 0 },
   },
+  {
+    label: "W44",
+    total: { budget: 707, realisasi: 365, deviasi: 342 },
+    comp: { budget: 366, realisasi: 265, deviasi: 101 },
+    fuel: { budget: 51, realisasi: 37, deviasi: 14 },
+    tyre: { budget: 0, realisasi: 0, deviasi: 0 },
+    rep: { budget: 2, realisasi: 2, deviasi: 0 },
+    ovh: { budget: 76, realisasi: 56, deviasi: 20 },
+    produksi: { budget: 0, realisasi: 0 },
+  },
 ];
 
 export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
@@ -469,6 +479,16 @@ export const RAW_WEEKLY_MUARAPAHU: FullPeriodRecord[] = [
     ovh: { budget: 329, realisasi: 126, deviasi: 203 },
     produksi: { budget: 151516, realisasi: 227883 },
   },
+  {
+    label: "W44",
+    total: { budget: 10328, realisasi: 7045, deviasi: 3283 },
+    comp: { budget: 914, realisasi: 749, deviasi: 165 },
+    fuel: { budget: 6845, realisasi: 3214, deviasi: 3631 },
+    tyre: { budget: 615, realisasi: 462, deviasi: 153 },
+    rep: { budget: 615, realisasi: 248, deviasi: 367 },
+    ovh: { budget: 458, realisasi: 16, deviasi: 442 },
+    produksi: { budget: 213790, realisasi: 162254 },
+  },
 ];
 
 // =========================================================================
@@ -575,6 +595,16 @@ export const RAW_MONTHLY_SENYIUR: FullPeriodRecord[] = [
     ovh: { budget: 163, realisasi: 131, deviasi: 32 },
     produksi: { budget: 324677, realisasi: 0 },
   },
+  {
+    label: "Nov",
+    total: { budget: 371, realisasi: 365, deviasi: 6 },
+    comp: { budget: 269, realisasi: 265, deviasi: 4 },
+    fuel: { budget: 37, realisasi: 37, deviasi: 0 },
+    tyre: { budget: 0, realisasi: 0, deviasi: 0 },
+    rep: { budget: 2, realisasi: 2, deviasi: 0 },
+    ovh: { budget: 56, realisasi: 56, deviasi: 0 },
+    produksi: { budget: 0, realisasi: 0 },
+  },
 ];
 
 export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
@@ -677,6 +707,16 @@ export const RAW_MONTHLY_MUARAPAHU: FullPeriodRecord[] = [
     rep: { budget: 946, realisasi: 419, deviasi: 527 },
     ovh: { budget: 705, realisasi: 90, deviasi: 615 },
     produksi: { budget: 324677, realisasi: 339252 },
+  },
+  {
+    label: "Nov",
+    total: { budget: 8279, realisasi: 7045, deviasi: 1234 },
+    comp: { budget: 715, realisasi: 749, deviasi: -34 },
+    fuel: { budget: 5729, realisasi: 3214, deviasi: 2515 },
+    tyre: { budget: 497, realisasi: 462, deviasi: 35 },
+    rep: { budget: 497, realisasi: 248, deviasi: 249 },
+    ovh: { budget: 370, realisasi: 16, deviasi: 354 },
+    produksi: { budget: 170500, realisasi: 162254 },
   },
 ];
 
@@ -865,9 +905,9 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
 
   // Week Range Filter state for Dashboard Cost
   const [weekFilterMode, setWeekFilterMode] = useState<"range" | "single" | "all">("range");
-  const [startWeek, setStartWeek] = useState<string>("W40");
-  const [endWeek, setEndWeek] = useState<string>("W43");
-  const [selectedSingleWeek, setSelectedSingleWeek] = useState<string>("W43");
+  const [startWeek, setStartWeek] = useState<string>("W41");
+  const [endWeek, setEndWeek] = useState<string>("W44");
+  const [selectedSingleWeek, setSelectedSingleWeek] = useState<string>("W44");
 
   const parseWeekNumber = (label: string): number => {
     const match = label.match(/\d+/);
@@ -916,7 +956,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
     const weeks = weekly.map((item) => item.label);
     const fallbackList = [
       "W29", "W30", "W31", "W32", "W33", "W34", "W35",
-      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43"
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43", "W44"
     ];
     const combined = Array.from(new Set([...fallbackList, ...weeks]));
     combined.sort((a, b) => parseWeekNumber(a) - parseWeekNumber(b));
@@ -1465,7 +1505,7 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
               onClick={() => {
                 setTimeframe("week");
                 setWeekFilterMode("range");
-                const latest = availableWeeks[availableWeeks.length - 1] || "W43";
+                const latest = availableWeeks[availableWeeks.length - 1] || "W44";
                 const latestNum = parseWeekNumber(latest);
                 const startNum = Math.max(29, latestNum - 3);
                 setStartWeek(`W${startNum}`);
@@ -1563,14 +1603,14 @@ export const CostTrendCharts: React.FC<CostTrendChartsProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        const latest = availableWeeks[availableWeeks.length - 1] || "W43";
+                        const latest = availableWeeks[availableWeeks.length - 1] || "W44";
                         const latestNum = parseWeekNumber(latest);
                         const startNum = Math.max(29, latestNum - 3);
                         setStartWeek(`W${startNum}`);
                         setEndWeek(latest);
                       }}
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
-                        endWeek === (availableWeeks[availableWeeks.length - 1] || "W43")
+                        endWeek === (availableWeeks[availableWeeks.length - 1] || "W44")
                           ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
                           : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
                       }`}

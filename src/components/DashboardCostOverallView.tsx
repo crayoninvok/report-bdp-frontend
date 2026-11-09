@@ -133,8 +133,8 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
       return activeDataset.availablePeriods;
     }
     return timeMode === "monthly"
-      ? ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agst", "Sept", "Okt"]
-      : ["W41", "W42", "W43"];
+      ? ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agst", "Sept", "Okt", "Nov"]
+      : ["W41", "W42", "W43", "W44"];
   }, [activeDataset, timeMode]);
 
   // Load data from backend

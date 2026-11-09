@@ -293,6 +293,7 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
       { week: "W41", frAktual: 1.51, frTarget: 1.55, linearTrend: 1.58 },
       { week: "W42", frAktual: 1.42, frTarget: 1.55, linearTrend: 1.51 },
       { week: "W43", frAktual: 1.45, frTarget: 1.55, linearTrend: 1.45 },
+      { week: "W44", frAktual: 1.48, frTarget: 1.55, linearTrend: 1.42 },
     ];
   }, [data]);
 
@@ -769,7 +770,7 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
                 Fuel Ratio Weekly Trend
               </h3>
               <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                Evaluasi mingguan (W36 s/d W43)
+                Evaluasi mingguan (W36 s/d W44)
               </p>
             </div>
             <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">

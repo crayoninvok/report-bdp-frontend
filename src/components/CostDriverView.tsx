@@ -148,8 +148,8 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
 
   // Filter Rentang Minggu (Fixed Week Range)
   const [weekFilterMode, setWeekFilterMode] = useState<"range" | "single" | "all">("range");
-  const [startWeek, setStartWeek] = useState<string>("W40");
-  const [endWeek, setEndWeek] = useState<string>("W43");
+  const [startWeek, setStartWeek] = useState<string>("W41");
+  const [endWeek, setEndWeek] = useState<string>("W44");
 
   const parseWeekNumber = (label: string): number => {
     const match = label.match(/\d+/);
@@ -174,7 +174,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     setSelectedPeriod("all");
     if (newTf === "week") {
       setWeekFilterMode("range");
-      const latest = availableWeeks[availableWeeks.length - 1] || "W43";
+      const latest = availableWeeks[availableWeeks.length - 1] || "W44";
       const latestNum = parseWeekNumber(latest);
       const startNum = Math.max(29, latestNum - 3);
       setStartWeek(`W${startNum}`);
@@ -340,7 +340,7 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
     const weeks = baseDataset.map((item) => item.label);
     const fallbackList = [
       "W29", "W30", "W31", "W32", "W33", "W34", "W35",
-      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43"
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43", "W44"
     ];
     const combined = Array.from(new Set([...fallbackList, ...weeks]));
     combined.sort((a, b) => parseWeekNumber(a) - parseWeekNumber(b));
@@ -981,14 +981,14 @@ export const CostDriverView: React.FC<CostDriverViewProps> = ({ user }) => {
                       <button
                         type="button"
                         onClick={() => {
-                          const latest = availableWeeks[availableWeeks.length - 1] || "W43";
+                          const latest = availableWeeks[availableWeeks.length - 1] || "W44";
                           const latestNum = parseWeekNumber(latest);
                           const startNum = Math.max(29, latestNum - 3);
                           setStartWeek(`W${startNum}`);
                           setEndWeek(latest);
                         }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
-                          endWeek === (availableWeeks[availableWeeks.length - 1] || "W43")
+                          endWeek === (availableWeeks[availableWeeks.length - 1] || "W44")
                             ? "bg-orange-500/30 text-orange-200 border-orange-400 shadow-xs"
                             : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-white/10"
                         }`}
