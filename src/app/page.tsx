@@ -29,6 +29,7 @@ import { LiveMonitoringUnitView } from "../components/LiveMonitoringUnitView";
 import { ProfitCenterView } from "../components/ProfitCenterView";
 import { MasterManpowerView } from "../components/MasterManpowerView";
 import { HRDashboardView } from "../components/HRDashboardView";
+import { ATRDashboardView } from "../components/ATRDashboardView";
 
 import {
   Menu,
@@ -600,6 +601,12 @@ export default function Home() {
             <HRDashboardView
               user={currentUser}
               onNavigateToMasterManpower={() => setActiveMenu("master-manpower")}
+            />
+          ) : activeMenu === "atr-dashboard" ? (
+            <ATRDashboardView
+              user={currentUser}
+              onNavigateToMasterManpower={() => setActiveMenu("master-manpower")}
+              onNavigateToHRDashboard={() => setActiveMenu("hr-dashboard")}
             />
           ) : activeMenu === "master-manpower" ? (
             <MasterManpowerView user={currentUser} />

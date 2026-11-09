@@ -27,6 +27,7 @@ import {
   Table,
   Radio,
   TrendingUp,
+  CalendarCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -168,6 +169,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "hr-dashboard",
           label: "Dashboard",
           icon: LayoutDashboard,
+        },
+        {
+          id: "atr-dashboard",
+          label: "ATR Dashboard",
+          icon: CalendarCheck,
         },
         {
           id: "master-manpower",
