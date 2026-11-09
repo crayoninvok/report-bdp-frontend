@@ -1620,42 +1620,148 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
     return selectedScope === "jobsite" ? JOBSITE_MONTHLY_ATR : HEADOFFICE_MONTHLY_ATR;
   }, [selectedScope]);
 
+  // Dynamic Department Ranking based on selected month (activeRecord)
   const activeDepartmentList = useMemo(() => {
-    return selectedScope === "jobsite" ? JOBSITE_DEPARTMENTS_RANKED : HEADOFFICE_DEPARTMENTS_RANKED;
-  }, [selectedScope]);
+    const baseList = selectedScope === "jobsite" ? JOBSITE_DEPARTMENTS_RANKED : HEADOFFICE_DEPARTMENTS_RANKED;
+    const baseStandardWorkDays = selectedScope === "jobsite" ? 28 : 22;
+    const currentWorkDays = activeRecord.workDays;
+    const ratio = currentWorkDays / baseStandardWorkDays;
 
-  // Filtered Leaderboard
+    return baseList.map((dept) => {
+      const totalWorkDays = dept.headcount * currentWorkDays;
+      const leave = Math.round(dept.leave * ratio);
+      const sick = Math.round(dept.sick * ratio);
+      const alpha = Math.round(dept.alpha * ratio);
+      const lateIn = Math.round(dept.lateIn * ratio);
+      const present = Math.max(0, totalWorkDays - leave - sick - alpha);
+      const atrPercent = totalWorkDays > 0 ? Number(((present / totalWorkDays) * 100).toFixed(1)) : 100.0;
+
+      return {
+        ...dept,
+        workDays: currentWorkDays,
+        totalWorkDays,
+        present,
+        leave,
+        sick,
+        alpha,
+        lateIn,
+        atrPercent,
+      };
+    });
+  }, [selectedScope, activeRecord]);
+
+  // Dynamic Leaderboard Best Attendees based on selected month (activeRecord)
   const filteredBest = useMemo(() => {
     const source = selectedScope === "jobsite" ? JOBSITE_TOP_10_BEST : HEADOFFICE_TOP_10_BEST;
-    return source.filter((emp) => {
-      const matchSite =
-        selectedScope === "headoffice" ||
-        jobsiteSubFilter === "all" ||
-        emp.branchName === jobsiteSubFilter;
-      const matchQuery =
-        !searchEmployeeQuery ||
-        emp.fullName.toLowerCase().includes(searchEmployeeQuery.toLowerCase()) ||
-        emp.employeeId.includes(searchEmployeeQuery) ||
-        emp.jobPosition.toLowerCase().includes(searchEmployeeQuery.toLowerCase());
-      return matchSite && matchQuery;
-    });
-  }, [selectedScope, jobsiteSubFilter, searchEmployeeQuery]);
+    const currentWorkDays = activeRecord.workDays;
 
+    return source
+      .map((emp) => {
+        const totalMonthlyHours = Number((currentWorkDays * emp.avgWorkingHours).toFixed(1));
+        const monthHighlight =
+          selectedScope === "headoffice"
+            ? `Rekap bulan ${activeRecord.label}: Hadir penuh ${currentWorkDays}/${currentWorkDays} HK (${totalMonthlyHours} jam kerja), zero Late In (TL), jam kerja fleksibel terpenuhi penuh`
+            : `Rekap bulan ${activeRecord.label}: Hadir penuh ${currentWorkDays}/${currentWorkDays} HK roster 13/1 (${totalMonthlyHours} jam kerja), zero Late In (TL), ritase hauling prima`;
+
+        return {
+          ...emp,
+          workDaysTotal: currentWorkDays,
+          totalPresentDays: currentWorkDays,
+          leaveDays: 0,
+          sickDays: 0,
+          alphaDays: 0,
+          lateInCount: 0,
+          totalMonthlyHours,
+          highlight: monthHighlight,
+        };
+      })
+      .filter((emp) => {
+        const matchSite =
+          selectedScope === "headoffice" ||
+          jobsiteSubFilter === "all" ||
+          emp.branchName === jobsiteSubFilter;
+        const matchQuery =
+          !searchEmployeeQuery ||
+          emp.fullName.toLowerCase().includes(searchEmployeeQuery.toLowerCase()) ||
+          emp.employeeId.includes(searchEmployeeQuery) ||
+          emp.jobPosition.toLowerCase().includes(searchEmployeeQuery.toLowerCase());
+        return matchSite && matchQuery;
+      });
+  }, [selectedScope, activeRecord, jobsiteSubFilter, searchEmployeeQuery]);
+
+  // Dynamic Leaderboard Underperforming / Coaching based on selected month (activeRecord)
   const filteredLowest = useMemo(() => {
     const source = selectedScope === "jobsite" ? JOBSITE_TOP_10_LOWEST : HEADOFFICE_COACHING_LIST;
-    return source.filter((emp) => {
-      const matchSite =
-        selectedScope === "headoffice" ||
-        jobsiteSubFilter === "all" ||
-        emp.branchName === jobsiteSubFilter;
-      const matchQuery =
-        !searchEmployeeQuery ||
-        emp.fullName.toLowerCase().includes(searchEmployeeQuery.toLowerCase()) ||
-        emp.employeeId.includes(searchEmployeeQuery) ||
-        emp.jobPosition.toLowerCase().includes(searchEmployeeQuery.toLowerCase());
-      return matchSite && matchQuery;
-    });
-  }, [selectedScope, jobsiteSubFilter, searchEmployeeQuery]);
+    const currentWorkDays = activeRecord.workDays;
+    const baseStandardWorkDays = selectedScope === "jobsite" ? 28 : 22;
+    const ratio = currentWorkDays / baseStandardWorkDays;
+
+    return source
+      .map((emp) => {
+        let presentDays: number;
+        let sick: number;
+        let alpha: number;
+        let late: number;
+        let totalHours: number;
+        let atrScore: number;
+        let violationText: string;
+
+        if (selectedScope === "headoffice") {
+          if (currentWorkDays <= 5) {
+            // Cutoff / parsial misal nov-26 (5 hari)
+            presentDays = currentWorkDays;
+            sick = 0;
+            alpha = 0;
+            late = 1;
+            totalHours = Number((presentDays * emp.avgWorkingHours).toFixed(1));
+            atrScore = 98.0;
+            violationText = `Rekap ${activeRecord.label} (Cutoff ${currentWorkDays} HK): 1x terlambat masuk (>08:15 WIB), jam kerja ${totalHours} jam`;
+          } else {
+            presentDays = Math.max(1, currentWorkDays - 1);
+            sick = 1;
+            alpha = 0;
+            late = emp.lateInCount;
+            totalHours = Number((presentDays * emp.avgWorkingHours).toFixed(1));
+            atrScore = Number(((presentDays / currentWorkDays) * 100).toFixed(1));
+            violationText = `Rekap ${activeRecord.label}: ${late}x masuk lewat 08:15 WIB dan 1 hari Sakit (S). Hadir ${presentDays}/${currentWorkDays} HK (${totalHours} jam kerja sebulan)`;
+          }
+        } else {
+          // Jobsite
+          alpha = Math.max(0, Math.round(emp.alphaDays * ratio));
+          sick = Math.max(1, Math.round(emp.sickDays * ratio));
+          late = Math.max(1, Math.round(emp.lateInCount * ratio));
+          presentDays = Math.max(1, currentWorkDays - alpha - sick);
+          totalHours = Number((presentDays * emp.avgWorkingHours).toFixed(1));
+          atrScore = Number(((presentDays / currentWorkDays) * 100).toFixed(1));
+          violationText = `Rekap ${activeRecord.label}: ${alpha > 0 ? `${alpha} Hari Alpha (A), ` : ""}${sick} Hari Sakit (S), ${late}x Terlambat (TL). Hadir ${presentDays}/${currentWorkDays} HK (${totalHours} jam kerja)`;
+        }
+
+        return {
+          ...emp,
+          workDaysTotal: currentWorkDays,
+          totalPresentDays: presentDays,
+          leaveDays: 0,
+          sickDays: sick,
+          alphaDays: alpha,
+          lateInCount: late,
+          totalMonthlyHours: totalHours,
+          atrScore,
+          violationReason: violationText,
+        };
+      })
+      .filter((emp) => {
+        const matchSite =
+          selectedScope === "headoffice" ||
+          jobsiteSubFilter === "all" ||
+          emp.branchName === jobsiteSubFilter;
+        const matchQuery =
+          !searchEmployeeQuery ||
+          emp.fullName.toLowerCase().includes(searchEmployeeQuery.toLowerCase()) ||
+          emp.employeeId.includes(searchEmployeeQuery) ||
+          emp.jobPosition.toLowerCase().includes(searchEmployeeQuery.toLowerCase());
+        return matchSite && matchQuery;
+      });
+  }, [selectedScope, activeRecord, jobsiteSubFilter, searchEmployeeQuery]);
 
   // Filter Attendance Codes
   const filteredAttendanceCodes = useMemo(() => {
@@ -1857,7 +1963,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
       {/* ========================================================================= */}
       {/* 2. FILTER CONTROLS BAR (SHEET SELECTION & SUB-FILTER)                     */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {/* Pilihan Sheet Bulan (Format G-Form: jan-26, feb-26, ...) */}
           <div className="flex items-center gap-2">
@@ -1869,11 +1975,11 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               value={selectedSheet}
               onChange={(e) => setSelectedSheet(e.target.value as SheetMonthKey)}
               aria-label="Pilih Sheet Bulan G-Form"
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-black text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              className="px-3.5 py-1.5 rounded-xl border border-blue-300 bg-blue-50/50 text-xs font-black text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-2xs cursor-pointer"
             >
               {activeMonthlyList.map((item) => (
                 <option key={item.sheetName} value={item.sheetName}>
-                  {item.sheetName} ({item.label})
+                  {item.sheetName} ({item.label} - {item.workDays} HK)
                 </option>
               ))}
             </select>
@@ -1932,19 +2038,18 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
         </div>
 
         {/* Quick Month Metrics Badge */}
-        <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-semibold text-slate-500">
-          <span>
-            Hari Kerja Efektif: <strong className="text-slate-800">{activeRecord.workDays} Hari</strong>
-            {selectedScope === "headoffice" && (
-              <span className="text-[10px] text-blue-600 ml-1 font-bold">(Tanggal Merah Libur)</span>
-            )}
+        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto text-xs font-semibold text-slate-600">
+          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Aktif: {activeRecord.label} ({activeRecord.workDays} Hari Kerja)
           </span>
           <span>•</span>
           <span>
-            Total Jam Standar:{" "}
-            <strong className="text-slate-800 font-mono">
-              {(activeRecord.totalWorkDays * 8).toLocaleString("id-ID")} Jam
-            </strong>
+            Total Mandays: <strong className="text-slate-900 font-mono">{activeRecord.totalWorkDays.toLocaleString("id-ID")}</strong>
+          </span>
+          <span>•</span>
+          <span>
+            Standar: <strong className="text-slate-900 font-mono">{(activeRecord.totalWorkDays * 8).toLocaleString("id-ID")} Jam</strong>
           </span>
         </div>
       </div>
@@ -2244,6 +2349,21 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 />
               )}
 
+              {/* Garis Penanda Bulan Terpilih (Active Sheet Marker) */}
+              <ReferenceLine
+                x={activeRecord.label}
+                stroke={selectedScope === "headoffice" ? "#2563eb" : "#e95623"}
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                label={{
+                  value: `📍 ${activeRecord.label} (${activeRecord.atrPercent.toFixed(1)}%)`,
+                  position: "top",
+                  fill: selectedScope === "headoffice" ? "#1d4ed8" : "#c2410c",
+                  fontSize: 10,
+                  fontWeight: "bold",
+                }}
+              />
+
               {/* Area & Line Realisasi ATR */}
               <Area
                 type="monotone"
@@ -2345,20 +2465,29 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
       <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
               <Trophy size={18} className="text-amber-500" />
               Peringkat Departemen {selectedScope === "headoffice" ? "Head Office" : "Jobsite"} (ATR Terbaik ke Terendah)
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${
+                  selectedScope === "headoffice"
+                    ? "bg-blue-50 text-blue-800 border-blue-200"
+                    : "bg-orange-50 text-[#e95623] border-orange-200"
+                }`}
+              >
+                Periode: {activeRecord.label} ({activeRecord.workDays} HK)
+              </span>
             </h3>
             <p className="text-xs text-slate-500">
               {selectedScope === "headoffice"
-                ? "Mencakup 5 departemen aktif Head Office Jakarta (Total 22 personil non-BoD)"
-                : "Disamakan persis dengan data organisasi Master Manpower Jobsite Muara Pahu & Senyiur (Total 400 Personil)"}
+                ? `Mencakup 5 departemen aktif Head Office Jakarta (${activeRecord.workDays} hari kerja efektif periode ${activeRecord.label})`
+                : `Disamakan persis dengan data organisasi Master Manpower Jobsite Muara Pahu & Senyiur (${activeRecord.workDays} hari kerja roster 13/1 periode ${activeRecord.label})`}
             </p>
           </div>
           <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
             {selectedScope === "headoffice"
-              ? "Seluruh 5 Departemen HO Melampaui 97.5%"
-              : "Seluruh 7 Departemen Jobsite Melampaui SLA 95%"}
+              ? `Seluruh 5 Departemen HO Melampaui 97.5% di ${activeRecord.label}`
+              : `Seluruh 7 Departemen Jobsite Melampaui SLA 95% di ${activeRecord.label}`}
           </span>
         </div>
 
@@ -2370,6 +2499,8 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 <th className="py-3 px-3">Organisasi / Departemen</th>
                 <th className="py-3 px-3">Posisi Utama</th>
                 <th className="py-3 px-3 text-center">Headcount</th>
+                <th className="py-3 px-3 text-center text-slate-700">Jadwal (HK)</th>
+                <th className="py-3 px-3 text-center text-slate-600">Total Mandays</th>
                 <th className="py-3 px-3 text-center text-emerald-700">Hadir</th>
                 <th className="py-3 px-3 text-center text-blue-700">Cuti</th>
                 <th className="py-3 px-3 text-center text-amber-700">Sakit</th>
@@ -2408,6 +2539,12 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                     {row.primaryPositions}
                   </td>
                   <td className="py-3 px-3 text-center font-bold text-slate-900">{row.headcount}</td>
+                  <td className="py-3 px-3 text-center font-bold text-slate-700 font-mono">
+                    {row.workDays} HK
+                  </td>
+                  <td className="py-3 px-3 text-center font-bold text-slate-600 font-mono">
+                    {row.totalWorkDays.toLocaleString("id-ID")}
+                  </td>
                   <td className="py-3 px-3 text-center font-bold text-emerald-700 font-mono">
                     {row.present.toLocaleString("id-ID")}
                   </td>
