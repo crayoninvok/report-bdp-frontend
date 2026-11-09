@@ -1810,22 +1810,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
                   BoD Excluded (0 Direksi)
                 </span>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                  7 Mantan Karyawan Dihapus
-                </span>
               </div>
-            </div>
-
-            {/* Notice of 7 Removed Names */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-center justify-between flex-wrap gap-2">
-              <span className="flex items-center gap-1.5">
-                <Info size={13} className="text-slate-400 shrink-0" />
-                Daftar nama yang telah dihapus permanen dari daftar presensi HO:{" "}
-                <strong className="text-slate-800">
-                  A. Kurnia, Yohanes Cahyo Wibowo, Ratna Dewi, Dara Yunia, Hari Setiawan, Heru Prastowo, Dalfa Anggraeni
-                </strong>.
-              </span>
-              <span className="text-[10px] font-mono text-slate-400">Database Synchronized</span>
             </div>
           </div>
         ) : (
