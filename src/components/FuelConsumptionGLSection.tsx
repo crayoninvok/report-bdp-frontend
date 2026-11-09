@@ -64,12 +64,12 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
   defaultStartDate,
   defaultEndDate,
 }) => {
-  // Date range defaults matching the report (01-Oct-2026 s/d 24-Oct-2026)
+  // Date range defaults matching latest data (01-Oct-2026 s/d 05-Nov-2026)
   const [startDate, setStartDate] = useState<string>(
     defaultStartDate && defaultStartDate.length >= 10 ? defaultStartDate : "2026-10-01"
   );
   const [endDate, setEndDate] = useState<string>(
-    defaultEndDate && defaultEndDate.length >= 10 ? defaultEndDate : "2026-10-24"
+    defaultEndDate && defaultEndDate.length >= 10 ? defaultEndDate : "2026-11-05"
   );
 
   const [selectedSite, setSelectedSite] = useState<string>(
@@ -370,20 +370,51 @@ export const FuelConsumptionGLSection: React.FC<FuelConsumptionGLSectionProps> =
             />
           </div>
 
-          {/* Reset / Preset Buttons */}
-          <button
-            onClick={() => {
-              setStartDate("2026-10-01");
-              setEndDate("2026-10-24");
-              fetchFuelData();
-            }}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer disabled:opacity-50 border border-slate-200 shadow-2xs"
-            title="Reset ke rentang 01-Oct-2026 s/d 24-Oct-2026"
-          >
-            <RefreshCw size={12} className={isLoading ? "animate-spin text-[#18392b]" : ""} />
-            <span>Reset 01-24 Okt</span>
-          </button>
+          {/* Quick Preset Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              onClick={() => {
+                setStartDate("2026-11-01");
+                setEndDate("2026-11-05");
+              }}
+              disabled={isLoading}
+              className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                startDate === "2026-11-01" && endDate === "2026-11-05"
+                  ? "bg-amber-700 text-white border-amber-800 shadow-2xs"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+              }`}
+            >
+              01-05 Nov
+            </button>
+            <button
+              onClick={() => {
+                setStartDate("2026-10-01");
+                setEndDate("2026-10-31");
+              }}
+              disabled={isLoading}
+              className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                startDate === "2026-10-01" && endDate === "2026-10-31"
+                  ? "bg-amber-700 text-white border-amber-800 shadow-2xs"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+              }`}
+            >
+              Oktober
+            </button>
+            <button
+              onClick={() => {
+                setStartDate("2026-10-01");
+                setEndDate("2026-11-05");
+              }}
+              disabled={isLoading}
+              className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                startDate === "2026-10-01" && endDate === "2026-11-05"
+                  ? "bg-amber-700 text-white border-amber-800 shadow-2xs"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+              }`}
+            >
+              YTD (Okt - Nov)
+            </button>
+          </div>
         </div>
 
         {/* Right: Site Filter & Status Badge */}
