@@ -897,7 +897,7 @@ export const HEADOFFICE_DEPARTMENTS_RANKED: DepartmentATR[] = [
 ];
 
 // =========================================================================
-// 4. LEADERBOARD KARYAWAN JOBSITE
+// 4. LEADERBOARD REKAPITULASI BULANAN KARYAWAN JOBSITE (ROSTER 13/1 = 28 HK)
 // =========================================================================
 export interface BestAttendanceItem {
   rank: number;
@@ -906,14 +906,14 @@ export interface BestAttendanceItem {
   jobPosition: string;
   organization: string;
   branchName: string;
-  totalPresentDays: number;
   workDaysTotal: number;
-  lateInCount: number;
-  avgClockInTime: string;
-  avgClockOutTime: string;
-  avgWorkingHours: number;
-  alphaDays: number;
+  totalPresentDays: number;
+  leaveDays: number;
   sickDays: number;
+  alphaDays: number;
+  lateInCount: number;
+  totalMonthlyHours: number;
+  avgWorkingHours: number;
   atrScore: number;
   highlight: string;
 }
@@ -925,13 +925,14 @@ export interface UnderperformingAttendanceItem {
   jobPosition: string;
   organization: string;
   branchName: string;
-  totalPresentDays: number;
   workDaysTotal: number;
-  lateInCount: number;
-  avgLateDuration: string;
-  avgWorkingHours: number;
-  alphaDays: number;
+  totalPresentDays: number;
+  leaveDays: number;
   sickDays: number;
+  alphaDays: number;
+  lateInCount: number;
+  totalMonthlyHours: number;
+  avgWorkingHours: number;
   atrScore: number;
   violationReason: string;
   recommendedAction: string;
@@ -945,16 +946,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Driver Double Trailer",
     organization: "Production",
     branchName: "Muara Pahu",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "05:42 (18 mnt awal)",
-    avgClockOutTime: "14:15",
-    avgWorkingHours: 8.25,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 231.0,
+    avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Disiplin shift 1 hauling, hadir penuh 28/28 hari kerja roster 13/1 (2 hari Day-Off dinikmati)",
+    highlight: "Rekap bulanan sempurna 28/28 HK hadir penuh roster 13/1, akumulasi 231.0 jam kerja, zero Late In (TL), ritase hauling prima",
   },
   {
     rank: 2,
@@ -963,16 +964,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Operational HSE",
     organization: "HSE",
     branchName: "Muara Pahu",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "06:45 (15 mnt awal)",
-    avgClockOutTime: "15:10",
-    avgWorkingHours: 8.22,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 230.2,
+    avgWorkingHours: 8.22,
     atrScore: 100.0,
-    highlight: "Kehadiran safety briefing 100%, 28/28 hari kerja roster 13/1 on-time",
+    highlight: "Kehadiran safety briefing 100% sebulan, hadir penuh 28/28 HK (230.2 jam kerja bulanan), zero deviasi presensi HSE",
   },
   {
     rank: 3,
@@ -981,16 +982,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Driver Double Trailer",
     organization: "Production",
     branchName: "Senyiur",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "05:46 (14 mnt awal)",
-    avgClockOutTime: "14:12",
-    avgWorkingHours: 8.20,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 229.6,
+    avgWorkingHours: 8.20,
     atrScore: 100.0,
-    highlight: "Top presensi koridor Senyiur, jam kerja harian memenuhi target (28/28 hari)",
+    highlight: "Top presensi koridor Senyiur, 28/28 HK hadir (229.6 jam kerja bulanan), nihil keterlambatan shift dan zero deviasi",
   },
   {
     rank: 4,
@@ -999,16 +1000,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Plant",
     organization: "Plant",
     branchName: "Senyiur",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "06:48 (12 mnt awal)",
-    avgClockOutTime: "15:08",
-    avgWorkingHours: 8.18,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 229.0,
+    avgWorkingHours: 8.18,
     atrScore: 100.0,
-    highlight: "Inspeksi workshop pagi konsisten, hadir 28/28 hari kerja, zero late-in",
+    highlight: "Inspeksi workshop pagi konsisten sebulan, hadir penuh 28/28 HK (229.0 jam kerja), zero Late In (TL)",
   },
   {
     rank: 5,
@@ -1017,16 +1018,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Driver Double Trailer",
     organization: "Production",
     branchName: "Muara Pahu",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "05:49 (11 mnt awal)",
-    avgClockOutTime: "14:10",
-    avgWorkingHours: 8.16,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 228.5,
+    avgWorkingHours: 8.16,
     atrScore: 100.0,
-    highlight: "Presensi shift malam (NS) konsisten tepat waktu 28/28 hari kerja, ritase prima",
+    highlight: "Presensi shift malam hauling konsisten tepat waktu sebulan, hadir 28/28 HK (228.5 jam kerja bulanan)",
   },
   {
     rank: 6,
@@ -1035,16 +1036,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Plant",
     organization: "Plant",
     branchName: "Senyiur",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "06:50 (10 mnt awal)",
-    avgClockOutTime: "15:05",
-    avgWorkingHours: 8.15,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 228.2,
+    avgWorkingHours: 8.15,
     atrScore: 100.0,
-    highlight: "Kehadiran pemeliharaan armada 100% (28/28 hari kerja), disiplin jadwal shift harian",
+    highlight: "Kehadiran pemeliharaan armada 100% (28/28 HK, 228.2 jam kerja bulanan), disiplin jadwal shift harian penuh",
   },
   {
     rank: 7,
@@ -1053,16 +1054,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Admin",
     organization: "Logistic",
     branchName: "Senyiur",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "06:51 (9 mnt awal)",
-    avgClockOutTime: "15:08",
-    avgWorkingHours: 8.14,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 227.9,
+    avgWorkingHours: 8.14,
     atrScore: 100.0,
-    highlight: "Administrasi logistik tepat waktu, absensi tapping barcode akurat (28/28 hari)",
+    highlight: "Administrasi logistik tepat waktu sebulan, tapping barcode akurat 28/28 HK (227.9 jam kerja bulanan)",
   },
   {
     rank: 8,
@@ -1071,16 +1072,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Human Resource",
     organization: "Hrga",
     branchName: "Senyiur",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "06:52 (8 mnt awal)",
-    avgClockOutTime: "15:07",
-    avgWorkingHours: 8.12,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 227.4,
+    avgWorkingHours: 8.12,
     atrScore: 100.0,
-    highlight: "Role model kepatuhan jam kerja HRGA, jam operasional terpenuhi penuh (28/28)",
+    highlight: "Role model kepatuhan presensi HRGA site Senyiur, hadir penuh 28/28 HK (227.4 jam kerja sebulan), zero deviasi",
   },
   {
     rank: 9,
@@ -1089,16 +1090,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Production",
     organization: "Production",
     branchName: "Muara Pahu",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "05:52 (8 mnt awal)",
-    avgClockOutTime: "14:08",
-    avgWorkingHours: 8.12,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 227.4,
+    avgWorkingHours: 8.12,
     atrScore: 100.0,
-    highlight: "Pengawasan pit Muara Pahu on-time, disiplin tapping 28/28 hari kerja",
+    highlight: "Pengawasan pit Muara Pahu tepat waktu sebulan penuh, hadir 28/28 HK (227.4 jam kerja sebulan), zero Late In",
   },
   {
     rank: 10,
@@ -1107,16 +1108,16 @@ const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv System & Complience",
     organization: "HSE",
     branchName: "Senyiur",
-    totalPresentDays: 28,
     workDaysTotal: 28,
-    lateInCount: 0,
-    avgClockInTime: "06:54 (6 mnt awal)",
-    avgClockOutTime: "15:06",
-    avgWorkingHours: 8.10,
-    alphaDays: 0,
+    totalPresentDays: 28,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 226.8,
+    avgWorkingHours: 8.10,
     atrScore: 100.0,
-    highlight: "Kepatuhan SOP presensi sempurna 28/28 hari kerja, nihil deviasi jam kerja",
+    highlight: "Kepatuhan SOP presensi sempurna sebulan, hadir 28/28 HK (226.8 jam kerja), zero deviasi waktu kerja",
   },
 ];
 
@@ -1128,16 +1129,17 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Driver Double Trailer",
     organization: "Production",
     branchName: "Muara Pahu",
-    totalPresentDays: 22,
     workDaysTotal: 28,
-    lateInCount: 6,
-    avgLateDuration: "32 mnt",
-    avgWorkingHours: 7.15,
-    alphaDays: 3,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 3,
+    lateInCount: 6,
+    totalMonthlyHours: 157.3,
+    avgWorkingHours: 7.15,
     atrScore: 78.6,
-    violationReason: "3x Alpha tanpa keterangan, 6x terlambat shift pagi (hadir 22/28 hari)",
-    recommendedAction: "Penerbitan SP-1 & Konseling Disiplin Shift Produksi",
+    violationReason: "Rekap bulanan: 3 Hari Alpha (A), 3 Hari Sakit (S), 6x Terlambat Shift (TL). Hadir 22/28 HK.",
+    recommendedAction: "Penerbitan Surat Peringatan (SP-1) & Konseling Disiplin Shift Produksi",
   },
   {
     rank: 2,
@@ -1146,15 +1148,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Mechanic Heavy Equipment",
     organization: "Plant",
     branchName: "Muara Pahu",
-    totalPresentDays: 22,
     workDaysTotal: 28,
-    lateInCount: 7,
-    avgLateDuration: "28 mnt",
-    avgWorkingHours: 7.20,
-    alphaDays: 2,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 4,
+    alphaDays: 2,
+    lateInCount: 7,
+    totalMonthlyHours: 158.4,
+    avgWorkingHours: 7.20,
     atrScore: 78.6,
-    violationReason: "Terlambat tertinggi (7x Late In), jam kerja 7.2 jam (hadir 22/28 hari)",
+    violationReason: "Rekap bulanan: 2 Hari Alpha (A), 4 Hari Sakit (S), 7x Terlambat (TL). Hadir 22/28 HK.",
     recommendedAction: "Panggilan Pembinaan oleh Spv Plant & Peringatan Tertulis",
   },
   {
@@ -1164,15 +1167,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Operator Wheel Loader",
     organization: "Production",
     branchName: "Senyiur",
-    totalPresentDays: 21,
     workDaysTotal: 28,
-    lateInCount: 4,
-    avgLateDuration: "21 mnt",
-    avgWorkingHours: 6.95,
-    alphaDays: 2,
+    totalPresentDays: 21,
+    leaveDays: 0,
     sickDays: 5,
+    alphaDays: 2,
+    lateInCount: 4,
+    totalMonthlyHours: 146.0,
+    avgWorkingHours: 6.95,
     atrScore: 75.0,
-    violationReason: "Jam kerja tidak memenuhi (<7 jam), 5 hari sakit beruntun (hadir 21/28 hari)",
+    violationReason: "Rekap bulanan: 2 Hari Alpha (A), 5 Hari Sakit (S), 4x Terlambat (TL), jam kerja rata-rata < 7 jam/hari.",
     recommendedAction: "Evaluasi MCU Ulang & Validasi Surat Keterangan Sakit",
   },
   {
@@ -1182,15 +1186,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Auto Electrician",
     organization: "Plant",
     branchName: "Muara Pahu",
-    totalPresentDays: 23,
     workDaysTotal: 28,
-    lateInCount: 5,
-    avgLateDuration: "25 mnt",
-    avgWorkingHours: 7.30,
-    alphaDays: 2,
+    totalPresentDays: 23,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 2,
+    lateInCount: 5,
+    totalMonthlyHours: 167.9,
+    avgWorkingHours: 7.30,
     atrScore: 82.1,
-    violationReason: "2x Alpha berturut-turut, sering terlambat pergantian shift (hadir 23/28)",
+    violationReason: "Rekap bulanan: 2 Hari Alpha berturut-turut, 3 Hari Sakit (S), 5x Terlambat shift (hadir 23/28 HK).",
     recommendedAction: "Konseling Roster Kerja oleh HRGA Site Muara Pahu",
   },
   {
@@ -1200,15 +1205,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Pit Controller",
     organization: "Production",
     branchName: "Muara Pahu",
-    totalPresentDays: 23,
     workDaysTotal: 28,
-    lateInCount: 4,
-    avgLateDuration: "19 mnt",
-    avgWorkingHours: 7.35,
-    alphaDays: 2,
+    totalPresentDays: 23,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 2,
+    lateInCount: 4,
+    totalMonthlyHours: 169.1,
+    avgWorkingHours: 7.35,
     atrScore: 82.1,
-    violationReason: "Waktu masuk pit tidak tepat jadwal briefing harian (hadir 23/28)",
+    violationReason: "Rekap bulanan: 2 Hari Alpha (A), 3 Hari Sakit (S), 4x Terlambat hadir briefing pit (hadir 23/28 HK).",
     recommendedAction: "Briefing Ulang SOP Kedisiplinan Pit Dispatch",
   },
   {
@@ -1218,15 +1224,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Side Dump Spotter",
     organization: "Production",
     branchName: "Senyiur",
-    totalPresentDays: 23,
     workDaysTotal: 28,
-    lateInCount: 5,
-    avgLateDuration: "22 mnt",
-    avgWorkingHours: 7.40,
-    alphaDays: 2,
+    totalPresentDays: 23,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 2,
+    lateInCount: 5,
+    totalMonthlyHours: 170.2,
+    avgWorkingHours: 7.40,
     atrScore: 82.1,
-    violationReason: "5x Late in pada shift malam, jam tapping keluar lebih awal (hadir 23/28)",
+    violationReason: "Rekap bulanan: 2 Hari Alpha (A), 3 Hari Sakit (S), 5x Terlambat shift malam (hadir 23/28 HK).",
     recommendedAction: "Pengawasan Absensi Biometrik oleh Mandor Lapangan",
   },
   {
@@ -1236,15 +1243,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Mechanic Fresh Bmc",
     organization: "Plant",
     branchName: "Muara Pahu",
-    totalPresentDays: 24,
     workDaysTotal: 28,
-    lateInCount: 4,
-    avgLateDuration: "18 mnt",
-    avgWorkingHours: 7.45,
-    alphaDays: 1,
+    totalPresentDays: 24,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 1,
+    lateInCount: 4,
+    totalMonthlyHours: 178.8,
+    avgWorkingHours: 7.45,
     atrScore: 85.7,
-    violationReason: "Jam kerja tidak memenuhi standar 8 jam (kurang 33 menit/hari)",
+    violationReason: "Rekap bulanan: 1 Hari Alpha (A), 3 Hari Sakit (S), 4x Terlambat (TL), jam kerja rata-rata 7.45 jam/hari.",
     recommendedAction: "Review Log Kehadiran Workshop & Pendampingan Lead Mechanic",
   },
   {
@@ -1254,15 +1262,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Fuel Attendant",
     organization: "Logistic",
     branchName: "Muara Pahu",
-    totalPresentDays: 24,
     workDaysTotal: 28,
-    lateInCount: 3,
-    avgLateDuration: "24 mnt",
-    avgWorkingHours: 7.50,
-    alphaDays: 1,
+    totalPresentDays: 24,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 1,
+    lateInCount: 3,
+    totalMonthlyHours: 180.0,
+    avgWorkingHours: 7.50,
     atrScore: 85.7,
-    violationReason: "1x Alpha & 3x terlambat di stasiun pengisian fuel (hadir 24/28)",
+    violationReason: "Rekap bulanan: 1 Hari Alpha (A), 3 Hari Sakit (S), 3x Terlambat di fuel station (hadir 24/28 HK).",
     recommendedAction: "Teguran Lisan Spv Logistic & Penataan Jadwal Piket",
   },
   {
@@ -1272,15 +1281,16 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Driver Double Trailer",
     organization: "Production",
     branchName: "Senyiur",
-    totalPresentDays: 24,
     workDaysTotal: 28,
-    lateInCount: 4,
-    avgLateDuration: "17 mnt",
-    avgWorkingHours: 7.55,
-    alphaDays: 1,
+    totalPresentDays: 24,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 1,
+    lateInCount: 4,
+    totalMonthlyHours: 181.2,
+    avgWorkingHours: 7.55,
     atrScore: 85.7,
-    violationReason: "Keterlambatan tapping kartu sebelum antrean hauling (hadir 24/28)",
+    violationReason: "Rekap bulanan: 1 Hari Alpha (A), 3 Hari Sakit (S), 4x Terlambat antrean hauling (hadir 24/28 HK).",
     recommendedAction: "Monitoring Disiplin Antrean Hauling Senyiur",
   },
   {
@@ -1290,24 +1300,23 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
     jobPosition: "Welder Workshop",
     organization: "Plant",
     branchName: "Muara Pahu",
-    totalPresentDays: 24,
     workDaysTotal: 28,
-    lateInCount: 3,
-    avgLateDuration: "20 mnt",
-    avgWorkingHours: 7.60,
-    alphaDays: 1,
+    totalPresentDays: 24,
+    leaveDays: 0,
     sickDays: 3,
+    alphaDays: 1,
+    lateInCount: 3,
+    totalMonthlyHours: 182.4,
+    avgWorkingHours: 7.60,
     atrScore: 85.7,
-    violationReason: "Pulang sebelum jam shift selesai tanpa izin atasan (hadir 24/28)",
+    violationReason: "Rekap bulanan: 1 Hari Alpha (A), 3 Hari Sakit (S), 3x Terlambat dan checkout sebelum shift (hadir 24/28 HK).",
     recommendedAction: "Pemeriksaan Form Izin Keluar Site oleh HRGA",
   },
 ];
 
 // =========================================================================
-// 5. LEADERBOARD KARYAWAN HEAD OFFICE (JAKARTA)
-// Aturan: Jam Kerja 8 Jam, Batas Maksimal Masuk 08:15 WIB.
-// Jam Pulang Fleksibel = Jam Masuk + 9 Jam (8 jam kerja + 1 jam istirahat).
-// Tanggal Merah & Weekend Libur Resmi.
+// 5. LEADERBOARD REKAPITULASI BULANAN HEAD OFFICE (JAKARTA)
+// 22 Personil Aktif Non-BoD, 22 Hari Kerja Terjadwal Bulanan (Tanggal Merah Libur)
 // =========================================================================
 const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
   {
@@ -1317,16 +1326,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Pmo & IT Programmer",
     organization: "Operations",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "07:15 (On-Time)",
-    avgClockOutTime: "16:30 (Memenuhi 8.25h)",
-    avgWorkingHours: 8.25,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 181.5,
+    avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Masuk 07:15 pulang 16:30 (8 jam kerja + istirahat terpenuhi penuh), zero Late In (TL)",
+    highlight: "Rekap bulanan sempurna 22/22 HK hadir penuh, akumulasi 181.5 jam kerja bulanan, zero Late In (TL), jam kerja fleksibel terpenuhi penuh",
   },
   {
     rank: 2,
@@ -1335,16 +1344,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Finance",
     organization: "FA & Procurement",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "07:30 (On-Time)",
-    avgClockOutTime: "16:45 (Memenuhi 8.25h)",
-    avgWorkingHours: 8.25,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 181.5,
+    avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Presensi keuangan konsisten, masuk 07:30 pulang 16:45, rekapitulasi cash flow tepat waktu",
+    highlight: "Presensi keuangan konsisten, hadir penuh 22/22 HK (181.5 jam kerja sebulan), rekapitulasi cash flow tepat waktu",
   },
   {
     rank: 3,
@@ -1353,16 +1362,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Pmo & IT Programmer",
     organization: "Operations",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "07:45 (On-Time)",
-    avgClockOutTime: "17:00 (Memenuhi 8.25h)",
-    avgWorkingHours: 8.25,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 181.5,
+    avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Masuk 07:45 pulang 17:00, jam kerja efektif harian selalu di atas 8 jam standar",
+    highlight: "Hadir penuh 22/22 HK (181.5 jam kerja sebulan), zero Late In (TL), jam kerja efektif harian selalu di atas 8 jam standar",
   },
   {
     rank: 4,
@@ -1371,16 +1380,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Manager Finance",
     organization: "FA & Procurement",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "07:50 (On-Time)",
-    avgClockOutTime: "17:10 (Memenuhi 8.33h)",
-    avgWorkingHours: 8.33,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 183.3,
+    avgWorkingHours: 8.33,
     atrScore: 100.0,
-    highlight: "Disiplin manajerial prima, kepatuhan batas masuk 08:15 sempurna, 0 hari mangkir",
+    highlight: "Disiplin manajerial prima, kepatuhan batas masuk 08:15 sempurna (22/22 HK hadir, 183.3 jam kerja sebulan), 0 hari mangkir",
   },
   {
     rank: 5,
@@ -1389,16 +1398,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Manager Infrastructure",
     organization: "Infrastructure",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "07:55 (On-Time)",
-    avgClockOutTime: "17:15 (Memenuhi 8.33h)",
-    avgWorkingHours: 8.33,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 183.3,
+    avgWorkingHours: 8.33,
     atrScore: 100.0,
-    highlight: "Masuk sebelum 08:00, koordinasi proyek jalan hauling site konsisten tepat waktu",
+    highlight: "Presensi prima 22/22 HK (183.3 jam kerja sebulan), koordinasi proyek jalan hauling site konsisten tepat waktu",
   },
   {
     rank: 6,
@@ -1407,16 +1416,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Manager Operation",
     organization: "Operations",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "08:00 (Normal)",
-    avgClockOutTime: "17:20 (Memenuhi 8.33h)",
-    avgWorkingHours: 8.33,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 183.3,
+    avgWorkingHours: 8.33,
     atrScore: 100.0,
-    highlight: "Masuk jam 08:00 normal dan checkout di atas jam 17:00, kepatuhan SOP 100%",
+    highlight: "Presensi operasional prima, 22/22 HK hadir (183.3 jam kerja sebulan), kepatuhan SOP jam kerja 100%",
   },
   {
     rank: 7,
@@ -1425,16 +1434,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Manager Plant",
     organization: "Plant",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "08:00 (Normal)",
-    avgClockOutTime: "17:15 (Memenuhi 8.25h)",
-    avgWorkingHours: 8.25,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 181.5,
+    avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Monitoring maintenance unit HO konsisten, zero deviasi batas masuk 08:15",
+    highlight: "Monitoring maintenance unit HO konsisten, hadir penuh 22/22 HK (181.5 jam kerja sebulan), zero deviasi batas masuk 08:15",
   },
   {
     rank: 8,
@@ -1443,16 +1452,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Accounting",
     organization: "FA & Procurement",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "08:05 (On-Time)",
-    avgClockOutTime: "17:15 (Memenuhi 8.17h)",
-    avgWorkingHours: 8.17,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 179.7,
+    avgWorkingHours: 8.17,
     atrScore: 100.0,
-    highlight: "Masuk sebelum batas toleransi 08:15, jam kerja harian terpenuhi 8.17 jam",
+    highlight: "Presensi accounting konsisten 22/22 HK hadir (179.7 jam kerja sebulan), jam kerja harian terpenuhi 8.17 jam, zero TL",
   },
   {
     rank: 9,
@@ -1461,16 +1470,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv System & Development",
     organization: "Hrga",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "08:10 (On-Time)",
-    avgClockOutTime: "17:25 (Memenuhi 8.25h)",
-    avgWorkingHours: 8.25,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 181.5,
+    avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Masuk 08:10 (dalam batas toleransi) dan checkout 17:25 (8.25 jam kerja), zero TL",
+    highlight: "Disiplin presensi HRGA, hadir penuh 22/22 HK (181.5 jam kerja sebulan), zero deviasi batas masuk 08:15 WIB, zero TL",
   },
   {
     rank: 10,
@@ -1479,16 +1488,16 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     jobPosition: "Spv Procurement",
     organization: "FA & Procurement",
     branchName: "HO Jakarta",
-    totalPresentDays: 22,
     workDaysTotal: 22,
-    lateInCount: 0,
-    avgClockInTime: "08:12 (On-Time)",
-    avgClockOutTime: "17:30 (Memenuhi 8.30h)",
-    avgWorkingHours: 8.30,
-    alphaDays: 0,
+    totalPresentDays: 22,
+    leaveDays: 0,
     sickDays: 0,
+    alphaDays: 0,
+    lateInCount: 0,
+    totalMonthlyHours: 182.6,
+    avgWorkingHours: 8.30,
     atrScore: 100.0,
-    highlight: "Presensi pengadaan barang tepat waktu, jam pulang selalu disesuaikan jam masuk",
+    highlight: "Presensi pengadaan barang tepat waktu, hadir 22/22 HK (182.6 jam kerja sebulan), jam kerja fleksibel terpenuhi penuh",
   },
 ];
 
@@ -1500,15 +1509,16 @@ const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
     jobPosition: "Driver Sarana",
     organization: "Hrga",
     branchName: "HO Jakarta",
-    totalPresentDays: 21,
     workDaysTotal: 22,
-    lateInCount: 3,
-    avgLateDuration: "14 mnt (>08:15)",
-    avgWorkingHours: 7.75,
-    alphaDays: 0,
+    totalPresentDays: 21,
+    leaveDays: 0,
     sickDays: 1,
+    alphaDays: 0,
+    lateInCount: 3,
+    totalMonthlyHours: 162.8,
+    avgWorkingHours: 7.75,
     atrScore: 95.5,
-    violationReason: "3x masuk di atas 08:15 WIB (kode TL: rata-rata 08:29) karena traffic penjemputan bandara",
+    violationReason: "Rekap bulanan: 3x masuk > 08:15 WIB (kode TL) dan 1 hari Sakit (S). Total hadir 21/22 HK.",
     recommendedAction: "Penyesuaian jadwal tugas luar (DL) atau revisi jam standby pool sarana",
   },
   {
@@ -1518,15 +1528,16 @@ const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
     jobPosition: "Office Boy",
     organization: "Hrga",
     branchName: "HO Jakarta",
-    totalPresentDays: 21,
     workDaysTotal: 22,
-    lateInCount: 2,
-    avgLateDuration: "11 mnt (>08:15)",
-    avgWorkingHours: 7.80,
-    alphaDays: 0,
+    totalPresentDays: 21,
+    leaveDays: 0,
     sickDays: 1,
+    alphaDays: 0,
+    lateInCount: 2,
+    totalMonthlyHours: 163.8,
+    avgWorkingHours: 7.80,
     atrScore: 95.5,
-    violationReason: "2x terlambat tapping masuk (kode TL) dan 1x pulang lebih awal (kode PA) untuk belanja operasional",
+    violationReason: "Rekap bulanan: 2x terlambat tapping masuk (kode TL), 1x pulang awal (PA), dan 1 hari Sakit (S). Total hadir 21/22 HK.",
     recommendedAction: "Penggunaan form Izin Keluar Kantor / Dinas Luar (DL) oleh Spv GA",
   },
   {
@@ -1536,16 +1547,17 @@ const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
     jobPosition: "Spv General Affair",
     organization: "Hrga",
     branchName: "HO Jakarta",
-    totalPresentDays: 21,
     workDaysTotal: 22,
-    lateInCount: 2,
-    avgLateDuration: "8 mnt (>08:15)",
-    avgWorkingHours: 7.90,
-    alphaDays: 0,
+    totalPresentDays: 21,
+    leaveDays: 0,
     sickDays: 1,
+    alphaDays: 0,
+    lateInCount: 2,
+    totalMonthlyHours: 165.9,
+    avgWorkingHours: 7.90,
     atrScore: 95.5,
-    violationReason: "2x tapping masuk pukul 08:23 WIB akibat inspeksi logistik gudang luar",
-    recommendedAction: "Pencatatan status Dinas Luar (DL) untuk tugas lapangan sebelum jam kantor",
+    violationReason: "Rekap bulanan: 2x tapping masuk pukul 08:23 WIB (inspeksi logistik gudang luar) & 1 hari Sakit (S). Total hadir 21/22 HK.",
+    recommendedAction: "Pencatatan status Dinas Luar (DL) untuk tugas lapangan sebelum jam kantor HO",
   },
   {
     rank: 4,
@@ -1554,15 +1566,16 @@ const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
     jobPosition: "Magang - Finance",
     organization: "FA & Procurement",
     branchName: "HO Jakarta",
-    totalPresentDays: 21,
     workDaysTotal: 22,
-    lateInCount: 2,
-    avgLateDuration: "9 mnt (>08:15)",
-    avgWorkingHours: 7.85,
-    alphaDays: 0,
+    totalPresentDays: 21,
+    leaveDays: 0,
     sickDays: 1,
+    alphaDays: 0,
+    lateInCount: 2,
+    totalMonthlyHours: 164.9,
+    avgWorkingHours: 7.85,
     atrScore: 95.5,
-    violationReason: "Masuk pukul 08:24 WIB dan pulang 16:45 (jam kerja kurang dari 8 jam standar)",
+    violationReason: "Rekap bulanan: 2x masuk lewat 08:15 WIB dan 1 hari Sakit (S), jam kerja harian rata-rata 7.85 jam (<8 jam).",
     recommendedAction: "Sosialisasi aturan jam kerja fleksibel (Clock-out = Clock-in + 9 Jam)",
   },
 ];
@@ -2437,7 +2450,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 7. TOP 10 KARYAWAN ABSEN TERBAIK VS PERLU PEMBINAAN                       */}
+      {/* 7. REKAPITULASI PRESENSI BULANAN: TOP TERBAIK VS PERLU PEMBINAAN           */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
         {/* Header & Leaderboard Tab Switcher */}
@@ -2445,12 +2458,12 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
           <div>
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Award size={18} className={selectedScope === "headoffice" ? "text-blue-600" : "text-[#e95623]"} />
-              Leaderboard Presensi {selectedScope === "headoffice" ? "Head Office" : "Jobsite"}: Top Terbaik vs Perlu Pembinaan
+              Rekapitulasi Presensi Bulanan {selectedScope === "headoffice" ? "Head Office" : "Jobsite"} ({activeRecord.label}): Top Terbaik vs Perlu Pembinaan
             </h3>
             <p className="text-xs text-slate-500">
               {selectedScope === "headoffice"
-                ? "Evaluasi ketepatan waktu masuk (≤08:15 WIB), pemenuhan 8 jam kerja fleksibel, dan ketiadaan deviasi absensi di HO Jakarta"
-                : "Evaluasi akurasi waktu masuk, pemenuhan 8 jam kerja, tingkat Alpha, dan ATR individu karyawan Jobsite"}
+                ? "Laporan rekapitulasi bulanan per karyawan: Jadwal Hari Kerja (HK), Hadir (H), Cuti (CT), Sakit (S), Alpha (A), Terlambat (TL), Total Jam Bulanan, dan Rasio ATR"
+                : "Laporan rekapitulasi bulanan per personil Jobsite: Roster 13/1 (28 HK), Hadir (H), Cuti (CT), Sakit (S), Alpha (A), Terlambat (TL), Total Jam Bulanan, dan Rasio ATR"}
             </p>
           </div>
 
@@ -2497,18 +2510,18 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
           </div>
         </div>
 
-        {/* TABEL 1: 10 KARYAWAN ABSEN PALING BAGUS */}
+        {/* TABEL 1: 10 KARYAWAN ABSEN PALING BAGUS (REKAPITULASI BULANAN) */}
         {activeLeaderboardTab === "best" && (
           <div className="space-y-3">
             <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between flex-wrap gap-2">
               <span className="font-semibold flex items-center gap-1.5">
                 <Sparkles size={14} className="text-emerald-600" />
                 {selectedScope === "headoffice"
-                  ? "Kriteria HO: Masuk tepat waktu (≤ 08:15 WIB), jam kerja harian terpenuhi ≥ 8.1 Jam, 100% kehadiran hari kerja kantor (22/22 hari), zero Late In (TL)."
-                  : "Kriteria Jobsite: Masuk tepat waktu shift/briefing (0 Late In), jam kerja harian ≥ 8.1 Jam, hadir penuh 28/28 hari kerja sesuai jadwal roster 13/1 (2–3 hari Day-Off dinikmati)."}
+                  ? "Kriteria Rekap Bulanan HO: 100% Hadir hari kerja kantor (22/22 HK), akumulasi total jam kerja bulanan ≥ 180 Jam, nihil Alpha (A), dan zero Terlambat (0x TL)."
+                  : "Kriteria Rekap Bulanan Jobsite: 100% Hadir hari kerja roster 13/1 (28/28 HK), akumulasi total jam kerja bulanan ≥ 226 Jam, nihil Alpha (A), dan zero Terlambat (0x TL)."}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-200 text-emerald-900">
-                Zero Late In (0x TL)
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-200 text-emerald-950 border border-emerald-300">
+                ATR 100.0% (Zero Deviasi Bulanan)
               </span>
             </div>
 
@@ -2521,12 +2534,15 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                     <th className="py-3 px-3">Nama Lengkap</th>
                     <th className="py-3 px-3">Posisi &amp; Organisasi</th>
                     <th className="py-3 px-3">Site / Lokasi</th>
-                    <th className="py-3 px-3 text-center">Hadir</th>
-                    <th className="py-3 px-3 text-center text-emerald-700">Waktu Masuk</th>
-                    <th className="py-3 px-3 text-center text-blue-700">Waktu Pulang</th>
-                    <th className="py-3 px-3 text-center text-purple-700">Jam Kerja</th>
-                    <th className="py-3 px-3 text-center font-black">ATR</th>
-                    <th className="py-3 px-3">Catatan Disiplin</th>
+                    <th className="py-3 px-3 text-center">Jadwal (HK)</th>
+                    <th className="py-3 px-3 text-center text-emerald-700">Hadir (H)</th>
+                    <th className="py-3 px-3 text-center text-blue-700">Cuti (CT)</th>
+                    <th className="py-3 px-3 text-center text-amber-700">Sakit (S)</th>
+                    <th className="py-3 px-3 text-center text-rose-700">Alpha (A)</th>
+                    <th className="py-3 px-3 text-center text-orange-700">Telat (TL)</th>
+                    <th className="py-3 px-3 text-center text-purple-700">Total Jam Bulanan</th>
+                    <th className="py-3 px-3 text-center font-black">ATR (%)</th>
+                    <th className="py-3 px-3">Evaluasi Presensi Bulanan</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -2554,24 +2570,28 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                         <span className="text-[10px] text-slate-400">{emp.organization}</span>
                       </td>
                       <td className="py-3 px-3 font-bold text-slate-700">{emp.branchName}</td>
+                      <td className="py-3 px-3 text-center font-bold text-slate-600 font-mono">
+                        {emp.workDaysTotal} HK
+                      </td>
                       <td className="py-3 px-3 text-center font-bold text-emerald-700 font-mono">
-                        {emp.totalPresentDays}/{emp.workDaysTotal}
+                        {emp.totalPresentDays} Hari
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-emerald-700 font-mono text-[11px]">
-                        {emp.avgClockInTime}
-                      </td>
-                      <td className="py-3 px-3 text-center font-bold text-blue-700 font-mono text-[11px]">
-                        {emp.avgClockOutTime}
-                      </td>
-                      <td className="py-3 px-3 text-center font-bold text-purple-700 font-mono">
-                        {emp.avgWorkingHours.toFixed(2)}h
+                      <td className="py-3 px-3 text-center font-mono text-blue-700">{emp.leaveDays}</td>
+                      <td className="py-3 px-3 text-center font-mono text-amber-700">{emp.sickDays}</td>
+                      <td className="py-3 px-3 text-center font-mono text-rose-700 font-bold">{emp.alphaDays}</td>
+                      <td className="py-3 px-3 text-center font-mono text-orange-700 font-bold">{emp.lateInCount}x</td>
+                      <td className="py-3 px-3 text-center font-mono text-purple-700 font-bold">
+                        <span>{emp.totalMonthlyHours.toFixed(1)} Jam</span>
+                        <span className="block text-[10px] text-slate-400 font-normal">
+                          ({emp.avgWorkingHours.toFixed(2)}h/hari)
+                        </span>
                       </td>
                       <td className="py-3 px-3 text-center">
                         <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
                           {emp.atrScore.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-slate-500 text-[11px]">
+                      <td className="py-3 px-3 text-slate-600 text-[11px] leading-relaxed max-w-sm">
                         {emp.highlight}
                       </td>
                     </tr>
@@ -2582,18 +2602,18 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
           </div>
         )}
 
-        {/* TABEL 2: KARYAWAN ABSEN PERLU PEMBINAAN */}
+        {/* TABEL 2: KARYAWAN ABSEN PERLU PEMBINAAN (REKAPITULASI BULANAN) */}
         {activeLeaderboardTab === "lowest" && (
           <div className="space-y-3">
             <div className="p-3 bg-rose-50/80 rounded-xl border border-rose-200 text-xs text-rose-900 flex items-center justify-between flex-wrap gap-2">
               <span className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle size={14} className="text-rose-600" />
                 {selectedScope === "headoffice"
-                  ? "Kriteria HO: Masuk kerja melewati batas 08:15 WIB (kode TL), pulang awal sebelum 8 jam (kode PA), atau jam kerja harian kurang."
-                  : "Kriteria Jobsite: Sering terlambat shift (Late In > 3x), jam kerja di bawah standar, kehadiran kurang dari 28 hari kerja terjadwal roster 13/1, terdapat Alpha, atau ATR < 87%."}
+                  ? "Kriteria Rekap Bulanan HO: Karyawan dengan catatan akumulasi keterlambatan masuk kantor (kode TL > 08:15 WIB), izin sakit (S), atau jam kerja bulanan kurang dari standar."
+                  : "Kriteria Rekap Bulanan Jobsite: Karyawan dengan akumulasi keterlambatan shift (TL), hari mangkir / Alpha (A), sakit (S), kehadiran < 28 HK, atau nilai ATR bulanan terendah."}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-200 text-rose-900">
-                Needs Coaching
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-200 text-rose-950 border border-rose-300">
+                Evaluasi &amp; Pembinaan Bulanan HR
               </span>
             </div>
 
@@ -2606,12 +2626,15 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                     <th className="py-3 px-3">Nama Lengkap</th>
                     <th className="py-3 px-3">Posisi &amp; Organisasi</th>
                     <th className="py-3 px-3">Site / Lokasi</th>
-                    <th className="py-3 px-3 text-center">Hadir</th>
-                    <th className="py-3 px-3 text-center text-rose-700">Alpha</th>
-                    <th className="py-3 px-3 text-center text-amber-700">Late In (TL)</th>
-                    <th className="py-3 px-3 text-center text-slate-700">Jam / Hari</th>
-                    <th className="py-3 px-3 text-center font-black">ATR</th>
-                    <th className="py-3 px-3">Indikasi Pelanggaran &amp; Rekomendasi HR</th>
+                    <th className="py-3 px-3 text-center">Jadwal (HK)</th>
+                    <th className="py-3 px-3 text-center text-slate-800">Hadir (H)</th>
+                    <th className="py-3 px-3 text-center text-blue-700">Cuti (CT)</th>
+                    <th className="py-3 px-3 text-center text-amber-700">Sakit (S)</th>
+                    <th className="py-3 px-3 text-center text-rose-700">Alpha (A)</th>
+                    <th className="py-3 px-3 text-center text-orange-700">Telat (TL)</th>
+                    <th className="py-3 px-3 text-center text-purple-700">Total Jam Bulanan</th>
+                    <th className="py-3 px-3 text-center font-black">ATR (%)</th>
+                    <th className="py-3 px-3">Rekapitulasi Pelanggaran &amp; Rekomendasi HR</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -2635,29 +2658,39 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                         <span className="text-[10px] text-slate-400">{emp.organization}</span>
                       </td>
                       <td className="py-3 px-3 font-bold text-slate-700">{emp.branchName}</td>
-                      <td className="py-3 px-3 text-center font-bold text-slate-700 font-mono">
-                        {emp.totalPresentDays}/{emp.workDaysTotal}
+                      <td className="py-3 px-3 text-center font-bold text-slate-600 font-mono">
+                        {emp.workDaysTotal} HK
+                      </td>
+                      <td className="py-3 px-3 text-center font-bold text-slate-900 font-mono">
+                        {emp.totalPresentDays} Hari
+                      </td>
+                      <td className="py-3 px-3 text-center font-mono text-blue-700">{emp.leaveDays}</td>
+                      <td className="py-3 px-3 text-center font-mono text-amber-700 font-bold">
+                        {emp.sickDays > 0 ? `${emp.sickDays} Hari` : "0"}
                       </td>
                       <td className="py-3 px-3 text-center font-bold text-rose-700 font-mono">
-                        {emp.alphaDays} Hari
+                        {emp.alphaDays > 0 ? `${emp.alphaDays} Hari` : "0"}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-amber-700 font-mono">
-                        {emp.lateInCount}x ({emp.avgLateDuration})
+                      <td className="py-3 px-3 text-center font-bold text-orange-700 font-mono">
+                        {emp.lateInCount > 0 ? `${emp.lateInCount}x` : "0"}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-rose-600 font-mono">
-                        {emp.avgWorkingHours.toFixed(2)} Jam
+                      <td className="py-3 px-3 text-center font-mono text-purple-700 font-bold">
+                        <span>{emp.totalMonthlyHours.toFixed(1)} Jam</span>
+                        <span className="block text-[10px] text-slate-400 font-normal">
+                          ({emp.avgWorkingHours.toFixed(2)}h/hari)
+                        </span>
                       </td>
                       <td className="py-3 px-3 text-center">
                         <span className="px-2.5 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-900 border border-rose-300">
                           {emp.atrScore.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="py-3 px-3">
-                        <span className="text-slate-800 font-semibold block text-[11px]">
+                      <td className="py-3 px-3 space-y-1 max-w-sm">
+                        <span className="text-slate-800 font-semibold block text-[11px] leading-snug">
                           {emp.violationReason}
                         </span>
-                        <span className="text-rose-700 font-bold text-[10px]">
-                          Action: {emp.recommendedAction}
+                        <span className="inline-block text-rose-700 font-bold text-[10px] bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                          Tindakan HR: {emp.recommendedAction}
                         </span>
                       </td>
                     </tr>
