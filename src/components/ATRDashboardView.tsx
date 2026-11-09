@@ -108,7 +108,7 @@ export const ATTENDANCE_CODES: AttendanceCodeDefinition[] = [
     code: "H",
     label: "Hadir Tepat Waktu",
     category: "hadir",
-    description: "Karyawan hadir bekerja tepat waktu (HO: Masuk ≤ 08:15; Jobsite: Hadir shift / briefing) dan memenuhi durasi kerja 8 jam.",
+    description: "Karyawan hadir bekerja tepat waktu. Head Office: Jam masuk 05:00–08:15 WIB dan jam pulang 16:00–22:00 WIB (Jam kerja efektif dihitung riil: [Jam Pulang - Jam Masuk] - 1 jam istirahat, standar ≥ 8.00 jam). Jobsite: Hadir shift / briefing operasional.",
     scope: "all",
     affectsATR: false,
     isPaid: true,
@@ -168,7 +168,7 @@ export const ATTENDANCE_CODES: AttendanceCodeDefinition[] = [
     code: "PA",
     label: "Pulang Awal (Early Out)",
     category: "pelanggaran",
-    description: "Pulang sebelum menyelesaikan kewajiban 8 jam kerja efektif (contoh HO: Masuk 08:00 pulang 16:30).",
+    description: "Pulang sebelum batas jam pulang kantor (HO: Pulang < 16:00 WIB atau belum memenuhi 8 jam kerja efektif; Jobsite: Pulang sebelum handover shift selesai).",
     scope: "all",
     affectsATR: true,
     isPaid: true,
@@ -917,6 +917,8 @@ export interface BestAttendanceItem {
   avgWorkingHours: number;
   atrScore: number;
   highlight: string;
+  typicalClockIn?: string;
+  typicalClockOut?: string;
 }
 
 export interface UnderperformingAttendanceItem {
@@ -937,6 +939,8 @@ export interface UnderperformingAttendanceItem {
   atrScore: number;
   violationReason: string;
   recommendedAction: string;
+  typicalClockIn?: string;
+  typicalClockOut?: string;
 }
 
 const JOBSITE_TOP_10_BEST: BestAttendanceItem[] = [
@@ -1317,7 +1321,9 @@ const JOBSITE_TOP_10_LOWEST: UnderperformingAttendanceItem[] = [
 
 // =========================================================================
 // 5. LEADERBOARD REKAPITULASI BULANAN HEAD OFFICE (JAKARTA)
-// 22 Personil Aktif Non-BoD, 22 Hari Kerja Terjadwal Bulanan (Tanggal Merah Libur)
+// 19 Personil Aktif Non-BoD, Jadwal Kerja Bulanan (Tanggal Merah Libur)
+// Logika Jam Kerja: Masuk 05:00–08:15 WIB, Pulang 16:00–22:00 WIB
+// Jam Kerja Efektif = (Jam Pulang - Jam Masuk) - 1 Jam Istirahat (Standar ≥ 8.00h)
 // =========================================================================
 const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
   {
@@ -1333,10 +1339,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "07:15",
+    typicalClockOut: "16:30",
     totalMonthlyHours: 181.5,
     avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Rekap bulanan sempurna 22/22 HK hadir penuh, akumulasi 181.5 jam kerja bulanan, zero Late In (TL), jam kerja fleksibel terpenuhi penuh",
+    highlight: "Masuk 07:15 WIB, pulang 16:30 WIB (rentang 05:00–08:15 & 16:00–22:00), jam kerja efektif riil 8.25 jam/hari (durasi - 1h istirahat), zero Late In (TL)",
   },
   {
     rank: 2,
@@ -1351,10 +1359,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "07:30",
+    typicalClockOut: "16:45",
     totalMonthlyHours: 181.5,
     avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Presensi keuangan konsisten, hadir penuh 22/22 HK (181.5 jam kerja sebulan), rekapitulasi cash flow tepat waktu",
+    highlight: "Masuk 07:30 WIB, pulang 16:45 WIB (rentang 05:00–08:15 & 16:00–22:00), jam kerja efektif 8.25 jam/hari, rekapitulasi cash flow tepat waktu, zero TL",
   },
   {
     rank: 3,
@@ -1369,10 +1379,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "07:45",
+    typicalClockOut: "17:00",
     totalMonthlyHours: 181.5,
     avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Hadir penuh 22/22 HK (181.5 jam kerja sebulan), zero Late In (TL), jam kerja efektif harian selalu di atas 8 jam standar",
+    highlight: "Masuk 07:45 WIB, pulang 17:00 WIB (rentang 05:00–08:15 & 16:00–22:00), jam kerja efektif 8.25 jam/hari, zero Late In (TL)",
   },
   {
     rank: 4,
@@ -1387,10 +1399,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "07:50",
+    typicalClockOut: "17:10",
     totalMonthlyHours: 183.3,
     avgWorkingHours: 8.33,
     atrScore: 100.0,
-    highlight: "Disiplin manajerial prima, kepatuhan batas masuk 08:15 sempurna (22/22 HK hadir, 183.3 jam kerja sebulan), 0 hari mangkir",
+    highlight: "Masuk 07:50 WIB, pulang 17:10 WIB (kepatuhan rentang 05:00–08:15 & 16:00–22:00), jam kerja efektif 8.33 jam/hari, zero TL, 0 hari mangkir",
   },
   {
     rank: 5,
@@ -1405,10 +1419,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "07:55",
+    typicalClockOut: "17:15",
     totalMonthlyHours: 183.3,
     avgWorkingHours: 8.33,
     atrScore: 100.0,
-    highlight: "Presensi prima 22/22 HK (183.3 jam kerja sebulan), koordinasi proyek jalan hauling site konsisten tepat waktu",
+    highlight: "Masuk 07:55 WIB, pulang 17:15 WIB (rentang 05:00–08:15 & 16:00–22:00), jam kerja efektif 8.33 jam/hari, koordinasi jalan hauling konsisten prima",
   },
   {
     rank: 6,
@@ -1423,10 +1439,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "08:00",
+    typicalClockOut: "17:20",
     totalMonthlyHours: 183.3,
     avgWorkingHours: 8.33,
     atrScore: 100.0,
-    highlight: "Presensi operasional prima, 22/22 HK hadir (183.3 jam kerja sebulan), kepatuhan SOP jam kerja 100%",
+    highlight: "Masuk 08:00 WIB, pulang 17:20 WIB (rentang 05:00–08:15 & 16:00–22:00), jam kerja efektif 8.33 jam/hari, kepatuhan SOP 100%, zero TL",
   },
   {
     rank: 7,
@@ -1441,10 +1459,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "08:00",
+    typicalClockOut: "17:15",
     totalMonthlyHours: 181.5,
     avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Monitoring maintenance unit HO konsisten, hadir penuh 22/22 HK (181.5 jam kerja sebulan), zero deviasi batas masuk 08:15",
+    highlight: "Masuk 08:00 WIB, pulang 17:15 WIB (rentang 05:00–08:15 & 16:00–22:00), jam kerja efektif 8.25 jam/hari, zero deviasi batas masuk 08:15",
   },
   {
     rank: 8,
@@ -1459,10 +1479,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "08:05",
+    typicalClockOut: "17:15",
     totalMonthlyHours: 179.7,
     avgWorkingHours: 8.17,
     atrScore: 100.0,
-    highlight: "Presensi accounting konsisten 22/22 HK hadir (179.7 jam kerja sebulan), jam kerja harian terpenuhi 8.17 jam, zero TL",
+    highlight: "Masuk 08:05 WIB, pulang 17:15 WIB (rentang 05:00–08:15 & 16:00–22:00), jam kerja harian 8.17 jam/hari, zero Late In (TL)",
   },
   {
     rank: 9,
@@ -1477,10 +1499,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "08:10",
+    typicalClockOut: "17:25",
     totalMonthlyHours: 181.5,
     avgWorkingHours: 8.25,
     atrScore: 100.0,
-    highlight: "Disiplin presensi HRGA, hadir penuh 22/22 HK (181.5 jam kerja sebulan), zero deviasi batas masuk 08:15 WIB, zero TL",
+    highlight: "Masuk 08:10 WIB (dalam toleransi 08:15), pulang 17:25 WIB, jam kerja efektif 8.25 jam/hari, zero deviasi masuk, zero TL",
   },
   {
     rank: 10,
@@ -1495,10 +1519,12 @@ const HEADOFFICE_TOP_10_BEST: BestAttendanceItem[] = [
     sickDays: 0,
     alphaDays: 0,
     lateInCount: 0,
+    typicalClockIn: "08:12",
+    typicalClockOut: "17:30",
     totalMonthlyHours: 182.6,
     avgWorkingHours: 8.30,
     atrScore: 100.0,
-    highlight: "Presensi pengadaan barang tepat waktu, hadir 22/22 HK (182.6 jam kerja sebulan), jam kerja fleksibel terpenuhi penuh",
+    highlight: "Masuk 08:12 WIB (dalam toleransi 08:15), pulang 17:30 WIB, jam kerja efektif 8.30 jam/hari, presensi pengadaan barang disiplin penuh",
   },
 ];
 
@@ -1516,11 +1542,13 @@ const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
     sickDays: 1,
     alphaDays: 0,
     lateInCount: 2,
-    totalMonthlyHours: 165.9,
-    avgWorkingHours: 7.90,
+    typicalClockIn: "08:23",
+    typicalClockOut: "17:15",
+    totalMonthlyHours: 165.3,
+    avgWorkingHours: 7.87,
     atrScore: 95.5,
-    violationReason: "Rekap bulanan: 2x tapping masuk pukul 08:23 WIB (inspeksi logistik gudang luar) & 1 hari Sakit (S). Total hadir 21/22 HK.",
-    recommendedAction: "Pencatatan status Dinas Luar (DL) untuk tugas lapangan sebelum jam kantor HO",
+    violationReason: "Rekap bulanan: Masuk tapping 08:23 WIB (> batas toleransi 08:15 WIB, tercatat TL) & 1 hari Sakit (S). Jam kerja rata-rata 7.87 jam (< 8.00 jam).",
+    recommendedAction: "Kepatuhan rentang jam masuk HO (05:00–08:15 WIB) atau ajukan Dinas Luar (DL) jika inspeksi logistik gudang luar",
   },
   {
     rank: 2,
@@ -1535,11 +1563,13 @@ const HEADOFFICE_COACHING_LIST: UnderperformingAttendanceItem[] = [
     sickDays: 1,
     alphaDays: 0,
     lateInCount: 2,
-    totalMonthlyHours: 164.9,
-    avgWorkingHours: 7.85,
+    typicalClockIn: "08:25",
+    typicalClockOut: "17:15",
+    totalMonthlyHours: 164.4,
+    avgWorkingHours: 7.83,
     atrScore: 95.5,
-    violationReason: "Rekap bulanan: 2x masuk lewat 08:15 WIB dan 1 hari Sakit (S), jam kerja harian rata-rata 7.85 jam (<8 jam).",
-    recommendedAction: "Sosialisasi aturan jam kerja fleksibel (Clock-out = Clock-in + 9 Jam)",
+    violationReason: "Rekap bulanan: Masuk lewat batas 08:15 WIB (08:25 WIB, tercatat TL) & 1 hari Sakit (S). Jam kerja rata-rata 7.83 jam (< 8.00 jam).",
+    recommendedAction: "Sosialisasi jam kerja HO: Masuk 05:00–08:15 WIB, Pulang 16:00–22:00 WIB, Jam Kerja = (Pulang - Masuk) - 1 Jam Istirahat ≥ 8.00 Jam",
   },
 ];
 
@@ -1623,7 +1653,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
         const totalMonthlyHours = Number((currentWorkDays * emp.avgWorkingHours).toFixed(1));
         const monthHighlight =
           selectedScope === "headoffice"
-            ? `Rekap bulan ${activeRecord.label}: Hadir penuh ${currentWorkDays}/${currentWorkDays} HK (${totalMonthlyHours} jam kerja), zero Late In (TL), jam kerja fleksibel terpenuhi penuh`
+            ? `Rekap ${activeRecord.label}: Hadir penuh ${currentWorkDays}/${currentWorkDays} HK (${totalMonthlyHours} jam kerja riil). Masuk ${emp.typicalClockIn || "07:30"} WIB, pulang ${emp.typicalClockOut || "16:45"} WIB (${emp.avgWorkingHours.toFixed(2)}h/hari, durasi - 1h istirahat), zero Late In (TL).`
             : `Rekap bulan ${activeRecord.label}: Hadir penuh ${currentWorkDays}/${currentWorkDays} HK roster 13/1 (${totalMonthlyHours} jam kerja), zero Late In (TL), ritase hauling prima`;
 
         return {
@@ -1678,7 +1708,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             late = 1;
             totalHours = Number((presentDays * emp.avgWorkingHours).toFixed(1));
             atrScore = 98.0;
-            violationText = `Rekap ${activeRecord.label} (Cutoff ${currentWorkDays} HK): 1x terlambat masuk (>08:15 WIB), jam kerja ${totalHours} jam`;
+            violationText = `Rekap ${activeRecord.label} (Cutoff ${currentWorkDays} HK): 1x terlambat masuk (>08:15 WIB), jam kerja ${totalHours} jam (${emp.avgWorkingHours.toFixed(2)}h/hari)`;
           } else {
             presentDays = Math.max(1, currentWorkDays - 1);
             sick = 1;
@@ -1686,7 +1716,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             late = emp.lateInCount;
             totalHours = Number((presentDays * emp.avgWorkingHours).toFixed(1));
             atrScore = Number(((presentDays / currentWorkDays) * 100).toFixed(1));
-            violationText = `Rekap ${activeRecord.label}: ${late}x masuk lewat 08:15 WIB dan 1 hari Sakit (S). Hadir ${presentDays}/${currentWorkDays} HK (${totalHours} jam kerja sebulan)`;
+            violationText = `Rekap ${activeRecord.label}: ${late}x masuk lewat batas 08:15 WIB (TL) dan 1 hari Sakit (S). Hadir ${presentDays}/${currentWorkDays} HK (${totalHours} jam kerja riil sebulan, rata-rata ${emp.avgWorkingHours.toFixed(2)}h/hari)`;
           }
         } else {
           // Jobsite
@@ -2132,15 +2162,17 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
             </div>
             <span className="text-xs font-bold text-slate-500 block mt-1">
               {selectedScope === "headoffice"
-                ? "Standar HO: 8.00 Jam Kerja Fleksibel"
+                ? "HO: Masuk 05:00–08:15 • Pulang 16:00–22:00"
                 : "Standar Lapangan: 8.00 Jam Shift"}
             </span>
           </div>
           <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-semibold flex items-center justify-between">
             <span className="text-amber-600 font-bold">
-              {activeRecord.lateIn}x Terlambat ({selectedScope === "headoffice" ? ">08:15" : "Late In"})
+              {activeRecord.lateIn}x Terlambat ({selectedScope === "headoffice" ? ">08:15 WIB" : "Late In"})
             </span>
-            <span className="text-emerald-700 font-bold">On-Time: 99.7%</span>
+            <span className="text-emerald-700 font-bold">
+              {selectedScope === "headoffice" ? "Rumus: (Pulang - Masuk) - 1h" : "On-Time: 99.7%"}
+            </span>
           </div>
         </div>
       </div>
@@ -2577,8 +2609,8 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               <span className="font-semibold flex items-center gap-1.5">
                 <Sparkles size={14} className="text-emerald-600" />
                 {selectedScope === "headoffice"
-                  ? "Kriteria Rekap Bulanan HO: 100% Hadir hari kerja kantor (22/22 HK), akumulasi total jam kerja bulanan ≥ 180 Jam, nihil Alpha (A), dan zero Terlambat (0x TL)."
-                  : "Kriteria Rekap Bulanan Jobsite: 100% Hadir hari kerja roster 13/1 (28/28 HK), akumulasi total jam kerja bulanan ≥ 226 Jam, nihil Alpha (A), dan zero Terlambat (0x TL)."}
+                  ? `Kriteria Rekap Bulanan HO: 100% Hadir (${activeRecord.workDays}/${activeRecord.workDays} HK), masuk rentang 05:00–08:15 WIB, pulang 16:00–22:00 WIB, jam kerja efektif dihitung riil (durasi - 1h istirahat ≥ 8.00 jam), nihil Alpha (A), dan zero Terlambat (0x TL).`
+                  : `Kriteria Rekap Bulanan Jobsite: 100% Hadir hari kerja roster 13/1 (${activeRecord.workDays}/${activeRecord.workDays} HK), akumulasi total jam kerja bulanan ≥ 226 Jam, nihil Alpha (A), dan zero Terlambat (0x TL).`}
               </span>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-200 text-emerald-950 border border-emerald-300">
                 ATR 100.0% (Zero Deviasi Bulanan)
@@ -2642,9 +2674,14 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                       <td className="py-3 px-3 text-center font-mono text-orange-700 font-bold">{emp.lateInCount}x</td>
                       <td className="py-3 px-3 text-center font-mono text-purple-700 font-bold">
                         <span>{emp.totalMonthlyHours.toFixed(1)} Jam</span>
-                        <span className="block text-[10px] text-slate-400 font-normal">
+                        <span className="block text-[10px] text-slate-500 font-medium">
                           ({emp.avgWorkingHours.toFixed(2)}h/hari)
                         </span>
+                        {selectedScope === "headoffice" && emp.typicalClockIn && emp.typicalClockOut && (
+                          <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Masuk {emp.typicalClockIn} • Pulang {emp.typicalClockOut}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-center">
                         <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
@@ -2669,7 +2706,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
               <span className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle size={14} className="text-rose-600" />
                 {selectedScope === "headoffice"
-                  ? "Kriteria Rekap Bulanan HO: Karyawan dengan catatan akumulasi keterlambatan masuk kantor (kode TL > 08:15 WIB), izin sakit (S), atau jam kerja bulanan kurang dari standar."
+                  ? "Kriteria Rekap Bulanan HO: Karyawan dengan catatan deviasi jam kerja (masuk lewat batas toleransi > 08:15 WIB tercatat TL, pulang < 16:00 WIB tercatat PA), izin sakit (S), atau rata-rata jam kerja riil < 8.00 jam/hari."
                   : "Kriteria Rekap Bulanan Jobsite: Karyawan dengan akumulasi keterlambatan shift (TL), hari mangkir / Alpha (A), sakit (S), kehadiran < 28 HK, atau nilai ATR bulanan terendah."}
               </span>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-200 text-rose-950 border border-rose-300">
@@ -2736,9 +2773,14 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
                       </td>
                       <td className="py-3 px-3 text-center font-mono text-purple-700 font-bold">
                         <span>{emp.totalMonthlyHours.toFixed(1)} Jam</span>
-                        <span className="block text-[10px] text-slate-400 font-normal">
+                        <span className="block text-[10px] text-slate-500 font-medium">
                           ({emp.avgWorkingHours.toFixed(2)}h/hari)
                         </span>
+                        {selectedScope === "headoffice" && emp.typicalClockIn && emp.typicalClockOut && (
+                          <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+                            Masuk {emp.typicalClockIn} • Pulang {emp.typicalClockOut}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-center">
                         <span className="px-2.5 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-900 border border-rose-300">
@@ -2903,7 +2945,7 @@ export const ATRDashboardView: React.FC<ATRDashboardViewProps> = ({
           <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
           <span>
             {selectedScope === "headoffice"
-              ? "Data presensi Head Office Jakarta: 19 personil aktif (BoD & karyawan jam kerja tidak menentu Naufal, Hendri, Iwan dieksklusi). Jam kerja 8 jam fleksibel (+1h istirahat), batas masuk 08:15 WIB, tanggal merah libur resmi."
+              ? "Data presensi Head Office Jakarta: 19 personil aktif (BoD & karyawan jam kerja tidak menentu Naufal, Hendri, Iwan dieksklusi). Rentang masuk sah 05:00–08:15 WIB, jam pulang sah 16:00–22:00 WIB, jam kerja efektif dihitung riil (durasi - 1h istirahat), tanggal merah libur resmi."
               : `Data presensi Jobsite disinkronkan dari G-Form sheet (${selectedSheet}). 7 Departemen sesuai database Master Manpower.`}
           </span>
         </div>
