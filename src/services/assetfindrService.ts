@@ -200,18 +200,26 @@ export interface DailyProductionResponse {
 }
 
 
+export const DEFAULT_ACTIVE_ASSETFINDR_TOKEN =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE4NTM4MjY1NTEsImp0aSI6ImJmN2FmZjA1NjVkMDc4ZTU5ZjFmZThmNmZkYTU5ZWVjIiwidXNlcl9pZCI6InVzcl9kNWU5OWJmYi0zZDg4LTRlM2EtYTQwNC1iOWY1YTc4ODZhYjUiLCJsY2lkIjoiY2xuXzY4YWQxZTI4LWYxYzYtNDAwOC04OWRkLTI5ZjliYWMwNjI5NiIsInBnaWQiOiJwZ3BfMDQ5MDQyZjktMmE3OS00M2ZjLThmZDAtNTQxNzlkYThkNTgyIn0.7fCy0KRk_YdkInO3UvhRm6KeSA59wgFrbn3j592BvNM";
+
 const TOKEN_STORAGE_KEY = "batara_assetfindr_token";
 
 export const assetfindrService = {
   /**
-   * Get stored Bearer token from browser localStorage
+   * Get stored Bearer token from browser localStorage (defaults to active global token)
    */
   getStoredToken(): string {
-    if (typeof window === "undefined") return "";
+    if (typeof window === "undefined") return DEFAULT_ACTIVE_ASSETFINDR_TOKEN;
     try {
-      return localStorage.getItem(TOKEN_STORAGE_KEY) || "";
+      const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (stored && stored.trim().length > 20) {
+        return stored.trim();
+      }
+      localStorage.setItem(TOKEN_STORAGE_KEY, DEFAULT_ACTIVE_ASSETFINDR_TOKEN);
+      return DEFAULT_ACTIVE_ASSETFINDR_TOKEN;
     } catch {
-      return "";
+      return DEFAULT_ACTIVE_ASSETFINDR_TOKEN;
     }
   },
 
