@@ -42,6 +42,13 @@ export interface PeriodicInspectionItem {
   shift: string;
   status: "Scheduled" | "In Progress" | "Completed" | "Pending" | string;
   inspectorName?: string | null;
+  mechanicName?: string | null;
+  currentKm?: number | null;
+  currentHm?: number | null;
+  nextDueKm?: number | null;
+  nextDueHm?: number | null;
+  liveKm?: number | null;
+  liveHm?: number | null;
   notes?: string | null;
   buntutSummary?: string | null;
   unit?: MasterUnit;
@@ -57,6 +64,7 @@ export interface DaySchedule {
   targetUnits: number;
   hasCustomTarget: boolean;
   leadInspector?: string | null;
+  leadMechanic?: string | null;
   scheduledCount: number;
   completedCount: number;
   inProgressCount: number;
@@ -75,6 +83,11 @@ export interface WeeklyScheduleData {
   primeMoverPopulation: number;
   totalPopulationAllSites?: number;
   selectedSite?: string;
+  telemetryMeta?: {
+    onlineCount: number;
+    fetchedAt: string;
+    error?: string | null;
+  };
   summary: {
     totalWeekPlan: number;
     totalWeekScheduled: number;
@@ -341,7 +354,264 @@ export const plantService = {
     }
     return res.json();
   },
+
+  // 12. Preventive Maintenance (PM) Weekly Schedule & Daily Plan
+  getPmWeeklySchedule: async (
+    date?: string,
+    site?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<WeeklyScheduleData> => {
+    const query = new URLSearchParams();
+    if (date) query.append("date", date);
+    if (site) query.append("site", site);
+    if (startDate) query.append("startDate", startDate);
+    if (endDate) query.append("endDate", endDate);
+
+    const res = await fetch(
+      `${API_BASE_URL}/plant/preventive-maintenance/weekly?${query.toString()}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      throw new Error("Failed to fetch Preventive Maintenance schedule");
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  // 13. Update PM Daily Plan Target or Lead Mechanic
+  upsertPmDailyPlan: async (payload: {
+    date: string;
+    targetUnits?: number;
+    leadMechanic?: string | null;
+    leadInspector?: string | null;
+    notes?: string;
+    jobSite?: string;
+  }): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/plant/preventive-maintenance/plan`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to update PM daily plan");
+    }
+    return res.json();
+  },
+
+  // 14. Add/Schedule a unit for PM
+  addPmItem: async (payload: {
+    date: string;
+    unitCode: string;
+    serviceType?: string;
+    shift?: string;
+    status?: string;
+    mechanicName?: string;
+    currentKm?: number | null;
+    currentHm?: number | null;
+    nextDueKm?: number | null;
+    nextDueHm?: number | null;
+    notes?: string;
+    jobSite?: string;
+  }): Promise<PeriodicInspectionItem> => {
+    const res = await fetch(`${API_BASE_URL}/plant/preventive-maintenance/item`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal menjadwalkan unit Preventive Maintenance");
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  // 15. Bulk add units for PM on a specific date
+  bulkAddPmItems: async (payload: {
+    date: string;
+    unitCodes: string[];
+    serviceType?: string;
+    shift?: string;
+    jobSite?: string;
+  }): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/plant/preventive-maintenance/bulk-add`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal menjadwalkan unit PM secara massal");
+    }
+    return res.json();
+  },
+
+  // 16. Update PM item
+  updatePmItem: async (
+    id: string,
+    payload: {
+      serviceType?: string;
+      shift?: string;
+      status?: string;
+      mechanicName?: string;
+      currentKm?: number | null;
+      currentHm?: number | null;
+      nextDueKm?: number | null;
+      nextDueHm?: number | null;
+      notes?: string;
+    }
+  ): Promise<PeriodicInspectionItem> => {
+    const res = await fetch(`${API_BASE_URL}/plant/preventive-maintenance/item/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      throw new Error("Gagal memperbarui jadwal Preventive Maintenance");
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  // 17. Delete PM item
+  deletePmItem: async (id: string): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/plant/preventive-maintenance/item/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      throw new Error("Gagal menghapus jadwal Preventive Maintenance");
+    }
+    return res.json();
+  },
+
+  // 18. Auto-schedule Due Soon / Overdue units from Volvo Telemetry Radar
+  autoScheduleDuePmUnits: async (
+    date?: string,
+    jobSite: string = "MuaraPahu"
+  ): Promise<{ success: boolean; message: string; scheduledCount?: number }> => {
+    const res = await fetch(
+      `${API_BASE_URL}/plant/preventive-maintenance/auto-schedule-due`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ date, jobSite }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal auto-jadwalkan unit Due Soon");
+    }
+    return res.json();
+  },
+
+  // 19. Get PM Radar (Live Volvo KM/HM + Interval Countdown + GL PM History)
+  getPmRadar: async (
+    site: string = "MuaraPahu",
+    force: boolean = false
+  ): Promise<PmRadarResponse> => {
+    const query = new URLSearchParams();
+    if (site) query.append("site", site);
+    if (force) query.append("force", "true");
+    const res = await fetch(
+      `${API_BASE_URL}/plant/preventive-maintenance/radar?${query.toString()}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      throw new Error("Failed to fetch PM KM/HM Radar");
+    }
+    return res.json();
+  },
 };
+
+export interface PmGlHistoryItem {
+  id: string;
+  date: string;
+  regNo?: string;
+  accountCode: string;
+  accountName: string;
+  specification: string;
+  qty: number;
+  debet: number;
+  remark: string;
+  isScheduledPm: boolean;
+}
+
+export interface PmRadarGlSummary {
+  oilCost: number;
+  greaseCost: number;
+  sparepartCost: number;
+  externalCost: number;
+  totalCost: number;
+  txCount: number;
+  lastServiceDate: string | null;
+  lastServiceRemark: string | null;
+}
+
+export interface PmRadarUnit {
+  unitCode: string;
+  unitNumber: number;
+  jobSite: string;
+  status: string;
+  model: string;
+  vin?: string | null;
+  buntutSummary: string;
+  hasTelemetry: boolean;
+  liveKm: number | null;
+  liveHm: number | null;
+  fuelLevel: number | null;
+  lastTelemetryAt: string | null;
+  targetKm: number | null;
+  targetHm: number | null;
+  remainingKm: number | null;
+  remainingHm: number | null;
+  kmServiceLabel: string | null;
+  hmServiceLabel: string | null;
+  recommendedServiceType: string;
+  readinessStatus: "Overdue" | "Due Soon" | "Safe" | "No Telemetry" | string;
+  lastCompletedPm?: {
+    id: string;
+    date: string;
+    serviceType: string;
+    currentKm: number | null;
+    currentHm: number | null;
+    mechanicName?: string | null;
+  } | null;
+  activeSchedule?: {
+    id: string;
+    date: string;
+    serviceType: string;
+    shift: string;
+    status: string;
+  } | null;
+  glSummary: PmRadarGlSummary;
+  glHistory: PmGlHistoryItem[];
+}
+
+export interface PmRadarResponse {
+  success: boolean;
+  telemetryMeta: {
+    onlineCount: number;
+    fetchedAt: string;
+    error?: string | null;
+  };
+  summary: {
+    totalUnits: number;
+    activeUnits: number;
+    onlineTelemetry: number;
+    overdueCount: number;
+    dueSoonCount: number;
+    safeCount: number;
+    scheduledCount: number;
+    totalGlPmCost: number;
+  };
+  data: PmRadarUnit[];
+}
 
 export interface TyreRimTransactionItem {
   id: string;

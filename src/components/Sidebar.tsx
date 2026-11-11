@@ -21,6 +21,7 @@ import {
   Database,
   Wrench,
   ClipboardCheck,
+  ShieldCheck,
   Disc,
   BarChart3,
   Scale,
@@ -149,6 +150,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "periodic-inspection",
           label: "Periodic Inspection",
           icon: ClipboardCheck,
+        },
+        {
+          id: "preventive-maintenance",
+          label: "Preventive Maintenance",
+          icon: ShieldCheck,
         },
         {
           id: "tyre-rim-usage",

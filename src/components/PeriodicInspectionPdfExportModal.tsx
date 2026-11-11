@@ -39,6 +39,7 @@ interface PeriodicInspectionPdfExportModalProps {
   masterUnits: MasterUnit[];
   initialStartDate?: string;
   initialEndDate?: string;
+  mode?: "pi" | "pm";
 }
 
 /**
@@ -97,7 +98,9 @@ export const PeriodicInspectionPdfExportModal: React.FC<
   masterUnits,
   initialStartDate,
   initialEndDate,
+  mode = "pi",
 }) => {
+  const isPmMode = mode === "pm";
   // -------------------------------------------------------------
   // Date Range Filter States
   // -------------------------------------------------------------
@@ -128,12 +131,19 @@ export const PeriodicInspectionPdfExportModal: React.FC<
     async (startStr: string, endStr: string) => {
       try {
         setIsLoadingRange(true);
-        const data = await plantService.getWeeklySchedule(
-          undefined,
-          selectedSite,
-          startStr,
-          endStr
-        );
+        const data = isPmMode
+          ? await plantService.getPmWeeklySchedule(
+              undefined,
+              selectedSite,
+              startStr,
+              endStr
+            )
+          : await plantService.getWeeklySchedule(
+              undefined,
+              selectedSite,
+              startStr,
+              endStr
+            );
         setActiveScheduleData(data);
       } catch (err) {
         console.error("Gagal memuat rentang tanggal untuk PDF:", err);
@@ -141,7 +151,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
         setIsLoadingRange(false);
       }
     },
-    [selectedSite]
+    [selectedSite, isPmMode]
   );
 
   // Handle Preset Changes
@@ -389,7 +399,8 @@ export const PeriodicInspectionPdfExportModal: React.FC<
       const sanitizedSite = selectedSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
       const sDateStr = (activeScheduleData?.weekRange.startDate || customStart).replace(/-/g, "");
       const eDateStr = (activeScheduleData?.weekRange.endDate || customEnd).replace(/-/g, "");
-      const fileName = `Periodic_Inspection_Weekly_Deck_${sanitizedSite}_${sDateStr}_sd_${eDateStr}.pdf`;
+      const prefix = isPmMode ? "Preventive_Maintenance_Weekly_Deck" : "Periodic_Inspection_Weekly_Deck";
+      const fileName = `${prefix}_${sanitizedSite}_${sDateStr}_sd_${eDateStr}.pdf`;
 
       pdf.save(fileName);
       setIsExporting(false);
@@ -431,7 +442,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
-              Ekspor Bahan Presentasi Weekly &bull; Periodic Inspection (PI)
+              Ekspor Bahan Presentasi Weekly &bull; {isPmMode ? "Preventive Maintenance (PM)" : "Periodic Inspection (PI)"}
             </h2>
           </div>
 
@@ -659,7 +670,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                             PT BATARA DHARMA PERSADA
                           </h1>
                           <span className="text-[10px] font-extrabold text-[#e95623] tracking-wide block">
-                            PLANT & MAINTENANCE DIVISION &bull; WEEKLY PERIODIC INSPECTION (PI)
+                            PLANT & MAINTENANCE DIVISION &bull; {isPmMode ? "WEEKLY PREVENTIVE MAINTENANCE (PM)" : "WEEKLY PERIODIC INSPECTION (PI)"}
                           </span>
                         </div>
                       </div>
@@ -672,7 +683,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                           {w.label}: {w.dateRangeStr}
                         </span>
                         <span className="px-2.5 py-1 rounded-lg text-[11px] font-black bg-slate-100 text-slate-700">
-                          Target: {activeScheduleData?.defaultDailyTarget || 9} Unit/Hari
+                          Target: {activeScheduleData?.defaultDailyTarget || (isPmMode ? 4 : 9)} Unit/Hari
                         </span>
                       </div>
 
@@ -718,7 +729,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                       {/* Card 3: Realisasi Selesai */}
                       <div className={`${chunkTheme.cardBg} border ${chunkTheme.border} rounded-xl p-2.5`}>
                         <span className={`text-[9px] font-bold ${chunkTheme.titleText} uppercase tracking-wider block`}>
-                          Inspeksi Selesai (Completed)
+                          {isPmMode ? "PM Selesai (Completed)" : "Inspeksi Selesai (Completed)"}
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
                           <span className={`text-xl font-black ${chunkTheme.valText} font-mono`}>
@@ -835,11 +846,11 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                                 />
                               </div>
 
-                              {/* Lead Inspector Badge in PDF */}
-                              {day.leadInspector && (
+                              {/* Lead Inspector / Mechanic Badge in PDF */}
+                              {(day.leadMechanic || day.leadInspector) && (
                                 <div className="mt-1 flex items-center justify-between px-1 py-0.5 rounded bg-orange-50 border border-orange-200/60 text-[7px] text-orange-900 font-bold truncate">
                                   <span>Lead:</span>
-                                  <span className="truncate">{day.leadInspector}</span>
+                                  <span className="truncate">{day.leadMechanic || day.leadInspector}</span>
                                 </div>
                               )}
                             </div>
@@ -911,12 +922,17 @@ export const PeriodicInspectionPdfExportModal: React.FC<
 
                                         <div className="flex items-center justify-between text-[7.5px] text-slate-500 mt-0.5">
                                           <span className="truncate max-w-22.5 font-mono">
-                                            {trailerText}
+                                            {isPmMode ? (item.serviceType || trailerText) : trailerText}
                                           </span>
                                           <span className="text-[7px] font-semibold text-slate-600 bg-slate-100/90 px-1 rounded">
                                             {item.shift === "Shift 2" ? "S2" : "S1"}
                                           </span>
                                         </div>
+                                        {isPmMode && (item.currentKm || item.liveKm) ? (
+                                          <div className="text-[6.5px] text-slate-500 font-mono truncate mt-0.5">
+                                            {(item.currentKm ?? item.liveKm)?.toLocaleString("id-ID")} km{(item.currentHm ?? item.liveHm) ? ` • ${(item.currentHm ?? item.liveHm)?.toLocaleString("id-ID")} hm` : ""}
+                                          </div>
+                                        ) : null}
                                       </div>
                                     );
                                   })}
@@ -991,7 +1007,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                         PT BATARA DHARMA PERSADA
                       </h1>
                       <span className="text-[10px] font-extrabold text-[#e95623] tracking-wide block">
-                        EVALUASI KINERJA & RINGKASAN PERIODIC INSPECTION (PI)
+                        EVALUASI KINERJA &amp; RINGKASAN {isPmMode ? "PREVENTIVE MAINTENANCE (PM)" : "PERIODIC INSPECTION (PI)"}
                       </span>
                     </div>
                   </div>
@@ -1039,8 +1055,8 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                           <tr key={d.date} className="hover:bg-slate-50">
                             <td className="py-2 px-3 font-bold text-slate-800">
                               <div>{d.dayName}, {d.date}</div>
-                              {d.leadInspector && (
-                                <div className="text-[9px] font-semibold text-orange-700">Lead: {d.leadInspector}</div>
+                              {(d.leadMechanic || d.leadInspector) && (
+                                <div className="text-[9px] font-semibold text-orange-700">Lead: {d.leadMechanic || d.leadInspector}</div>
                               )}
                             </td>
                             <td className="py-2 px-3 text-center font-mono font-bold">{d.targetUnits} Unit</td>

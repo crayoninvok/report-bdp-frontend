@@ -20,6 +20,7 @@ import { FuelConsumptionGLSection } from "../components/FuelConsumptionGLSection
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
 import { GLDataView } from "../components/GLDataView";
 import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
+import { PreventiveMaintenanceView } from "../components/PreventiveMaintenanceView";
 import { TyreRimUsageView } from "../components/TyreRimUsageView";
 import { MasterUnitView } from "../components/MasterUnitView";
 import { DashboardCostOverallView } from "../components/DashboardCostOverallView";
@@ -315,6 +316,8 @@ export default function Home() {
                       ? "Plant & Maintenance • Dashboard Plant"
                       : activeMenu === "periodic-inspection"
                       ? "Plant & Maintenance • Periodic Inspection"
+                      : activeMenu === "preventive-maintenance"
+                      ? "Plant & Maintenance • Preventive Maintenance"
                       : activeMenu === "tyre-rim-usage"
                       ? "Plant & Maintenance • Tyre & Rim Usage"
                       : activeMenu === "master-unit"
@@ -589,6 +592,11 @@ export default function Home() {
             />
           ) : activeMenu === "periodic-inspection" ? (
             <PeriodicInspectionView
+              user={currentUser}
+              onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
+          ) : activeMenu === "preventive-maintenance" ? (
+            <PreventiveMaintenanceView
               user={currentUser}
               onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
             />
