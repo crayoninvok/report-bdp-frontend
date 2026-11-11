@@ -401,6 +401,9 @@ export const PreventiveMaintenanceView: React.FC<
 
   // Handlers
   const openAddModal = (date: string, prefillRadar?: PmRadarUnit) => {
+    if (hrSupervisors.length === 0 || hrMechanics.length === 0) {
+      void fetchPersonnel();
+    }
     const km = prefillRadar?.liveKm ?? null;
     const hm = prefillRadar?.liveHm ?? null;
     const serviceType =
@@ -437,6 +440,9 @@ export const PreventiveMaintenanceView: React.FC<
   };
 
   const openEditModal = (item: PeriodicInspectionItem) => {
+    if (hrSupervisors.length === 0 || hrMechanics.length === 0) {
+      void fetchPersonnel();
+    }
     setUnitModalState({
       isOpen: true,
       mode: "edit",
@@ -480,17 +486,17 @@ export const PreventiveMaintenanceView: React.FC<
         shift: values.shift,
         status: values.status,
         category: values.category,
-        planStartTime: values.planStartTime || undefined,
-        planLeadTime: values.planLeadTime || undefined,
-        planHmServis: values.planHmServis || undefined,
-        supervisorName: values.supervisorName || undefined,
+        planStartTime: values.planStartTime,
+        planLeadTime: values.planLeadTime,
+        planHmServis: values.planHmServis,
+        supervisorName: values.supervisorName,
         mechanicNames: values.mechanicNames,
-        mechanicName: values.mechanicNames.join(", ") || undefined,
+        mechanicName: values.mechanicNames.join(", "),
         currentKm: values.currentKm ? Number(values.currentKm) : null,
         currentHm: values.currentHm ? Number(values.currentHm) : null,
         nextDueKm: values.nextDueKm ? Number(values.nextDueKm) : null,
         nextDueHm: values.nextDueHm ? Number(values.nextDueHm) : null,
-        notes: values.notes || undefined,
+        notes: values.notes,
       };
 
       if (unitModalState.mode === "add") {
