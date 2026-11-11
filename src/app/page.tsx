@@ -317,7 +317,7 @@ export default function Home() {
                       : activeMenu === "periodic-inspection"
                       ? "Plant & Maintenance • Periodic Inspection"
                       : activeMenu === "preventive-maintenance"
-                      ? "Plant & Maintenance • Preventive Maintenance"
+                      ? "Plant & Maintenance • Periodic Service"
                       : activeMenu === "tyre-rim-usage"
                       ? "Plant & Maintenance • Tyre & Rim Usage"
                       : activeMenu === "master-unit"

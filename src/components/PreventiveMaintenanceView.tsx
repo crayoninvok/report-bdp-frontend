@@ -6,6 +6,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Database,
   FileSpreadsheet,
   FileText,
@@ -22,6 +23,7 @@ import {
   Trash2,
   Truck,
   UserCheck,
+  Users,
   Wrench,
 } from "lucide-react";
 import { User } from "../types/auth";
@@ -29,6 +31,7 @@ import {
   DaySchedule,
   MasterUnit,
   PeriodicInspectionItem,
+  PlantPersonnelItem,
   plantService,
   PmRadarResponse,
   PmRadarUnit,
@@ -57,6 +60,9 @@ import {
   PM_SERVICE_TYPES,
   PM_SHIFT_OPTIONS,
   PM_STATUS_OPTIONS,
+  PS_CATEGORY_OPTIONS,
+  PS_LEAD_TIME_OPTIONS,
+  PS_START_TIME_OPTIONS,
   resolveTrailerSummary,
 } from "../utils/pmHelpers";
 
@@ -80,6 +86,21 @@ function shiftDateString(dateStr: string, deltaDays: number): string {
 /** Extracts friendly Indonesian error messages from async API calls. */
 function getErrorMessage(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
+}
+
+/** Resolves display list of mechanics from array field or comma-separated fallback. */
+function resolveMechanicsArray(item: PeriodicInspectionItem): string[] {
+  if (Array.isArray(item.mechanicNames) && item.mechanicNames.length > 0) {
+    return item.mechanicNames.slice(0, 5);
+  }
+  if (item.mechanicName) {
+    return item.mechanicName
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+  }
+  return [];
 }
 
 export const PreventiveMaintenanceView: React.FC<
@@ -106,6 +127,10 @@ export const PreventiveMaintenanceView: React.FC<
   const [telemetryMeta, setTelemetryMeta] = useState<
     PmRadarResponse["telemetryMeta"] | null
   >(null);
+
+  // HR Plant Personnel (SPV Plant & Mechanics)
+  const [hrSupervisors, setHrSupervisors] = useState<PlantPersonnelItem[]>([]);
+  const [hrMechanics, setHrMechanics] = useState<PlantPersonnelItem[]>([]);
 
   const [isLoadingWeekly, setIsLoadingWeekly] = useState<boolean>(true);
   const [isLoadingRadar, setIsLoadingRadar] = useState<boolean>(false);
@@ -160,7 +185,12 @@ export const PreventiveMaintenanceView: React.FC<
       serviceType: PM_SERVICE_TYPES[0],
       shift: "Shift 1",
       status: "Scheduled",
-      mechanicName: "",
+      category: PS_CATEGORY_OPTIONS[0],
+      planStartTime: PS_START_TIME_OPTIONS[1],
+      planLeadTime: PS_LEAD_TIME_OPTIONS[3],
+      planHmServis: "",
+      supervisorName: "",
+      mechanicNames: [],
       currentKm: "",
       currentHm: "",
       nextDueKm: "",
@@ -203,7 +233,10 @@ export const PreventiveMaintenanceView: React.FC<
       });
       setLeadDrafts(drafts);
     } catch (err) {
-      showToast("error", getErrorMessage(err, "Gagal memuat jadwal Preventive Maintenance"));
+      showToast(
+        "error",
+        getErrorMessage(err, "Gagal memuat jadwal Periodic Service")
+      );
     } finally {
       setIsLoadingWeekly(false);
     }
@@ -219,13 +252,24 @@ export const PreventiveMaintenanceView: React.FC<
         setRadarSummary(res.summary || null);
         setTelemetryMeta(res.telemetryMeta || null);
       } catch (err) {
-        console.error("Failed to fetch PM radar:", err);
+        console.error("Failed to fetch Periodic Service radar:", err);
       } finally {
         setIsLoadingRadar(false);
       }
     },
     [selectedSite]
   );
+
+  // Load HR Plant Supervisors & Mechanics
+  const fetchPersonnel = useCallback(async () => {
+    try {
+      const res = await plantService.getPlantPersonnel(selectedSite);
+      setHrSupervisors(res.data?.supervisors || []);
+      setHrMechanics(res.data?.mechanics || []);
+    } catch (err) {
+      console.error("Failed to fetch HR Plant personnel:", err);
+    }
+  }, [selectedSite]);
 
   useEffect(() => {
     fetchWeeklyAndUnits();
@@ -234,6 +278,10 @@ export const PreventiveMaintenanceView: React.FC<
   useEffect(() => {
     fetchRadar(false);
   }, [fetchRadar]);
+
+  useEffect(() => {
+    fetchPersonnel();
+  }, [fetchPersonnel]);
 
   // Keep detail date range synced with active week when preset is "current"
   useEffect(() => {
@@ -257,7 +305,10 @@ export const PreventiveMaintenanceView: React.FC<
         );
         setDetailScheduleData(data);
       } catch (err) {
-        showToast("error", getErrorMessage(err, "Gagal memuat detail periode PM"));
+        showToast(
+          "error",
+          getErrorMessage(err, "Gagal memuat detail periode servis")
+        );
       } finally {
         setIsLoadingDetail(false);
       }
@@ -314,8 +365,10 @@ export const PreventiveMaintenanceView: React.FC<
         const buntut = resolveTrailerSummary(item, masterUnits);
         if (q) {
           const hay = `${item.unitCode} ${buntut} ${item.serviceType} ${
-            item.mechanicName || ""
-          } ${item.notes || ""}`.toLowerCase();
+            item.category || ""
+          } ${item.supervisorName || ""} ${item.mechanicName || ""} ${
+            item.notes || ""
+          }`.toLowerCase();
           if (!hay.includes(q)) continue;
         }
         rows.push({
@@ -353,6 +406,11 @@ export const PreventiveMaintenanceView: React.FC<
     const serviceType =
       prefillRadar?.recommendedServiceType || PM_SERVICE_TYPES[0];
     const targets = computePmTargetsClient(serviceType, km, hm);
+    const autoPlanHm = prefillRadar?.targetHm
+      ? `Target ${prefillRadar.targetHm.toLocaleString("id-ID")} HM (${
+          prefillRadar.hmServiceLabel || "Live Volvo"
+        })`
+      : "";
 
     setUnitModalState({
       isOpen: true,
@@ -363,7 +421,12 @@ export const PreventiveMaintenanceView: React.FC<
         serviceType,
         shift: "Shift 1",
         status: "Scheduled",
-        mechanicName: "",
+        category: PS_CATEGORY_OPTIONS[0],
+        planStartTime: PS_START_TIME_OPTIONS[1],
+        planLeadTime: PS_LEAD_TIME_OPTIONS[3],
+        planHmServis: autoPlanHm,
+        supervisorName: "",
+        mechanicNames: [],
         currentKm: km != null ? String(km) : "",
         currentHm: hm != null ? String(hm) : "",
         nextDueKm: targets.nextDueKm != null ? String(targets.nextDueKm) : "",
@@ -384,7 +447,12 @@ export const PreventiveMaintenanceView: React.FC<
         serviceType: item.serviceType || PM_SERVICE_TYPES[0],
         shift: item.shift || "Shift 1",
         status: item.status || "Scheduled",
-        mechanicName: item.mechanicName || item.inspectorName || "",
+        category: item.category || PS_CATEGORY_OPTIONS[0],
+        planStartTime: item.planStartTime || "",
+        planLeadTime: item.planLeadTime || "",
+        planHmServis: item.planHmServis || "",
+        supervisorName: item.supervisorName || "",
+        mechanicNames: resolveMechanicsArray(item),
         currentKm:
           item.currentKm != null
             ? String(item.currentKm)
@@ -411,7 +479,13 @@ export const PreventiveMaintenanceView: React.FC<
         serviceType: values.serviceType,
         shift: values.shift,
         status: values.status,
-        mechanicName: values.mechanicName || undefined,
+        category: values.category,
+        planStartTime: values.planStartTime || undefined,
+        planLeadTime: values.planLeadTime || undefined,
+        planHmServis: values.planHmServis || undefined,
+        supervisorName: values.supervisorName || undefined,
+        mechanicNames: values.mechanicNames,
+        mechanicName: values.mechanicNames.join(", ") || undefined,
         currentKm: values.currentKm ? Number(values.currentKm) : null,
         currentHm: values.currentHm ? Number(values.currentHm) : null,
         nextDueKm: values.nextDueKm ? Number(values.nextDueKm) : null,
@@ -426,16 +500,25 @@ export const PreventiveMaintenanceView: React.FC<
           jobSite: selectedSite,
           ...payload,
         });
-        showToast("success", `Unit ${values.unitCode} berhasil dijadwalkan PM.`);
+        showToast(
+          "success",
+          `Unit ${values.unitCode} berhasil dijadwalkan Periodic Service.`
+        );
       } else if (unitModalState.editItemId) {
         await plantService.updatePmItem(unitModalState.editItemId, payload);
-        showToast("success", `Jadwal PM ${values.unitCode} berhasil diperbarui.`);
+        showToast(
+          "success",
+          `Jadwal Periodic Service ${values.unitCode} berhasil diperbarui.`
+        );
       }
 
       setUnitModalState((prev) => ({ ...prev, isOpen: false }));
       await refreshAll();
     } catch (err) {
-      showToast("error", getErrorMessage(err, "Gagal menyimpan jadwal PM"));
+      showToast(
+        "error",
+        getErrorMessage(err, "Gagal menyimpan jadwal Periodic Service")
+      );
     } finally {
       setIsMutating(false);
     }
@@ -452,12 +535,15 @@ export const PreventiveMaintenanceView: React.FC<
       await plantService.bulkAddPmItems({ ...payload, jobSite: selectedSite });
       showToast(
         "success",
-        `${payload.unitCodes.length} unit ditambahkan ke jadwal PM ${payload.date}.`
+        `${payload.unitCodes.length} unit ditambahkan ke jadwal Periodic Service ${payload.date}.`
       );
       setBulkModalDate(null);
       await refreshAll();
     } catch (err) {
-      showToast("error", getErrorMessage(err, "Gagal menjadwalkan unit massal"));
+      showToast(
+        "error",
+        getErrorMessage(err, "Gagal menjadwalkan unit massal")
+      );
     } finally {
       setIsMutating(false);
     }
@@ -477,7 +563,10 @@ export const PreventiveMaintenanceView: React.FC<
         );
       } else {
         await plantService.deletePmItem(confirmAction.item.id);
-        showToast("success", `Jadwal PM ${confirmAction.item.unitCode} dihapus.`);
+        showToast(
+          "success",
+          `Jadwal Periodic Service ${confirmAction.item.unitCode} dihapus.`
+        );
       }
       setConfirmAction(null);
       await refreshAll();
@@ -500,10 +589,10 @@ export const PreventiveMaintenanceView: React.FC<
         leadMechanic: draft || null,
         jobSite: selectedSite,
       });
-      showToast("success", `Lead Mekanik tanggal ${date} disimpan.`);
+      showToast("success", `Lead Pengawas tanggal ${date} disimpan.`);
       await fetchWeeklyAndUnits();
     } catch (err) {
-      showToast("error", getErrorMessage(err, "Gagal menyimpan Lead Mekanik"));
+      showToast("error", getErrorMessage(err, "Gagal menyimpan Lead Pengawas"));
     }
   };
 
@@ -520,7 +609,10 @@ export const PreventiveMaintenanceView: React.FC<
       );
       await refreshAll();
     } catch (err) {
-      showToast("error", getErrorMessage(err, "Gagal auto-jadwalkan unit Due Soon"));
+      showToast(
+        "error",
+        getErrorMessage(err, "Gagal auto-jadwalkan unit Due Soon")
+      );
     } finally {
       setIsMutating(false);
     }
@@ -565,7 +657,7 @@ export const PreventiveMaintenanceView: React.FC<
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-sm">
                 <ShieldCheck size={13} />
-                Plant &amp; Maintenance • Preventive Maintenance (PM)
+                Plant &amp; Maintenance • Periodic Service (PS)
               </span>
               {telemetryMeta && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
@@ -576,14 +668,14 @@ export const PreventiveMaintenanceView: React.FC<
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Preventive Maintenance Unit Hauling
+              Periodic Service Unit Hauling
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Penjadwalan mingguan Preventive Maintenance berbasis interval{" "}
+              Bagian dari program <strong className="text-white">Preventive Maintenance</strong>{" "}
+              (bersama Periodic Inspection) untuk penjadwalan servis berkala berbasis interval{" "}
               <strong className="text-white">KM (PS1/PS2/PS3)</strong> &amp;{" "}
-              <strong className="text-white">HM (P1/P2/P3/P4)</strong> yang
-              terintegrasi real-time dengan telemetri Volvo Connect dan riwayat
-              transaksi GL Maintenance.
+              <strong className="text-white">HM (P1/P2/P3/P4)</strong> yang terintegrasi
+              telemetri Volvo Connect, tim HR Plant, dan riwayat biaya GL.
             </p>
           </div>
 
@@ -690,7 +782,7 @@ export const PreventiveMaintenanceView: React.FC<
             }`}
           >
             <Wrench size={15} className={activeTab === "detail" ? "text-[#e95623]" : ""} />
-            <span>Daftar Detail PM</span>
+            <span>Daftar Detail Periodic Service</span>
           </button>
 
           <button
@@ -806,7 +898,7 @@ export const PreventiveMaintenanceView: React.FC<
               <div
                 className={`flex items-center justify-between text-xs font-bold ${kpiTheme.titleText} uppercase tracking-wider`}
               >
-                <span>PM Selesai (Completed)</span>
+                <span>Servis Selesai (Completed)</span>
                 <Activity size={16} />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
@@ -850,13 +942,11 @@ export const PreventiveMaintenanceView: React.FC<
             </div>
           </div>
 
-          {/* Lead Mechanic Datalist for Quick Selection */}
-          <datalist id="pm-lead-mechanic-options">
-            <option value="Samsul Arifin" />
-            <option value="Rizky Ramadhan" />
-            <option value="Agus Setiawan" />
-            <option value="Hendra Wijaya" />
-            <option value="Budi Santoso" />
+          {/* HR SPV Plant Datalist for Quick Day Lead Selection */}
+          <datalist id="ps-lead-spv-options">
+            {hrSupervisors.map((spv) => (
+              <option key={spv.id} value={spv.fullName} />
+            ))}
           </datalist>
 
           {/* 7-Day Monday-Sunday Grid */}
@@ -932,12 +1022,12 @@ export const PreventiveMaintenanceView: React.FC<
                       />
                     </div>
 
-                    {/* Lead Mechanic Inline Input */}
+                    {/* Lead Pengawas Inline Input */}
                     <div className="mt-2 flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2 py-1">
                       <UserCheck size={12} className="text-[#e95623] shrink-0" />
                       <input
                         type="text"
-                        list="pm-lead-mechanic-options"
+                        list="ps-lead-spv-options"
                         value={leadDrafts[day.date] ?? ""}
                         onChange={(e) =>
                           setLeadDrafts((p) => ({
@@ -951,7 +1041,7 @@ export const PreventiveMaintenanceView: React.FC<
                             e.currentTarget.blur();
                           }
                         }}
-                        placeholder="Lead Mekanik..."
+                        placeholder="Lead Pengawas..."
                         className="w-full text-[10px] font-bold text-slate-700 bg-transparent focus:outline-none truncate"
                       />
                     </div>
@@ -964,7 +1054,7 @@ export const PreventiveMaintenanceView: React.FC<
                         className="flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-[10px] font-black bg-[#e95623] hover:bg-[#d44818] text-white cursor-pointer transition-all"
                       >
                         <Plus size={11} />
-                        <span>Unit PM</span>
+                        <span>Unit Servis</span>
                       </button>
                       <button
                         type="button"
@@ -985,7 +1075,7 @@ export const PreventiveMaintenanceView: React.FC<
                       </div>
                     ) : day.items.length === 0 ? (
                       <div className="py-10 text-center text-[11px] text-slate-400 px-2">
-                        Belum ada jadwal PM hari ini
+                        Belum ada jadwal Periodic Service hari ini
                       </div>
                     ) : (
                       day.items.map((item) => {
@@ -994,6 +1084,7 @@ export const PreventiveMaintenanceView: React.FC<
                         const radar = radarMap.get(item.unitCode);
                         const displayKm = item.currentKm ?? item.liveKm ?? radar?.liveKm;
                         const displayHm = item.currentHm ?? item.liveHm ?? radar?.liveHm;
+                        const mechList = resolveMechanicsArray(item);
 
                         return (
                           <div
@@ -1050,6 +1141,24 @@ export const PreventiveMaintenanceView: React.FC<
                               </span>
                             </div>
 
+                            {/* Kategori + Plan Start Time / Lead Time */}
+                            {(item.category || item.planStartTime || item.planLeadTime) && (
+                              <div className="flex flex-wrap items-center gap-1 text-[9px] text-slate-600">
+                                {item.category && (
+                                  <span className="px-1.5 py-0.5 rounded bg-slate-100 font-bold truncate max-w-24">
+                                    {item.category}
+                                  </span>
+                                )}
+                                {(item.planStartTime || item.planLeadTime) && (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 font-mono font-bold">
+                                    <Clock size={9} />
+                                    {item.planStartTime || "--:--"}
+                                    {item.planLeadTime ? ` • ${item.planLeadTime}` : ""}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
                             {/* Live / Recorded KM & HM Pill */}
                             {(displayKm != null || displayHm != null) && (
                               <div className="px-2 py-1 rounded-lg bg-slate-900/5 text-[9.5px] font-mono text-slate-700 flex items-center justify-between gap-1">
@@ -1059,16 +1168,35 @@ export const PreventiveMaintenanceView: React.FC<
                               </div>
                             )}
 
-                            {/* Footer Mechanic + Actions */}
+                            {/* Pengawas + Mekanik summary */}
+                            {(item.supervisorName || mechList.length > 0) && (
+                              <div className="text-[9.5px] text-slate-600 space-y-0.5">
+                                {item.supervisorName && (
+                                  <div className="truncate font-semibold">
+                                    SPV: {item.supervisorName}
+                                  </div>
+                                )}
+                                {mechList.length > 0 && (
+                                  <div className="flex items-center gap-1 truncate text-slate-500">
+                                    <Users size={10} className="shrink-0 text-[#e95623]" />
+                                    <span className="truncate">
+                                      {mechList.join(", ")}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Footer Notes + Actions */}
                             <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                               <span className="text-[9.5px] text-slate-500 truncate max-w-28">
-                                {item.mechanicName || item.notes || "Tim Workshop"}
+                                {item.notes || item.planHmServis || "Workshop Team"}
                               </span>
                               <div className="flex items-center gap-1 shrink-0">
                                 <button
                                   type="button"
                                   onClick={() => openEditModal(item)}
-                                  title="Edit Detail PM"
+                                  title="Edit Detail Servis"
                                   className="p-1 rounded-md hover:bg-slate-200/70 text-slate-600 cursor-pointer"
                                 >
                                   <Pencil size={11} />
@@ -1078,7 +1206,7 @@ export const PreventiveMaintenanceView: React.FC<
                                   onClick={() =>
                                     setConfirmAction({ type: "delete", item })
                                   }
-                                  title="Hapus Jadwal PM"
+                                  title="Hapus Jadwal Servis"
                                   className="p-1 rounded-md hover:bg-rose-100 text-rose-600 cursor-pointer"
                                 >
                                   <Trash2 size={11} />
@@ -1098,7 +1226,7 @@ export const PreventiveMaintenanceView: React.FC<
       )}
 
       {/* =================================================================== */}
-      {/* TAB 2: DAFTAR DETAIL PM & EXPORT EXCEL                              */}
+      {/* TAB 2: DAFTAR DETAIL PERIODIC SERVICE & EXPORT EXCEL                */}
       {/* =================================================================== */}
       {activeTab === "detail" && (
         <div className="space-y-4">
@@ -1197,7 +1325,7 @@ export const PreventiveMaintenanceView: React.FC<
                   type="text"
                   value={detailSearch}
                   onChange={(e) => setDetailSearch(e.target.value)}
-                  placeholder="Cari unit, buntut, mekanik..."
+                  placeholder="Cari unit, buntut, pengawas, mekanik..."
                   className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
@@ -1220,7 +1348,7 @@ export const PreventiveMaintenanceView: React.FC<
                 onChange={(e) => setDetailServiceFilter(e.target.value)}
                 className="px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl"
               >
-                <option value="ALL">Semua Jenis Service</option>
+                <option value="ALL">Semua Tipe Servis</option>
                 {PM_SERVICE_TYPES.map((st) => (
                   <option key={st} value={st}>
                     {st}
@@ -1251,9 +1379,9 @@ export const PreventiveMaintenanceView: React.FC<
                   <tr>
                     <th className="py-3 px-4">Tanggal &amp; Hari</th>
                     <th className="py-3 px-4">Unit Head &amp; Buntut</th>
-                    <th className="py-3 px-4">Jenis Service</th>
+                    <th className="py-3 px-4">Tipe, Kategori &amp; Plan</th>
                     <th className="py-3 px-4">KM / HM &amp; Target</th>
-                    <th className="py-3 px-4">Shift &amp; Mekanik</th>
+                    <th className="py-3 px-4">Shift, Pengawas &amp; Mekanik</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-right">Aksi</th>
                   </tr>
@@ -1262,19 +1390,20 @@ export const PreventiveMaintenanceView: React.FC<
                   {isLoadingDetail ? (
                     <tr>
                       <td colSpan={7} className="py-12 text-center text-slate-400">
-                        Memuat data periode PM...
+                        Memuat data periode Periodic Service...
                       </td>
                     </tr>
                   ) : filteredDetailRows.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="py-12 text-center text-slate-400">
-                        Tidak ada jadwal PM pada rentang tanggal ini.
+                        Tidak ada jadwal Periodic Service pada rentang tanggal ini.
                       </td>
                     </tr>
                   ) : (
                     filteredDetailRows.map((row) => {
                       const stStyle = getPmStatusStyle(row.status);
                       const trailerText = resolveTrailerSummary(row, masterUnits);
+                      const mechList = resolveMechanicsArray(row);
                       return (
                         <tr key={row.id} className="hover:bg-slate-50">
                           <td className="py-3 px-4 whitespace-nowrap">
@@ -1294,9 +1423,23 @@ export const PreventiveMaintenanceView: React.FC<
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="px-2 py-0.5 rounded-lg bg-orange-50 text-[#c74315] font-extrabold text-[11px] border border-orange-200">
-                              {row.serviceType}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded-lg bg-orange-50 text-[#c74315] font-extrabold text-[11px] border border-orange-200">
+                                {row.serviceType}
+                              </span>
+                              {row.category && (
+                                <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                  {row.category}
+                                </span>
+                              )}
+                            </div>
+                            {(row.planStartTime || row.planLeadTime || row.planHmServis) && (
+                              <div className="text-[11px] text-slate-600 mt-1 font-mono">
+                                {row.planStartTime ? `Start ${row.planStartTime}` : ""}
+                                {row.planLeadTime ? ` • Lead ${row.planLeadTime}` : ""}
+                                {row.planHmServis ? ` • ${row.planHmServis}` : ""}
+                              </div>
+                            )}
                             {row.notes && (
                               <div className="text-[11px] text-slate-500 mt-1 max-w-xs truncate">
                                 {row.notes}
@@ -1320,9 +1463,16 @@ export const PreventiveMaintenanceView: React.FC<
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-bold text-slate-800">{row.shift}</div>
-                            <div className="text-[11px] text-slate-500">
-                              {row.mechanicName || row.leadName || "-"}
-                            </div>
+                            {(row.supervisorName || row.leadName) && (
+                              <div className="text-[11px] text-slate-600 font-semibold">
+                                Pengawas: {row.supervisorName || row.leadName}
+                              </div>
+                            )}
+                            {mechList.length > 0 && (
+                              <div className="text-[11px] text-slate-500 max-w-52">
+                                Mekanik: {mechList.join(", ")}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <select
@@ -1404,9 +1554,12 @@ export const PreventiveMaintenanceView: React.FC<
       <PmUnitFormModal
         isOpen={unitModalState.isOpen}
         mode={unitModalState.mode}
+        selectedSite={selectedSite}
         initialValues={unitModalState.initialValues}
         availableUnits={activePrimeMovers}
         radarMap={radarMap}
+        supervisors={hrSupervisors}
+        mechanics={hrMechanics}
         isSaving={isMutating}
         onClose={() => setUnitModalState((p) => ({ ...p, isOpen: false }))}
         onSubmit={handleSubmitUnitModal}
@@ -1442,7 +1595,7 @@ export const PreventiveMaintenanceView: React.FC<
             await plantService.updateSetting("daily_pm_target", String(newTarget));
             showToast(
               "success",
-              `Target default PM diubah menjadi ${newTarget} unit/hari.`
+              `Target default Periodic Service diubah menjadi ${newTarget} unit/hari.`
             );
             setTargetModalState({
               isOpen: false,
@@ -1451,7 +1604,7 @@ export const PreventiveMaintenanceView: React.FC<
             });
             await refreshAll();
           } catch (err) {
-            showToast("error", getErrorMessage(err, "Gagal mengubah target PM"));
+            showToast("error", getErrorMessage(err, "Gagal mengubah target servis"));
           } finally {
             setIsMutating(false);
           }
@@ -1466,7 +1619,7 @@ export const PreventiveMaintenanceView: React.FC<
             });
             showToast(
               "success",
-              `Target PM tanggal ${date} diatur menjadi ${newTarget} unit.`
+              `Target Periodic Service tanggal ${date} diatur menjadi ${newTarget} unit.`
             );
             setTargetModalState({
               isOpen: false,
@@ -1475,7 +1628,10 @@ export const PreventiveMaintenanceView: React.FC<
             });
             await refreshAll();
           } catch (err) {
-            showToast("error", getErrorMessage(err, "Gagal mengubah target harian"));
+            showToast(
+              "error",
+              getErrorMessage(err, "Gagal mengubah target harian")
+            );
           } finally {
             setIsMutating(false);
           }
@@ -1502,4 +1658,3 @@ export const PreventiveMaintenanceView: React.FC<
     </div>
   );
 };
-

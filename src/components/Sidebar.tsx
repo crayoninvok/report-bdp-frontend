@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         },
         {
           id: "preventive-maintenance",
-          label: "Preventive Maintenance",
+          label: "Periodic Service",
           icon: ShieldCheck,
         },
         {

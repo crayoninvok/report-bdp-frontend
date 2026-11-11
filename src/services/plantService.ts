@@ -43,6 +43,12 @@ export interface PeriodicInspectionItem {
   status: "Scheduled" | "In Progress" | "Completed" | "Pending" | string;
   inspectorName?: string | null;
   mechanicName?: string | null;
+  mechanicNames?: string[];
+  supervisorName?: string | null;
+  category?: string | null;
+  planStartTime?: string | null;
+  planLeadTime?: string | null;
+  planHmServis?: string | null;
   currentKm?: number | null;
   currentHm?: number | null;
   nextDueKm?: number | null;
@@ -401,13 +407,19 @@ export const plantService = {
     return res.json();
   },
 
-  // 14. Add/Schedule a unit for PM
+  // 14. Add/Schedule a unit for Periodic Service
   addPmItem: async (payload: {
     date: string;
     unitCode: string;
     serviceType?: string;
     shift?: string;
     status?: string;
+    category?: string;
+    planStartTime?: string;
+    planLeadTime?: string;
+    planHmServis?: string;
+    supervisorName?: string;
+    mechanicNames?: string[];
     mechanicName?: string;
     currentKm?: number | null;
     currentHm?: number | null;
@@ -423,13 +435,13 @@ export const plantService = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Gagal menjadwalkan unit Preventive Maintenance");
+      throw new Error(err.message || "Gagal menjadwalkan unit Periodic Service");
     }
     const json = await res.json();
     return json.data;
   },
 
-  // 15. Bulk add units for PM on a specific date
+  // 15. Bulk add units for Periodic Service on a specific date
   bulkAddPmItems: async (payload: {
     date: string;
     unitCodes: string[];
@@ -444,18 +456,24 @@ export const plantService = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Gagal menjadwalkan unit PM secara massal");
+      throw new Error(err.message || "Gagal menjadwalkan unit Periodic Service secara massal");
     }
     return res.json();
   },
 
-  // 16. Update PM item
+  // 16. Update Periodic Service item
   updatePmItem: async (
     id: string,
     payload: {
       serviceType?: string;
       shift?: string;
       status?: string;
+      category?: string;
+      planStartTime?: string;
+      planLeadTime?: string;
+      planHmServis?: string;
+      supervisorName?: string;
+      mechanicNames?: string[];
       mechanicName?: string;
       currentKm?: number | null;
       currentHm?: number | null;
@@ -470,20 +488,20 @@ export const plantService = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      throw new Error("Gagal memperbarui jadwal Preventive Maintenance");
+      throw new Error("Gagal memperbarui jadwal Periodic Service");
     }
     const json = await res.json();
     return json.data;
   },
 
-  // 17. Delete PM item
+  // 17. Delete Periodic Service item
   deletePmItem: async (id: string): Promise<any> => {
     const res = await fetch(`${API_BASE_URL}/plant/preventive-maintenance/item/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
     if (!res.ok) {
-      throw new Error("Gagal menghapus jadwal Preventive Maintenance");
+      throw new Error("Gagal menghapus jadwal Periodic Service");
     }
     return res.json();
   },
@@ -508,7 +526,7 @@ export const plantService = {
     return res.json();
   },
 
-  // 19. Get PM Radar (Live Volvo KM/HM + Interval Countdown + GL PM History)
+  // 19. Get Periodic Service Radar (Live Volvo KM/HM + Interval Countdown + GL History)
   getPmRadar: async (
     site: string = "MuaraPahu",
     force: boolean = false
@@ -523,11 +541,47 @@ export const plantService = {
       }
     );
     if (!res.ok) {
-      throw new Error("Failed to fetch PM KM/HM Radar");
+      throw new Error("Failed to fetch Periodic Service KM/HM Radar");
+    }
+    return res.json();
+  },
+
+  // 20. Get HR Plant Personnel (SPV Plant & Mechanics for dropdowns)
+  getPlantPersonnel: async (
+    site: string = "MuaraPahu"
+  ): Promise<PlantPersonnelResponse> => {
+    const query = new URLSearchParams();
+    if (site) query.append("site", site);
+    const res = await fetch(
+      `${API_BASE_URL}/plant/periodic-service/personnel?${query.toString()}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      throw new Error("Gagal memuat data personel Plant dari HR");
     }
     return res.json();
   },
 };
+
+export interface PlantPersonnelItem {
+  id: string;
+  employeeId: string;
+  fullName: string;
+  jobPosition: string | null;
+  jobLevel: string | null;
+  branchName: string | null;
+}
+
+export interface PlantPersonnelResponse {
+  success: boolean;
+  targetBranch: string;
+  data: {
+    supervisors: PlantPersonnelItem[];
+    mechanics: PlantPersonnelItem[];
+  };
+}
 
 export interface PmGlHistoryItem {
   id: string;

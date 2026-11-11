@@ -9,8 +9,59 @@ export const PM_SERVICE_TYPES = [
   "P2 (500 HM)",
   "P3 (1000 HM)",
   "P4 (2000 HM)",
-  "Greasing & PM",
+  "Greasing & PS",
   "Unscheduled / Breakdown",
+] as const;
+
+export const PS_CATEGORY_OPTIONS = [
+  "Scheduled PS",
+  "Back-Log / Follow-up",
+  "Unscheduled",
+  "Breakdown",
+  "Overhaul / Major",
+  "Greasing & Routine",
+] as const;
+
+export const PS_START_TIME_OPTIONS = [
+  "07:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "19:00",
+  "20:00",
+  "21:00",
+  "22:00",
+  "23:00",
+  "00:00",
+  "01:00",
+  "03:00",
+  "05:00",
+] as const;
+
+export const PS_LEAD_TIME_OPTIONS = [
+  "1 Jam",
+  "2 Jam",
+  "3 Jam",
+  "4 Jam",
+  "6 Jam",
+  "8 Jam",
+  "12 Jam",
+  "24 Jam",
+  "> 24 Jam",
+] as const;
+
+export const PS_HM_SERVIS_OPTIONS = [
+  "250 HM",
+  "500 HM",
+  "1000 HM",
+  "2000 HM",
+  "2500 HM",
+  "5000 HM",
 ] as const;
 
 export const PM_STATUS_OPTIONS = ["Scheduled", "In Progress", "Completed", "Pending"] as const;
@@ -194,15 +245,21 @@ export function exportPmScheduleExcel(params: {
     Hari: row.dayName,
     Unit: row.unitCode,
     Buntut: resolveTrailerSummary(row, masterUnits),
-    "Jenis Service / PM": row.serviceType,
+    "Tipe Servis": row.serviceType,
+    Kategori: row.category || "Scheduled PS",
     Shift: row.shift,
+    "Plan Start Time": row.planStartTime || "-",
+    "Plan Lead Time": row.planLeadTime || "-",
+    "Plan HM Servis": row.planHmServis || "-",
     Status: row.status,
     "KM Saat Ini": row.currentKm ?? row.liveKm ?? "",
     "Target KM Next": row.nextDueKm ?? "",
     "HM Saat Ini": row.currentHm ?? row.liveHm ?? "",
     "Target HM Next": row.nextDueHm ?? "",
-    "Lead Mekanik": row.leadName || "-",
-    "Mekanik Eksekutor": row.mechanicName || "-",
+    "Nama Pengawas (SPV)": row.supervisorName || row.leadName || "-",
+    "Nama Mekanik": row.mechanicNames?.length
+      ? row.mechanicNames.join(", ")
+      : row.mechanicName || "-",
     Catatan: row.notes || "",
   }));
 
@@ -225,7 +282,9 @@ export function exportPmScheduleExcel(params: {
 
   const wb = XLSX.utils.book_new();
   const wsDetail = XLSX.utils.json_to_sheet(
-    detailSheetData.length > 0 ? detailSheetData : [{ Info: "Tidak ada jadwal PM pada periode ini" }]
+    detailSheetData.length > 0
+      ? detailSheetData
+      : [{ Info: "Tidak ada jadwal Periodic Service pada periode ini" }]
   );
   const wsSummary = XLSX.utils.json_to_sheet(
     summarySheetData.length > 0 ? summarySheetData : [{ Info: "Tidak ada data ringkasan" }]
@@ -237,23 +296,27 @@ export function exportPmScheduleExcel(params: {
     { wch: 10 },
     { wch: 10 },
     { wch: 24 },
-    { wch: 22 },
+    { wch: 20 },
+    { wch: 18 },
     { wch: 10 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 16 },
     { wch: 14 },
     { wch: 14 },
     { wch: 15 },
     { wch: 14 },
     { wch: 15 },
-    { wch: 18 },
-    { wch: 18 },
+    { wch: 22 },
+    { wch: 28 },
     { wch: 30 },
   ];
 
-  XLSX.utils.book_append_sheet(wb, wsDetail, "Daftar Detail PM");
+  XLSX.utils.book_append_sheet(wb, wsDetail, "Daftar Detail Servis");
   XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan Harian");
 
   const safeStart = (startDate || "start").replace(/-/g, "");
   const safeEnd = (endDate || "end").replace(/-/g, "");
-  XLSX.writeFile(wb, `Preventive_Maintenance_${selectedSite}_${safeStart}_sd_${safeEnd}.xlsx`);
+  XLSX.writeFile(wb, `Periodic_Service_${selectedSite}_${safeStart}_sd_${safeEnd}.xlsx`);
 }
 

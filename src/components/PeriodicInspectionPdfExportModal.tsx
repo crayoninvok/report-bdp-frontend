@@ -399,7 +399,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
       const sanitizedSite = selectedSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
       const sDateStr = (activeScheduleData?.weekRange.startDate || customStart).replace(/-/g, "");
       const eDateStr = (activeScheduleData?.weekRange.endDate || customEnd).replace(/-/g, "");
-      const prefix = isPmMode ? "Preventive_Maintenance_Weekly_Deck" : "Periodic_Inspection_Weekly_Deck";
+      const prefix = isPmMode ? "Periodic_Service_Weekly_Deck" : "Periodic_Inspection_Weekly_Deck";
       const fileName = `${prefix}_${sanitizedSite}_${sDateStr}_sd_${eDateStr}.pdf`;
 
       pdf.save(fileName);
@@ -442,7 +442,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
-              Ekspor Bahan Presentasi Weekly &bull; {isPmMode ? "Preventive Maintenance (PM)" : "Periodic Inspection (PI)"}
+              Ekspor Bahan Presentasi Weekly &bull; {isPmMode ? "Periodic Service (PS)" : "Periodic Inspection (PI)"}
             </h2>
           </div>
 
@@ -670,7 +670,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                             PT BATARA DHARMA PERSADA
                           </h1>
                           <span className="text-[10px] font-extrabold text-[#e95623] tracking-wide block">
-                            PLANT & MAINTENANCE DIVISION &bull; {isPmMode ? "WEEKLY PREVENTIVE MAINTENANCE (PM)" : "WEEKLY PERIODIC INSPECTION (PI)"}
+                            PLANT & MAINTENANCE DIVISION &bull; {isPmMode ? "WEEKLY PERIODIC SERVICE (PS)" : "WEEKLY PERIODIC INSPECTION (PI)"}
                           </span>
                         </div>
                       </div>
@@ -729,7 +729,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                       {/* Card 3: Realisasi Selesai */}
                       <div className={`${chunkTheme.cardBg} border ${chunkTheme.border} rounded-xl p-2.5`}>
                         <span className={`text-[9px] font-bold ${chunkTheme.titleText} uppercase tracking-wider block`}>
-                          {isPmMode ? "PM Selesai (Completed)" : "Inspeksi Selesai (Completed)"}
+                          {isPmMode ? "Servis Selesai (Completed)" : "Inspeksi Selesai (Completed)"}
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
                           <span className={`text-xl font-black ${chunkTheme.valText} font-mono`}>
@@ -1007,7 +1007,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                         PT BATARA DHARMA PERSADA
                       </h1>
                       <span className="text-[10px] font-extrabold text-[#e95623] tracking-wide block">
-                        EVALUASI KINERJA &amp; RINGKASAN {isPmMode ? "PREVENTIVE MAINTENANCE (PM)" : "PERIODIC INSPECTION (PI)"}
+                        EVALUASI KINERJA &amp; RINGKASAN {isPmMode ? "PERIODIC SERVICE (PS)" : "PERIODIC INSPECTION (PI)"}
                       </span>
                     </div>
                   </div>

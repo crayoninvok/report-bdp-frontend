@@ -185,13 +185,13 @@ export const PreventiveMaintenanceRadarTab: React.FC<
             <span className="text-xs text-slate-500 font-semibold">Unit On-Plan</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            Terhubung langsung dengan kalender PM
+            Terhubung langsung dengan kalender PS
           </p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
-            <span>Biaya PM &amp; Part (GL)</span>
+            <span>Biaya Servis &amp; Part (GL)</span>
             <DollarSign size={15} className="text-[#e95623]" />
           </div>
           <div className="mt-2">
@@ -300,7 +300,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
                 <th className="py-3 px-4">Live Volvo KM / HM</th>
                 <th className="py-3 px-4">Target &amp; Sisa Interval</th>
                 <th className="py-3 px-4">Kesiapan &amp; Jadwal</th>
-                <th className="py-3 px-4">Riwayat Biaya GL PM</th>
+                <th className="py-3 px-4">Riwayat Biaya GL Servis</th>
                 <th className="py-3 px-4 text-right">Aksi Cepat</th>
               </tr>
             </thead>
@@ -438,7 +438,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
 
                         {unit.lastCompletedPm && (
                           <div className="mt-1 text-[10px] text-slate-500">
-                            Last PM: {unit.lastCompletedPm.date} ({unit.lastCompletedPm.serviceType})
+                            Last Servis: {unit.lastCompletedPm.date} ({unit.lastCompletedPm.serviceType})
                           </div>
                         )}
                       </td>
@@ -466,7 +466,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
                           </button>
                         ) : (
                           <span className="text-[10px] text-slate-400 block mt-1">
-                            Belum ada transaksi PM di GL
+                            Belum ada transaksi servis di GL
                           </span>
                         )}
                       </td>
@@ -479,7 +479,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#e95623] hover:bg-[#d44818] text-white shadow-xs transition-all cursor-pointer"
                         >
                           <CalendarPlus size={13} />
-                          <span>Jadwalkan PM</span>
+                          <span>Jadwalkan Servis</span>
                         </button>
                       </td>
                     </tr>
@@ -611,7 +611,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
                         <div className="flex flex-wrap items-center gap-1.5">
                           {tx.isScheduledPm && (
                             <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase">
-                              Scheduled PM
+                              Scheduled PS
                             </span>
                           )}
                           <span>{tx.remark || "-"}</span>
