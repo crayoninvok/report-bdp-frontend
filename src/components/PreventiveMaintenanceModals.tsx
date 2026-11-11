@@ -156,7 +156,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                   required
                   value={form.unitCode}
                   onChange={(e) => handleUnitChange(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                  className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 >
                   <option value="">-- Pilih Unit Head --</option>
                   {availableUnits.map((u) => {
@@ -188,7 +188,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                 disabled={mode === "edit"}
                 value={form.date}
                 onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl disabled:opacity-60 focus:outline-none focus:border-[#e95623]"
+                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
           </div>
@@ -223,7 +223,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
               <select
                 value={form.serviceType}
                 onChange={(e) => handleServiceTypeChange(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               >
                 {PM_SERVICE_TYPES.map((st) => (
                   <option key={st} value={st}>
@@ -240,7 +240,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
               <select
                 value={form.shift}
                 onChange={(e) => setForm((p) => ({ ...p, shift: e.target.value }))}
-                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               >
                 {PM_SHIFT_OPTIONS.map((sh) => (
                   <option key={sh} value={sh}>
@@ -257,7 +257,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
               <select
                 value={form.status}
                 onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               >
                 {PM_STATUS_OPTIONS.map((st) => (
                   <option key={st} value={st}>
@@ -292,7 +292,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                   }));
                 }}
                 placeholder="161000"
-                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
 
@@ -305,7 +305,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                 value={form.nextDueKm}
                 onChange={(e) => setForm((p) => ({ ...p, nextDueKm: e.target.value }))}
                 placeholder="173000"
-                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
 
@@ -332,7 +332,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                   }));
                 }}
                 placeholder="6275.5"
-                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
 
@@ -346,7 +346,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                 value={form.nextDueHm}
                 onChange={(e) => setForm((p) => ({ ...p, nextDueHm: e.target.value }))}
                 placeholder="6525.5"
-                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
           </div>
@@ -364,7 +364,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                   setForm((p) => ({ ...p, mechanicName: e.target.value }))
                 }
                 placeholder="Nama mekanik / tim pit..."
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
             <div>
@@ -376,7 +376,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                 value={form.notes}
                 onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 placeholder="Ganti oli engine, filter solar, greasing..."
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
           </div>
@@ -547,7 +547,7 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari PMxxx atau buntut..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
 
@@ -756,7 +756,7 @@ export const PmTargetModal: React.FC<PmTargetModalProps> = ({
               required
               value={val}
               onChange={(e) => setVal(e.target.value)}
-              className="w-full px-4 py-2.5 text-lg font-mono font-black bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+              className="w-full px-4 py-2.5 text-lg font-mono font-black bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
             />
             <p className="text-[11px] text-slate-500 mt-1.5">
               {specificDate

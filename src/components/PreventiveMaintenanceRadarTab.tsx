@@ -218,7 +218,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari unit, buntut, VIN, remark GL..."
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623] text-slate-800"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 text-slate-800"
             />
           </div>
 
@@ -252,7 +252,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as RadarSortType)}
-            className="px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-[#e95623]"
+            className="px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
           >
             <option value="urgency">Urut: Prioritas Service Terdekat</option>
             <option value="cost">Urut: Biaya GL Tertinggi</option>
@@ -566,7 +566,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
                   value={glModalSearch}
                   onChange={(e) => setGlModalSearch(e.target.value)}
                   placeholder="Filter nama part, akun, atau remark..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
               <span className="text-xs font-bold text-slate-500">

@@ -892,7 +892,7 @@ export const PreventiveMaintenanceView: React.FC<
                             {day.dayName}
                           </span>
                           {day.isToday && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-[#e95623] text-white uppercase">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-[#e95623] text-white uppercase">
                               Hari Ini
                             </span>
                           )}
@@ -1198,7 +1198,7 @@ export const PreventiveMaintenanceView: React.FC<
                   value={detailSearch}
                   onChange={(e) => setDetailSearch(e.target.value)}
                   placeholder="Cari unit, buntut, mekanik..."
-                  className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#e95623]"
+                  className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
 
