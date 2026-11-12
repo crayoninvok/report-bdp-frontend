@@ -800,11 +800,27 @@ export function formatIndoMonthYear(year: number, monthIndex: number): string {
   return `${INDO_FULL_MONTHS[monthIndex] || ""} ${year}`;
 }
 
+/** Returns Monday..Sunday bounds in YYYY-MM-DD containing the given local date (defaults to today). */
+export function getLocalWeekRange(dateStr = getLocalTodayIso()): {
+  startDate: string;
+  endDate: string;
+} {
+  const dt = parseIsoToLocalDate(dateStr) || new Date();
+  const baseIso = toLocalIsoDate(dt);
+  const mondayOffset = (dt.getDay() + 6) % 7;
+  const startDate = shiftIsoDate(baseIso, -mondayOffset);
+  return {
+    startDate,
+    endDate: shiftIsoDate(startDate, 6),
+  };
+}
+
 /** Formats a single-day or multi-day date range label compactly. */
 export function formatDateRangeLabel(
   startDate: string,
   endDate: string,
-  todayStr: string
+  todayStr: string,
+  currentWeekRange?: { startDate: string; endDate: string } | null
 ): string {
   if (startDate === endDate) {
     if (startDate === todayStr) {
@@ -815,14 +831,27 @@ export function formatDateRangeLabel(
   const s = parseIsoToLocalDate(startDate);
   const e = parseIsoToLocalDate(endDate);
   const days = countInclusiveDays(startDate, endDate);
+  const isCurrentWeek =
+    currentWeekRange &&
+    startDate === currentWeekRange.startDate &&
+    endDate === currentWeekRange.endDate;
+
+  let rangeText: string;
   if (s && e && s.getFullYear() === e.getFullYear()) {
-    if (s.getMonth() === e.getMonth()) {
-      return `${s.getDate()}–${formatIndoShortDate(endDate)} (${days} Hari)`;
-    }
-    return `${formatIndoShortDate(startDate, false)} – ${formatIndoShortDate(
+    rangeText =
+      s.getMonth() === e.getMonth()
+        ? `${s.getDate()}–${formatIndoShortDate(endDate)}`
+        : `${formatIndoShortDate(startDate, false)} – ${formatIndoShortDate(
+            endDate
+          )}`;
+  } else {
+    rangeText = `${formatIndoShortDate(startDate)} – ${formatIndoShortDate(
       endDate
-    )} (${days} Hari)`;
+    )}`;
   }
-  return `${formatIndoShortDate(startDate)} – ${formatIndoShortDate(endDate)} (${days} Hari)`;
+
+  return isCurrentWeek
+    ? `Minggu Ini • ${rangeText}`
+    : `${rangeText} (${days} Hari)`;
 }
 

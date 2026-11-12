@@ -25,6 +25,7 @@ import {
   formatKpiPct,
   getIndoDayNameClient,
   getLocalTodayIso,
+  getLocalWeekRange,
   KpiMetricEntry,
   parseIsoToLocalDate,
   shiftIsoDate,
@@ -128,16 +129,16 @@ interface KpiCalendarRangePickerProps {
   startDate: string;
   endDate: string;
   todayStr: string;
-  weekRange?: { startDate: string; endDate: string } | null;
+  currentWeekRange: { startDate: string; endDate: string };
   onApplyRange: (startDate: string, endDate: string) => void;
 }
 
-/** Interactive calendar popover supporting single-day (Today default) and multi-day KPI filtering. */
+/** Interactive calendar popover supporting multi-day (Minggu Ini default) and single-day KPI filtering. */
 const KpiCalendarRangePicker: React.FC<KpiCalendarRangePickerProps> = ({
   startDate,
   endDate,
   todayStr,
-  weekRange,
+  currentWeekRange,
   onApplyRange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -242,19 +243,15 @@ const KpiCalendarRangePicker: React.FC<KpiCalendarRangePickerProps> = ({
     };
   }, [todayStr]);
 
-  const presets = useMemo(() => {
-    const list = [
+  const presets = useMemo(
+    () => [
+      {
+        id: "week",
+        label: "Minggu Ini",
+        start: currentWeekRange.startDate,
+        end: currentWeekRange.endDate,
+      },
       { id: "today", label: "Today", start: todayStr, end: todayStr },
-      ...(weekRange
-        ? [
-            {
-              id: "week",
-              label: "Minggu Ini",
-              start: weekRange.startDate,
-              end: weekRange.endDate,
-            },
-          ]
-        : []),
       {
         id: "7d",
         label: "7 Hari Terakhir",
@@ -273,9 +270,9 @@ const KpiCalendarRangePicker: React.FC<KpiCalendarRangePickerProps> = ({
         start: monthRange.start,
         end: monthRange.end,
       },
-    ];
-    return list;
-  }, [todayStr, weekRange, monthRange]);
+    ],
+    [todayStr, currentWeekRange, monthRange]
+  );
 
   const cells = useMemo(
     () => buildCalendarCells(viewYear, viewMonth),
@@ -295,7 +292,12 @@ const KpiCalendarRangePicker: React.FC<KpiCalendarRangePickerProps> = ({
     return draftStart <= target ? target : draftStart;
   }, [draftStart, hoverIso, endDate]);
 
-  const triggerLabel = formatDateRangeLabel(startDate, endDate, todayStr);
+  const triggerLabel = formatDateRangeLabel(
+    startDate,
+    endDate,
+    todayStr,
+    currentWeekRange
+  );
 
   return (
     <div ref={containerRef} className="relative">
@@ -500,10 +502,15 @@ const KpiCalendarRangePicker: React.FC<KpiCalendarRangePickerProps> = ({
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => commitAndClose(todayStr, todayStr)}
+                onClick={() =>
+                  commitAndClose(
+                    currentWeekRange.startDate,
+                    currentWeekRange.endDate
+                  )
+                }
                 className="text-[11px] font-bold text-[#e95623] hover:underline cursor-pointer"
               >
-                Reset ke Today
+                Reset ke Minggu Ini
               </button>
               <button
                 type="submit"
@@ -525,13 +532,14 @@ export const PeriodicServiceKpiSection: React.FC<
   PeriodicServiceKpiSectionProps
 > = ({ scheduleData, selectedSite, isLoadingWeekly = false, onJumpToDetail }) => {
   const todayStr = getLocalTodayIso();
+  const currentWeekRange = useMemo(
+    () => getLocalWeekRange(todayStr),
+    [todayStr]
+  );
   const [kpiRange, setKpiRange] = useState<{
     startDate: string;
     endDate: string;
-  }>(() => {
-    const today = getLocalTodayIso();
-    return { startDate: today, endDate: today };
-  });
+  }>(() => getLocalWeekRange());
 
   const { startDate, endDate } = kpiRange;
 
@@ -575,8 +583,8 @@ export const PeriodicServiceKpiSection: React.FC<
     if (
       !scheduleData &&
       isLoadingWeekly &&
-      startDate === todayStr &&
-      endDate === todayStr
+      startDate === currentWeekRange.startDate &&
+      endDate === currentWeekRange.endDate
     ) {
       return;
     }
@@ -622,7 +630,8 @@ export const PeriodicServiceKpiSection: React.FC<
     startDate,
     endDate,
     activeRangeKey,
-    todayStr,
+    currentWeekRange.startDate,
+    currentWeekRange.endDate,
     reloadTick,
   ]);
 
@@ -653,6 +662,9 @@ export const PeriodicServiceKpiSection: React.FC<
   const dayCount = countInclusiveDays(startDate, endDate);
   const isSingleDay = startDate === endDate;
   const isTodaySelected = isSingleDay && startDate === todayStr;
+  const isCurrentWeekSelected =
+    startDate === currentWeekRange.startDate &&
+    endDate === currentWeekRange.endDate;
 
   const periodSubtitle = isSingleDay
     ? isTodaySelected
@@ -662,9 +674,11 @@ export const PeriodicServiceKpiSection: React.FC<
       : `${getIndoDayNameClient(startDate)}, ${formatIndoShortDate(
           startDate
         )} • ${scopedItems.length} Unit`
-    : `Periode: ${formatIndoShortDate(startDate)} – ${formatIndoShortDate(
-        endDate
-      )} (${dayCount} Hari) • ${scopedItems.length} Unit`;
+    : `${isCurrentWeekSelected ? "Minggu Ini" : "Periode"}: ${formatIndoShortDate(
+        startDate
+      )} – ${formatIndoShortDate(endDate)} (${dayCount} Hari) • ${
+        scopedItems.length
+      } Unit`;
 
   const parameterCards: KpiCardDescriptor[] = [
     {
@@ -760,7 +774,7 @@ export const PeriodicServiceKpiSection: React.FC<
             startDate={startDate}
             endDate={endDate}
             todayStr={todayStr}
-            weekRange={scheduleData?.weekRange}
+            currentWeekRange={currentWeekRange}
             onApplyRange={(s, e) => setKpiRange({ startDate: s, endDate: e })}
           />
         </div>
