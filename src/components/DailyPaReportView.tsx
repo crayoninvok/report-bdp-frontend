@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -8,6 +8,10 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import {
+  DailyPaMonthlyDaySummary,
+  plantService,
+} from "../services/plantService";
 import {
   INDONESIAN_MONTHS,
   INDONESIAN_WEEKDAYS_MON_FIRST,
@@ -21,6 +25,35 @@ export const DailyPaReportView: React.FC = () => {
 
   const [viewYear, setViewYear] = useState<number>(() => now.getFullYear());
   const [viewMonth, setViewMonth] = useState<number>(() => now.getMonth());
+  const [siteFilter, setSiteFilter] = useState<"" | "MuaraPahu" | "Senyiur">("");
+  const [summaryMap, setSummaryMap] = useState<
+    Record<string, DailyPaMonthlyDaySummary>
+  >({});
+
+  useEffect(() => {
+    let active = true;
+    const loadMonth = async () => {
+      try {
+        const res = await plantService.getDailyPaMonthlySummary(
+          viewYear,
+          viewMonth + 1,
+          siteFilter || undefined
+        );
+        if (!active || !res.success) return;
+        const map: Record<string, DailyPaMonthlyDaySummary> = {};
+        for (const d of res.data.days) {
+          map[d.date] = d;
+        }
+        setSummaryMap(map);
+      } catch {
+        // Keep calendar navigable even if summary fetch fails transiently
+      }
+    };
+    loadMonth();
+    return () => {
+      active = false;
+    };
+  }, [viewYear, viewMonth, siteFilter]);
 
   const yearOptions = useMemo(() => {
     const currentYear = now.getFullYear();
@@ -83,6 +116,19 @@ export const DailyPaReportView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={siteFilter}
+            onChange={(e) =>
+              setSiteFilter(e.target.value as "" | "MuaraPahu" | "Senyiur")
+            }
+            aria-label="Filter Job Site"
+            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-sky-300 cursor-pointer"
+          >
+            <option value="">Semua Site</option>
+            <option value="MuaraPahu">Muara Pahu</option>
+            <option value="Senyiur">Senyiur</option>
+          </select>
+
           <button
             type="button"
             onClick={handlePrevMonth}
@@ -174,6 +220,11 @@ export const DailyPaReportView: React.FC = () => {
         <div className="grid grid-cols-7 gap-px bg-slate-200/80">
           {cells.map((cell) => {
             const isToday = cell.iso === todayIso;
+            const daySummary = summaryMap[cell.iso];
+            const isPaHealthy = daySummary
+              ? daySummary.overallPaPercent >= daySummary.targetPa
+              : true;
+
             return (
               <Link
                 key={cell.iso}
@@ -218,13 +269,26 @@ export const DailyPaReportView: React.FC = () => {
                   )}
                 </div>
 
-                {!cell.isCurrentMonth && (
+                {daySummary ? (
+                  <div className="pt-1.5 space-y-1">
+                    <div
+                      className={`inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-extrabold border ${
+                        isPaHealthy
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
+                      }`}
+                    >
+                      PA {daySummary.overallPaPercent.toFixed(1)}%
+                    </div>
+                    <div className="text-[10px] font-semibold text-slate-500 hidden sm:block">
+                      {daySummary.totalUnits} unit &bull; {daySummary.breakdownUnitCount} BD
+                    </div>
+                  </div>
+                ) : !cell.isCurrentMonth ? (
                   <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
                     {INDONESIAN_MONTHS[cell.monthIndex].slice(0, 3)}
                   </span>
-                )}
-
-                {cell.isCurrentMonth && (
+                ) : (
                   <div className="pt-2 flex items-center justify-between">
                     <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 group-hover:text-sky-700 transition-colors opacity-0 group-hover:opacity-100">
                       Buka Laporan →

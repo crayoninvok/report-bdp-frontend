@@ -672,7 +672,231 @@ export const plantService = {
     }
     return res.json();
   },
+
+  // Daily PA Report endpoints
+  getDailyPaReport: async (
+    date: string,
+    jobSite: string
+  ): Promise<DailyPaReportResponse> => {
+    const query = new URLSearchParams({ date, jobSite });
+    return requestPlantJson<DailyPaReportResponse>(
+      `${API_BASE_URL}/plant/daily-pa?${query.toString()}`,
+      { headers: getAuthHeaders() },
+      "Gagal memuat Daily PA Report"
+    );
+  },
+
+  getDailyPaMonthlySummary: async (
+    year: number,
+    month: number,
+    jobSite?: string
+  ): Promise<{
+    success: boolean;
+    data: { year: number; month: number; days: DailyPaMonthlyDaySummary[] };
+  }> => {
+    const query = new URLSearchParams({
+      year: String(year),
+      month: String(month),
+    });
+    if (jobSite) query.append("jobSite", jobSite);
+    return requestPlantJson(
+      `${API_BASE_URL}/plant/daily-pa/monthly-summary?${query.toString()}`,
+      { headers: getAuthHeaders() },
+      "Gagal memuat ringkasan kalender Daily PA"
+    );
+  },
+
+  updateDailyPaSettings: async (payload: {
+    date: string;
+    jobSite: string;
+    calendarHours?: number;
+    targetPa?: number;
+    notes?: string;
+  }): Promise<DailyPaReportResponse> =>
+    requestPlantJson<DailyPaReportResponse>(
+      `${API_BASE_URL}/plant/daily-pa/settings`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      },
+      "Gagal menyimpan pengaturan Daily PA"
+    ),
+
+  addUnitsToDailyPa: async (payload: {
+    date: string;
+    jobSite: string;
+    unitCodes: string[];
+  }): Promise<DailyPaReportResponse & { addedUnitsCount?: number }> =>
+    requestPlantJson(
+      `${API_BASE_URL}/plant/daily-pa/units`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      },
+      "Gagal menambahkan unit ke Daily PA"
+    ),
+
+  removeUnitFromDailyPa: async (entryId: string): Promise<DailyPaReportResponse> =>
+    requestPlantJson<DailyPaReportResponse>(
+      `${API_BASE_URL}/plant/daily-pa/units/${encodeURIComponent(entryId)}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      },
+      "Gagal menghapus unit dari Daily PA"
+    ),
+
+  syncPiPsToDailyPa: async (
+    date: string,
+    jobSite: string
+  ): Promise<DailyPaReportResponse> =>
+    requestPlantJson<DailyPaReportResponse>(
+      `${API_BASE_URL}/plant/daily-pa/sync-pi-ps`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ date, jobSite }),
+      },
+      "Gagal sinkronisasi PI & PS ke Daily PA"
+    ),
+
+  addDailyPaActivity: async (payload: {
+    unitEntryId: string;
+    activityText: string;
+    breakdownTime?: string;
+    durationHours: number | string;
+  }): Promise<DailyPaReportResponse> =>
+    requestPlantJson<DailyPaReportResponse>(
+      `${API_BASE_URL}/plant/daily-pa/activities`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      },
+      "Gagal menambahkan BD Activity"
+    ),
+
+  updateDailyPaActivity: async (
+    activityId: string,
+    payload: {
+      activityText?: string;
+      breakdownTime?: string;
+      durationHours?: number | string;
+    }
+  ): Promise<DailyPaReportResponse> =>
+    requestPlantJson<DailyPaReportResponse>(
+      `${API_BASE_URL}/plant/daily-pa/activities/${encodeURIComponent(activityId)}`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      },
+      "Gagal memperbarui BD Activity"
+    ),
+
+  deleteDailyPaActivity: async (activityId: string): Promise<DailyPaReportResponse> =>
+    requestPlantJson<DailyPaReportResponse>(
+      `${API_BASE_URL}/plant/daily-pa/activities/${encodeURIComponent(activityId)}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      },
+      "Gagal menghapus BD Activity"
+    ),
 };
+
+async function requestPlantJson<T>(
+  url: string,
+  init: RequestInit,
+  fallbackError: string
+): Promise<T> {
+  const res = await fetch(url, init);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.message || json.error || fallbackError);
+  }
+  return json as T;
+}
+
+export interface DailyPaActivityItem {
+  id: string;
+  unitEntryId: string;
+  sourceType: "PI" | "PS" | "MANUAL" | string;
+  sourceItemId: string | null;
+  activityText: string;
+  breakdownTime: string;
+  durationHours: number;
+  sortOrder: number;
+}
+
+export interface DailyPaUnitRow {
+  id: string;
+  no: number;
+  unitCode: string;
+  category: string;
+  brand: string;
+  model: string;
+  bdCount: number;
+  totalDowntime: number;
+  availableHours: number;
+  paPercent: number;
+  isBelowTarget: boolean;
+  breakdownTimesJoined: string;
+  mttr: number | null;
+  mtbf: number | null;
+  hasMissingPiPsHours: boolean;
+  activities: DailyPaActivityItem[];
+}
+
+export interface DailyPaSummary {
+  totalUnits: number;
+  totalBd: number;
+  totalDowntime: number;
+  totalAvailableHours: number;
+  totalCalendarHours: number;
+  overallPaPercent: number;
+  breakdownUnitCount: number;
+  belowTargetUnitCount: number;
+  overallMttr: number | null;
+  overallMtbf: number | null;
+}
+
+export interface DailyPaReportMeta {
+  id: string | null;
+  date: string;
+  jobSite: string;
+  calendarHours: number;
+  targetPa: number;
+  notes: string;
+}
+
+export interface DailyPaReportData {
+  report: DailyPaReportMeta;
+  summary: DailyPaSummary;
+  units: DailyPaUnitRow[];
+}
+
+export interface DailyPaReportResponse {
+  success: boolean;
+  message?: string;
+  data: DailyPaReportData;
+  syncMeta?: {
+    addedCount: number;
+    updatedCount: number;
+  };
+}
+
+export interface DailyPaMonthlyDaySummary {
+  date: string;
+  totalUnits: number;
+  totalBd: number;
+  breakdownUnitCount: number;
+  belowTargetUnitCount: number;
+  overallPaPercent: number;
+  targetPa: number;
+}
 
 export type PlantGlScope = "all_plant" | "rm_only" | "tyre_oli_grease";
 export type PlantPmPeriodMode = "week" | "mtd" | "30d" | "ytd" | "custom";
