@@ -770,17 +770,14 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full min-h-125 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
-      {/* Map DOM Container */}
-      <div ref={mapContainerRef} className="w-full h-full z-0 min-h-125" />
-
-      {/* Floating Map Controls Toolbar */}
-      <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-3 w-full">
+      {/* Map Controls & Geofence Quick-Fly Toolbar (Above Map) */}
+      <div className="flex flex-wrap items-center gap-2 p-2.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
         {/* Layer Switcher */}
-        <div className="flex items-center p-1 bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-slate-200/80">
+        <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/60">
           <button
             onClick={() => onLayerChange("satellite")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               mapLayer === "satellite"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -790,7 +787,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </button>
           <button
             onClick={() => onLayerChange("streets")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               mapLayer === "streets"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -800,7 +797,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </button>
           <button
             onClick={() => onLayerChange("dark")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               mapLayer === "dark"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -817,12 +814,12 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
             <button
               key={area.id}
               onClick={() => handleFlyToArea(area)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/95 backdrop-blur-md text-slate-800 text-xs font-extrabold hover:bg-slate-50 transition-all shadow-md cursor-pointer border border-slate-200"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-800 text-xs font-extrabold hover:bg-slate-100 transition-all cursor-pointer border border-slate-200/80"
               title={`Fokus ke ${area.name}`}
             >
               <span>{area.emoji || "🏭"} {area.shortName}</span>
               <span
-                className="px-1.5 py-0.2 rounded-md text-white font-mono text-[10px] font-black"
+                className="px-1.5 py-0.5 rounded-md text-white font-mono text-[10px] font-black leading-none"
                 style={{ backgroundColor: area.color }}
               >
                 {count} Unit
@@ -834,27 +831,33 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         {/* Fit All Units Button */}
         <button
           onClick={handleFitAll}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/80 text-slate-800 text-xs font-extrabold hover:bg-slate-50 transition-all shadow-md cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold hover:bg-slate-800 transition-all shadow-xs cursor-pointer"
           title="Zoom ke seluruh armada unit"
         >
-          <Maximize2 size={13} className="text-[#e95623]" />
+          <Maximize2 size={13} className="text-orange-400" />
           <span>Lihat Semua ({units.length})</span>
         </button>
       </div>
 
-      {/* Map Legend Overlay at Bottom Left */}
-      <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white p-3 rounded-2xl shadow-lg border border-slate-800 text-[11px] space-y-1.5 max-w-xs pointer-events-none">
-        <span className="font-extrabold block text-slate-300 uppercase tracking-wider text-[10px]">
-          Status Armada Real-time
-        </span>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold">Bergerak (&gt;1.5 km/h)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-            <span className="font-bold">Berhenti / Parkir</span>
+      {/* Map Canvas Container */}
+      <div className="relative w-full h-155 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        {/* Map DOM Container */}
+        <div ref={mapContainerRef} className="w-full h-full z-0" />
+
+        {/* Map Legend Overlay at Bottom Left */}
+        <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white p-3 rounded-2xl shadow-lg border border-slate-800 text-[11px] space-y-1.5 max-w-xs pointer-events-none">
+          <span className="font-extrabold block text-slate-300 uppercase tracking-wider text-[10px]">
+            Status Armada Real-time
+          </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-bold">Bergerak (&gt;1.5 km/h)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <span className="font-bold">Berhenti / Parkir</span>
+            </div>
           </div>
         </div>
       </div>

@@ -354,7 +354,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side: Leaflet Interactive Map (8 cols on lg) */}
         <div className="lg:col-span-8 xl:col-span-8 flex flex-col space-y-3">
-          <div className="h-155 w-full">
+          <div className="w-full">
             <VolvoMap
               units={filteredUnits}
               selectedUnit={selectedUnit}
