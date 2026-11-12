@@ -82,6 +82,20 @@ export const KNOWN_AREAS: KnownArea[] = [
     description:
       "Geofence Area Jetty Muara Pahu radius 3 km dari titik pusat 0°14'36.5\"S 116°01'09.6\"E.",
   },
+  {
+    id: "jetty-senyiur",
+    name: "Area Jetty Senyiur",
+    shortName: "Jetty Senyiur",
+    category: "Jetty & Loading Terminal (Radius 3 km)",
+    emoji: "⚓",
+    center: [0.295934, 116.620546],
+    zoom: 13,
+    color: "#7c3aed",
+    fillColor: "#8b5cf6",
+    radiusMeters: 3000,
+    description:
+      "Geofence Area Jetty Senyiur radius 3 km dari titik pusat 0.295934, 116.620546.",
+  },
 ];
 
 // Helper: Check if point [lat, lng] is inside a polygon
