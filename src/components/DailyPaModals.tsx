@@ -22,16 +22,6 @@ interface DailyPaBulkAddUnitsModalProps {
   onConfirmAdd: (unitCodes: string[]) => Promise<void>;
 }
 
-const CATEGORY_TABS = [
-  "Semua",
-  "Prime Mover",
-  "Vessel 1",
-  "Dolly",
-  "Vessel 2",
-] as const;
-
-const HAULING_SET = new Set(["Prime Mover", "Vessel 1", "Dolly", "Vessel 2"]);
-
 export const DailyPaBulkAddUnitsModal: React.FC<DailyPaBulkAddUnitsModalProps> = ({
   isOpen,
   onClose,
@@ -42,14 +32,11 @@ export const DailyPaBulkAddUnitsModal: React.FC<DailyPaBulkAddUnitsModalProps> =
   onConfirmAdd,
 }) => {
   const [search, setSearch] = useState("");
-  const [categoryTab, setCategoryTab] =
-    useState<(typeof CATEGORY_TABS)[number]>("Prime Mover");
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
       setSearch("");
-      setCategoryTab("Prime Mover");
       setSelectedCodes(new Set());
     }
   }, [isOpen]);
@@ -57,18 +44,16 @@ export const DailyPaBulkAddUnitsModal: React.FC<DailyPaBulkAddUnitsModalProps> =
   const filteredUnits = useMemo(() => {
     const q = search.trim().toLowerCase();
     return masterUnits.filter((u) => {
-      if (!HAULING_SET.has(u.category)) return false;
-      if (categoryTab !== "Semua" && u.category !== categoryTab) return false;
+      if (u.category !== "Prime Mover") return false;
 
       if (!q) return true;
       return (
         u.unitCode.toLowerCase().includes(q) ||
         u.brand.toLowerCase().includes(q) ||
-        u.model.toLowerCase().includes(q) ||
-        u.category.toLowerCase().includes(q)
+        u.model.toLowerCase().includes(q)
       );
     });
-  }, [masterUnits, categoryTab, search]);
+  }, [masterUnits, search]);
 
   const selectableFiltered = useMemo(
     () => filteredUnits.filter((u) => !existingUnitCodes.has(u.unitCode)),
@@ -144,24 +129,7 @@ export const DailyPaBulkAddUnitsModal: React.FC<DailyPaBulkAddUnitsModalProps> =
         </div>
 
         {/* Filter & Quick Select Controls */}
-        <div className="px-5 py-3.5 border-b border-slate-200 space-y-3 bg-white">
-          <div className="flex flex-wrap gap-1.5">
-            {CATEGORY_TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setCategoryTab(tab)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  categoryTab === tab
-                    ? "bg-sky-600 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
+        <div className="px-5 py-3.5 border-b border-slate-200 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
             <div className="relative flex-1">
               <Search
@@ -172,7 +140,7 @@ export const DailyPaBulkAddUnitsModal: React.FC<DailyPaBulkAddUnitsModalProps> =
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari kode unit, brand, model, atau kategori..."
+                placeholder="Cari kode unit Prime Mover, brand, atau model..."
                 className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-sky-300"
               />
             </div>

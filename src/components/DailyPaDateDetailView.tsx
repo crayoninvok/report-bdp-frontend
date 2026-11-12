@@ -125,21 +125,15 @@ export const DailyPaDateDetailView: React.FC = () => {
       setIsLoadingReport(true);
       const [paRes, unitsRes] = await Promise.all([
         plantService.getDailyPaReport(rawDate, selectedSite),
-        plantService.getMasterUnits({ site: selectedSite }),
+        plantService.getMasterUnits({ site: selectedSite, category: "Prime Mover" }),
       ]);
       if (paRes.success) {
         applyReportPayload(paRes.data);
       }
       if (unitsRes.success) {
-        const haulingCategories = new Set([
-          "Prime Mover",
-          "Vessel 1",
-          "Dolly",
-          "Vessel 2",
-        ]);
         setMasterUnits(
           unitsRes.data.filter(
-            (u) => u.status === "Active" && haulingCategories.has(u.category)
+            (u) => u.status === "Active" && u.category === "Prime Mover"
           )
         );
       }
