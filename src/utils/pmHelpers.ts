@@ -696,3 +696,133 @@ export function exportPmScheduleExcel(params: {
   XLSX.writeFile(wb, `Periodic_Service_${selectedSite}_${safeStart}_sd_${safeEnd}.xlsx`);
 }
 
+const INDO_SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+] as const;
+
+const INDO_FULL_MONTHS = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+] as const;
+
+const INDO_DAY_NAMES = [
+  "Minggu",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+] as const;
+
+/** Formats a Date instance to local YYYY-MM-DD without UTC midnight rollback. */
+export function toLocalIsoDate(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** Returns today's local YYYY-MM-DD date string. */
+export function getLocalTodayIso(): string {
+  return toLocalIsoDate(new Date());
+}
+
+/** Parses YYYY-MM-DD into a local Date at noon to avoid midnight/DST boundary shifts. */
+export function parseIsoToLocalDate(dateStr: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
+  if (!match) return null;
+  const y = Number(match[1]);
+  const m = Number(match[2]) - 1;
+  const d = Number(match[3]);
+  const dt = new Date(y, m, d, 12, 0, 0);
+  if (dt.getFullYear() !== y || dt.getMonth() !== m || dt.getDate() !== d) {
+    return null;
+  }
+  return dt;
+}
+
+/** Shifts a YYYY-MM-DD string by deltaDays in local calendar time. */
+export function shiftIsoDate(dateStr: string, deltaDays: number): string {
+  const dt = parseIsoToLocalDate(dateStr) || new Date();
+  dt.setDate(dt.getDate() + deltaDays);
+  return toLocalIsoDate(dt);
+}
+
+/** Counts inclusive calendar days between two YYYY-MM-DD dates. */
+export function countInclusiveDays(startDate: string, endDate: string): number {
+  const s = parseIsoToLocalDate(startDate);
+  const e = parseIsoToLocalDate(endDate);
+  if (!s || !e || s > e) return 0;
+  const utcS = Date.UTC(s.getFullYear(), s.getMonth(), s.getDate());
+  const utcE = Date.UTC(e.getFullYear(), e.getMonth(), e.getDate());
+  return Math.round((utcE - utcS) / 86_400_000) + 1;
+}
+
+/** Returns Indonesian day name (e.g. "Kamis") for a YYYY-MM-DD string. */
+export function getIndoDayNameClient(dateStr: string): string {
+  const dt = parseIsoToLocalDate(dateStr);
+  return dt ? INDO_DAY_NAMES[dt.getDay()] : "";
+}
+
+/** Formats YYYY-MM-DD into short Indonesian date (e.g. "12 Nov 2026"). */
+export function formatIndoShortDate(dateStr: string, includeYear = true): string {
+  const dt = parseIsoToLocalDate(dateStr);
+  if (!dt) return dateStr;
+  const day = dt.getDate();
+  const mon = INDO_SHORT_MONTHS[dt.getMonth()];
+  return includeYear ? `${day} ${mon} ${dt.getFullYear()}` : `${day} ${mon}`;
+}
+
+/** Formats month + year header (e.g. "November 2026") for calendar navigation. */
+export function formatIndoMonthYear(year: number, monthIndex: number): string {
+  return `${INDO_FULL_MONTHS[monthIndex] || ""} ${year}`;
+}
+
+/** Formats a single-day or multi-day date range label compactly. */
+export function formatDateRangeLabel(
+  startDate: string,
+  endDate: string,
+  todayStr: string
+): string {
+  if (startDate === endDate) {
+    if (startDate === todayStr) {
+      return `Today • ${formatIndoShortDate(startDate)}`;
+    }
+    return formatIndoShortDate(startDate);
+  }
+  const s = parseIsoToLocalDate(startDate);
+  const e = parseIsoToLocalDate(endDate);
+  const days = countInclusiveDays(startDate, endDate);
+  if (s && e && s.getFullYear() === e.getFullYear()) {
+    if (s.getMonth() === e.getMonth()) {
+      return `${s.getDate()}–${formatIndoShortDate(endDate)} (${days} Hari)`;
+    }
+    return `${formatIndoShortDate(startDate, false)} – ${formatIndoShortDate(
+      endDate
+    )} (${days} Hari)`;
+  }
+  return `${formatIndoShortDate(startDate)} – ${formatIndoShortDate(endDate)} (${days} Hari)`;
+}
+

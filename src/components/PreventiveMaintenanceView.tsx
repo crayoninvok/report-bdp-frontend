@@ -817,7 +817,15 @@ export const PreventiveMaintenanceView: React.FC<
       {/* =================================================================== */}
       <PeriodicServiceKpiSection
         scheduleData={scheduleData}
-        onJumpToDetail={() => setActiveTab("detail")}
+        selectedSite={selectedSite}
+        isLoadingWeekly={isLoadingWeekly}
+        onJumpToDetail={({ startDate, endDate }) => {
+          setActiveTab("detail");
+          setDetailPreset("custom");
+          setDetailStart(startDate);
+          setDetailEnd(endDate);
+          fetchDetailRange(startDate, endDate);
+        }}
       />
 
       {/* =================================================================== */}
