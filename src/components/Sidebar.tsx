@@ -14,9 +14,6 @@ import {
   Gauge,
   FileEdit,
   Waves,
-  Truck,
-  FileSpreadsheet,
-  ClipboardList,
   Fuel,
   Database,
   Wrench,
@@ -92,28 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       title: "Coal Hauling",
-      badge: "Maintenance",
       items: [
-        {
-          id: "coal-dashboard",
-          label: "Dashboard Produksi",
-          icon: Truck,
-          badge: "Maintenance",
-        },
-
-        {
-          id: "coal-input",
-          label: "Input Data Produksi",
-          icon: FileSpreadsheet,
-          badge: "Maintenance",
-        },
-
-        {
-          id: "coal-reports",
-          label: "Laporan Produksi",
-          icon: ClipboardList,
-          badge: "Maintenance",
-        },
         {
           id: "coal-fuel-gl",
           label: "Konsumsi Fuel Operasional",
