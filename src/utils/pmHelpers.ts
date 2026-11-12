@@ -252,6 +252,290 @@ export function getPresetDateRange(
   };
 }
 
+export const HM_TOLERANCE_HOURS = 50;
+export const START_TIME_TOLERANCE_MINUTES = 60;
+export const LEAD_TIME_TOLERANCE_HOURS = 2;
+
+export interface KpiMetricEntry {
+  plan: number;
+  actual: number;
+  pct: number;
+  missingActualCount?: number;
+}
+
+export interface PsItemKpiEval {
+  isPlanned: boolean;
+  isExecuted: boolean;
+  hm: {
+    planVal: number | null;
+    actualVal: number | null;
+    diff: number | null;
+    pass: boolean | null;
+  };
+  startTime: {
+    planMin: number | null;
+    actualMin: number | null;
+    diffMinutes: number | null;
+    pass: boolean | null;
+  };
+  leadTime: {
+    planHours: number | null;
+    actualHours: number | null;
+    diffHours: number | null;
+    pass: boolean | null;
+  };
+}
+
+export interface PsKpiSummary {
+  pmCompliance: KpiMetricEntry;
+  akurasiServis: KpiMetricEntry;
+  achievementServis: KpiMetricEntry;
+  akurasiHm: KpiMetricEntry;
+  akurasiStartTime: KpiMetricEntry;
+  akurasiLeadTime: KpiMetricEntry;
+  executedCount: number;
+  plannedCount: number;
+  incompleteActualCount: number;
+}
+
+/** Parses numbers supporting Indonesian thousands grouping (e.g. "4.500") and decimals. */
+function parseLocalizedNumber(rawToken: string): number | null {
+  const cleaned = rawToken.trim();
+  if (!cleaned) return null;
+  const isIndoThousands = /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned);
+  const normalized = isIndoThousands
+    ? cleaned.replace(/\./g, "").replace(",", ".")
+    : cleaned.replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Extracts planned HM numeric target from strings like "Target 4.500 HM (P2 (500 HM))" or "500 HM". */
+export function parsePlanHmHours(raw?: string | null): number | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const beforeParen = trimmed.split("(")[0].trim();
+  const targetSrc = /\d/.test(beforeParen) ? beforeParen : trimmed;
+  const match = targetSrc.match(/\d+(?:[.,]\d+)*/);
+  return match ? parseLocalizedNumber(match[0]) : null;
+}
+
+/** Parses clock string ("07:00", "08:00 WITA", "15.30") into minutes from midnight (0..1439). */
+export function parseClockTimeMinutes(raw?: string | null): number | null {
+  if (!raw) return null;
+  const match = raw.trim().match(/(\d{1,2})[:.](\d{2})/);
+  if (!match) return null;
+  const hh = parseInt(match[1], 10);
+  const mm = parseInt(match[2], 10);
+  if (isNaN(hh) || isNaN(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return hh * 60 + mm;
+}
+
+/** Computes shortest circular distance in minutes across a 24-hour clock. */
+export function circularClockDiffMinutes(aMin: number, bMin: number): number {
+  const diff = Math.abs(aMin - bMin);
+  return diff > 720 ? 1440 - diff : diff;
+}
+
+/** Extracts lead time duration in hours from strings like "8 Jam", "9hrs", or "5.5". */
+export function parseLeadTimeHours(raw?: string | null): number | null {
+  if (!raw) return null;
+  const match = raw.trim().match(/\d+(?:[.,]\d+)*/);
+  return match ? parseLocalizedNumber(match[0]) : null;
+}
+
+/** Formats KPI compliance percentage up to 2 decimals using Indonesian comma separator. */
+export function formatKpiPct(pct: number): string {
+  return `${pct.toLocaleString("id-ID", { maximumFractionDigits: 2 })}%`;
+}
+
+function calcKpiPercent(actual: number, plan: number): number {
+  if (plan <= 0) return 0;
+  return Math.round((actual / plan) * 10000) / 100;
+}
+
+/** Checks whether a schedule item belongs to a planned category rather than Unscheduled/Breakdown. */
+export function isPlannedPsCategory(
+  item: Pick<PeriodicInspectionItem, "category" | "serviceType">
+): boolean {
+  if (item.category) {
+    return !/unscheduled|breakdown/i.test(item.category);
+  }
+  return !/unscheduled|breakdown/i.test(item.serviceType || "");
+}
+
+/** Evaluates per-row Plan vs Actual pass/fail tolerances for HM, Start Time, and Lead Time. */
+export function evaluatePmItemKpi(item: PeriodicInspectionItem): PsItemKpiEval {
+  const isPlanned = isPlannedPsCategory(item);
+  const isExecuted = item.status === "Completed";
+
+  const planHm = parsePlanHmHours(item.planHmServis);
+  const actualHm =
+    item.actualHmServis != null && Number.isFinite(Number(item.actualHmServis))
+      ? Number(item.actualHmServis)
+      : null;
+  const hmDiff = planHm != null && actualHm != null ? actualHm - planHm : null;
+  const hmPass =
+    isExecuted && hmDiff != null ? Math.abs(hmDiff) <= HM_TOLERANCE_HOURS : null;
+
+  const planMin = parseClockTimeMinutes(item.planStartTime);
+  const actualMin = parseClockTimeMinutes(item.actualStartTime);
+  const startDiffMin =
+    planMin != null && actualMin != null ? circularClockDiffMinutes(planMin, actualMin) : null;
+  const startPass =
+    isExecuted && startDiffMin != null
+      ? startDiffMin <= START_TIME_TOLERANCE_MINUTES
+      : null;
+
+  const planHours = parseLeadTimeHours(item.planLeadTime);
+  const actualHours = parseLeadTimeHours(item.actualLeadTime);
+  const leadDiff = planHours != null && actualHours != null ? actualHours - planHours : null;
+  const leadPass =
+    isExecuted && leadDiff != null
+      ? Math.abs(leadDiff) <= LEAD_TIME_TOLERANCE_HOURS
+      : null;
+
+  return {
+    isPlanned,
+    isExecuted,
+    hm: { planVal: planHm, actualVal: actualHm, diff: hmDiff, pass: hmPass },
+    startTime: {
+      planMin,
+      actualMin,
+      diffMinutes: startDiffMin,
+      pass: startPass,
+    },
+    leadTime: { planHours, actualHours, diffHours: leadDiff, pass: leadPass },
+  };
+}
+
+/**
+ * Computes Periodic Service KPI metrics matching the STRIVE compliance formula:
+ * - Akurasi Servis: planned units executed / total executed units
+ * - Achievement Servis: planned units executed / total planned units
+ * - Akurasi HM: |Actual HM - Plan HM| <= 50 hrs
+ * - Akurasi Start Time: |Actual Start - Plan Start| <= 1 hr (60 min)
+ * - Akurasi Lead Time: |Actual Lead - Plan Lead| <= 2 hrs
+ * - PM Compliance: sum(all 5 Actuals) / sum(all 5 Plans) * 100%
+ */
+export function computePsKpiMetrics(items: PeriodicInspectionItem[]): PsKpiSummary {
+  let executedCount = 0;
+  let plannedCount = 0;
+  let executedPlannedCount = 0;
+
+  let hmPlan = 0;
+  let hmActual = 0;
+  let hmMissing = 0;
+
+  let startPlan = 0;
+  let startActual = 0;
+  let startMissing = 0;
+
+  let leadPlan = 0;
+  let leadActual = 0;
+  let leadMissing = 0;
+
+  let incompleteActualCount = 0;
+
+  for (const item of items) {
+    const ev = evaluatePmItemKpi(item);
+    if (ev.isPlanned) plannedCount++;
+    if (!ev.isExecuted) continue;
+
+    executedCount++;
+    if (ev.isPlanned) executedPlannedCount++;
+
+    const hasHmActual = ev.hm.actualVal != null;
+    const hasStartActual = ev.startTime.actualMin != null;
+    const hasLeadActual = ev.leadTime.actualHours != null;
+    if (!hasHmActual || !hasStartActual || !hasLeadActual) {
+      incompleteActualCount++;
+    }
+
+    if (ev.hm.planVal != null && ev.hm.actualVal != null) {
+      hmPlan++;
+      if (ev.hm.pass) hmActual++;
+    } else if (ev.hm.planVal != null) {
+      hmMissing++;
+    }
+
+    if (ev.startTime.planMin != null && ev.startTime.actualMin != null) {
+      startPlan++;
+      if (ev.startTime.pass) startActual++;
+    } else if (ev.startTime.planMin != null) {
+      startMissing++;
+    }
+
+    if (ev.leadTime.planHours != null && ev.leadTime.actualHours != null) {
+      leadPlan++;
+      if (ev.leadTime.pass) leadActual++;
+    } else if (ev.leadTime.planHours != null) {
+      leadMissing++;
+    }
+  }
+
+  const akurasiServis: KpiMetricEntry = {
+    plan: executedCount,
+    actual: executedPlannedCount,
+    pct: calcKpiPercent(executedPlannedCount, executedCount),
+  };
+  const achievementServis: KpiMetricEntry = {
+    plan: plannedCount,
+    actual: executedPlannedCount,
+    pct: calcKpiPercent(executedPlannedCount, plannedCount),
+  };
+  const akurasiHm: KpiMetricEntry = {
+    plan: hmPlan,
+    actual: hmActual,
+    pct: calcKpiPercent(hmActual, hmPlan),
+    missingActualCount: hmMissing,
+  };
+  const akurasiStartTime: KpiMetricEntry = {
+    plan: startPlan,
+    actual: startActual,
+    pct: calcKpiPercent(startActual, startPlan),
+    missingActualCount: startMissing,
+  };
+  const akurasiLeadTime: KpiMetricEntry = {
+    plan: leadPlan,
+    actual: leadActual,
+    pct: calcKpiPercent(leadActual, leadPlan),
+    missingActualCount: leadMissing,
+  };
+
+  const totalPlan =
+    akurasiServis.plan +
+    achievementServis.plan +
+    akurasiHm.plan +
+    akurasiStartTime.plan +
+    akurasiLeadTime.plan;
+  const totalActual =
+    akurasiServis.actual +
+    achievementServis.actual +
+    akurasiHm.actual +
+    akurasiStartTime.actual +
+    akurasiLeadTime.actual;
+
+  const pmCompliance: KpiMetricEntry = {
+    plan: totalPlan,
+    actual: totalActual,
+    pct: calcKpiPercent(totalActual, totalPlan),
+  };
+
+  return {
+    pmCompliance,
+    akurasiServis,
+    achievementServis,
+    akurasiHm,
+    akurasiStartTime,
+    akurasiLeadTime,
+    executedCount,
+    plannedCount,
+    incompleteActualCount,
+  };
+}
+
 /** Exports PM detail & daily summary sheets to an .xlsx workbook. */
 export function exportPmScheduleExcel(params: {
   days: DaySchedule[];
@@ -263,34 +547,91 @@ export function exportPmScheduleExcel(params: {
 }) {
   const { days, filteredRows, masterUnits, selectedSite, startDate, endDate } = params;
 
-  const detailSheetData = filteredRows.map((row, idx) => ({
-    No: idx + 1,
-    Tanggal: row.date,
-    Hari: row.dayName,
-    Unit: row.unitCode,
-    "Kategori Unit": resolvePsUnitCategory(row, masterUnits),
-    "Buntut Ikut PS": resolveTrailerSummary(row, masterUnits),
-    "Tipe Servis": row.serviceType,
-    Kategori: row.category || "Scheduled PS",
-    Shift: row.shift,
-    "Plan Start Time": row.planStartTime || "-",
-    "Plan Lead Time": row.planLeadTime || "-",
-    "Plan HM Servis": row.planHmServis || "-",
-    Status: row.status,
-    "KM Saat Ini": row.currentKm ?? row.liveKm ?? "",
-    "Target KM Next": row.nextDueKm ?? "",
-    "HM Saat Ini": row.currentHm ?? row.liveHm ?? "",
-    "Target HM Next": row.nextDueHm ?? "",
-    "Nama Pengawas (SPV)": row.supervisorName || row.leadName || "-",
-    "Nama Mekanik": row.mechanicNames?.length
-      ? row.mechanicNames.join(", ")
-      : row.mechanicName || "-",
-    Catatan: row.notes || "",
-  }));
+  const detailSheetData = filteredRows.map((row, idx) => {
+    const kpi = evaluatePmItemKpi(row);
+    return {
+      No: idx + 1,
+      Tanggal: row.date,
+      Hari: row.dayName,
+      Unit: row.unitCode,
+      "Kategori Unit": resolvePsUnitCategory(row, masterUnits),
+      "Buntut Ikut PS": resolveTrailerSummary(row, masterUnits),
+      "Tipe Servis": row.serviceType,
+      Kategori: row.category || "Scheduled PS",
+      Shift: row.shift,
+      "Plan Start Time": row.planStartTime || "-",
+      "Actual Start Time": row.actualStartTime || "-",
+      "Evaluasi Start": kpi.startTime.pass === null ? "-" : kpi.startTime.pass ? "Sesuai" : "Lewat",
+      "Plan Lead Time": row.planLeadTime || "-",
+      "Actual Lead Time": row.actualLeadTime || "-",
+      "Evaluasi Lead": kpi.leadTime.pass === null ? "-" : kpi.leadTime.pass ? "Sesuai" : "Lewat",
+      "Plan HM Servis": row.planHmServis || "-",
+      "Actual HM Servis": row.actualHmServis ?? "-",
+      "Evaluasi HM": kpi.hm.pass === null ? "-" : kpi.hm.pass ? "Sesuai" : "Lewat",
+      Status: row.status,
+      "KM Saat Ini": row.currentKm ?? row.liveKm ?? "",
+      "Target KM Next": row.nextDueKm ?? "",
+      "HM Saat Ini": row.currentHm ?? row.liveHm ?? "",
+      "Target HM Next": row.nextDueHm ?? "",
+      "Nama Pengawas (SPV)": row.supervisorName || row.leadName || "-",
+      "Nama Mekanik": row.mechanicNames?.length
+        ? row.mechanicNames.join(", ")
+        : row.mechanicName || "-",
+      Catatan: row.notes || "",
+    };
+  });
+
+  const allItems = days.flatMap((d) => d.items);
+  const kpiSummary = computePsKpiMetrics(allItems);
+  const kpiSheetData = [
+    {
+      Parameter: "PM Compliance (Total Semua Parameter)",
+      Keterangan: "Total semua parameter",
+      Plan: kpiSummary.pmCompliance.plan,
+      Actual: kpiSummary.pmCompliance.actual,
+      Persentase: formatKpiPct(kpiSummary.pmCompliance.pct),
+    },
+    {
+      Parameter: "Akurasi Servis",
+      Keterangan: "Kesesuaian unit yang di service",
+      Plan: kpiSummary.akurasiServis.plan,
+      Actual: kpiSummary.akurasiServis.actual,
+      Persentase: formatKpiPct(kpiSummary.akurasiServis.pct),
+    },
+    {
+      Parameter: "Achievement Servis",
+      Keterangan: "Ketepatan unit yang service",
+      Plan: kpiSummary.achievementServis.plan,
+      Actual: kpiSummary.achievementServis.actual,
+      Persentase: formatKpiPct(kpiSummary.achievementServis.pct),
+    },
+    {
+      Parameter: "Akurasi HM",
+      Keterangan: "Toleransi +/- 50 hrs",
+      Plan: kpiSummary.akurasiHm.plan,
+      Actual: kpiSummary.akurasiHm.actual,
+      Persentase: formatKpiPct(kpiSummary.akurasiHm.pct),
+    },
+    {
+      Parameter: "Akurasi Start Time",
+      Keterangan: "Toleransi +/- 1 jam",
+      Plan: kpiSummary.akurasiStartTime.plan,
+      Actual: kpiSummary.akurasiStartTime.actual,
+      Persentase: formatKpiPct(kpiSummary.akurasiStartTime.pct),
+    },
+    {
+      Parameter: "Akurasi Lead Time",
+      Keterangan: "Toleransi +/- 2 jam",
+      Plan: kpiSummary.akurasiLeadTime.plan,
+      Actual: kpiSummary.akurasiLeadTime.actual,
+      Persentase: formatKpiPct(kpiSummary.akurasiLeadTime.pct),
+    },
+  ];
 
   const summarySheetData = days.map((d) => {
     const completed = d.items.filter((i) => i.status === "Completed").length;
     const pct = d.targetUnits > 0 ? Math.round((completed / d.targetUnits) * 100) : 0;
+    const dayKpi = computePsKpiMetrics(d.items);
     return {
       Tanggal: d.date,
       Hari: d.dayName,
@@ -300,7 +641,8 @@ export function exportPmScheduleExcel(params: {
       "In Progress": d.items.filter((i) => i.status === "In Progress").length,
       Scheduled: d.items.filter((i) => i.status === "Scheduled").length,
       Pending: d.items.filter((i) => i.status === "Pending").length,
-      "% Achievement": `${pct}%`,
+      "% Achievement Target": `${pct}%`,
+      "PM Compliance": formatKpiPct(dayKpi.pmCompliance.pct),
       "Lead Mekanik": d.leadMechanic || d.leadInspector || "-",
     };
   });
@@ -311,6 +653,7 @@ export function exportPmScheduleExcel(params: {
       ? detailSheetData
       : [{ Info: "Tidak ada jadwal Periodic Service pada periode ini" }]
   );
+  const wsKpi = XLSX.utils.json_to_sheet(kpiSheetData);
   const wsSummary = XLSX.utils.json_to_sheet(
     summarySheetData.length > 0 ? summarySheetData : [{ Info: "Tidak ada data ringkasan" }]
   );
@@ -325,9 +668,15 @@ export function exportPmScheduleExcel(params: {
     { wch: 20 },
     { wch: 18 },
     { wch: 10 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 16 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 12 },
     { wch: 14 },
     { wch: 14 },
     { wch: 15 },
@@ -338,6 +687,7 @@ export function exportPmScheduleExcel(params: {
     { wch: 30 },
   ];
 
+  XLSX.utils.book_append_sheet(wb, wsKpi, "KPI Compliance");
   XLSX.utils.book_append_sheet(wb, wsDetail, "Daftar Detail Servis");
   XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan Harian");
 

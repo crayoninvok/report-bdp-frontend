@@ -22,10 +22,16 @@ import {
   PmRadarUnit,
 } from "../services/plantService";
 import {
+  circularClockDiffMinutes,
   computePmTargetsClient,
   formatHm,
   formatKm,
   getPmReadinessStyle,
+  HM_TOLERANCE_HOURS,
+  LEAD_TIME_TOLERANCE_HOURS,
+  parseClockTimeMinutes,
+  parseLeadTimeHours,
+  parsePlanHmHours,
   PM_SERVICE_TYPES,
   PM_SHIFT_OPTIONS,
   PM_STATUS_OPTIONS,
@@ -33,6 +39,7 @@ import {
   PS_HM_SERVIS_OPTIONS,
   PS_LEAD_TIME_OPTIONS,
   PS_START_TIME_OPTIONS,
+  START_TIME_TOLERANCE_MINUTES,
 } from "../utils/pmHelpers";
 
 export interface PmUnitFormValues {
@@ -45,6 +52,9 @@ export interface PmUnitFormValues {
   planStartTime: string;
   planLeadTime: string;
   planHmServis: string;
+  actualStartTime: string;
+  actualLeadTime: string;
+  actualHmServis: string;
   supervisorName: string;
   mechanicNames: string[];
   includedTrailers: string[];
@@ -117,6 +127,42 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
   const [unitCategoryFilter, setUnitCategoryFilter] =
     useState<UnitCategoryFilter>("ALL");
   const [showTelemetryInputs, setShowTelemetryInputs] = useState(false);
+
+  // Live KPI pass/fail previews against Plan values
+  const kpiPreview = useMemo(() => {
+    const planHm = parsePlanHmHours(form.planHmServis);
+    const actualHm = form.actualHmServis.trim()
+      ? Number(form.actualHmServis.replace(",", "."))
+      : null;
+    const hmOk =
+      planHm != null && actualHm != null && Number.isFinite(actualHm)
+        ? Math.abs(actualHm - planHm) <= HM_TOLERANCE_HOURS
+        : null;
+
+    const planStart = parseClockTimeMinutes(form.planStartTime);
+    const actualStart = parseClockTimeMinutes(form.actualStartTime);
+    const startOk =
+      planStart != null && actualStart != null
+        ? circularClockDiffMinutes(planStart, actualStart) <=
+          START_TIME_TOLERANCE_MINUTES
+        : null;
+
+    const planLead = parseLeadTimeHours(form.planLeadTime);
+    const actualLead = parseLeadTimeHours(form.actualLeadTime);
+    const leadOk =
+      planLead != null && actualLead != null
+        ? Math.abs(actualLead - planLead) <= LEAD_TIME_TOLERANCE_HOURS
+        : null;
+
+    return { planHm, hmOk, startOk, leadOk };
+  }, [
+    form.planHmServis,
+    form.actualHmServis,
+    form.planStartTime,
+    form.actualStartTime,
+    form.planLeadTime,
+    form.actualLeadTime,
+  ]);
 
   React.useEffect(() => {
     setForm(initialValues);
@@ -719,7 +765,139 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
             />
           </div>
 
-          {/* Status & Telemetry Advanced Section */}
+          {/* Status & Realisasi Aktual Servis (Input KPI) */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-extrabold text-slate-800">
+                Status &amp; Realisasi Aktual Servis (KPI)
+              </span>
+              {form.currentHm && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((p) => ({
+                      ...p,
+                      actualHmServis: p.currentHm,
+                    }))
+                  }
+                  className="text-[10px] font-bold text-[#e95623] hover:underline cursor-pointer"
+                >
+                  Isi Actual HM dari Current HM ({form.currentHm})
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Status Servis
+                </label>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
+                  className="w-full px-2.5 py-2 text-xs font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                >
+                  {PM_STATUS_OPTIONS.map((st) => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                    Actual HM
+                  </label>
+                  {kpiPreview.hmOk !== null && (
+                    <span
+                      className={`text-[9.5px] font-black px-1.5 py-0.5 rounded ${
+                        kpiPreview.hmOk
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-rose-100 text-rose-700"
+                      }`}
+                    >
+                      {kpiPreview.hmOk ? "✓ ±50 HM" : "✗ >50 HM"}
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={form.actualHmServis}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, actualHmServis: e.target.value }))
+                  }
+                  placeholder={
+                    kpiPreview.planHm != null
+                      ? `Plan ${kpiPreview.planHm}`
+                      : "e.g. 525"
+                  }
+                  className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                    Actual Start
+                  </label>
+                  {kpiPreview.startOk !== null && (
+                    <span
+                      className={`text-[9.5px] font-black px-1.5 py-0.5 rounded ${
+                        kpiPreview.startOk
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-rose-100 text-rose-700"
+                      }`}
+                    >
+                      {kpiPreview.startOk ? "✓ ±1 Jam" : "✗ >1 Jam"}
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="time"
+                  value={form.actualStartTime}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, actualStartTime: e.target.value }))
+                  }
+                  className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                    Actual Lead (Jam)
+                  </label>
+                  {kpiPreview.leadOk !== null && (
+                    <span
+                      className={`text-[9.5px] font-black px-1.5 py-0.5 rounded ${
+                        kpiPreview.leadOk
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-rose-100 text-rose-700"
+                      }`}
+                    >
+                      {kpiPreview.leadOk ? "✓ ±2 Jam" : "✗ >2 Jam"}
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={form.actualLeadTime}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, actualLeadTime: e.target.value }))
+                  }
+                  placeholder="e.g. 8"
+                  className="w-full px-2.5 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Telemetry & Next Due KM / HM Advanced Section */}
           <div className="pt-1">
             <button
               type="button"
@@ -727,32 +905,11 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
               className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-[#e95623] cursor-pointer"
             >
               {showTelemetryInputs ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-              <span>
-                {mode === "edit"
-                  ? "Status Pengerjaan & Angka KM / HM Detail"
-                  : "Atur Angka KM / HM & Status (Opsional)"}
-              </span>
+              <span>Atur Angka Odometer KM / HM &amp; Target Berikutnya (Opsional)</span>
             </button>
 
             {showTelemetryInputs && (
               <div className="mt-2.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Status Servis
-                  </label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-                    className="w-full px-3 py-2 text-xs font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-                  >
-                    {PM_STATUS_OPTIONS.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
@@ -1282,23 +1439,37 @@ export type PendingConfirmAction =
   | { type: "status"; item: PeriodicInspectionItem; nextStatus: string }
   | { type: "delete"; item: PeriodicInspectionItem };
 
+export interface CompletionActualInput {
+  actualHmServis: string;
+  actualStartTime: string;
+  actualLeadTime: string;
+}
+
 interface PmConfirmModalProps {
   action: PendingConfirmAction | null;
   isProcessing: boolean;
   onCancel: () => void;
-  onConfirm: () => Promise<void>;
+  onConfirm: (actualInput?: CompletionActualInput) => Promise<void>;
 }
 
-/** Confirmation dialog protecting status updates and deletions from accidental clicks. */
-export const PmConfirmModal: React.FC<PmConfirmModalProps> = ({
-  action,
-  isProcessing,
-  onCancel,
-  onConfirm,
-}) => {
-  if (!action) return null;
-
+const PmConfirmModalBody: React.FC<{
+  action: PendingConfirmAction;
+  isProcessing: boolean;
+  onCancel: () => void;
+  onConfirm: (actualInput?: CompletionActualInput) => Promise<void>;
+}> = ({ action, isProcessing, onCancel, onConfirm }) => {
   const isDelete = action.type === "delete";
+  const isCompleting = action.type === "status" && action.nextStatus === "Completed";
+  const existingLead = parseLeadTimeHours(action.item.actualLeadTime);
+  const [actualHmServis, setActualHmServis] = useState(
+    action.item.actualHmServis != null ? String(action.item.actualHmServis) : ""
+  );
+  const [actualStartTime, setActualStartTime] = useState(
+    action.item.actualStartTime || ""
+  );
+  const [actualLeadTime, setActualLeadTime] = useState(
+    existingLead != null ? String(existingLead) : ""
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
@@ -1334,6 +1505,63 @@ export const PmConfirmModal: React.FC<PmConfirmModalProps> = ({
           </div>
         </div>
 
+        {isCompleting && (
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+            <div className="text-[11px] font-extrabold text-slate-700">
+              Input Realisasi Aktual Servis (Opsional untuk KPI)
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Actual HM
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={actualHmServis}
+                  onChange={(e) => setActualHmServis(e.target.value)}
+                  placeholder="e.g. 525"
+                  className="w-full px-2.5 py-1.5 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Actual Start
+                </label>
+                <input
+                  type="time"
+                  value={actualStartTime}
+                  onChange={(e) => setActualStartTime(e.target.value)}
+                  className="w-full px-2 py-1.5 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Lead (Jam)
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={actualLeadTime}
+                  onChange={(e) => setActualLeadTime(e.target.value)}
+                  placeholder="e.g. 8"
+                  className="w-full px-2.5 py-1.5 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                />
+              </div>
+            </div>
+            {(action.item.planHmServis ||
+              action.item.planStartTime ||
+              action.item.planLeadTime) && (
+              <p className="text-[10px] text-slate-500 font-mono">
+                Plan: {action.item.planHmServis || "-"} •{" "}
+                {action.item.planStartTime || "--:--"} •{" "}
+                {action.item.planLeadTime || "-"}
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-end gap-2 pt-2">
           <button
             type="button"
@@ -1345,7 +1573,17 @@ export const PmConfirmModal: React.FC<PmConfirmModalProps> = ({
           <button
             type="button"
             disabled={isProcessing}
-            onClick={onConfirm}
+            onClick={() =>
+              onConfirm(
+                isCompleting
+                  ? {
+                      actualHmServis,
+                      actualStartTime,
+                      actualLeadTime,
+                    }
+                  : undefined
+              )
+            }
             className={`px-5 py-2 rounded-xl text-xs font-black text-white cursor-pointer disabled:opacity-50 ${
               isDelete
                 ? "bg-rose-600 hover:bg-rose-700"
@@ -1361,5 +1599,27 @@ export const PmConfirmModal: React.FC<PmConfirmModalProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+/** Confirmation dialog protecting status updates and deletions from accidental clicks. */
+export const PmConfirmModal: React.FC<PmConfirmModalProps> = ({
+  action,
+  isProcessing,
+  onCancel,
+  onConfirm,
+}) => {
+  if (!action) return null;
+  const actionKey = `${action.type}:${action.item.id}:${
+    action.type === "status" ? action.nextStatus : "del"
+  }`;
+  return (
+    <PmConfirmModalBody
+      key={actionKey}
+      action={action}
+      isProcessing={isProcessing}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
   );
 };

@@ -49,6 +49,9 @@ export interface PeriodicInspectionItem {
   planStartTime?: string | null;
   planLeadTime?: string | null;
   planHmServis?: string | null;
+  actualStartTime?: string | null;
+  actualLeadTime?: string | null;
+  actualHmServis?: number | null;
   currentKm?: number | null;
   currentHm?: number | null;
   nextDueKm?: number | null;
@@ -418,6 +421,9 @@ export const plantService = {
     planStartTime?: string;
     planLeadTime?: string;
     planHmServis?: string;
+    actualStartTime?: string | null;
+    actualLeadTime?: string | null;
+    actualHmServis?: number | null;
     supervisorName?: string;
     mechanicNames?: string[];
     mechanicName?: string;
@@ -474,6 +480,9 @@ export const plantService = {
       planStartTime?: string;
       planLeadTime?: string;
       planHmServis?: string;
+      actualStartTime?: string | null;
+      actualLeadTime?: string | null;
+      actualHmServis?: number | null;
       supervisorName?: string;
       mechanicNames?: string[];
       mechanicName?: string;

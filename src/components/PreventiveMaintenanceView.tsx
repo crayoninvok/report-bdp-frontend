@@ -42,7 +42,9 @@ import {
   PeriodicInspectionPdfExportModal,
 } from "./PeriodicInspectionPdfExportModal";
 import { PreventiveMaintenanceRadarTab } from "./PreventiveMaintenanceRadarTab";
+import { PeriodicServiceKpiSection } from "./PeriodicServiceKpiSection";
 import {
+  CompletionActualInput,
   PendingConfirmAction,
   PmBulkAddModal,
   PmConfirmModal,
@@ -52,12 +54,14 @@ import {
 } from "./PreventiveMaintenanceModals";
 import {
   computePmTargetsClient,
+  evaluatePmItemKpi,
   exportPmScheduleExcel,
   formatHm,
   formatKm,
   getPmStatusStyle,
   getPresetDateRange,
   parseIncludedTrailers,
+  parseLeadTimeHours,
   PM_SERVICE_TYPES,
   PM_SHIFT_OPTIONS,
   PM_STATUS_OPTIONS,
@@ -103,6 +107,27 @@ function resolveMechanicsArray(item: PeriodicInspectionItem): string[] {
       .slice(0, 5);
   }
   return [];
+}
+
+/** Normalizes Actual Lead Time input (e.g. "9" -> "9 Jam") and parses Actual HM Servis. */
+function buildActualKpiPayload(input?: {
+  actualStartTime?: string;
+  actualLeadTime?: string;
+  actualHmServis?: string;
+}) {
+  const leadRaw = (input?.actualLeadTime || "").trim();
+  const leadFormatted = leadRaw
+    ? /jam|hr/i.test(leadRaw)
+      ? leadRaw
+      : `${leadRaw} Jam`
+    : null;
+  const hmRaw = (input?.actualHmServis || "").trim().replace(",", ".");
+  const hmNum = hmRaw ? Number(hmRaw) : null;
+  return {
+    actualStartTime: (input?.actualStartTime || "").trim() || null,
+    actualLeadTime: leadFormatted,
+    actualHmServis: hmNum != null && Number.isFinite(hmNum) ? hmNum : null,
+  };
 }
 
 export const PreventiveMaintenanceView: React.FC<
@@ -191,6 +216,9 @@ export const PreventiveMaintenanceView: React.FC<
       planStartTime: PS_START_TIME_OPTIONS[1],
       planLeadTime: PS_LEAD_TIME_OPTIONS[3],
       planHmServis: "",
+      actualStartTime: "",
+      actualLeadTime: "",
+      actualHmServis: "",
       supervisorName: "",
       mechanicNames: [],
       includedTrailers: [],
@@ -430,6 +458,9 @@ export const PreventiveMaintenanceView: React.FC<
         planStartTime: PS_START_TIME_OPTIONS[1],
         planLeadTime: PS_LEAD_TIME_OPTIONS[3],
         planHmServis: autoPlanHm,
+        actualStartTime: "",
+        actualLeadTime: "",
+        actualHmServis: "",
         supervisorName: "",
         mechanicNames: [],
         includedTrailers: [],
@@ -446,6 +477,7 @@ export const PreventiveMaintenanceView: React.FC<
     if (hrSupervisors.length === 0 || hrMechanics.length === 0) {
       void fetchPersonnel();
     }
+    const existingActualLead = parseLeadTimeHours(item.actualLeadTime);
     setUnitModalState({
       isOpen: true,
       mode: "edit",
@@ -460,6 +492,10 @@ export const PreventiveMaintenanceView: React.FC<
         planStartTime: item.planStartTime || "",
         planLeadTime: item.planLeadTime || "",
         planHmServis: item.planHmServis || "",
+        actualStartTime: item.actualStartTime || "",
+        actualLeadTime: existingActualLead != null ? String(existingActualLead) : "",
+        actualHmServis:
+          item.actualHmServis != null ? String(item.actualHmServis) : "",
         supervisorName: item.supervisorName || "",
         mechanicNames: resolveMechanicsArray(item),
         includedTrailers: parseIncludedTrailers(item.buntutSummary),
@@ -485,6 +521,11 @@ export const PreventiveMaintenanceView: React.FC<
   const handleSubmitUnitModal = async (values: PmUnitFormValues) => {
     try {
       setIsMutating(true);
+      const actualPayload = buildActualKpiPayload({
+        actualStartTime: values.actualStartTime,
+        actualLeadTime: values.actualLeadTime,
+        actualHmServis: values.actualHmServis,
+      });
       const payload = {
         serviceType: values.serviceType,
         shift: values.shift,
@@ -493,6 +534,7 @@ export const PreventiveMaintenanceView: React.FC<
         planStartTime: values.planStartTime,
         planLeadTime: values.planLeadTime,
         planHmServis: values.planHmServis,
+        ...actualPayload,
         supervisorName: values.supervisorName,
         mechanicNames: values.mechanicNames,
         mechanicName: values.mechanicNames.join(", "),
@@ -561,13 +603,17 @@ export const PreventiveMaintenanceView: React.FC<
     }
   };
 
-  const handleConfirmAction = async () => {
+  const handleConfirmAction = async (actualInput?: CompletionActualInput) => {
     if (!confirmAction) return;
     try {
       setIsMutating(true);
       if (confirmAction.type === "status") {
+        const actualPayload = actualInput
+          ? buildActualKpiPayload(actualInput)
+          : undefined;
         await plantService.updatePmItem(confirmAction.item.id, {
           status: confirmAction.nextStatus,
+          ...(actualPayload || {}),
         });
         showToast(
           "success",
@@ -765,6 +811,14 @@ export const PreventiveMaintenanceView: React.FC<
           </div>
         </div>
       </div>
+
+      {/* =================================================================== */}
+      {/* KPI PERIODIC SERVICE (PM COMPLIANCE & AKURASI FORMULA)              */}
+      {/* =================================================================== */}
+      <PeriodicServiceKpiSection
+        scheduleData={scheduleData}
+        onJumpToDetail={() => setActiveTab("detail")}
+      />
 
       {/* =================================================================== */}
       {/* TAB SWITCHER BAR                                                    */}
@@ -1102,6 +1156,11 @@ export const PreventiveMaintenanceView: React.FC<
                         const displayKm = item.currentKm ?? item.liveKm ?? radar?.liveKm;
                         const displayHm = item.currentHm ?? item.liveHm ?? radar?.liveHm;
                         const mechList = resolveMechanicsArray(item);
+                        const kpiEval = evaluatePmItemKpi(item);
+                        const hasAnyActual =
+                          item.actualHmServis != null ||
+                          Boolean(item.actualStartTime) ||
+                          Boolean(item.actualLeadTime);
 
                         return (
                           <div
@@ -1176,6 +1235,66 @@ export const PreventiveMaintenanceView: React.FC<
                                     <Clock size={9} />
                                     {item.planStartTime || "--:--"}
                                     {item.planLeadTime ? ` • ${item.planLeadTime}` : ""}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Actual KPI Mini Badges */}
+                            {item.status === "Completed" && hasAnyActual && (
+                              <div className="flex flex-wrap items-center gap-1 text-[9px] font-mono font-bold">
+                                {kpiEval.hm.actualVal != null && (
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded ${
+                                      kpiEval.hm.pass === true
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : kpiEval.hm.pass === false
+                                        ? "bg-rose-100 text-rose-700"
+                                        : "bg-slate-100 text-slate-600"
+                                    }`}
+                                  >
+                                    HM {kpiEval.hm.actualVal}
+                                    {kpiEval.hm.pass === true
+                                      ? " ✓"
+                                      : kpiEval.hm.pass === false
+                                      ? " ✗"
+                                      : ""}
+                                  </span>
+                                )}
+                                {item.actualStartTime && (
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded ${
+                                      kpiEval.startTime.pass === true
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : kpiEval.startTime.pass === false
+                                        ? "bg-rose-100 text-rose-700"
+                                        : "bg-slate-100 text-slate-600"
+                                    }`}
+                                  >
+                                    Start {item.actualStartTime}
+                                    {kpiEval.startTime.pass === true
+                                      ? " ✓"
+                                      : kpiEval.startTime.pass === false
+                                      ? " ✗"
+                                      : ""}
+                                  </span>
+                                )}
+                                {item.actualLeadTime && (
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded ${
+                                      kpiEval.leadTime.pass === true
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : kpiEval.leadTime.pass === false
+                                        ? "bg-rose-100 text-rose-700"
+                                        : "bg-slate-100 text-slate-600"
+                                    }`}
+                                  >
+                                    Lead {item.actualLeadTime}
+                                    {kpiEval.leadTime.pass === true
+                                      ? " ✓"
+                                      : kpiEval.leadTime.pass === false
+                                      ? " ✗"
+                                      : ""}
                                   </span>
                                 )}
                               </div>
@@ -1466,11 +1585,74 @@ export const PreventiveMaintenanceView: React.FC<
                             </div>
                             {(row.planStartTime || row.planLeadTime || row.planHmServis) && (
                               <div className="text-[11px] text-slate-600 mt-1 font-mono">
-                                {row.planStartTime ? `Start ${row.planStartTime}` : ""}
+                                Plan: {row.planStartTime ? `Start ${row.planStartTime}` : "-"}
                                 {row.planLeadTime ? ` • Lead ${row.planLeadTime}` : ""}
                                 {row.planHmServis ? ` • ${row.planHmServis}` : ""}
                               </div>
                             )}
+                            {(row.actualStartTime ||
+                              row.actualLeadTime ||
+                              row.actualHmServis != null) && (() => {
+                              const rowKpi = evaluatePmItemKpi(row);
+                              return (
+                                <div className="flex flex-wrap items-center gap-1 mt-1 text-[10px] font-mono font-bold">
+                                  {row.actualStartTime && (
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded ${
+                                        rowKpi.startTime.pass === true
+                                          ? "bg-emerald-100 text-emerald-700"
+                                          : rowKpi.startTime.pass === false
+                                          ? "bg-rose-100 text-rose-700"
+                                          : "bg-slate-100 text-slate-700"
+                                      }`}
+                                    >
+                                      Act Start {row.actualStartTime}
+                                      {rowKpi.startTime.pass === true
+                                        ? " ✓"
+                                        : rowKpi.startTime.pass === false
+                                        ? " ✗"
+                                        : ""}
+                                    </span>
+                                  )}
+                                  {row.actualLeadTime && (
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded ${
+                                        rowKpi.leadTime.pass === true
+                                          ? "bg-emerald-100 text-emerald-700"
+                                          : rowKpi.leadTime.pass === false
+                                          ? "bg-rose-100 text-rose-700"
+                                          : "bg-slate-100 text-slate-700"
+                                      }`}
+                                    >
+                                      Act Lead {row.actualLeadTime}
+                                      {rowKpi.leadTime.pass === true
+                                        ? " ✓"
+                                        : rowKpi.leadTime.pass === false
+                                        ? " ✗"
+                                        : ""}
+                                    </span>
+                                  )}
+                                  {row.actualHmServis != null && (
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded ${
+                                        rowKpi.hm.pass === true
+                                          ? "bg-emerald-100 text-emerald-700"
+                                          : rowKpi.hm.pass === false
+                                          ? "bg-rose-100 text-rose-700"
+                                          : "bg-slate-100 text-slate-700"
+                                      }`}
+                                    >
+                                      Act HM {row.actualHmServis}
+                                      {rowKpi.hm.pass === true
+                                        ? " ✓"
+                                        : rowKpi.hm.pass === false
+                                        ? " ✗"
+                                        : ""}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             {row.notes && (
                               <div className="text-[11px] text-slate-500 mt-1 max-w-xs truncate">
                                 {row.notes}
@@ -1583,6 +1765,7 @@ export const PreventiveMaintenanceView: React.FC<
       {/* MODALS                                                              */}
       {/* =================================================================== */}
       <PmUnitFormModal
+        key={`${unitModalState.mode}:${unitModalState.editItemId || unitModalState.initialValues.date}:${unitModalState.isOpen ? "open" : "closed"}`}
         isOpen={unitModalState.isOpen}
         mode={unitModalState.mode}
         selectedSite={selectedSite}
