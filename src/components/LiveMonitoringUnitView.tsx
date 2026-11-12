@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { User } from "../types/auth";
 import { volvoService, VolvoUnit, VolvoSummary } from "../services/volvoService";
@@ -58,6 +58,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
 
   // Map & Interaction States
   const [selectedUnit, setSelectedUnit] = useState<VolvoUnit | null>(null);
+  const [focusRequestId, setFocusRequestId] = useState<number>(0);
   const [mapLayer, setMapLayer] = useState<"satellite" | "streets" | "dark">("satellite");
 
   // Filter & Search States
@@ -68,7 +69,10 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
   const [refreshInterval, setRefreshInterval] = useState<number>(30);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(30);
 
-  // Load Volvo Units Data
+  const showErrorRef = useRef(showError);
+  showErrorRef.current = showError;
+
+  // Load Volvo Units Data (stable callback: NEVER depends on selectedUnit to prevent click re-fetch loop)
   const loadUnitsData = useCallback(
     async (isBackground = false, force = false) => {
       try {
@@ -76,34 +80,38 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
         else setIsRefreshing(true);
 
         const res = await volvoService.getLiveMonitoring(force);
-        setUnits(res.data || []);
+        const list = res.data || [];
+        setUnits(list);
         setSummary(res.summary || null);
         setLastUpdated(new Date());
 
-        // Keep selected unit synchronized
-        if (selectedUnit) {
-          const updated = res.data.find((u) => u.vin === selectedUnit.vin);
-          if (updated) setSelectedUnit(updated);
-        }
+        // Keep selected unit data synchronized without recreating loadUnitsData
+        setSelectedUnit((prev) => {
+          if (!prev) return null;
+          return list.find((u) => u.vin === prev.vin) || prev;
+        });
       } catch (err: any) {
         console.error("Gagal memuat data Volvo Live Monitoring:", err);
         if (!isBackground) {
-          showError(err.message || "Gagal menghubungi API Volvo Trucks Telematics");
+          showErrorRef.current(err.message || "Gagal menghubungi API Volvo Trucks Telematics");
         }
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
       }
     },
-    [selectedUnit, showError]
+    []
   );
 
-  // Initial load
+  // Initial load once on mount
   useEffect(() => {
     loadUnitsData();
   }, [loadUnitsData]);
 
-  // Auto-refresh countdown & trigger
+  // Auto-refresh countdown & trigger (uses ref so it doesn't restart on unit clicks)
+  const loadUnitsRef = useRef(loadUnitsData);
+  loadUnitsRef.current = loadUnitsData;
+
   useEffect(() => {
     if (refreshInterval <= 0) return;
 
@@ -111,7 +119,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
-          loadUnitsData(true, true);
+          loadUnitsRef.current(true, true);
           return refreshInterval;
         }
         return prev - 1;
@@ -119,7 +127,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [refreshInterval, loadUnitsData]);
+  }, [refreshInterval]);
 
   // Filtered Units List
   const filteredUnits = useMemo(() => {
@@ -350,9 +358,10 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
             <VolvoMap
               units={filteredUnits}
               selectedUnit={selectedUnit}
-              onSelectUnit={(unit) => setSelectedUnit(unit)}
+              focusRequestId={focusRequestId}
+              onSelectUnit={setSelectedUnit}
               mapLayer={mapLayer}
-              onLayerChange={(layer) => setMapLayer(layer)}
+              onLayerChange={setMapLayer}
             />
           </div>
 
@@ -443,7 +452,10 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
                 return (
                   <div
                     key={unit.vin}
-                    onClick={() => setSelectedUnit(unit)}
+                    onClick={() => {
+                      setSelectedUnit(unit);
+                      setFocusRequestId((n) => n + 1);
+                    }}
                     className={`p-3 rounded-2xl border transition-all cursor-pointer ${
                       isSelected
                         ? "bg-orange-50/70 border-orange-300 ring-2 ring-orange-400/30 shadow-xs"

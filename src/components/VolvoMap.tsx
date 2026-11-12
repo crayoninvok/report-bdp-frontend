@@ -84,6 +84,7 @@ export function isPointInPolygon(point: [number, number], vs: [number, number][]
 interface VolvoMapProps {
   units: VolvoUnit[];
   selectedUnit: VolvoUnit | null;
+  focusRequestId?: number;
   onSelectUnit: (unit: VolvoUnit) => void;
   mapLayer: "satellite" | "streets" | "dark";
   onLayerChange: (layer: "satellite" | "streets" | "dark") => void;
@@ -92,6 +93,7 @@ interface VolvoMapProps {
 export const VolvoMap: React.FC<VolvoMapProps> = ({
   units,
   selectedUnit,
+  focusRequestId = 0,
   onSelectUnit,
   mapLayer,
   onLayerChange,
@@ -253,10 +255,13 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     });
   }, [units]);
 
-  const isMapClickRef = useRef<boolean>(false);
   const prevSelectedVinRef = useRef<string | null>(null);
+  const prevFocusRequestIdRef = useRef<number>(0);
+  const selectedUnitRef = useRef<VolvoUnit | null>(selectedUnit);
+  selectedUnitRef.current = selectedUnit;
   const onSelectUnitRef = useRef(onSelectUnit);
   onSelectUnitRef.current = onSelectUnit;
+  const selectedVin = selectedUnit?.vin ?? null;
 
   // Create custom HTML icon for each unit (stable geometry to prevent jitter)
   const createUnitIcon = (unit: VolvoUnit) => {
@@ -277,7 +282,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         </div>
 
         <!-- Vehicle Directional Marker -->
-        <div class="unit-marker-pin relative w-7 h-7 rounded-full bg-slate-900 border-2 flex items-center justify-center shadow-md text-white transition-all" style="border-color: ${borderColor};">
+        <div class="unit-marker-pin relative w-7 h-7 rounded-full bg-slate-900 border-2 flex items-center justify-center shadow-md text-white transition-colors" style="border-color: ${borderColor};">
           ${
             isMoving
               ? `
@@ -417,20 +422,30 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       activeVins.add(unit.vin);
 
       if (currentMarkers.has(unit.vin)) {
-        // Update existing marker position & popup content smoothly without destroying icon DOM
+        // Update existing marker position & popup content smoothly without recreating DOM
         const marker = currentMarkers.get(unit.vin)!;
-        marker.setLatLng([unit.latitude, unit.longitude]);
-        marker.setPopupContent(createPopupContent(unit));
+        (marker as any)._unitData = unit;
+
+        const prevLatLng = marker.getLatLng();
+        if (prevLatLng.lat !== unit.latitude || prevLatLng.lng !== unit.longitude) {
+          marker.setLatLng([unit.latitude, unit.longitude]);
+        }
+
+        const currentVisualKey = `${unit.isMoving}-${unit.speed}-${unit.heading}`;
+        const currentPopupKey = `${currentVisualKey}-${unit.latitude}-${unit.longitude}-${unit.positionDateTime || ""}`;
+        if ((marker as any)._popupKey !== currentPopupKey) {
+          marker.setPopupContent(createPopupContent(unit));
+          (marker as any)._popupKey = currentPopupKey;
+        }
 
         // Only update icon if movement/heading state actually changed
         const prevVisual = (marker as any)._visualKey;
-        const currentVisualKey = `${unit.isMoving}-${unit.speed}-${unit.heading}`;
         if (prevVisual !== currentVisualKey) {
           marker.setIcon(createUnitIcon(unit));
           (marker as any)._visualKey = currentVisualKey;
 
           // Re-apply selection state if this unit is currently selected
-          if (selectedUnit?.vin === unit.vin) {
+          if (selectedUnitRef.current?.vin === unit.vin) {
             marker.setZIndexOffset(1000);
             marker.getElement()?.classList.add("is-unit-selected");
           }
@@ -439,24 +454,25 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         // Create new marker with stable geometry
         const icon = createUnitIcon(unit);
         const marker = L.marker([unit.latitude, unit.longitude], { icon }).addTo(map);
-
-        (marker as any)._visualKey = `${unit.isMoving}-${unit.speed}-${unit.heading}`;
+        const currentVisualKey = `${unit.isMoving}-${unit.speed}-${unit.heading}`;
+        (marker as any)._unitData = unit;
+        (marker as any)._visualKey = currentVisualKey;
+        (marker as any)._popupKey = `${currentVisualKey}-${unit.latitude}-${unit.longitude}-${unit.positionDateTime || ""}`;
 
         marker.bindPopup(createPopupContent(unit), {
           className: "custom-leaflet-popup",
           maxWidth: 290,
-          autoPan: true,
-          autoPanPadding: [30, 30],
+          autoPan: false,
         });
 
-        // Click handler on map marker: mark as map click and notify parent
+        // Click handler on map marker: notify parent cleanly without triggering flyTo
         marker.on("click", (e) => {
           L.DomEvent.stopPropagation(e);
-          isMapClickRef.current = true;
-          onSelectUnitRef.current(unit);
+          const latestUnit: VolvoUnit = (marker as any)._unitData || unit;
+          onSelectUnitRef.current(latestUnit);
         });
 
-        if (selectedUnit?.vin === unit.vin) {
+        if (selectedUnitRef.current?.vin === unit.vin) {
           marker.setZIndexOffset(1000);
           marker.getElement()?.classList.add("is-unit-selected");
         }
@@ -474,16 +490,17 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     });
   }, [units]);
 
-  // Handle Selected Unit changes (Highlighting & smooth camera without shaking)
+  // Handle Selected Unit changes (Highlighting & camera only on explicit sidebar selection, never on refresh)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    const fromMapClick = isMapClickRef.current;
-    isMapClickRef.current = false;
+    const shouldFlyToUnit = focusRequestId > prevFocusRequestIdRef.current;
+    prevFocusRequestIdRef.current = focusRequestId;
 
     const prevVin = prevSelectedVinRef.current;
-    const currentVin = selectedUnit?.vin || null;
+    const currentVin = selectedVin;
+    const activeUnit = selectedUnitRef.current;
 
     // 1. Remove highlight & reset z-index on previously selected marker
     if (prevVin && prevVin !== currentVin) {
@@ -505,37 +522,45 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
 
     prevSelectedVinRef.current = currentVin;
 
-    // 3. Handle camera and popup behavior
-    if (!selectedUnit || selectedUnit.latitude === null || selectedUnit.longitude === null) {
+    // 3. Handle camera & popup: ONLY fly when user clicked a unit from the sidebar list
+    if (
+      !shouldFlyToUnit ||
+      !activeUnit ||
+      activeUnit.latitude === null ||
+      activeUnit.longitude === null
+    ) {
       return;
     }
 
-    const currentMarker = markersRef.current.get(selectedUnit.vin);
-
-    if (fromMapClick) {
-      // Direct click on map marker:
-      // The user is already focused right on the marker!
-      // Do NOT flyTo or pan the camera.
-      // Leaflet's built-in bindPopup click handler already opens the popup smoothly.
-      // Skipping flyTo completely eliminates camera oscillation and marker vibration!
-      return;
-    }
-
-    // Selection came from external sidebar list:
-    // Smoothly pan to the unit and open popup once the animation completes
+    const currentMarker = markersRef.current.get(activeUnit.vin);
     const targetZoom = Math.max(map.getZoom(), 16);
 
     const onFlyComplete = () => {
+      map.off("zoomstart", cancelPendingPopup);
+      map.off("dragstart", cancelPendingPopup);
       if (currentMarker && !currentMarker.isPopupOpen()) {
         currentMarker.openPopup();
       }
     };
 
+    const cancelPendingPopup = () => {
+      map.off("moveend", onFlyComplete);
+      map.off("zoomstart", cancelPendingPopup);
+      map.off("dragstart", cancelPendingPopup);
+    };
+
+    map.stop();
     map.once("moveend", onFlyComplete);
-    map.flyTo([selectedUnit.latitude, selectedUnit.longitude], targetZoom, {
-      duration: 0.8,
+    map.once("zoomstart", cancelPendingPopup);
+    map.once("dragstart", cancelPendingPopup);
+    map.flyTo([activeUnit.latitude, activeUnit.longitude], targetZoom, {
+      duration: 0.6,
     });
-  }, [selectedUnit]);
+
+    return () => {
+      cancelPendingPopup();
+    };
+  }, [selectedVin, focusRequestId]);
 
   // Fit bounds to all units helper
   const handleFitAll = () => {
