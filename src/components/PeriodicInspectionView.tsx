@@ -1790,7 +1790,11 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                       <span className="text-xs font-black text-slate-800">
                         {selectedUnitTrailers?.vessel1?.unitCode || "-"}
                       </span>
-                      <span className="text-[8px] text-slate-500 block">SDT110</span>
+                      <span className="text-[8px] text-slate-500 block">
+                        {selectedUnitTrailers?.vessel1
+                          ? `${selectedUnitTrailers.vessel1.brand} ${selectedUnitTrailers.vessel1.model}`
+                          : "SDT110"}
+                      </span>
                     </div>
 
                     <div className="p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
@@ -1798,7 +1802,11 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                       <span className="text-xs font-black text-slate-800">
                         {selectedUnitTrailers?.dolly?.unitCode || "-"}
                       </span>
-                      <span className="text-[8px] text-slate-500 block">DL</span>
+                      <span className="text-[8px] text-slate-500 block">
+                        {selectedUnitTrailers?.dolly
+                          ? `${selectedUnitTrailers.dolly.brand} ${selectedUnitTrailers.dolly.model}`
+                          : "DL60"}
+                      </span>
                     </div>
 
                     <div className="p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
@@ -1806,7 +1814,11 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                       <span className="text-xs font-black text-slate-800">
                         {selectedUnitTrailers?.vessel2?.unitCode || "-"}
                       </span>
-                      <span className="text-[8px] text-slate-500 block">SDT125</span>
+                      <span className="text-[8px] text-slate-500 block">
+                        {selectedUnitTrailers?.vessel2
+                          ? `${selectedUnitTrailers.vessel2.brand} ${selectedUnitTrailers.vessel2.model}`
+                          : "SDT125"}
+                      </span>
                     </div>
                   </div>
                 </div>

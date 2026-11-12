@@ -120,6 +120,24 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
     [masterUnits]
   );
 
+  const categorySubtitle = useMemo(() => {
+    const buildLabel = (cat: string, fallback: string) => {
+      const items = masterUnits.filter((u) => u.category === cat);
+      if (items.length === 0) return fallback;
+      const brands = Array.from(new Set(items.map((u) => u.brand).filter(Boolean)));
+      const models = Array.from(new Set(items.map((u) => u.model).filter(Boolean)));
+      const brandText = brands.join(" / ");
+      const modelText = models.join(" / ");
+      return brandText && modelText ? `${brandText} ${modelText}` : fallback;
+    };
+    return {
+      primeMover: buildLabel("Prime Mover", "Volvo FH16"),
+      vessel1: buildLabel("Vessel 1", "Korindo / CIMC SDT110"),
+      dolly: buildLabel("Dolly", "Korindo / CIMC DL60"),
+      vessel2: buildLabel("Vessel 2", "Korindo / CIMC SDT125"),
+    };
+  }, [masterUnits]);
+
   // Filtered Units
   const filteredUnits = useMemo(() => {
     let list = masterUnits;
@@ -292,7 +310,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Truck size={13} className="text-[#e95623]" />
-            Prime Mover (Volvo FH16)
+            Prime Mover ({categorySubtitle.primeMover})
           </span>
           <div className="my-2">
             <span className="text-2xl font-black text-slate-800">{pmCount || 71}</span>
@@ -306,7 +324,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Layers size={13} className="text-blue-600" />
-            Vessel 1 (Korindo SDT110)
+            Vessel 1 ({categorySubtitle.vessel1})
           </span>
           <div className="my-2">
             <span className="text-2xl font-black text-blue-700">{v1Count || 71}</span>
@@ -320,7 +338,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Layers size={13} className="text-purple-600" />
-            Dolly (Korindo DL)
+            Dolly ({categorySubtitle.dolly})
           </span>
           <div className="my-2">
             <span className="text-2xl font-black text-purple-700">{dlCount || 71}</span>
@@ -334,7 +352,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Layers size={13} className="text-emerald-600" />
-            Vessel 2 (Korindo SDT125)
+            Vessel 2 ({categorySubtitle.vessel2})
           </span>
           <div className="my-2">
             <span className="text-2xl font-black text-emerald-700">{v2Count || 71}</span>
@@ -366,7 +384,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari kode unit (e.g. 401, PM401, Volvo, DL)..."
+              placeholder="Cari kode unit (e.g. 401, PM401, Volvo, DL60, CIMC)..."
               value={unitSearch}
               onChange={(e) => setUnitSearch(e.target.value)}
               className="w-full pl-10 pr-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 shadow-2xs"
