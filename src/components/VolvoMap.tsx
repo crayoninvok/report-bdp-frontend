@@ -11,21 +11,24 @@ export interface KnownArea {
   name: string;
   shortName: string;
   category: string;
+  emoji?: string;
   center: [number, number];
   zoom: number;
   color: string;
   fillColor: string;
-  polygon: [number, number][];
+  polygon?: [number, number][];
+  radiusMeters?: number;
   description: string;
 }
 
-// Known Key Mining Operational Areas & Facilities (Senyiur & Muara Pahu)
+// Known Key Mining Operational Areas, Workshops & Jetty Facilities (Senyiur & Muara Pahu)
 export const KNOWN_AREAS: KnownArea[] = [
   {
     id: "workshop-muara-pahu",
     name: "Area Workshop Muara Pahu",
     shortName: "Workshop Muara Pahu",
     category: "Workshop & Maintenance Pool",
+    emoji: "🏭",
     center: [0.0221, 116.0295],
     zoom: 17,
     color: "#2563eb",
@@ -47,6 +50,7 @@ export const KNOWN_AREAS: KnownArea[] = [
     name: "Area Workshop Senyiur",
     shortName: "Workshop Senyiur",
     category: "Workshop & Maintenance Pool",
+    emoji: "🏭",
     center: [0.2965, 116.5775],
     zoom: 17,
     color: "#ea580c",
@@ -62,6 +66,21 @@ export const KNOWN_AREAS: KnownArea[] = [
       [0.2978, 116.5764],
     ],
     description: "Fasilitas Workshop, bengkel perawatan, dan pool parkir armada unit Volvo di Site Senyiur.",
+  },
+  {
+    id: "jetty-muara-pahu",
+    name: "Area Jetty Muara Pahu",
+    shortName: "Jetty Muara Pahu",
+    category: "Jetty & Loading Terminal (Radius 3 km)",
+    emoji: "⚓",
+    // 0°14'36.5"S = -0.2434722, 116°01'09.6"E = 116.0193333
+    center: [-0.2434722, 116.0193333],
+    zoom: 13,
+    color: "#0d9488",
+    fillColor: "#14b8a6",
+    radiusMeters: 3000,
+    description:
+      "Geofence Area Jetty Muara Pahu radius 3 km dari titik pusat 0°14'36.5\"S 116°01'09.6\"E.",
   },
 ];
 
@@ -79,6 +98,39 @@ export function isPointInPolygon(point: [number, number], vs: [number, number][]
     if (intersect) inside = !inside;
   }
   return inside;
+}
+
+/** Computes Haversine distance in meters between two [lat, lng] points. */
+export function haversineDistanceMeters(
+  a: [number, number],
+  b: [number, number]
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const R = 6371000;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const sinHalfLat = Math.sin(dLat / 2);
+  const sinHalfLng = Math.sin(dLng / 2);
+  const h =
+    sinHalfLat * sinHalfLat +
+    Math.cos(lat1) * Math.cos(lat2) * sinHalfLng * sinHalfLng;
+  return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+/** Checks whether a unit coordinate falls within either a circular radius or polygon geofence. */
+export function isPointInKnownArea(
+  point: [number, number],
+  area: KnownArea
+): boolean {
+  if (area.radiusMeters != null) {
+    return haversineDistanceMeters(point, area.center) <= area.radiusMeters;
+  }
+  if (area.polygon && area.polygon.length > 0) {
+    return isPointInPolygon(point, area.polygon);
+  }
+  return false;
 }
 
 interface VolvoMapProps {
@@ -173,24 +225,38 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         (u) =>
           u.latitude !== null &&
           u.longitude !== null &&
-          isPointInPolygon([u.latitude, u.longitude], area.polygon)
+          isPointInKnownArea([u.latitude, u.longitude], area)
       );
 
-      // 1. Draw boundary polygon
-      const polygon = L.polygon(area.polygon, {
-        color: area.color,
-        weight: 2.5,
-        dashArray: "6, 6",
-        fillColor: area.fillColor,
-        fillOpacity: 0.16,
-      }).addTo(areasGroup);
+      const emoji = area.emoji || "🏭";
+
+      // 1. Draw boundary shape (circle radius or polygon)
+      const boundaryLayer =
+        area.radiusMeters != null
+          ? L.circle(area.center, {
+              radius: area.radiusMeters,
+              color: area.color,
+              weight: 2.5,
+              dashArray: "6, 6",
+              fillColor: area.fillColor,
+              fillOpacity: 0.14,
+            }).addTo(areasGroup)
+          : area.polygon
+          ? L.polygon(area.polygon, {
+              color: area.color,
+              weight: 2.5,
+              dashArray: "6, 6",
+              fillColor: area.fillColor,
+              fillOpacity: 0.16,
+            }).addTo(areasGroup)
+          : null;
 
       // 2. Area Popup Content
       const popupHtml = `
         <div class="p-3 text-slate-900 font-sans min-w-64" style="font-family: inherit;">
           <div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
             <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-sm">
-              🏭
+              ${emoji}
             </span>
             <div>
               <h3 class="font-black text-sm text-slate-900 leading-tight">${area.name}</h3>
@@ -219,19 +285,21 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </div>
 
           <div class="mt-2 text-[10px] text-slate-400 flex items-center justify-between">
-            <span>Koordinat Pusat:</span>
+            <span>Koordinat Pusat${area.radiusMeters ? ` (r = ${(area.radiusMeters / 1000).toFixed(1)} km)` : ""}:</span>
             <code class="text-slate-600 font-mono">${area.center[0].toFixed(4)}, ${area.center[1].toFixed(4)}</code>
           </div>
         </div>
       `;
 
-      polygon.bindPopup(popupHtml, { maxWidth: 300 });
+      if (boundaryLayer) {
+        boundaryLayer.bindPopup(popupHtml, { maxWidth: 300 });
+      }
 
       // 3. Floating area title badge on map
       const labelHtml = `
         <div class="cursor-pointer group pointer-events-auto" style="transform: translate(-50%, -50%);">
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/95 backdrop-blur-md text-white border-2 shadow-xl transition-all group-hover:scale-105 group-hover:border-white" style="border-color: ${area.color};">
-            <span class="text-xs">🏭</span>
+            <span class="text-xs">${emoji}</span>
             <span class="font-black text-[11px] tracking-tight whitespace-nowrap">${area.name}</span>
             <span class="px-1.5 py-0.2 rounded-md text-white text-[9px] font-black uppercase font-mono" style="background-color: ${area.color};">
               ${insideUnits.length} Unit
@@ -247,7 +315,12 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         iconAnchor: [85, 15],
       });
 
-      const labelMarker = L.marker([area.center[0] + 0.0014, area.center[1]], {
+      const labelPos: [number, number] =
+        area.radiusMeters != null
+          ? area.center
+          : [area.center[0] + 0.0014, area.center[1]];
+
+      const labelMarker = L.marker(labelPos, {
         icon: labelIcon,
       }).addTo(areasGroup);
 
@@ -331,12 +404,12 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         ? `https://www.google.com/maps?q=${unit.latitude},${unit.longitude}`
         : "#";
 
-    // Check which workshop area the unit is currently inside
+    // Check which geofence area the unit is currently inside
     const currentArea = KNOWN_AREAS.find(
       (area) =>
         unit.latitude !== null &&
         unit.longitude !== null &&
-        isPointInPolygon([unit.latitude, unit.longitude], area.polygon)
+        isPointInKnownArea([unit.latitude, unit.longitude], area)
     );
 
     return `
@@ -358,7 +431,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         ${
           currentArea
             ? `<div class="mb-2 p-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-extrabold flex items-center gap-1.5">
-                <span>🏭</span>
+                <span>${currentArea.emoji || "🏭"}</span>
                 <span>Berada di ${currentArea.name}</span>
                </div>`
             : ""
@@ -586,13 +659,13 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     });
   };
 
-  // Count units in each workshop area
+  // Count units in each geofence area
   const getAreaUnitsCount = (area: KnownArea) => {
     return units.filter(
       (u) =>
         u.latitude !== null &&
         u.longitude !== null &&
-        isPointInPolygon([u.latitude, u.longitude], area.polygon)
+        isPointInKnownArea([u.latitude, u.longitude], area)
     ).length;
   };
 
@@ -637,7 +710,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
           </button>
         </div>
 
-        {/* Quick Fly Buttons for Workshops */}
+        {/* Quick Fly Buttons for Known Areas */}
         {KNOWN_AREAS.map((area) => {
           const count = getAreaUnitsCount(area);
           return (
@@ -647,7 +720,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/95 backdrop-blur-md text-slate-800 text-xs font-extrabold hover:bg-slate-50 transition-all shadow-md cursor-pointer border border-slate-200"
               title={`Fokus ke ${area.name}`}
             >
-              <span>🏭 {area.shortName}</span>
+              <span>{area.emoji || "🏭"} {area.shortName}</span>
               <span
                 className="px-1.5 py-0.2 rounded-md text-white font-mono text-[10px] font-black"
                 style={{ backgroundColor: area.color }}
