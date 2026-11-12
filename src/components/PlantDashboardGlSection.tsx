@@ -64,7 +64,7 @@ function GlTooltipCard({
   const rowPayload = payload[0]?.payload || {};
 
   return (
-    <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg p-3 text-xs min-w-[210px] max-w-[300px]">
+    <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg p-3 text-xs min-w-52.5 max-w-75">
       <div className="font-bold text-slate-900 mb-1.5 border-b border-slate-100 pb-1">
         {label}
         {titleSuffix ? ` (${titleSuffix})` : ""}
@@ -364,7 +364,7 @@ export const PlantDashboardGlSection: React.FC<PlantDashboardGlSectionProps> = (
           {glCost.dailyMtdTrend.length === 0 ? (
             <EmptyChartState message="Belum ada transaksi GL Plant pada bulan MTD yang dipilih." />
           ) : (
-            <div className="h-[310px] w-full">
+            <div className="h-77.5 w-full">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <ComposedChart
                   data={glCost.dailyMtdTrend}
@@ -463,7 +463,7 @@ export const PlantDashboardGlSection: React.FC<PlantDashboardGlSectionProps> = (
           {plReference.monthlyTrend.length === 0 ? (
             <EmptyChartState message="Belum ada data referensi P&L biaya Plant untuk filter ini." />
           ) : (
-            <div className="h-[310px] w-full">
+            <div className="h-77.5 w-full">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <ComposedChart
                   data={plReference.monthlyTrend}
@@ -540,7 +540,7 @@ export const PlantDashboardGlSection: React.FC<PlantDashboardGlSectionProps> = (
           {uploadedMonthsOnly.length === 0 ? (
             <EmptyChartState message="Belum ada transaksi GL terupload." />
           ) : (
-            <div className="h-[290px] w-full">
+            <div className="h-72.5 w-full">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart
                   data={uploadedMonthsOnly}
@@ -625,8 +625,8 @@ export const PlantDashboardGlSection: React.FC<PlantDashboardGlSectionProps> = (
           {pieSeries.length === 0 ? (
             <EmptyChartState message={`Belum ada komposisi kategori pada ${pieMode}.`} />
           ) : (
-            <div className="flex flex-col h-[290px]">
-              <div className="relative h-[185px] w-full">
+            <div className="flex flex-col h-72.5">
+              <div className="relative h-46.25 w-full">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <PieChart>
                     <Pie
@@ -694,7 +694,7 @@ export const PlantDashboardGlSection: React.FC<PlantDashboardGlSectionProps> = (
           {accountChartData.length === 0 ? (
             <EmptyChartState message="Belum ada transaksi akun GL Plant." />
           ) : (
-            <div className="h-[290px] w-full">
+            <div className="h-72.5 w-full">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart
                   layout="vertical"
@@ -776,7 +776,7 @@ export const PlantDashboardGlSection: React.FC<PlantDashboardGlSectionProps> = (
             message={`Belum ada data Cost Center Plant untuk periode ${ccMode}.`}
           />
         ) : (
-          <div className="h-[300px] w-full">
+          <div className="h-75 w-full">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart
                 layout="vertical"

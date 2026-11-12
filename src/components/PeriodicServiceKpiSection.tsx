@@ -329,7 +329,7 @@ const KpiCalendarRangePicker: React.FC<KpiCalendarRangePickerProps> = ({
         <div
           role="dialog"
           aria-label="Filter Kalender KPI Periodic Service"
-          className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-[312px] sm:w-[344px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-xl p-3.5 space-y-3"
+          className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-78 sm:w-86 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-xl p-3.5 space-y-3"
         >
           {/* Quick Presets */}
           <div className="flex flex-wrap gap-1.5">
