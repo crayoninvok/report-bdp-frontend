@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Clock,
   Gauge,
-  Info,
   Target,
   Timer,
   Wrench,
@@ -68,7 +67,6 @@ export const PeriodicServiceKpiSection: React.FC<
   PeriodicServiceKpiSectionProps
 > = ({ scheduleData, onJumpToDetail }) => {
   const [selectedDate, setSelectedDate] = useState<string>("ALL");
-  const [showFormulaNote, setShowFormulaNote] = useState<boolean>(false);
 
   const days = useMemo(() => scheduleData?.days || [], [scheduleData]);
   const activeDayFilter = useMemo(() => {
@@ -147,20 +145,9 @@ export const PeriodicServiceKpiSection: React.FC<
             <Gauge size={18} />
           </div>
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-sm sm:text-base font-black text-slate-900">
-                KPI Periodic Service (PM Compliance)
-              </h2>
-              <button
-                type="button"
-                onClick={() => setShowFormulaNote((v) => !v)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                title="Lihat rincian formula perhitungan KPI"
-              >
-                <Info size={11} />
-                <span>Formula</span>
-              </button>
-            </div>
+            <h2 className="text-sm sm:text-base font-black text-slate-900">
+              KPI Periodic Service (PM Compliance)
+            </h2>
             <p className="text-[11px] text-slate-500">
               {activeDayFilter === "ALL"
                 ? `Periode Minggu: ${scheduleData?.weekRange.formatted || "-"}`
@@ -202,36 +189,6 @@ export const PeriodicServiceKpiSection: React.FC<
           </select>
         </div>
       </div>
-
-      {/* Expandable Formula Legend */}
-      {showFormulaNote && (
-        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-          <div>
-            <strong className="text-slate-800">PM Compliance:</strong> (Total
-            Actual semua 5 parameter ÷ Total Plan semua 5 parameter) × 100%
-          </div>
-          <div>
-            <strong className="text-slate-800">Akurasi Servis:</strong> Unit
-            terencana selesai ÷ Total unit selesai aktual
-          </div>
-          <div>
-            <strong className="text-slate-800">Achievement Servis:</strong> Unit
-            terencana selesai ÷ Total unit terencana di jadwal
-          </div>
-          <div>
-            <strong className="text-slate-800">Akurasi HM:</strong> Selisih
-            |Actual HM − Plan HM| ≤ 50 jam
-          </div>
-          <div>
-            <strong className="text-slate-800">Akurasi Start Time:</strong>{" "}
-            Selisih |Actual Start − Plan Start| ≤ 1 jam
-          </div>
-          <div>
-            <strong className="text-slate-800">Akurasi Lead Time:</strong>{" "}
-            Selisih |Actual Lead Time − Plan Lead Time| ≤ 2 jam
-          </div>
-        </div>
-      )}
 
       {/* KPI Grid: 1 Featured PM Compliance + 5 Parameter Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
