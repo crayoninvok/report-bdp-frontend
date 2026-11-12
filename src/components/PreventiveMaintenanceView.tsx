@@ -683,12 +683,11 @@ export const PreventiveMaintenanceView: React.FC<
               Periodic Service Unit Hauling
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Bagian dari program <strong className="text-white">Preventive Maintenance</strong>{" "}
-              (bersama Periodic Inspection) untuk penjadwalan servis berkala{" "}
-              <strong className="text-white">Head, Dolly &amp; Vessel secara mandiri</strong>{" "}
-              berbasis interval <strong className="text-white">KM (PS1/PS2/PS3)</strong> &amp;{" "}
-              <strong className="text-white">HM (P1/P2/P3/P4)</strong> yang terintegrasi
-              telemetri Volvo Connect, tim HR Plant, dan riwayat biaya GL.
+              Penjadwalan servis berkala{" "}
+              <strong className="text-white">Head, Dolly &amp; Vessel</strong>{" "}
+              secara mandiri berbasis interval{" "}
+              <strong className="text-white">KM (PS1/PS2/PS3)</strong> &amp;{" "}
+              <strong className="text-white">HM (P1/P2/P3/P4)</strong>.
             </p>
           </div>
 
