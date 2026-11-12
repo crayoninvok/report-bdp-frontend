@@ -96,6 +96,29 @@ export const KNOWN_AREAS: KnownArea[] = [
     description:
       "Geofence Area Jetty Senyiur radius 3 km dari titik pusat 0.295934, 116.620546.",
   },
+  {
+    id: "fajar-sakti-prima",
+    name: "Area Fajar Sakti Prima",
+    shortName: "Fajar Sakti Prima",
+    category: "Mining Concession / Pit Area",
+    emoji: "⛏️",
+    center: [0.5363334, 116.1093473],
+    zoom: 13,
+    color: "#dc2626",
+    fillColor: "#ef4444",
+    polygon: [
+      [0.5703889, 116.0954444],
+      [0.5703889, 116.1330556],
+      [0.5022778, 116.1330556],
+      [0.5022778, 116.0856389],
+      [0.5471667, 116.0856389],
+      [0.5471667, 116.0906111],
+      [0.5575833, 116.0906111],
+      [0.5575833, 116.0954444],
+    ],
+    description:
+      "Geofence polygon Area Fajar Sakti Prima (FSP) dari batas konsesi KML.",
+  },
 ];
 
 // Helper: Check if point [lat, lng] is inside a polygon
