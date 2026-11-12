@@ -6,22 +6,17 @@ import {
   CalendarPlus,
   CheckCircle2,
   Clock,
-  DollarSign,
   Fuel,
   Gauge,
-  History,
   Radio,
   RefreshCw,
   Search,
   Truck,
-  Wrench,
-  X,
 } from "lucide-react";
 import { PmRadarResponse, PmRadarUnit } from "../services/plantService";
 import {
   formatHm,
   formatKm,
-  formatRupiah,
   getPmReadinessStyle,
 } from "../utils/pmHelpers";
 
@@ -35,7 +30,7 @@ interface PreventiveMaintenanceRadarTabProps {
 }
 
 type RadarFilterType = "ALL" | "Overdue" | "Due Soon" | "Safe" | "Scheduled";
-type RadarSortType = "urgency" | "cost" | "unit";
+type RadarSortType = "urgency" | "unit";
 
 /** Calculates 0-100% progress inside the current 12,000 KM service cycle. */
 function computeCycleProgressPct(liveKm: number | null, targetKm: number | null): number {
@@ -60,8 +55,6 @@ export const PreventiveMaintenanceRadarTab: React.FC<
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<RadarFilterType>("ALL");
   const [sortBy, setSortBy] = useState<RadarSortType>("urgency");
-  const [selectedGlUnit, setSelectedGlUnit] = useState<PmRadarUnit | null>(null);
-  const [glModalSearch, setGlModalSearch] = useState("");
 
   const filteredUnits = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -79,15 +72,11 @@ export const PreventiveMaintenanceRadarTab: React.FC<
         u.unitCode.toLowerCase().includes(q) ||
         (u.buntutSummary || "").toLowerCase().includes(q) ||
         (u.model || "").toLowerCase().includes(q) ||
-        (u.vin || "").toLowerCase().includes(q) ||
-        (u.glSummary.lastServiceRemark || "").toLowerCase().includes(q)
+        (u.vin || "").toLowerCase().includes(q)
       );
     });
 
     return [...list].sort((a, b) => {
-      if (sortBy === "cost") {
-        return (b.glSummary?.totalCost || 0) - (a.glSummary?.totalCost || 0);
-      }
       if (sortBy === "unit") {
         return a.unitNumber - b.unitNumber;
       }
@@ -107,23 +96,10 @@ export const PreventiveMaintenanceRadarTab: React.FC<
     });
   }, [radarData, searchQuery, statusFilter, sortBy]);
 
-  const filteredGlTransactions = useMemo(() => {
-    if (!selectedGlUnit) return [];
-    const q = glModalSearch.trim().toLowerCase();
-    if (!q) return selectedGlUnit.glHistory;
-    return selectedGlUnit.glHistory.filter(
-      (tx) =>
-        tx.accountName.toLowerCase().includes(q) ||
-        tx.specification.toLowerCase().includes(q) ||
-        tx.remark.toLowerCase().includes(q) ||
-        (tx.regNo || "").toLowerCase().includes(q)
-    );
-  }, [selectedGlUnit, glModalSearch]);
-
   return (
     <div className="space-y-4">
-      {/* 5 Executive Radar & GL Cost KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {/* 4 Executive Radar KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white border border-rose-200 rounded-2xl p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs font-bold text-rose-600 uppercase tracking-wider">
             <span>Overdue Interval</span>
@@ -188,21 +164,6 @@ export const PreventiveMaintenanceRadarTab: React.FC<
             Terhubung langsung dengan kalender PS
           </p>
         </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
-            <span>Biaya Servis &amp; Part (GL)</span>
-            <DollarSign size={15} className="text-[#e95623]" />
-          </div>
-          <div className="mt-2">
-            <span className="text-lg font-black text-slate-900 font-mono block truncate">
-              {formatRupiah(radarSummary?.totalGlPmCost ?? 0)}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1">
-            Oli, Grease, Sparepart &amp; Jasa Eksternal
-          </p>
-        </div>
       </div>
 
       {/* Filter & Volvo Sync Toolbar */}
@@ -217,7 +178,7 @@ export const PreventiveMaintenanceRadarTab: React.FC<
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari unit, buntut, VIN, remark GL..."
+              placeholder="Cari unit, buntut, VIN..."
               className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 text-slate-800"
             />
           </div>
@@ -255,7 +216,6 @@ export const PreventiveMaintenanceRadarTab: React.FC<
             className="px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
           >
             <option value="urgency">Urut: Prioritas Service Terdekat</option>
-            <option value="cost">Urut: Biaya GL Tertinggi</option>
             <option value="unit">Urut: Nomor Unit</option>
           </select>
 
@@ -300,16 +260,15 @@ export const PreventiveMaintenanceRadarTab: React.FC<
                 <th className="py-3 px-4">Live Volvo KM / HM</th>
                 <th className="py-3 px-4">Target &amp; Sisa Interval</th>
                 <th className="py-3 px-4">Kesiapan &amp; Jadwal</th>
-                <th className="py-3 px-4">Riwayat Biaya GL Servis</th>
                 <th className="py-3 px-4 text-right">Aksi Cepat</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredUnits.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
                     {isLoading
-                      ? "Memuat data telemetry Volvo & GL..."
+                      ? "Memuat data telemetry Volvo..."
                       : "Tidak ada unit yang sesuai dengan filter saat ini."}
                   </td>
                 </tr>
@@ -443,34 +402,6 @@ export const PreventiveMaintenanceRadarTab: React.FC<
                         )}
                       </td>
 
-                      {/* GL Summary */}
-                      <td className="py-3 px-4 align-top min-w-52">
-                        <div className="font-mono font-black text-slate-900">
-                          {formatRupiah(unit.glSummary.totalCost)}
-                        </div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">
-                          Oli {formatRupiah(unit.glSummary.oilCost)} • Grease{" "}
-                          {formatRupiah(unit.glSummary.greaseCost)}
-                        </div>
-                        {unit.glSummary.txCount > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedGlUnit(unit);
-                              setGlModalSearch("");
-                            }}
-                            className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-[#e95623] hover:text-[#c74315] cursor-pointer"
-                          >
-                            <History size={12} />
-                            <span>Lihat {unit.glSummary.txCount} Transaksi GL</span>
-                          </button>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 block mt-1">
-                            Belum ada transaksi servis di GL
-                          </span>
-                        )}
-                      </td>
-
                       {/* Quick Schedule Action */}
                       <td className="py-3 px-4 align-top text-right">
                         <button
@@ -490,141 +421,6 @@ export const PreventiveMaintenanceRadarTab: React.FC<
           </table>
         </div>
       </div>
-
-      {/* Modal Detail GL Maintenance History */}
-      {selectedGlUnit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden">
-            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-white/10">
-                  <Wrench size={18} className="text-[#e95623]" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black">
-                    Riwayat GL Maintenance &amp; Sparepart • {selectedGlUnit.unitCode}
-                  </h3>
-                  <p className="text-xs text-slate-300">
-                    Buntut: {selectedGlUnit.buntutSummary || "-"} • Live:{" "}
-                    {formatKm(selectedGlUnit.liveKm)} / {formatHm(selectedGlUnit.liveHm)}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedGlUnit(null)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* 4 Cost Breakdown Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 border-b border-slate-200">
-              <div className="bg-white border border-slate-200 rounded-xl p-3">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">
-                  Beban Oli (05110204)
-                </span>
-                <div className="text-sm font-black font-mono text-slate-900 mt-1">
-                  {formatRupiah(selectedGlUnit.glSummary.oilCost)}
-                </div>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-3">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">
-                  Beban Grease (05110205)
-                </span>
-                <div className="text-sm font-black font-mono text-slate-900 mt-1">
-                  {formatRupiah(selectedGlUnit.glSummary.greaseCost)}
-                </div>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-3">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">
-                  Beban Sparepart (05110301)
-                </span>
-                <div className="text-sm font-black font-mono text-slate-900 mt-1">
-                  {formatRupiah(selectedGlUnit.glSummary.sparepartCost)}
-                </div>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-3">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">
-                  External Service (05110305)
-                </span>
-                <div className="text-sm font-black font-mono text-slate-900 mt-1">
-                  {formatRupiah(selectedGlUnit.glSummary.externalCost)}
-                </div>
-              </div>
-            </div>
-
-            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search
-                  size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  type="text"
-                  value={glModalSearch}
-                  onChange={(e) => setGlModalSearch(e.target.value)}
-                  placeholder="Filter nama part, akun, atau remark..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-                />
-              </div>
-              <span className="text-xs font-bold text-slate-500">
-                Menampilkan {filteredGlTransactions.length} transaksi
-              </span>
-            </div>
-
-            <div className="flex-1 overflow-auto p-4">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-50 text-[10px] font-extrabold uppercase text-slate-600 border-b border-slate-200">
-                  <tr>
-                    <th className="py-2 px-3">Tanggal</th>
-                    <th className="py-2 px-3">Akun Beban</th>
-                    <th className="py-2 px-3">Material / Spesifikasi</th>
-                    <th className="py-2 px-3 text-center">Qty</th>
-                    <th className="py-2 px-3 text-right">Nominal</th>
-                    <th className="py-2 px-3">Remark / Pekerjaan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredGlTransactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-slate-50">
-                      <td className="py-2 px-3 font-mono whitespace-nowrap text-slate-700">
-                        <div>{tx.date}</div>
-                        {tx.regNo && (
-                          <div className="text-[10px] text-slate-400">{tx.regNo}</div>
-                        )}
-                      </td>
-                      <td className="py-2 px-3 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">
-                          {tx.accountName}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 font-semibold text-slate-800">
-                        {tx.specification}
-                      </td>
-                      <td className="py-2 px-3 text-center font-mono">{tx.qty}</td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
-                        {formatRupiah(tx.debet)}
-                      </td>
-                      <td className="py-2 px-3 text-slate-600">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {tx.isScheduledPm && (
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase">
-                              Scheduled PS
-                            </span>
-                          )}
-                          <span>{tx.remark || "-"}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

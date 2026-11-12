@@ -244,7 +244,7 @@ export const PreventiveMaintenanceView: React.FC<
     }
   }, [anchorDate, selectedSite, showToast]);
 
-  // Load live Volvo + GL Radar
+  // Load live Volvo KM/HM Radar
   const fetchRadar = useCallback(
     async (forceSync = false) => {
       try {
@@ -807,7 +807,7 @@ export const PreventiveMaintenanceView: React.FC<
             }`}
           >
             <Gauge size={15} className={activeTab === "radar" ? "text-[#e95623]" : ""} />
-            <span>Radar KM/HM &amp; Riwayat GL</span>
+            <span>Radar KM/HM Volvo</span>
             {(radarSummary?.overdueCount || 0) + (radarSummary?.dueSoonCount || 0) > 0 && (
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white">
                 {(radarSummary?.overdueCount || 0) + (radarSummary?.dueSoonCount || 0)}
@@ -949,7 +949,7 @@ export const PreventiveMaintenanceView: React.FC<
                 onClick={() => setActiveTab("radar")}
                 className="text-[11px] font-bold text-[#e95623] hover:underline mt-2 cursor-pointer"
               >
-                Buka Radar KM/HM &amp; GL History &rarr;
+                Buka Radar KM/HM Unit &rarr;
               </button>
             </div>
           </div>
@@ -1563,7 +1563,7 @@ export const PreventiveMaintenanceView: React.FC<
       )}
 
       {/* =================================================================== */}
-      {/* TAB 3: RADAR KM/HM VOLVO & RIWAYAT GL MAINTENANCE                   */}
+      {/* TAB 3: RADAR KM/HM VOLVO                                            */}
       {/* =================================================================== */}
       {activeTab === "radar" && (
         <PreventiveMaintenanceRadarTab

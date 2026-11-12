@@ -530,7 +530,7 @@ export const plantService = {
     return res.json();
   },
 
-  // 19. Get Periodic Service Radar (Live Volvo KM/HM + Interval Countdown + GL History)
+  // 19. Get Periodic Service Radar (Live Volvo KM/HM + Interval Countdown)
   getPmRadar: async (
     site: string = "MuaraPahu",
     force: boolean = false
@@ -587,30 +587,6 @@ export interface PlantPersonnelResponse {
   };
 }
 
-export interface PmGlHistoryItem {
-  id: string;
-  date: string;
-  regNo?: string;
-  accountCode: string;
-  accountName: string;
-  specification: string;
-  qty: number;
-  debet: number;
-  remark: string;
-  isScheduledPm: boolean;
-}
-
-export interface PmRadarGlSummary {
-  oilCost: number;
-  greaseCost: number;
-  sparepartCost: number;
-  externalCost: number;
-  totalCost: number;
-  txCount: number;
-  lastServiceDate: string | null;
-  lastServiceRemark: string | null;
-}
-
 export interface PmRadarUnit {
   unitCode: string;
   unitNumber: number;
@@ -647,8 +623,6 @@ export interface PmRadarUnit {
     shift: string;
     status: string;
   } | null;
-  glSummary: PmRadarGlSummary;
-  glHistory: PmGlHistoryItem[];
 }
 
 export interface PmRadarResponse {
@@ -666,7 +640,6 @@ export interface PmRadarResponse {
     dueSoonCount: number;
     safeCount: number;
     scheduledCount: number;
-    totalGlPmCost: number;
   };
   data: PmRadarUnit[];
 }
