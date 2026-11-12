@@ -21,6 +21,16 @@ export interface MasterUnit {
   buntutSummary?: string;
 }
 
+export interface MasterUnitSyncMeta {
+  syncedAt: string;
+  totalVolvoVehicles: number;
+  createdCount: number;
+  newPrimeMovers: string[];
+  newTrailers: string[];
+  skippedCache?: boolean;
+  error?: string;
+}
+
 export interface MasterUnitsResponse {
   success: boolean;
   data: MasterUnit[];
@@ -30,7 +40,10 @@ export interface MasterUnitsResponse {
     vessel1: number;
     dolly: number;
     vessel2: number;
+    support?: number;
+    supportByCategory?: Record<string, number>;
   };
+  syncMeta?: MasterUnitSyncMeta;
 }
 
 export interface PeriodicInspectionItem {
@@ -129,12 +142,14 @@ export const plantService = {
     search?: string;
     withTrailers?: boolean;
     site?: string;
+    syncVolvo?: boolean;
   }): Promise<MasterUnitsResponse> => {
     const query = new URLSearchParams();
     if (params?.category) query.append("category", params.category);
     if (params?.search) query.append("search", params.search);
     if (params?.withTrailers) query.append("withTrailers", "true");
     if (params?.site) query.append("site", params.site);
+    if (params?.syncVolvo) query.append("syncVolvo", "true");
 
     const res = await fetch(`${API_BASE_URL}/plant/units?${query.toString()}`, {
       headers: getAuthHeaders(),
@@ -145,10 +160,53 @@ export const plantService = {
     return res.json();
   },
 
+  // 1b. Add New Support Unit
+  createUnit: async (payload: {
+    unitCode: string;
+    category: string;
+    brand: string;
+    model: string;
+    jobSite: "MuaraPahu" | "Senyiur";
+    status?: "Active" | "Inactive";
+  }): Promise<{ success: boolean; message: string; data: MasterUnit }> => {
+    const res = await fetch(`${API_BASE_URL}/plant/units`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || json.error || "Gagal menambahkan unit support");
+    }
+    return json;
+  },
+
+  // 1c. Sync Prime Movers & Auto-paired Vessel/Dolly from Volvo Connect
+  syncVolvoUnits: async (): Promise<{
+    success: boolean;
+    message: string;
+    data: MasterUnitSyncMeta;
+  }> => {
+    const res = await fetch(`${API_BASE_URL}/plant/units/sync-volvo`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || json.error || "Gagal sinkronisasi Volvo Connect");
+    }
+    return json;
+  },
+
   // 2. Update Unit Status & JobSite (Super Admin only, cascades to trailers if Prime Mover)
   updateUnit: async (
     unitCode: string,
-    payload: { status?: "Active" | "Inactive"; jobSite?: "MuaraPahu" | "Senyiur" }
+    payload: {
+      status?: "Active" | "Inactive";
+      jobSite?: "MuaraPahu" | "Senyiur";
+      brand?: string;
+      model?: string;
+    }
   ): Promise<any> => {
     const res = await fetch(`${API_BASE_URL}/plant/units/${unitCode}`, {
       method: "PUT",

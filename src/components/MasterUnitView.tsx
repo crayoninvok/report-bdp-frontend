@@ -5,7 +5,12 @@ import { User } from "../types/auth";
 import {
   plantService,
   MasterUnit,
+  MasterUnitSyncMeta,
 } from "../services/plantService";
+import {
+  SUPPORT_UNIT_TYPES,
+  isSupportCategory,
+} from "../utils/pmHelpers";
 import { useNotification } from "../context/NotificationContext";
 import {
   Database,
@@ -24,6 +29,9 @@ import {
   MapPin,
   CalendarCheck,
   ArrowRight,
+  Plus,
+  Radio,
+  Wrench,
 } from "lucide-react";
 
 interface MasterUnitViewProps {
@@ -37,29 +45,55 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
 }) => {
   const { showSuccess, showError, confirm } = useNotification();
   const isSuperAdmin = user.role === "SuperAdmin";
+  const isGlobalAdmin = isSuperAdmin || user.jobSite === "HeadOffice";
+  const defaultUserSite: "MuaraPahu" | "Senyiur" =
+    user.jobSite === "Senyiur" ? "Senyiur" : "MuaraPahu";
 
   const [masterUnits, setMasterUnits] = useState<MasterUnit[]>([]);
+  const [syncMeta, setSyncMeta] = useState<MasterUnitSyncMeta | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isSyncingVolvo, setIsSyncingVolvo] = useState<boolean>(false);
 
   // Filters & Search
   const [unitCategoryFilter, setUnitCategoryFilter] = useState<string>("ALL");
   const [unitSiteFilter, setUnitSiteFilter] = useState<string>("ALL");
   const [unitSearch, setUnitSearch] = useState<string>("");
 
+  // Add Support Unit Modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [addCategory, setAddCategory] = useState<string>(SUPPORT_UNIT_TYPES[0].category);
+  const [addUnitCode, setAddUnitCode] = useState<string>(SUPPORT_UNIT_TYPES[0].prefix);
+  const [addBrand, setAddBrand] = useState<string>("");
+  const [addModel, setAddModel] = useState<string>("");
+  const [addJobSite, setAddJobSite] = useState<"MuaraPahu" | "Senyiur">(defaultUserSite);
+  const [addStatus, setAddStatus] = useState<"Active" | "Inactive">("Active");
+  const [isCreatingUnit, setIsCreatingUnit] = useState<boolean>(false);
+
   // Edit Modal (Super Admin only)
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [unitForEdit, setUnitForEdit] = useState<MasterUnit | null>(null);
   const [editStatus, setEditStatus] = useState<"Active" | "Inactive">("Active");
   const [editJobSite, setEditJobSite] = useState<"MuaraPahu" | "Senyiur">("MuaraPahu");
+  const [editBrand, setEditBrand] = useState<string>("");
+  const [editModel, setEditModel] = useState<string>("");
   const [isSavingUnit, setIsSavingUnit] = useState<boolean>(false);
 
-  const loadUnits = async () => {
+  const loadUnits = async (syncVolvo = false) => {
     try {
       setIsLoading(true);
-      const res = await plantService.getMasterUnits({ withTrailers: true });
+      const res = await plantService.getMasterUnits({
+        withTrailers: true,
+        syncVolvo,
+      });
       if (res.success && res.data) {
         setMasterUnits(res.data);
+        setSyncMeta(res.syncMeta || null);
+        if (res.syncMeta && res.syncMeta.createdCount > 0) {
+          showSuccess(
+            `Auto-sync Volvo Connect: ${res.syncMeta.newPrimeMovers.length} Prime Mover baru & ${res.syncMeta.newTrailers.length} Vessel/Dolly otomatis terdaftar.`
+          );
+        }
       }
     } catch (err: any) {
       showError(err.message || "Gagal memuat database unit");
@@ -74,9 +108,87 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadUnits();
+    await loadUnits(true);
     setIsRefreshing(false);
-    showSuccess("Database unit berhasil disinkronkan");
+    showSuccess("Database unit & sinkronisasi Volvo Connect selesai");
+  };
+
+  const handleSyncVolvo = async () => {
+    try {
+      setIsSyncingVolvo(true);
+      const res = await plantService.syncVolvoUnits();
+      setSyncMeta(res.data);
+      showSuccess(res.message || "Sinkronisasi Volvo Connect berhasil");
+      await loadUnits(false);
+    } catch (err: any) {
+      showError(err.message || "Gagal sinkronisasi Volvo Connect");
+    } finally {
+      setIsSyncingVolvo(false);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    const first = SUPPORT_UNIT_TYPES[0];
+    setAddCategory(first.category);
+    setAddUnitCode(first.prefix);
+    setAddBrand("");
+    setAddModel("");
+    setAddJobSite(defaultUserSite);
+    setAddStatus("Active");
+    setIsAddModalOpen(true);
+  };
+
+  const handleSelectAddCategory = (nextCat: string) => {
+    const prevType = SUPPORT_UNIT_TYPES.find((t) => t.category === addCategory);
+    const nextType = SUPPORT_UNIT_TYPES.find((t) => t.category === nextCat);
+    setAddCategory(nextCat);
+    const trimmed = addUnitCode.trim().toUpperCase();
+    if (
+      nextType &&
+      (!trimmed || (prevType && trimmed === prevType.prefix))
+    ) {
+      setAddUnitCode(nextType.prefix);
+    }
+  };
+
+  const handleCreateSupportUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const normalizedCode = addUnitCode.trim().replace(/\s+/g, "").toUpperCase();
+    const selectedType = SUPPORT_UNIT_TYPES.find((t) => t.category === addCategory);
+
+    if (!normalizedCode || normalizedCode.length < 2) {
+      showError("Kode unit support wajib diisi (minimal 2 karakter).");
+      return;
+    }
+    if (selectedType?.prefix === "ST" && /^ST[89]\d{2}$/.test(normalizedCode)) {
+      showError(
+        "Kode ST8xx dan ST9xx dicadangkan untuk Vessel Hauling. Gunakan kode lain seperti ST01 atau ST101."
+      );
+      return;
+    }
+    if (!addBrand.trim() || !addModel.trim()) {
+      showError("Brand / Merk dan Model unit wajib diisi.");
+      return;
+    }
+
+    try {
+      setIsCreatingUnit(true);
+      const res = await plantService.createUnit({
+        unitCode: normalizedCode,
+        category: addCategory,
+        brand: addBrand.trim(),
+        model: addModel.trim(),
+        jobSite: isGlobalAdmin ? addJobSite : defaultUserSite,
+        status: addStatus,
+      });
+      showSuccess(res.message || `Unit ${normalizedCode} berhasil ditambahkan`);
+      setIsAddModalOpen(false);
+      await loadUnits(false);
+    } catch (err: any) {
+      showError(err.message || "Gagal menambahkan unit support");
+    } finally {
+      setIsCreatingUnit(false);
+    }
   };
 
   // Calculations
@@ -119,6 +231,12 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
     () => masterUnits.filter((u) => u.category === "Vessel 2").length,
     [masterUnits]
   );
+  const supportUnits = useMemo(
+    () => masterUnits.filter((u) => isSupportCategory(u.category)),
+    [masterUnits]
+  );
+  const supportCount = supportUnits.length;
+  const haulingCount = masterUnits.length - supportCount;
 
   const categorySubtitle = useMemo(() => {
     const buildLabel = (cat: string, fallback: string) => {
@@ -141,7 +259,9 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
   // Filtered Units
   const filteredUnits = useMemo(() => {
     let list = masterUnits;
-    if (unitCategoryFilter !== "ALL") {
+    if (unitCategoryFilter === "SUPPORT") {
+      list = list.filter((u) => isSupportCategory(u.category));
+    } else if (unitCategoryFilter !== "ALL") {
       list = list.filter((u) => u.category === unitCategoryFilter);
     }
     if (unitSiteFilter !== "ALL") {
@@ -153,6 +273,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
         (u) =>
           u.unitCode.toLowerCase().includes(q) ||
           (u.headUnitCode && u.headUnitCode.toLowerCase().includes(q)) ||
+          u.category.toLowerCase().includes(q) ||
           u.brand.toLowerCase().includes(q) ||
           u.model.toLowerCase().includes(q) ||
           u.status.toLowerCase().includes(q) ||
@@ -172,6 +293,8 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
     setUnitForEdit(unit);
     setEditStatus((unit.status as any) === "Inactive" ? "Inactive" : "Active");
     setEditJobSite((unit.jobSite as any) === "Senyiur" ? "Senyiur" : "MuaraPahu");
+    setEditBrand(unit.brand || "");
+    setEditModel(unit.model || "");
     setIsEditModalOpen(true);
   };
 
@@ -179,13 +302,20 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
     e.preventDefault();
     if (!unitForEdit) return;
 
+    const isSupport = isSupportCategory(unitForEdit.category);
+    const trimmedBrand = editBrand.trim();
+    const trimmedModel = editModel.trim();
     const isStatusChanged = unitForEdit.status !== editStatus;
     const isJobSiteChanged = unitForEdit.jobSite !== editJobSite;
+    const isBrandChanged = isSupport && trimmedBrand !== "" && trimmedBrand !== unitForEdit.brand;
+    const isModelChanged = isSupport && trimmedModel !== "" && trimmedModel !== unitForEdit.model;
 
-    if (isStatusChanged || isJobSiteChanged) {
+    if (isStatusChanged || isJobSiteChanged || isBrandChanged || isModelChanged) {
       const changes: string[] = [];
       if (isStatusChanged) changes.push(`Status: "${unitForEdit.status}" → "${editStatus}"`);
       if (isJobSiteChanged) changes.push(`JobSite: "${unitForEdit.jobSite}" → "${editJobSite}"`);
+      if (isBrandChanged) changes.push(`Brand: "${unitForEdit.brand}" → "${trimmedBrand}"`);
+      if (isModelChanged) changes.push(`Model: "${unitForEdit.model}" → "${trimmedModel}"`);
 
       confirm({
         title: "Konfirmasi Perubahan Master Unit",
@@ -204,12 +334,13 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
             const res = await plantService.updateUnit(unitForEdit.unitCode, {
               status: editStatus,
               jobSite: editJobSite,
+              ...(isSupport ? { brand: trimmedBrand, model: trimmedModel } : {}),
             });
 
             showSuccess(res.message || "Data unit berhasil diperbarui!");
             setIsEditModalOpen(false);
             setUnitForEdit(null);
-            await loadUnits();
+            await loadUnits(false);
           } catch (err: any) {
             showError(err.message || "Gagal memperbarui unit");
           } finally {
@@ -263,7 +394,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
 
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                 <CheckCircle2 size={11} />
-                284 Unit Terdaftar
+                {masterUnits.length || 284} Unit ({haulingCount || 284} Hauling &bull; {supportCount} Support)
               </span>
             </div>
 
@@ -271,15 +402,34 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
               <span>Master Data Unit Armada</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-200/90 max-w-3xl leading-relaxed">
-              Pusat database master armada hauling PT Batara Dharma Persada:{" "}
+              Pusat database master armada hauling &amp; unit support PT Batara Dharma Persada:{" "}
               <strong className="text-white font-bold underline decoration-[#e95623]/80 decoration-2 underline-offset-4">
-                71 Rangkaian Terintegrasi (Prime Mover, Vessel 1, Dolly, dan Vessel 2)
+                Prime Mover, Vessel &amp; Dolly otomatis tersinkron dari Volvo Connect
               </strong>
-              . Super Admin berwenang mengelola penempatan Jobsite dan status operasional armada dengan sinkronisasi otomatis ke seluruh rangkaian gandengan.
+              , sedangkan Unit Support (LV, TH, FT, ST, WT, AM, BM, EX, DT, CP, DZ, GS) dapat ditambahkan secara manual.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              onClick={handleOpenAddModal}
+              className="px-4 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+              title="Tambahkan Unit Support baru (LV, TH, FT, ST, WT, AM, BM, EX, DT, CP, DZ, GS)"
+            >
+              <Plus size={14} />
+              <span>Tambah Unit Support</span>
+            </button>
+
+            <button
+              onClick={handleSyncVolvo}
+              disabled={isSyncingVolvo}
+              className="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 text-xs font-bold border border-sky-400/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Sinkronkan Prime Mover baru & otomatis daftarkan Vessel 1, Dolly, Vessel 2 dari Volvo Connect"
+            >
+              <Radio size={14} className={isSyncingVolvo ? "animate-pulse text-sky-300" : "text-sky-300"} />
+              <span>{isSyncingVolvo ? "Menyinkronkan..." : "Sync Volvo Connect"}</span>
+            </button>
+
             {onNavigateToPI && (
               <button
                 onClick={() => onNavigateToPI()}
@@ -306,7 +456,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
       {/* ---------------------------------------------------------
           Quick KPI Cards by Category
       ---------------------------------------------------------- */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 items-stretch">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 items-stretch">
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Truck size={13} className="text-[#e95623]" />
@@ -362,6 +512,30 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
             Kode: <strong>ST901 &ndash; ST971</strong>
           </span>
         </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            setUnitCategoryFilter(unitCategoryFilter === "SUPPORT" ? "ALL" : "SUPPORT")
+          }
+          className={`text-left bg-white border rounded-2xl p-4 shadow-xs flex flex-col justify-between transition-all cursor-pointer ${
+            unitCategoryFilter === "SUPPORT" || isSupportCategory(unitCategoryFilter)
+              ? "border-sky-400 ring-2 ring-sky-200"
+              : "border-slate-200/90 hover:border-sky-300"
+          }`}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Wrench size={13} className="text-sky-600" />
+            Unit Support (12 Tipe)
+          </span>
+          <div className="my-2">
+            <span className="text-2xl font-black text-sky-700">{supportCount}</span>
+            <span className="text-xs text-slate-400 font-semibold ml-1">Unit</span>
+          </div>
+          <span className="text-[11px] text-slate-500">
+            LV, TH, FT, ST, WT, AM, BM, EX, DT, CP, DZ, GS
+          </span>
+        </button>
       </div>
 
       {/* ---------------------------------------------------------
@@ -402,19 +576,44 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
               { id: "Vessel 1", label: `Vessel 1 (${v1Count})` },
               { id: "Dolly", label: `Dolly (${dlCount})` },
               { id: "Vessel 2", label: `Vessel 2 (${v2Count})` },
-            ].map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setUnitCategoryFilter(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  unitCategoryFilter === cat.id
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+              { id: "SUPPORT", label: `Unit Support (${supportCount})` },
+            ].map((cat) => {
+              const isSelected =
+                unitCategoryFilter === cat.id ||
+                (cat.id === "SUPPORT" && isSupportCategory(unitCategoryFilter));
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setUnitCategoryFilter(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-slate-900 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+
+            <select
+              value={isSupportCategory(unitCategoryFilter) ? unitCategoryFilter : ""}
+              onChange={(e) =>
+                setUnitCategoryFilter(e.target.value ? e.target.value : "SUPPORT")
+              }
+              aria-label="Filter Spesifik Kategori Support"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200 focus:outline-hidden focus:ring-2 focus:ring-sky-300 cursor-pointer"
+            >
+              <option value="">Tipe Support (12 Kategori)</option>
+              {SUPPORT_UNIT_TYPES.map((t) => {
+                const count = supportUnits.filter((u) => u.category === t.category).length;
+                return (
+                  <option key={t.category} value={t.category}>
+                    {t.label} ({count})
+                  </option>
+                );
+              })}
+            </select>
           </div>
 
           {/* JobSite Filter Pills */}
@@ -520,7 +719,9 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                             ? "bg-blue-50 text-blue-700 border border-blue-200"
                             : u.category === "Dolly"
                             ? "bg-purple-50 text-purple-700 border border-purple-200"
-                            : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : u.category === "Vessel 2"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-sky-50 text-sky-700 border border-sky-200"
                         }`}
                       >
                         {u.category}
@@ -551,7 +752,12 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                       </span>
                     </td>
                     <td className="py-3 px-3.5 text-slate-500 text-[11px]">
-                      {u.buntutSummary || (u.category !== "Prime Mover" ? `Ikut ${u.headUnitCode}` : "-")}
+                      {u.buntutSummary ||
+                        (u.headUnitCode && u.category !== "Prime Mover"
+                          ? `Ikut ${u.headUnitCode}`
+                          : isSupportCategory(u.category)
+                          ? "Unit Support (Mandiri)"
+                          : "-")}
                     </td>
                     <td className="py-3 px-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
@@ -694,6 +900,35 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                 </div>
               </div>
 
+              {isSupportCategory(unitForEdit.category) && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Brand / Merk
+                    </label>
+                    <input
+                      type="text"
+                      value={editBrand}
+                      onChange={(e) => setEditBrand(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Model
+                    </label>
+                    <input
+                      type="text"
+                      value={editModel}
+                      onChange={(e) => setEditModel(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -716,6 +951,212 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                     <>
                       <Check size={14} />
                       <span>Simpan Perubahan</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------
+          MODAL: TAMBAH UNIT SUPPORT (AUTO-SYNC VOLVO FOR HAULING)
+      ---------------------------------------------------------- */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Wrench size={18} className="text-[#e95623]" />
+                  <h3 className="text-base font-extrabold text-slate-900">
+                    Tambah Unit Support
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Daftarkan unit support operasional di site {isGlobalAdmin ? "Muara Pahu / Senyiur" : defaultUserSite === "Senyiur" ? "Senyiur" : "Muara Pahu"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="bg-sky-50/90 border border-sky-200 rounded-2xl p-3 text-[11px] text-sky-900 leading-relaxed flex items-start gap-2">
+              <Radio size={15} className="text-sky-600 shrink-0 mt-0.5" />
+              <div>
+                <strong>Catatan Otomatisasi Hauling:</strong> Unit{" "}
+                <strong>Prime Mover, Vessel 1, Dolly &amp; Vessel 2</strong>{" "}
+                terdaftar otomatis dari <strong>Volvo Connect</strong> (saat Prime Mover baru masuk di Volvo Connect, Vessel &amp; Dolly otomatis ikut terdaftar). Form ini khusus untuk <strong>12 kategori Unit Support</strong>.
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateSupportUnit} className="space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Kategori Unit Support
+                  </label>
+                  <select
+                    value={addCategory}
+                    onChange={(e) => handleSelectAddCategory(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  >
+                    {SUPPORT_UNIT_TYPES.map((t) => (
+                      <option key={t.category} value={t.category}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Kode Unit
+                  </label>
+                  <input
+                    type="text"
+                    value={addUnitCode}
+                    onChange={(e) => setAddUnitCode(e.target.value.toUpperCase())}
+                    placeholder="Contoh: LV01, EX02, DT101..."
+                    required
+                    className="w-full px-3 py-2 text-xs font-mono font-bold uppercase rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  />
+                  {addCategory === "Storing Truck" && (
+                    <span className="text-[10px] text-amber-700 block mt-1">
+                      Gunakan kode seperti ST01 / ST101 (ST8xx &amp; ST9xx dipakai Vessel).
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Brand / Merk
+                  </label>
+                  <input
+                    type="text"
+                    value={addBrand}
+                    onChange={(e) => setAddBrand(e.target.value)}
+                    placeholder="Contoh: Toyota, Komatsu, Hino..."
+                    required
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Model / Tipe
+                  </label>
+                  <input
+                    type="text"
+                    value={addModel}
+                    onChange={(e) => setAddModel(e.target.value)}
+                    placeholder="Contoh: Hilux 4x4, PC200, FM260..."
+                    required
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Penempatan JobSite
+                  </label>
+                  {isGlobalAdmin ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAddJobSite("MuaraPahu")}
+                        className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          addJobSite === "MuaraPahu"
+                            ? "bg-orange-50 text-[#e95623] border-orange-300 ring-2 ring-orange-200"
+                            : "bg-slate-50 text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        Muara Pahu
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAddJobSite("Senyiur")}
+                        className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          addJobSite === "Senyiur"
+                            ? "bg-orange-50 text-[#e95623] border-orange-300 ring-2 ring-orange-200"
+                            : "bg-slate-50 text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        Senyiur
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <MapPin size={13} className="text-[#e95623]" />
+                      <span>{defaultUserSite === "Senyiur" ? "Site Senyiur" : "Site Muara Pahu"}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Status Operasional
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAddStatus("Active")}
+                      className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        addStatus === "Active"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-300 ring-2 ring-emerald-200"
+                          : "bg-slate-50 text-slate-600 border-slate-200"
+                      }`}
+                    >
+                      Active
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddStatus("Inactive")}
+                      className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        addStatus === "Inactive"
+                          ? "bg-rose-50 text-rose-800 border-rose-300 ring-2 ring-rose-200"
+                          : "bg-slate-50 text-slate-600 border-slate-200"
+                      }`}
+                    >
+                      Inactive
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingUnit}
+                  className="px-5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isCreatingUnit ? (
+                    <>
+                      <RefreshCw size={13} className="animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={14} />
+                      <span>Simpan Unit Support</span>
                     </>
                   )}
                 </button>

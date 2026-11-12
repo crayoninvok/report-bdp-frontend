@@ -28,6 +28,7 @@ import {
   formatKm,
   getPmReadinessStyle,
   HM_TOLERANCE_HOURS,
+  isSupportCategory,
   LEAD_TIME_TOLERANCE_HOURS,
   parseClockTimeMinutes,
   parseLeadTimeHours,
@@ -86,6 +87,7 @@ const UNIT_CATEGORY_FILTERS = [
   "Vessel 1",
   "Dolly",
   "Vessel 2",
+  "Unit Support",
 ] as const;
 
 type UnitCategoryFilter = (typeof UNIT_CATEGORY_FILTERS)[number];
@@ -188,6 +190,9 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
 
   const filteredUnitsByCategory = useMemo(() => {
     if (unitCategoryFilter === "ALL") return availableUnits;
+    if (unitCategoryFilter === "Unit Support") {
+      return availableUnits.filter((u) => isSupportCategory(u.category));
+    }
     return availableUnits.filter((u) => u.category === unitCategoryFilter);
   }, [availableUnits, unitCategoryFilter]);
 
@@ -198,12 +203,21 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
       { category: "Dolly", items: [] },
       { category: "Vessel 2", items: [] },
     ];
+    const dynamicGroups = new Map<string, MasterUnit[]>();
     for (const u of filteredUnitsByCategory) {
       const target = groups.find((g) => g.category === u.category);
-      if (target) target.items.push(u);
-      else groups[0].items.push(u);
+      if (target) {
+        target.items.push(u);
+      } else {
+        const list = dynamicGroups.get(u.category) || [];
+        list.push(u);
+        dynamicGroups.set(u.category, list);
+      }
     }
-    return groups.filter((g) => g.items.length > 0);
+    const supportGroups = Array.from(dynamicGroups.entries()).map(
+      ([category, items]) => ({ category, items })
+    );
+    return [...groups.filter((g) => g.items.length > 0), ...supportGroups];
   }, [filteredUnitsByCategory]);
 
   const groupedSupervisors = useMemo(
@@ -407,7 +421,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                   onChange={(e) => handleUnitChange(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 >
-                  <option value="">-- Pilih Unit (Head / Dolly / Vessel) --</option>
+                  <option value="">-- Pilih Unit (Head / Dolly / Vessel / Support) --</option>
                   {unitsGroupedByCategory.map((group) => (
                     <optgroup key={group.category} label={group.category}>
                       {group.items.map((u) => {
@@ -1077,7 +1091,9 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
   const filteredUnits = useMemo(() => {
     const q = search.trim().toLowerCase();
     return availableUnits.filter((u) => {
-      if (categoryFilter !== "ALL" && u.category !== categoryFilter) {
+      if (categoryFilter === "Unit Support") {
+        if (!isSupportCategory(u.category)) return false;
+      } else if (categoryFilter !== "ALL" && u.category !== categoryFilter) {
         return false;
       }
       const r =

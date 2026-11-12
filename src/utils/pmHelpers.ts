@@ -212,7 +212,37 @@ export function resolveMechanicsArray(item: PeriodicInspectionItem): string[] {
   return [];
 }
 
-/** Resolves the unit category ("Prime Mover", "Vessel 1", "Dolly", "Vessel 2") for a PS item. */
+/** Canonical hauling fleet categories managed automatically via Volvo Connect. */
+export const HAULING_CATEGORIES = [
+  "Prime Mover",
+  "Vessel 1",
+  "Dolly",
+  "Vessel 2",
+] as const;
+
+/** Canonical support unit types allowed for manual registration in Master Data Unit. */
+export const SUPPORT_UNIT_TYPES = [
+  { prefix: "LV", category: "Light Vehicle", label: "Light Vehicle (LV)" },
+  { prefix: "TH", category: "Telehandler", label: "Telehandler (TH)" },
+  { prefix: "FT", category: "Fuel Truck", label: "Fuel Truck (FT)" },
+  { prefix: "ST", category: "Storing Truck", label: "Storing Truck (ST)" },
+  { prefix: "WT", category: "Water Truck", label: "Water Truck (WT)" },
+  { prefix: "AM", category: "Ambulance", label: "Ambulance (AM)" },
+  { prefix: "BM", category: "Bus Manhaul", label: "Bus Manhaul (BM)" },
+  { prefix: "EX", category: "Excavator", label: "Excavator (EX)" },
+  { prefix: "DT", category: "Dump Truck", label: "Dump Truck (DT)" },
+  { prefix: "CP", category: "Compactor", label: "Compactor (CP)" },
+  { prefix: "DZ", category: "Dozer", label: "Dozer (DZ)" },
+  { prefix: "GS", category: "Genset", label: "Genset (GS)" },
+] as const;
+
+/** Returns true if the unit category belongs to standalone support units. */
+export function isSupportCategory(category?: string | null): boolean {
+  if (!category) return false;
+  return !HAULING_CATEGORIES.includes(category as (typeof HAULING_CATEGORIES)[number]);
+}
+
+/** Resolves the unit category ("Prime Mover", "Vessel 1", "Dolly", "Vessel 2", or support type) for a PS item. */
 export function resolvePsUnitCategory(
   item: PeriodicInspectionItem,
   masterUnits: MasterUnit[]
