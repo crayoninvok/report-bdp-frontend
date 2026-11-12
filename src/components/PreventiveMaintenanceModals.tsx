@@ -252,8 +252,8 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
     const unitObj = availableUnits.find((u) => u.unitCode === unitCode);
     const isHead = !unitObj || unitObj.category === "Prime Mover";
     const r = isHead ? radarMap.get(unitCode) : undefined;
-    const liveKmVal = r?.liveKm ?? null;
-    const liveHmVal = r?.liveHm ?? null;
+    const liveKmVal = r?.liveKm ?? (!isHead ? unitObj?.currentKm ?? null : null);
+    const liveHmVal = r?.liveHm ?? (!isHead ? unitObj?.currentHm ?? null : null);
     const recService =
       r?.recommendedServiceType ||
       (isHead ? form.serviceType : "Greasing & PS");
@@ -521,6 +521,19 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
               <span>
                 <strong>Unit Mandiri:</strong> {selectedUnitObj.category} (
                 {selectedUnitObj.model}) &bull; Jadwal PS terpisah dari Head
+                {(selectedUnitObj.currentHm != null || selectedUnitObj.currentKm != null) && (
+                  <>
+                    {" "}
+                    &bull; Meter:{" "}
+                    <strong>
+                      {selectedUnitObj.currentHm != null ? `${selectedUnitObj.currentHm.toLocaleString("id-ID")} HM` : "- HM"}
+                    </strong>{" "}
+                    /{" "}
+                    <strong>
+                      {selectedUnitObj.currentKm != null ? `${selectedUnitObj.currentKm.toLocaleString("id-ID")} KM` : "- KM"}
+                    </strong>
+                  </>
+                )}
               </span>
               {selectedUnitObj.headUnitCode && (
                 <span className="font-mono font-bold text-sky-700">

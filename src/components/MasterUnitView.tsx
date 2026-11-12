@@ -66,6 +66,8 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
   const [addUnitCode, setAddUnitCode] = useState<string>(SUPPORT_UNIT_TYPES[0].prefix);
   const [addBrand, setAddBrand] = useState<string>("");
   const [addModel, setAddModel] = useState<string>("");
+  const [addHm, setAddHm] = useState<string>("");
+  const [addKm, setAddKm] = useState<string>("");
   const [addJobSite, setAddJobSite] = useState<"MuaraPahu" | "Senyiur">(defaultUserSite);
   const [addStatus, setAddStatus] = useState<"Active" | "Inactive">("Active");
   const [isCreatingUnit, setIsCreatingUnit] = useState<boolean>(false);
@@ -77,6 +79,8 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
   const [editJobSite, setEditJobSite] = useState<"MuaraPahu" | "Senyiur">("MuaraPahu");
   const [editBrand, setEditBrand] = useState<string>("");
   const [editModel, setEditModel] = useState<string>("");
+  const [editHm, setEditHm] = useState<string>("");
+  const [editKm, setEditKm] = useState<string>("");
   const [isSavingUnit, setIsSavingUnit] = useState<boolean>(false);
 
   const loadUnits = async (syncVolvo = false) => {
@@ -127,12 +131,25 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
     }
   };
 
+  const parseOptionalMeter = (raw: string, label: string): { valid: boolean; value: number | null } => {
+    const trimmed = raw.trim();
+    if (!trimmed) return { valid: true, value: null };
+    const num = Number(trimmed);
+    if (!Number.isFinite(num) || num < 0) {
+      showError(`Nilai ${label} harus berupa angka >= 0.`);
+      return { valid: false, value: null };
+    }
+    return { valid: true, value: num };
+  };
+
   const handleOpenAddModal = () => {
     const first = SUPPORT_UNIT_TYPES[0];
     setAddCategory(first.category);
     setAddUnitCode(first.prefix);
     setAddBrand("");
     setAddModel("");
+    setAddHm("");
+    setAddKm("");
     setAddJobSite(defaultUserSite);
     setAddStatus("Active");
     setIsAddModalOpen(true);
@@ -171,6 +188,11 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
       return;
     }
 
+    const hmParsed = parseOptionalMeter(addHm, "HM");
+    if (!hmParsed.valid) return;
+    const kmParsed = parseOptionalMeter(addKm, "KM");
+    if (!kmParsed.valid) return;
+
     try {
       setIsCreatingUnit(true);
       const res = await plantService.createUnit({
@@ -178,6 +200,8 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
         category: addCategory,
         brand: addBrand.trim(),
         model: addModel.trim(),
+        currentHm: hmParsed.value,
+        currentKm: kmParsed.value,
         jobSite: isGlobalAdmin ? addJobSite : defaultUserSite,
         status: addStatus,
       });
@@ -295,6 +319,8 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
     setEditJobSite((unit.jobSite as any) === "Senyiur" ? "Senyiur" : "MuaraPahu");
     setEditBrand(unit.brand || "");
     setEditModel(unit.model || "");
+    setEditHm(unit.currentHm != null ? String(unit.currentHm) : "");
+    setEditKm(unit.currentKm != null ? String(unit.currentKm) : "");
     setIsEditModalOpen(true);
   };
 
@@ -305,17 +331,35 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
     const isSupport = isSupportCategory(unitForEdit.category);
     const trimmedBrand = editBrand.trim();
     const trimmedModel = editModel.trim();
+    const hmParsed = isSupport ? parseOptionalMeter(editHm, "HM") : { valid: true, value: null };
+    if (!hmParsed.valid) return;
+    const kmParsed = isSupport ? parseOptionalMeter(editKm, "KM") : { valid: true, value: null };
+    if (!kmParsed.valid) return;
+
     const isStatusChanged = unitForEdit.status !== editStatus;
     const isJobSiteChanged = unitForEdit.jobSite !== editJobSite;
     const isBrandChanged = isSupport && trimmedBrand !== "" && trimmedBrand !== unitForEdit.brand;
     const isModelChanged = isSupport && trimmedModel !== "" && trimmedModel !== unitForEdit.model;
+    const prevHm = unitForEdit.currentHm ?? null;
+    const prevKm = unitForEdit.currentKm ?? null;
+    const isHmChanged = isSupport && hmParsed.value !== prevHm;
+    const isKmChanged = isSupport && kmParsed.value !== prevKm;
 
-    if (isStatusChanged || isJobSiteChanged || isBrandChanged || isModelChanged) {
+    if (
+      isStatusChanged ||
+      isJobSiteChanged ||
+      isBrandChanged ||
+      isModelChanged ||
+      isHmChanged ||
+      isKmChanged
+    ) {
       const changes: string[] = [];
       if (isStatusChanged) changes.push(`Status: "${unitForEdit.status}" → "${editStatus}"`);
       if (isJobSiteChanged) changes.push(`JobSite: "${unitForEdit.jobSite}" → "${editJobSite}"`);
       if (isBrandChanged) changes.push(`Brand: "${unitForEdit.brand}" → "${trimmedBrand}"`);
       if (isModelChanged) changes.push(`Model: "${unitForEdit.model}" → "${trimmedModel}"`);
+      if (isHmChanged) changes.push(`HM: "${prevHm ?? "-"}" → "${hmParsed.value ?? "-"}"`);
+      if (isKmChanged) changes.push(`KM: "${prevKm ?? "-"}" → "${kmParsed.value ?? "-"}"`);
 
       confirm({
         title: "Konfirmasi Perubahan Master Unit",
@@ -334,7 +378,14 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
             const res = await plantService.updateUnit(unitForEdit.unitCode, {
               status: editStatus,
               jobSite: editJobSite,
-              ...(isSupport ? { brand: trimmedBrand, model: trimmedModel } : {}),
+              ...(isSupport
+                ? {
+                    brand: trimmedBrand,
+                    model: trimmedModel,
+                    currentHm: hmParsed.value,
+                    currentKm: kmParsed.value,
+                  }
+                : {}),
             });
 
             showSuccess(res.message || "Data unit berhasil diperbarui!");
@@ -680,6 +731,8 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                 <th className="py-3 px-3.5">Kategori</th>
                 <th className="py-3 px-3.5">Brand / Merk</th>
                 <th className="py-3 px-3.5">Model</th>
+                <th className="py-3 px-3.5 text-right">HM</th>
+                <th className="py-3 px-3.5 text-right">KM</th>
                 <th className="py-3 px-3.5">JobSite</th>
                 <th className="py-3 px-3.5">Status</th>
                 <th className="py-3 px-3.5">Rangkaian Gandengan</th>
@@ -689,14 +742,14 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={11} className="py-12 text-center text-slate-400">
                     <RefreshCw className="animate-spin text-[#e95623] mx-auto mb-2" size={24} />
                     Memuat data master unit...
                   </td>
                 </tr>
               ) : filteredUnits.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={11} className="py-12 text-center text-slate-400">
                     Tidak ada unit yang cocok dengan filter / pencarian.
                   </td>
                 </tr>
@@ -729,6 +782,33 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                     </td>
                     <td className="py-3 px-3.5 font-semibold text-slate-800">{u.brand}</td>
                     <td className="py-3 px-3.5 font-mono text-[11px] text-slate-600">{u.model}</td>
+                    <td className="py-3 px-3.5 text-right font-mono text-[11px] whitespace-nowrap">
+                      {u.currentHm != null ? (
+                        <span
+                          className="font-bold text-slate-800 inline-flex items-center gap-1"
+                          title={u.isLiveTelemetry ? "Live dari Volvo Connect" : "Tercatat di Master Data Unit"}
+                        >
+                          {u.isLiveTelemetry && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                          )}
+                          {u.currentHm.toLocaleString("id-ID", { maximumFractionDigits: 1 })} HM
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3.5 text-right font-mono text-[11px] whitespace-nowrap">
+                      {u.currentKm != null ? (
+                        <span
+                          className="font-bold text-slate-800"
+                          title={u.isLiveTelemetry ? "Live dari Volvo Connect" : "Tercatat di Master Data Unit"}
+                        >
+                          {u.currentKm.toLocaleString("id-ID")} KM
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
+                    </td>
                     <td className="py-3 px-3.5">
                       <span
                         className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold ${
@@ -901,30 +981,62 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
               </div>
 
               {isSupportCategory(unitForEdit.category) && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Brand / Merk
-                    </label>
-                    <input
-                      type="text"
-                      value={editBrand}
-                      onChange={(e) => setEditBrand(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-                    />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                        Brand / Merk
+                      </label>
+                      <input
+                        type="text"
+                        value={editBrand}
+                        onChange={(e) => setEditBrand(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                        Model
+                      </label>
+                      <input
+                        type="text"
+                        value={editModel}
+                        onChange={(e) => setEditModel(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Model
-                    </label>
-                    <input
-                      type="text"
-                      value={editModel}
-                      onChange={(e) => setEditModel(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                        HM (Hour Meter)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={editHm}
+                        onChange={(e) => setEditHm(e.target.value)}
+                        placeholder="Contoh: 1250"
+                        className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                        KM (Odometer)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={editKm}
+                        onChange={(e) => setEditKm(e.target.value)}
+                        placeholder="Contoh: 45000"
+                        className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1062,6 +1174,38 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                     placeholder="Contoh: Hilux 4x4, PC200, FM260..."
                     required
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    HM (Hour Meter)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={addHm}
+                    onChange={(e) => setAddHm(e.target.value)}
+                    placeholder="Contoh: 1250 (opsional)"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    KM (Odometer)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={addKm}
+                    onChange={(e) => setAddKm(e.target.value)}
+                    placeholder="Contoh: 45000 (opsional)"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   />
                 </div>
               </div>

@@ -12,6 +12,9 @@ export interface MasterUnit {
   pairIndex: number | null;
   jobSite: string;
   status: string;
+  currentHm?: number | null;
+  currentKm?: number | null;
+  isLiveTelemetry?: boolean;
   trailers?: {
     vessel1?: MasterUnit;
     dolly?: MasterUnit;
@@ -168,6 +171,8 @@ export const plantService = {
     model: string;
     jobSite: "MuaraPahu" | "Senyiur";
     status?: "Active" | "Inactive";
+    currentHm?: number | null;
+    currentKm?: number | null;
   }): Promise<{ success: boolean; message: string; data: MasterUnit }> => {
     const res = await fetch(`${API_BASE_URL}/plant/units`, {
       method: "POST",
@@ -206,6 +211,8 @@ export const plantService = {
       jobSite?: "MuaraPahu" | "Senyiur";
       brand?: string;
       model?: string;
+      currentHm?: number | null;
+      currentKm?: number | null;
     }
   ): Promise<any> => {
     const res = await fetch(`${API_BASE_URL}/plant/units/${unitCode}`, {
