@@ -576,7 +576,249 @@ export const plantService = {
     }
     return res.json();
   },
+
+  // 21. Get Dashboard Plant Analytics (GL Plant Cost YTD & MTD + Preventive Maintenance PI & PS)
+  getPlantDashboard: async (params?: {
+    site?: string;
+    glScope?: "all_plant" | "rm_only" | "tyre_oli_grease";
+    year?: number;
+    month?: number;
+    pmPeriod?: "week" | "mtd" | "30d" | "ytd" | "custom";
+    pmStartDate?: string;
+    pmEndDate?: string;
+  }): Promise<PlantDashboardResponse> => {
+    const query = new URLSearchParams();
+    if (params?.site) query.append("site", params.site);
+    if (params?.glScope) query.append("glScope", params.glScope);
+    if (params?.year) query.append("year", String(params.year));
+    if (params?.month) query.append("month", String(params.month));
+    if (params?.pmPeriod) query.append("pmPeriod", params.pmPeriod);
+    if (params?.pmStartDate) query.append("pmStartDate", params.pmStartDate);
+    if (params?.pmEndDate) query.append("pmEndDate", params.pmEndDate);
+    const qs = query.toString();
+    const res = await fetch(
+      `${API_BASE_URL}/plant/dashboard${qs ? `?${qs}` : ""}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      throw new Error("Gagal memuat data Dashboard Plant");
+    }
+    return res.json();
+  },
 };
+
+export type PlantGlScope = "all_plant" | "rm_only" | "tyre_oli_grease";
+export type PlantPmPeriodMode = "week" | "mtd" | "30d" | "ytd" | "custom";
+
+export interface PlantDashboardMonthOption {
+  month: number;
+  label: string;
+  periodName: string;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface PlantDashboardMonthlyGlPoint {
+  month: number;
+  label: string;
+  hasData: boolean;
+  periodName: string | null;
+  tyre: number;
+  sparepart: number;
+  oliGrease: number;
+  consumableTools: number;
+  jasaUndercarriage: number;
+  total: number;
+  mph: number;
+  sny: number;
+  txCount: number;
+}
+
+export interface PlantDashboardDailyMtdPoint {
+  date: string;
+  label: string;
+  tyre: number;
+  sparepart: number;
+  oliGrease: number;
+  consumableTools: number;
+  jasaUndercarriage: number;
+  total: number;
+  txCount: number;
+  cumulativeTotal: number;
+}
+
+export interface PlantDashboardCategoryItem {
+  categoryKey: string;
+  categoryLabel: string;
+  ytdTotal: number;
+  mtdTotal: number;
+  ytdSharePercent: number;
+  mtdSharePercent: number;
+}
+
+export interface PlantDashboardAccountItem {
+  accountCode: string;
+  accountName: string;
+  categoryKey: string;
+  categoryLabel: string;
+  ytdTotal: number;
+  mtdTotal: number;
+  ytdMph: number;
+  ytdSny: number;
+  mtdMph: number;
+  mtdSny: number;
+  txCountYtd: number;
+  txCountMtd: number;
+}
+
+export interface PlantDashboardCostCenterItem {
+  costCenter: string;
+  tyre: number;
+  sparepartRm: number;
+  oliGrease: number;
+  total: number;
+  txCount: number;
+}
+
+export interface PlantDashboardPlMonthlyPoint {
+  month: number;
+  label: string;
+  budget: number;
+  realisasi: number;
+  tyreBudget: number;
+  tyreReal: number;
+  rmBudget: number;
+  rmReal: number;
+  achPercent: number;
+  variance: number;
+}
+
+export interface PlantDashboardPmDailyPoint {
+  date: string;
+  label: string;
+  plan: number;
+  scheduled: number;
+  completed: number;
+  inProgress: number;
+  openCount: number;
+  achievementPercent: number;
+}
+
+export interface PlantDashboardPmPlanSummary {
+  totalPlan: number;
+  totalScheduled: number;
+  totalCompleted: number;
+  inProgressCount: number;
+  scheduledOpenCount: number;
+  pendingCount: number;
+  achievementPercent: number;
+  scheduleFillPercent: number;
+  daysCount: number;
+}
+
+export interface PlantDashboardPmSection {
+  summary: PlantDashboardPmPlanSummary;
+  statusBreakdown: Array<{ name: string; value: number; key: string }>;
+  shiftBreakdown: Array<{ shift: string; total: number; completed: number; pending: number }>;
+  dailySeries: PlantDashboardPmDailyPoint[];
+}
+
+export interface PlantDashboardData {
+  filters: {
+    site: string;
+    glProjectArea: string;
+    glScope: PlantGlScope;
+    year: number;
+    month: number;
+    availableYears: number[];
+    availableMonths: PlantDashboardMonthOption[];
+    pmPeriod: PlantPmPeriodMode;
+    pmRange: {
+      startDate: string;
+      endDate: string;
+      label: string;
+    };
+  };
+  fleet: {
+    primeMoverPopulation: number;
+    totalUnitsCount: number;
+  };
+  glCost: {
+    ytd: {
+      totalCost: number;
+      rmCost: number;
+      tyreOliGreaseCost: number;
+      mphCost: number;
+      snyCost: number;
+      hofCost: number;
+      transactionCount: number;
+      uploadedMonthsCount: number;
+      uploadedPeriodNames: string[];
+      uploadedMonthsLabel: string;
+    };
+    mtd: {
+      hasData: boolean;
+      periodName: string;
+      startDate: string | null;
+      endDate: string | null;
+      daysElapsed: number;
+      totalCost: number;
+      rmCost: number;
+      tyreOliGreaseCost: number;
+      mphCost: number;
+      snyCost: number;
+      hofCost: number;
+      avgDailyCost: number;
+      prevMonthPeriodName: string | null;
+      prevMonthAvgDaily: number;
+      dailyRunRateDeltaPercent: number | null;
+      transactionCount: number;
+    };
+    monthlyGlTrend: PlantDashboardMonthlyGlPoint[];
+    dailyMtdTrend: PlantDashboardDailyMtdPoint[];
+    categoryBreakdown: PlantDashboardCategoryItem[];
+    accountBreakdown: PlantDashboardAccountItem[];
+    topCostCentersYtd: PlantDashboardCostCenterItem[];
+    topCostCentersMtd: PlantDashboardCostCenterItem[];
+    plReference: {
+      totals: {
+        ytdBudget: number;
+        ytdRealisasi: number;
+        ytdVariance: number;
+        ytdAchPercent: number;
+        mtdBudget: number;
+        mtdRealisasi: number;
+      };
+      monthlyTrend: PlantDashboardPlMonthlyPoint[];
+    };
+  };
+  pm: {
+    pi: PlantDashboardPmSection;
+    ps: PlantDashboardPmSection & {
+      intervalBreakdown: Array<{
+        interval: string;
+        Completed: number;
+        "In Progress": number;
+        Scheduled: number;
+        Pending: number;
+        total: number;
+      }>;
+      assetBreakdown: Array<{
+        assetCategory: string;
+        total: number;
+        completed: number;
+      }>;
+      kpiItems: PeriodicInspectionItem[];
+    };
+  };
+}
+
+export interface PlantDashboardResponse {
+  success: boolean;
+  data: PlantDashboardData;
+}
 
 export interface PlantPersonnelItem {
   id: string;

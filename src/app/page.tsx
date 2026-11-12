@@ -19,6 +19,7 @@ import { CoalProductionReportView } from "../components/CoalProductionReportView
 import { FuelConsumptionGLSection } from "../components/FuelConsumptionGLSection";
 import { UnderDevelopmentView } from "../components/UnderDevelopmentView";
 import { GLDataView } from "../components/GLDataView";
+import { PlantDashboardView } from "../components/PlantDashboardView";
 import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
 import { PreventiveMaintenanceView } from "../components/PreventiveMaintenanceView";
 import { TyreRimUsageView } from "../components/TyreRimUsageView";
@@ -584,12 +585,7 @@ export default function Home() {
           ) : activeMenu === "profit-center" ? (
             <ProfitCenterView user={currentUser} onNavigateBack={() => setActiveMenu("dashboard")} />
           ) : activeMenu === "plant-dashboard" ? (
-            <UnderDevelopmentView
-              user={currentUser}
-              moduleName="Dashboard Plant"
-              moduleCategory="Plant & Maintenance"
-              onBackToDashboard={() => setActiveMenu("dashboard")}
-            />
+            <PlantDashboardView user={currentUser} />
           ) : activeMenu === "periodic-inspection" ? (
             <PeriodicInspectionView
               user={currentUser}
