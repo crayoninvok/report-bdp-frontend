@@ -140,6 +140,27 @@ export const KNOWN_AREAS: KnownArea[] = [
     description:
       "Geofence polygon Area PT Tanur Jaya dari batas konsesi KML.",
   },
+  {
+    id: "tiwa-abadi",
+    name: "Area Tiwa Abadi",
+    shortName: "Tiwa Abadi",
+    category: "Mining Concession / Pit Area",
+    emoji: "⛏️",
+    center: [0.4834459, 116.1563625],
+    zoom: 12,
+    color: "#ca8a04",
+    fillColor: "#eab308",
+    polygon: [
+      [0.4500111, 116.1333222],
+      [0.5333, 116.1333222],
+      [0.5333, 116.1794028],
+      [0.4335917, 116.1794028],
+      [0.4335917, 116.1658],
+      [0.4500111, 116.1658],
+    ],
+    description:
+      "Geofence polygon Area PT Tiwa Abadi dari batas konsesi KML.",
+  },
 ];
 
 // Helper: Check if point [lat, lng] is inside a polygon
