@@ -234,6 +234,8 @@ export const SUPPORT_UNIT_TYPES = [
   { prefix: "CP", category: "Compactor", label: "Compactor (CP)" },
   { prefix: "DZ", category: "Dozer", label: "Dozer (DZ)" },
   { prefix: "GS", category: "Genset", label: "Genset (GS)" },
+  { prefix: "AC", category: "Air Compressor", label: "Air Compressor (AC)" },
+  { prefix: "WP", category: "Water Pump", label: "Water Pump (WP)" },
 ] as const;
 
 /** Returns true if the unit category belongs to standalone support units. */

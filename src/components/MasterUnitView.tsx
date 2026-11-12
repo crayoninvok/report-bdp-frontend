@@ -577,7 +577,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
         >
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Wrench size={13} className="text-sky-600" />
-            Unit Support (12 Tipe)
+            Unit Support ({SUPPORT_UNIT_TYPES.length} Tipe)
           </span>
           <div className="my-2">
             <span className="text-2xl font-black text-sky-700">{supportCount}</span>
@@ -655,7 +655,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
               aria-label="Filter Spesifik Kategori Support"
               className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200 focus:outline-hidden focus:ring-2 focus:ring-sky-300 cursor-pointer"
             >
-              <option value="">Tipe Support (12 Kategori)</option>
+              <option value="">Tipe Support ({SUPPORT_UNIT_TYPES.length} Kategori)</option>
               {SUPPORT_UNIT_TYPES.map((t) => {
                 const count = supportUnits.filter((u) => u.category === t.category).length;
                 return (
@@ -1120,7 +1120,7 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
               <div>
                 <strong>Catatan Otomatisasi Hauling:</strong> Unit{" "}
                 <strong>Prime Mover, Vessel 1, Dolly &amp; Vessel 2</strong>{" "}
-                terdaftar otomatis dari <strong>Volvo Connect</strong> (saat Prime Mover baru masuk di Volvo Connect, Vessel &amp; Dolly otomatis ikut terdaftar). Form ini khusus untuk <strong>12 kategori Unit Support</strong>.
+                terdaftar otomatis dari <strong>Volvo Connect</strong> (saat Prime Mover baru masuk di Volvo Connect, Vessel &amp; Dolly otomatis ikut terdaftar). Form ini khusus untuk <strong>{SUPPORT_UNIT_TYPES.length} kategori Unit Support</strong>.
               </div>
             </div>
 
