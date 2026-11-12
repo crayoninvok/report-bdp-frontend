@@ -59,7 +59,6 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
   // Map & Interaction States
   const [selectedUnit, setSelectedUnit] = useState<VolvoUnit | null>(null);
   const [focusRequestId, setFocusRequestId] = useState<number>(0);
-  const [mapLayer, setMapLayer] = useState<"satellite" | "streets" | "dark">("satellite");
 
   // Filter & Search States
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -360,8 +359,6 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
               selectedUnit={selectedUnit}
               focusRequestId={focusRequestId}
               onSelectUnit={setSelectedUnit}
-              mapLayer={mapLayer}
-              onLayerChange={setMapLayer}
             />
           </div>
 

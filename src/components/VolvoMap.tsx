@@ -238,8 +238,6 @@ interface VolvoMapProps {
   selectedUnit: VolvoUnit | null;
   focusRequestId?: number;
   onSelectUnit: (unit: VolvoUnit) => void;
-  mapLayer: "satellite" | "streets" | "dark";
-  onLayerChange: (layer: "satellite" | "streets" | "dark") => void;
 }
 
 export const VolvoMap: React.FC<VolvoMapProps> = ({
@@ -247,16 +245,13 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
   selectedUnit,
   focusRequestId = 0,
   onSelectUnit,
-  mapLayer,
-  onLayerChange,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
-  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const areasLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
-  // Initialize Map
+  // Initialize Map (Satellite layer only)
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -267,6 +262,15 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         zoom: 10,
         zoomControl: false,
       });
+
+      L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution:
+            "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+          maxZoom: 19,
+        }
+      ).addTo(map);
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
@@ -284,32 +288,6 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       }
     };
   }, []);
-
-  // Update Tile Layer when mapLayer changes
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    if (tileLayerRef.current) {
-      map.removeLayer(tileLayerRef.current);
-    }
-
-    let url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-    let attribution = "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community";
-
-    if (mapLayer === "streets") {
-      url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-      attribution = "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors";
-    } else if (mapLayer === "dark") {
-      url = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-      attribution = "&copy; OpenStreetMap &copy; CARTO";
-    }
-
-    tileLayerRef.current = L.tileLayer(url, {
-      attribution,
-      maxZoom: 19,
-    }).addTo(map);
-  }, [mapLayer]);
 
   // Render & Update Known Areas (Geofences) on Map
   useEffect(() => {
@@ -773,38 +751,9 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
     <div className="flex flex-col gap-3 w-full">
       {/* Map Controls & Geofence Quick-Fly Toolbar (Above Map) */}
       <div className="flex flex-wrap items-center gap-2 p-2.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-        {/* Layer Switcher */}
-        <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/60">
-          <button
-            onClick={() => onLayerChange("satellite")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              mapLayer === "satellite"
-                ? "bg-slate-900 text-white shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <span>🛰️ Satelit</span>
-          </button>
-          <button
-            onClick={() => onLayerChange("streets")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              mapLayer === "streets"
-                ? "bg-slate-900 text-white shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <span>🗺️ Jalan</span>
-          </button>
-          <button
-            onClick={() => onLayerChange("dark")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              mapLayer === "dark"
-                ? "bg-slate-900 text-white shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <span>🌙 Dark</span>
-          </button>
+        {/* Map Mode Badge (Satellite Only) */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-xs">
+          <span>🛰️ Satelit</span>
         </div>
 
         {/* Quick Fly Buttons for Known Areas */}
