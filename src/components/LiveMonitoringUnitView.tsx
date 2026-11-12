@@ -64,16 +64,19 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"all" | "moving" | "idle">("all");
 
-  // Auto-refresh interval (in seconds: 15, 30, 60, or 0 for off)
+  // Auto-refresh interval (in seconds: 5, 15, 30, 60, or 0 for off)
   const [refreshInterval, setRefreshInterval] = useState<number>(30);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(30);
 
+  const isFetchingRef = useRef<boolean>(false);
   const showErrorRef = useRef(showError);
   showErrorRef.current = showError;
 
   // Load Volvo Units Data (stable callback: NEVER depends on selectedUnit to prevent click re-fetch loop)
   const loadUnitsData = useCallback(
     async (isBackground = false, force = false) => {
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
       try {
         if (!isBackground) setIsLoading(true);
         else setIsRefreshing(true);
@@ -95,6 +98,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
           showErrorRef.current(err.message || "Gagal menghubungi API Volvo Trucks Telematics");
         }
       } finally {
+        isFetchingRef.current = false;
         setIsLoading(false);
         setIsRefreshing(false);
       }
@@ -111,18 +115,22 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
   const loadUnitsRef = useRef(loadUnitsData);
   loadUnitsRef.current = loadUnitsData;
 
+  const secondsRef = useRef<number>(refreshInterval);
   useEffect(() => {
     if (refreshInterval <= 0) return;
 
+    secondsRef.current = refreshInterval;
     setSecondsRemaining(refreshInterval);
+
     const interval = setInterval(() => {
-      setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          loadUnitsRef.current(true, true);
-          return refreshInterval;
-        }
-        return prev - 1;
-      });
+      if (secondsRef.current <= 1) {
+        secondsRef.current = refreshInterval;
+        setSecondsRemaining(refreshInterval);
+        loadUnitsRef.current(true, true);
+      } else {
+        secondsRef.current -= 1;
+        setSecondsRemaining(secondsRef.current);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -187,6 +195,7 @@ export const LiveMonitoringUnitView: React.FC<LiveMonitoringUnitViewProps> = ({
                 onChange={(e) => setRefreshInterval(Number(e.target.value))}
                 className="bg-transparent text-xs font-black text-slate-800 focus:outline-none cursor-pointer"
               >
+                <option value={5}>5 dtk</option>
                 <option value={15}>15 dtk</option>
                 <option value={30}>30 dtk</option>
                 <option value={60}>60 dtk</option>
