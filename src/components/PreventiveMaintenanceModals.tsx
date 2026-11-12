@@ -251,18 +251,25 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
   const handleUnitChange = (unitCode: string) => {
     const unitObj = availableUnits.find((u) => u.unitCode === unitCode);
     const isHead = !unitObj || unitObj.category === "Prime Mover";
-    const r = isHead ? radarMap.get(unitCode) : undefined;
-    const liveKmVal = r?.liveKm ?? (!isHead ? unitObj?.currentKm ?? null : null);
-    const liveHmVal = r?.liveHm ?? (!isHead ? unitObj?.currentHm ?? null : null);
+    const headCode = isHead ? unitCode : unitObj?.headUnitCode || "";
+    const r = headCode ? radarMap.get(headCode) : undefined;
+    const liveKmVal = r?.liveKm ?? unitObj?.currentKm ?? null;
+    const liveHmVal = r?.liveHm ?? unitObj?.currentHm ?? null;
     const recService =
-      r?.recommendedServiceType ||
-      (isHead ? form.serviceType : "Greasing & PS");
+      isHead && r?.recommendedServiceType
+        ? r.recommendedServiceType
+        : isHead
+        ? form.serviceType
+        : "Greasing & PS";
     const targets = isHead
       ? computePmTargetsClient(recService, liveKmVal, liveHmVal)
       : { nextDueKm: null, nextDueHm: null };
-    const autoPlanHm = r?.targetHm
-      ? `Target ${r.targetHm.toLocaleString("id-ID")} HM (${r.hmServiceLabel || "Live Volvo"})`
-      : r?.hmServiceLabel || (isHead ? form.planHmServis || PS_HM_SERVIS_OPTIONS[0] : "");
+    const autoPlanHm =
+      isHead && r?.targetHm
+        ? `Target ${r.targetHm.toLocaleString("id-ID")} HM (${r.hmServiceLabel || "Live Volvo"})`
+        : isHead
+        ? r?.hmServiceLabel || form.planHmServis || PS_HM_SERVIS_OPTIONS[0]
+        : "";
 
     setForm((prev) => ({
       ...prev,
@@ -516,32 +523,39 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
             </div>
           )}
 
-          {form.unitCode && !isHeadUnit && selectedUnitObj && (
-            <div className="px-3.5 py-2.5 rounded-xl bg-sky-50/70 border border-sky-200 flex flex-wrap items-center justify-between gap-2 text-[11px] text-sky-900">
-              <span>
-                <strong>Unit Mandiri:</strong> {selectedUnitObj.category} (
-                {selectedUnitObj.model}) &bull; Jadwal PS terpisah dari Head
-                {(selectedUnitObj.currentHm != null || selectedUnitObj.currentKm != null) && (
-                  <>
-                    {" "}
-                    &bull; Meter:{" "}
-                    <strong>
-                      {selectedUnitObj.currentHm != null ? `${selectedUnitObj.currentHm.toLocaleString("id-ID")} HM` : "- HM"}
-                    </strong>{" "}
-                    /{" "}
-                    <strong>
-                      {selectedUnitObj.currentKm != null ? `${selectedUnitObj.currentKm.toLocaleString("id-ID")} KM` : "- KM"}
-                    </strong>
-                  </>
-                )}
-              </span>
-              {selectedUnitObj.headUnitCode && (
-                <span className="font-mono font-bold text-sky-700">
-                  Gandengan Head: {selectedUnitObj.headUnitCode}
+          {form.unitCode && !isHeadUnit && selectedUnitObj && (() => {
+            const pairedHeadRadar = selectedUnitObj.headUnitCode
+              ? radarMap.get(selectedUnitObj.headUnitCode)
+              : undefined;
+            const displayHm = pairedHeadRadar?.liveHm ?? selectedUnitObj.currentHm ?? null;
+            const displayKm = pairedHeadRadar?.liveKm ?? selectedUnitObj.currentKm ?? null;
+            return (
+              <div className="px-3.5 py-2.5 rounded-xl bg-sky-50/70 border border-sky-200 flex flex-wrap items-center justify-between gap-2 text-[11px] text-sky-900">
+                <span>
+                  <strong>Unit Mandiri:</strong> {selectedUnitObj.category} (
+                  {selectedUnitObj.model}) &bull; Jadwal PS terpisah dari Head
+                  {(displayHm != null || displayKm != null) && (
+                    <>
+                      {" "}
+                      &bull; {pairedHeadRadar ? `Volvo (${selectedUnitObj.headUnitCode})` : "Meter"}:{" "}
+                      <strong>
+                        {displayHm != null ? `${displayHm.toLocaleString("id-ID")} HM` : "- HM"}
+                      </strong>{" "}
+                      /{" "}
+                      <strong>
+                        {displayKm != null ? `${displayKm.toLocaleString("id-ID")} KM` : "- KM"}
+                      </strong>
+                    </>
+                  )}
                 </span>
-              )}
-            </div>
-          )}
+                {selectedUnitObj.headUnitCode && (
+                  <span className="font-mono font-bold text-sky-700">
+                    Gandengan Head: {selectedUnitObj.headUnitCode}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Row 1: Tipe Servis & Shift */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

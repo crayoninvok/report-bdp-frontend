@@ -786,7 +786,15 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                       {u.currentHm != null ? (
                         <span
                           className="font-bold text-slate-800 inline-flex items-center gap-1"
-                          title={u.isLiveTelemetry ? "Live dari Volvo Connect" : "Tercatat di Master Data Unit"}
+                          title={
+                            u.isLiveTelemetry
+                              ? u.category !== "Prime Mover" && u.headUnitCode
+                                ? `Mengikuti Prime Mover ${u.headUnitCode} (Live Volvo Connect)`
+                                : "Live dari Volvo Connect"
+                              : u.headUnitCode && u.category !== "Prime Mover"
+                              ? `Mengikuti Prime Mover ${u.headUnitCode}`
+                              : "Tercatat di Master Data Unit"
+                          }
                         >
                           {u.isLiveTelemetry && (
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
@@ -801,7 +809,15 @@ export const MasterUnitView: React.FC<MasterUnitViewProps> = ({
                       {u.currentKm != null ? (
                         <span
                           className="font-bold text-slate-800"
-                          title={u.isLiveTelemetry ? "Live dari Volvo Connect" : "Tercatat di Master Data Unit"}
+                          title={
+                            u.isLiveTelemetry
+                              ? u.category !== "Prime Mover" && u.headUnitCode
+                                ? `Mengikuti Prime Mover ${u.headUnitCode} (Live Volvo Connect)`
+                                : "Live dari Volvo Connect"
+                              : u.headUnitCode && u.category !== "Prime Mover"
+                              ? `Mengikuti Prime Mover ${u.headUnitCode}`
+                              : "Tercatat di Master Data Unit"
+                          }
                         >
                           {u.currentKm.toLocaleString("id-ID")} KM
                         </span>
