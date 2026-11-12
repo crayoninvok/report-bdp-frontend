@@ -119,6 +119,27 @@ export const KNOWN_AREAS: KnownArea[] = [
     description:
       "Geofence polygon Area Fajar Sakti Prima (FSP) dari batas konsesi KML.",
   },
+  {
+    id: "tanur-jaya",
+    name: "Area Tanur Jaya",
+    shortName: "Tanur Jaya",
+    category: "Mining Concession / Pit Area",
+    emoji: "⛏️",
+    center: [0.4834459, 116.2017973],
+    zoom: 12,
+    color: "#db2777",
+    fillColor: "#ec4899",
+    polygon: [
+      [0.4500011, 116.2241917],
+      [0.4500011, 116.1985278],
+      [0.4335917, 116.1985278],
+      [0.4335917, 116.1794028],
+      [0.5333, 116.1794028],
+      [0.5333, 116.2241917],
+    ],
+    description:
+      "Geofence polygon Area PT Tanur Jaya dari batas konsesi KML.",
+  },
 ];
 
 // Helper: Check if point [lat, lng] is inside a polygon
