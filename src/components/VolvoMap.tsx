@@ -161,6 +161,27 @@ export const KNOWN_AREAS: KnownArea[] = [
     description:
       "Geofence polygon Area PT Tiwa Abadi dari batas konsesi KML.",
   },
+  {
+    id: "bara-tabang",
+    name: "Area Bara Tabang",
+    shortName: "Bara Tabang",
+    category: "Mining Concession / Pit Area",
+    emoji: "⛏️",
+    center: [0.5528915, 116.172917],
+    zoom: 13,
+    color: "#0284c7",
+    fillColor: "#0ea5e9",
+    polygon: [
+      [0.533333, 116.133056],
+      [0.57245, 116.133056],
+      [0.57245, 116.155433],
+      [0.5606, 116.155433],
+      [0.5606, 116.212778],
+      [0.533333, 116.212778],
+    ],
+    description:
+      "Geofence polygon Area PT Bara Tabang dari batas konsesi KML.",
+  },
 ];
 
 // Helper: Check if point [lat, lng] is inside a polygon
