@@ -68,6 +68,7 @@ import {
   PS_CATEGORY_OPTIONS,
   PS_LEAD_TIME_OPTIONS,
   PS_START_TIME_OPTIONS,
+  resolveMechanicsArray,
   resolvePsUnitCategory,
   resolveTrailerSummary,
 } from "../utils/pmHelpers";
@@ -92,21 +93,6 @@ function shiftDateString(dateStr: string, deltaDays: number): string {
 /** Extracts friendly Indonesian error messages from async API calls. */
 function getErrorMessage(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
-}
-
-/** Resolves display list of mechanics from array field or comma-separated fallback. */
-function resolveMechanicsArray(item: PeriodicInspectionItem): string[] {
-  if (Array.isArray(item.mechanicNames) && item.mechanicNames.length > 0) {
-    return item.mechanicNames.slice(0, 5);
-  }
-  if (item.mechanicName) {
-    return item.mechanicName
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .slice(0, 5);
-  }
-  return [];
 }
 
 /** Normalizes Actual Lead Time input (e.g. "9" -> "9 Jam") and parses Actual HM Servis. */
@@ -198,6 +184,14 @@ export const PreventiveMaintenanceView: React.FC<
 
   // Modal states
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
+  const [kpiActiveRange, setKpiActiveRange] = useState<{
+    startDate: string;
+    endDate: string;
+  } | null>(null);
+  const [pdfRangeOverride, setPdfRangeOverride] = useState<{
+    startDate: string;
+    endDate: string;
+  } | null>(null);
   const [unitModalState, setUnitModalState] = useState<{
     isOpen: boolean;
     mode: "add" | "edit";
@@ -760,7 +754,14 @@ export const PreventiveMaintenanceView: React.FC<
             {/* Export PDF Presentasi */}
             <button
               type="button"
-              onClick={() => setIsPdfModalOpen(true)}
+              onClick={() => {
+                setPdfRangeOverride(
+                  activeTab === "detail"
+                    ? { startDate: detailStart, endDate: detailEnd }
+                    : kpiActiveRange
+                );
+                setIsPdfModalOpen(true);
+              }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all cursor-pointer"
             >
               <FileText size={15} className="text-[#e95623]" />
@@ -819,6 +820,12 @@ export const PreventiveMaintenanceView: React.FC<
         scheduleData={scheduleData}
         selectedSite={selectedSite}
         isLoadingWeekly={isLoadingWeekly}
+        masterUnits={masterUnits}
+        onRangeChange={setKpiActiveRange}
+        onExportPdf={(range) => {
+          setPdfRangeOverride(range);
+          setIsPdfModalOpen(true);
+        }}
         onJumpToDetail={({ startDate, endDate }) => {
           setActiveTab("detail");
           setDetailPreset("custom");
@@ -1454,7 +1461,10 @@ export const PreventiveMaintenanceView: React.FC<
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsPdfModalOpen(true)}
+                  onClick={() => {
+                    setPdfRangeOverride({ startDate: detailStart, endDate: detailEnd });
+                    setIsPdfModalOpen(true);
+                  }}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d44818] text-white shadow-xs cursor-pointer"
                 >
                   <FileText size={15} />
@@ -1873,8 +1883,14 @@ export const PreventiveMaintenanceView: React.FC<
         scheduleData={scheduleData}
         selectedSite={selectedSite}
         masterUnits={masterUnits}
-        initialStartDate={activeTab === "detail" ? detailStart : undefined}
-        initialEndDate={activeTab === "detail" ? detailEnd : undefined}
+        initialStartDate={
+          pdfRangeOverride?.startDate ||
+          (activeTab === "detail" ? detailStart : kpiActiveRange?.startDate)
+        }
+        initialEndDate={
+          pdfRangeOverride?.endDate ||
+          (activeTab === "detail" ? detailEnd : kpiActiveRange?.endDate)
+        }
         mode="pm"
       />
     </div>

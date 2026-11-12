@@ -26,10 +26,17 @@ import {
 import {
   WeeklyScheduleData,
   MasterUnit,
-  PeriodicInspectionItem,
   DaySchedule,
   plantService,
 } from "../services/plantService";
+import {
+  computePsKpiMetrics,
+  evaluatePmItemKpi,
+  formatKpiPct,
+  getLocalTodayIso,
+  resolveMechanicsArray,
+  resolvePsUnitCategory,
+} from "../utils/pmHelpers";
 
 interface PeriodicInspectionPdfExportModalProps {
   isOpen: boolean;
@@ -88,6 +95,43 @@ export const getAchievementTheme = (pct: number) => {
   };
 };
 
+function getKpiComplianceTheme(pct: number, hasPlan: boolean) {
+  if (!hasPlan) {
+    return {
+      cardBg: "bg-slate-50",
+      border: "border-slate-200",
+      valText: "text-slate-400",
+      barFill: "bg-slate-300",
+      badge: "bg-slate-100 text-slate-500",
+    };
+  }
+  if (pct >= 90) {
+    return {
+      cardBg: "bg-emerald-50/60",
+      border: "border-emerald-200",
+      valText: "text-emerald-700",
+      barFill: "bg-emerald-600",
+      badge: "bg-emerald-100 text-emerald-800",
+    };
+  }
+  if (pct >= 70) {
+    return {
+      cardBg: "bg-amber-50/60",
+      border: "border-amber-200",
+      valText: "text-amber-700",
+      barFill: "bg-amber-500",
+      badge: "bg-amber-100 text-amber-800",
+    };
+  }
+  return {
+    cardBg: "bg-rose-50/60",
+    border: "border-rose-200",
+    valText: "text-rose-700",
+    barFill: "bg-rose-600",
+    badge: "bg-rose-100 text-rose-800",
+  };
+}
+
 export const PeriodicInspectionPdfExportModal: React.FC<
   PeriodicInspectionPdfExportModalProps
 > = ({
@@ -108,23 +152,14 @@ export const PeriodicInspectionPdfExportModal: React.FC<
     initialStartDate && initialEndDate ? "custom" : "current"
   );
   const [customStart, setCustomStart] = useState<string>(() => {
-    return initialStartDate || scheduleData?.weekRange.startDate || new Date().toISOString().slice(0, 10);
+    return initialStartDate || scheduleData?.weekRange.startDate || getLocalTodayIso();
   });
   const [customEnd, setCustomEnd] = useState<string>(() => {
-    return initialEndDate || scheduleData?.weekRange.endDate || new Date().toISOString().slice(0, 10);
+    return initialEndDate || scheduleData?.weekRange.endDate || getLocalTodayIso();
   });
 
   const [activeScheduleData, setActiveScheduleData] = useState<WeeklyScheduleData | null>(scheduleData);
   const [isLoadingRange, setIsLoadingRange] = useState<boolean>(false);
-
-  // Sync activeScheduleData when scheduleData changes and preset is "current"
-  useEffect(() => {
-    if (rangePreset === "current" && scheduleData) {
-      setActiveScheduleData(scheduleData);
-      setCustomStart(scheduleData.weekRange.startDate);
-      setCustomEnd(scheduleData.weekRange.endDate);
-    }
-  }, [scheduleData, rangePreset]);
 
   // Load custom range data
   const fetchDateRangeData = useCallback(
@@ -153,6 +188,30 @@ export const PeriodicInspectionPdfExportModal: React.FC<
     },
     [selectedSite, isPmMode]
   );
+
+  // Sync active date range whenever modal opens or parent initialStartDate/EndDate changes
+  useEffect(() => {
+    if (!isOpen) return;
+    if (
+      initialStartDate &&
+      initialEndDate &&
+      (!scheduleData?.weekRange ||
+        initialStartDate !== scheduleData.weekRange.startDate ||
+        initialEndDate !== scheduleData.weekRange.endDate)
+    ) {
+      setRangePreset("custom");
+      setCustomStart(initialStartDate);
+      setCustomEnd(initialEndDate);
+      void fetchDateRangeData(initialStartDate, initialEndDate);
+      return;
+    }
+    if (scheduleData) {
+      setRangePreset("current");
+      setActiveScheduleData(scheduleData);
+      setCustomStart(scheduleData.weekRange.startDate);
+      setCustomEnd(scheduleData.weekRange.endDate);
+    }
+  }, [isOpen, initialStartDate, initialEndDate, scheduleData, fetchDateRangeData]);
 
   // Handle Preset Changes
   const handleSelectPreset = (preset: "current" | "2weeks" | "month" | "custom") => {
@@ -250,17 +309,8 @@ export const PeriodicInspectionPdfExportModal: React.FC<
     }));
   };
 
-  // Active Slide Preview (id: "week-1", "week-2", ..., "eval")
+  // Active Slide Preview (id: "week-1", "week-2", ..., "eval", "kpi-detail-1", ...)
   const [activeSlideKey, setActiveSlideKey] = useState<string>("week-1");
-
-  // Keep activeSlideKey valid
-  useEffect(() => {
-    if (activeSlideKey === "eval") return;
-    const exists = weekChunks.some((w) => w.id === activeSlideKey);
-    if (!exists && weekChunks.length > 0) {
-      setActiveSlideKey(weekChunks[0].id);
-    }
-  }, [weekChunks, activeSlideKey]);
 
   // Export Loading State
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -268,6 +318,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
 
   // Refs for rendering to canvas
   const weekSlideRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const kpiDetailSlideRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const evalSlideRef = useRef<HTMLDivElement>(null);
 
   // Date formatted strings
@@ -288,6 +339,59 @@ export const PeriodicInspectionPdfExportModal: React.FC<
     return activeScheduleData.days.flatMap((d) => d.items);
   }, [activeScheduleData]);
 
+  const pmKpiSummary = useMemo(
+    () => (isPmMode ? computePsKpiMetrics(allItems) : null),
+    [isPmMode, allItems]
+  );
+
+  const kpiDetailChunks = useMemo(() => {
+    if (!isPmMode || !activeScheduleData?.days) return [];
+    const flat = activeScheduleData.days.flatMap((d) =>
+      d.items.map((item) => ({
+        ...item,
+        dayName: d.dayName,
+        leadName: d.leadMechanic || d.leadInspector || null,
+      }))
+    );
+    if (flat.length === 0) return [];
+    const PAGE_SIZE = 14;
+    const chunks: Array<{
+      id: string;
+      label: string;
+      pageNum: number;
+      startIndex: number;
+      items: typeof flat;
+    }> = [];
+    for (let i = 0; i < flat.length; i += PAGE_SIZE) {
+      const pageNum = Math.floor(i / PAGE_SIZE) + 1;
+      chunks.push({
+        id: `kpi-detail-${pageNum}`,
+        label:
+          flat.length > PAGE_SIZE
+            ? `Detail KPI Unit (${pageNum})`
+            : "Detail KPI Unit",
+        pageNum,
+        startIndex: i,
+        items: flat.slice(i, i + PAGE_SIZE),
+      });
+    }
+    return chunks;
+  }, [isPmMode, activeScheduleData]);
+
+  // Keep activeSlideKey valid
+  useEffect(() => {
+    if (activeSlideKey === "eval") return;
+    if (
+      weekChunks.some((w) => w.id === activeSlideKey) ||
+      kpiDetailChunks.some((c) => c.id === activeSlideKey)
+    ) {
+      return;
+    }
+    if (weekChunks.length > 0) {
+      setActiveSlideKey(weekChunks[0].id);
+    }
+  }, [weekChunks, kpiDetailChunks, activeSlideKey]);
+
   const totalCompleted = useMemo(() => {
     return allItems.filter((i) => i.status === "Completed").length;
   }, [allItems]);
@@ -304,13 +408,20 @@ export const PeriodicInspectionPdfExportModal: React.FC<
     return allItems.filter((i) => i.status === "Pending").length;
   }, [allItems]);
 
-  const totalWeekPlan = activeScheduleData?.summary.totalWeekPlan || 63;
+  const totalWeekPlan = useMemo(() => {
+    if (activeScheduleData?.days?.length) {
+      return activeScheduleData.days.reduce((acc, d) => acc + (d.targetUnits || 0), 0);
+    }
+    return activeScheduleData?.summary.totalWeekPlan || 0;
+  }, [activeScheduleData]);
+
   const overallAchievementPercent =
     totalWeekPlan > 0 ? Math.min(100, Math.round((totalCompleted / totalWeekPlan) * 100)) : 0;
 
   const totalSlidesIncluded =
     weekChunks.filter((w) => isSlideIncluded(w.id)).length +
-    (isSlideIncluded("eval") ? 1 : 0);
+    (isSlideIncluded("eval") ? 1 : 0) +
+    kpiDetailChunks.filter((c) => isSlideIncluded(c.id)).length;
 
   // -------------------------------------------------------------
   // Handler: Generate High-Resolution PDF Presentation
@@ -327,6 +438,10 @@ export const PeriodicInspectionPdfExportModal: React.FC<
       const el = weekSlideRefs.current[w.id];
       if (el) previousDisplays[w.id] = el.style.display;
     });
+    kpiDetailChunks.forEach((c) => {
+      const el = kpiDetailSlideRefs.current[c.id];
+      if (el) previousDisplays[c.id] = el.style.display;
+    });
     if (evalSlideRef.current) {
       previousDisplays["eval"] = evalSlideRef.current.style.display;
     }
@@ -339,6 +454,10 @@ export const PeriodicInspectionPdfExportModal: React.FC<
       weekChunks.forEach((w) => {
         const el = weekSlideRefs.current[w.id];
         if (el && isSlideIncluded(w.id)) el.style.display = "flex";
+      });
+      kpiDetailChunks.forEach((c) => {
+        const el = kpiDetailSlideRefs.current[c.id];
+        if (el && isSlideIncluded(c.id)) el.style.display = "flex";
       });
       if (evalSlideRef.current && isSlideIncluded("eval")) {
         evalSlideRef.current.style.display = "flex";
@@ -377,9 +496,13 @@ export const PeriodicInspectionPdfExportModal: React.FC<
         pageCount++;
       }
 
-      // 2. Render Final Slide: Evaluasi & Otorisasi
+      // 2. Render Slide Evaluasi & KPI Compliance
       if (isSlideIncluded("eval") && evalSlideRef.current) {
-        setExportProgressText("Merender Slide Evaluasi Kinerja & Lembar Pengesahan...");
+        setExportProgressText(
+          isPmMode
+            ? "Merender Slide KPI Compliance & Rekap Harian..."
+            : "Merender Slide Evaluasi Kinerja & Lembar Pengesahan..."
+        );
         const canvasEval = await html2canvas(evalSlideRef.current, {
           scale: 2,
           useCORS: true,
@@ -392,6 +515,28 @@ export const PeriodicInspectionPdfExportModal: React.FC<
         const imgEval = canvasEval.toDataURL("image/png");
         if (pageCount > 0) pdf.addPage("a4", "landscape");
         pdf.addImage(imgEval, "PNG", 0, 0, 297, 210, undefined, "FAST");
+        pageCount++;
+      }
+
+      // 3. Render Detail KPI Unit Slide(s) in Periodic Service Mode
+      for (const chunk of kpiDetailChunks) {
+        if (!isSlideIncluded(chunk.id)) continue;
+        const el = kpiDetailSlideRefs.current[chunk.id];
+        if (!el) continue;
+
+        setExportProgressText(`Merender ${chunk.label}...`);
+        const canvasDetail = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: 1122,
+          windowHeight: 793,
+        });
+
+        const imgDetail = canvasDetail.toDataURL("image/png");
+        if (pageCount > 0) pdf.addPage("a4", "landscape");
+        pdf.addImage(imgDetail, "PNG", 0, 0, 297, 210, undefined, "FAST");
         pageCount++;
       }
 
@@ -415,6 +560,12 @@ export const PeriodicInspectionPdfExportModal: React.FC<
         const el = weekSlideRefs.current[w.id];
         if (el && previousDisplays[w.id] !== undefined) {
           el.style.display = previousDisplays[w.id];
+        }
+      });
+      kpiDetailChunks.forEach((c) => {
+        const el = kpiDetailSlideRefs.current[c.id];
+        if (el && previousDisplays[c.id] !== undefined) {
+          el.style.display = previousDisplays[c.id];
         }
       });
       if (evalSlideRef.current && previousDisplays["eval"] !== undefined) {
@@ -546,7 +697,9 @@ export const PeriodicInspectionPdfExportModal: React.FC<
             ) : (
               <span>
                 Total <strong className="text-slate-800">{activeScheduleData?.days.length || 7} Hari</strong> (
-                <strong className="text-[#e95623]">{weekChunks.length} Slide Board</strong> + 1 Slide Evaluasi)
+                <strong className="text-[#e95623]">{weekChunks.length} Slide Board</strong> + 1 Slide{" "}
+                {isPmMode ? "KPI & Evaluasi" : "Evaluasi"}
+                {kpiDetailChunks.length > 0 ? ` + ${kpiDetailChunks.length} Slide Detail KPI` : ""})
               </span>
             )}
           </div>
@@ -584,12 +737,27 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                 onChange={() => toggleSlideIncluded("eval")}
                 className="rounded accent-[#e95623] cursor-pointer"
               />
-              <span>Slide Rekap Kinerja Harian</span>
+              <span>{isPmMode ? "Slide KPI & Rekap Harian" : "Slide Rekap Kinerja Harian"}</span>
             </label>
+
+            {kpiDetailChunks.map((chunk) => (
+              <label
+                key={chunk.id}
+                className="flex items-center gap-1.5 cursor-pointer select-none text-slate-700 font-semibold hover:text-slate-900"
+              >
+                <input
+                  type="checkbox"
+                  checked={isSlideIncluded(chunk.id)}
+                  onChange={() => toggleSlideIncluded(chunk.id)}
+                  className="rounded accent-[#e95623] cursor-pointer"
+                />
+                <span>{chunk.label}</span>
+              </label>
+            ))}
           </div>
 
           {/* Preview Switcher Tabs */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <span className="text-[11px] font-bold text-slate-500 px-2">Preview:</span>
             {weekChunks.map((w) => (
               <button
@@ -614,8 +782,22 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                   : "text-slate-600 hover:text-slate-900 hover:bg-white"
               }`}
             >
-              Rekap Kinerja Harian
+              {isPmMode ? "KPI & Rekap Harian" : "Rekap Kinerja Harian"}
             </button>
+            {kpiDetailChunks.map((chunk) => (
+              <button
+                key={chunk.id}
+                type="button"
+                onClick={() => setActiveSlideKey(chunk.id)}
+                className={`px-2.5 py-0.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  activeSlideKey === chunk.id
+                    ? "bg-[#e95623] text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white"
+                }`}
+              >
+                {chunk.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -642,6 +824,8 @@ export const PeriodicInspectionPdfExportModal: React.FC<
               const chunkPercent =
                 chunkPlan > 0 ? Math.min(100, Math.round((chunkCompleted / chunkPlan) * 100)) : 0;
               const chunkTheme = getAchievementTheme(chunkPercent);
+              const chunkKpi = isPmMode ? computePsKpiMetrics(chunkAllItems) : null;
+              const maxDayItems = isPmMode ? 8 : 10;
 
               return (
                 <div
@@ -769,6 +953,51 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                       </div>
                     </div>
 
+                    {/* PERIODIC SERVICE KPI COMPLIANCE STRIP (PM MODE ONLY) */}
+                    {isPmMode && chunkKpi && (
+                      <div className="mt-2 bg-slate-50/90 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center justify-between gap-2">
+                        <div className="shrink-0 pr-2 border-r border-slate-200">
+                          <span className="text-[8.5px] font-black uppercase tracking-wider text-slate-700 block leading-tight">
+                            KPI Compliance
+                          </span>
+                          <span className="text-[7.5px] font-semibold text-slate-400 block">
+                            Minggu Ke-{w.weekNum}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-6 gap-2 flex-1">
+                          {[
+                            { label: "PM Compliance", metric: chunkKpi.pmCompliance },
+                            { label: "Akurasi Servis", metric: chunkKpi.akurasiServis },
+                            { label: "Achievement Servis", metric: chunkKpi.achievementServis },
+                            { label: "Akurasi HM (±50j)", metric: chunkKpi.akurasiHm },
+                            { label: "Start Time (±1j)", metric: chunkKpi.akurasiStartTime },
+                            { label: "Lead Time (±2j)", metric: chunkKpi.akurasiLeadTime },
+                          ].map((kpi) => {
+                            const hasPlan = kpi.metric.plan > 0;
+                            const kpiTheme = getKpiComplianceTheme(kpi.metric.pct, hasPlan);
+                            return (
+                              <div
+                                key={kpi.label}
+                                className={`rounded-lg border px-2 py-1 ${kpiTheme.cardBg} ${kpiTheme.border}`}
+                              >
+                                <span className="text-[7.5px] font-bold text-slate-600 block truncate">
+                                  {kpi.label}
+                                </span>
+                                <div className="flex items-baseline justify-between gap-1 mt-0.5">
+                                  <span className={`text-[11px] font-black font-mono ${kpiTheme.valText}`}>
+                                    {hasPlan ? formatKpiPct(kpi.metric.pct) : "-"}
+                                  </span>
+                                  <span className="text-[7.5px] font-mono font-bold text-slate-500">
+                                    {kpi.metric.actual}/{kpi.metric.plan}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* 7-DAY WEEKLY GRID MATRIX */}
                     <div
                       className={`grid gap-2 mt-3 items-stretch ${
@@ -863,7 +1092,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                                 </div>
                               ) : (
                                 <>
-                                  {day.items.slice(0, 10).map((item) => {
+                                  {day.items.slice(0, maxDayItems).map((item) => {
                                     const isCompleted = item.status === "Completed";
                                     const isInProgress = item.status === "In Progress";
                                     const isPending = item.status === "Pending";
@@ -940,9 +1169,9 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                                       </div>
                                     );
                                   })}
-                                  {day.items.length > 10 && (
+                                  {day.items.length > maxDayItems && (
                                     <div className="text-[7.5px] font-bold text-center text-slate-500 bg-slate-100/90 rounded py-0.5">
-                                      +{day.items.length - 10} unit lagi (Detail di Slide Evaluasi)
+                                      +{day.items.length - maxDayItems} unit lagi ({isPmMode ? "Detail di Slide KPI Unit" : "Detail di Slide Evaluasi"})
                                     </div>
                                   )}
                                 </>
@@ -986,7 +1215,7 @@ export const PeriodicInspectionPdfExportModal: React.FC<
             })}
 
             {/* ============================================================== */}
-            {/* SLIDE: EVALUASI KINERJA KUMULATIF & LEMBAR PENGESAHAN          */}
+            {/* SLIDE: EVALUASI KINERJA KUMULATIF & KPI COMPLIANCE             */}
             {/* ============================================================== */}
             <div
               ref={evalSlideRef}
@@ -1011,7 +1240,9 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                         PT BATARA DHARMA PERSADA
                       </h1>
                       <span className="text-[10px] font-extrabold text-[#e95623] tracking-wide block">
-                        EVALUASI KINERJA &amp; RINGKASAN {isPmMode ? "PERIODIC SERVICE (PS)" : "PERIODIC INSPECTION (PI)"}
+                        {isPmMode
+                          ? "RINGKASAN KPI COMPLIANCE & EVALUASI HARIAN PERIODIC SERVICE (PS)"
+                          : "EVALUASI KINERJA & RINGKASAN PERIODIC INSPECTION (PI)"}
                       </span>
                     </div>
                   </div>
@@ -1030,62 +1261,271 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                   </span>
                 </div>
 
-                {/* Daily Breakdown Table across the range */}
-                <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-                  <table className="w-full text-left text-[10px] border-collapse">
-                    <thead className="bg-slate-50 text-slate-600 font-extrabold border-b border-slate-200 uppercase text-[9px]">
-                      <tr>
-                        <th className="py-2 px-3">Hari & Tanggal</th>
-                        <th className="py-2 px-3 text-center">Plan Target</th>
-                        <th className="py-2 px-3 text-center">Terjadwal</th>
-                        <th className="py-2 px-3 text-center text-emerald-700">Completed</th>
-                        <th className="py-2 px-3 text-center text-amber-700">In Progress</th>
-                        <th className="py-2 px-3 text-center text-slate-600">Scheduled</th>
-                        <th className="py-2 px-3 text-center text-rose-700">Pending</th>
-                        <th className="py-2 px-3 text-center">% Achieved</th>
-                        <th className="py-2 px-3 text-right">Status Harian</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {activeScheduleData?.days.map((d) => {
-                        const comp = d.items.filter((i) => i.status === "Completed").length;
-                        const inProg = d.items.filter((i) => i.status === "In Progress").length;
-                        const sched = d.items.filter((i) => i.status === "Scheduled").length;
-                        const pend = d.items.filter((i) => i.status === "Pending").length;
-                        const pct = d.targetUnits > 0 ? Math.round((comp / d.targetUnits) * 100) : 0;
-                        const rowTheme = getAchievementTheme(pct);
-
+                {/* 6 PARAMETER KPI COMPLIANCE SUMMARY CARDS (PM MODE) */}
+                {isPmMode && pmKpiSummary && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-700">
+                        Perhitungan KPI Compliance Periodic Service ({overallRangeLabel})
+                      </span>
+                      {pmKpiSummary.incompleteActualCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[8.5px] font-bold">
+                          Catatan: {pmKpiSummary.incompleteActualCount} unit Completed belum input aktual HM/Start/Lead
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-6 gap-2">
+                      {[
+                        {
+                          title: "PM Compliance",
+                          sub: "Total semua 5 parameter",
+                          metric: pmKpiSummary.pmCompliance,
+                        },
+                        {
+                          title: "Akurasi Servis",
+                          sub: "Unit selesai vs aktual",
+                          metric: pmKpiSummary.akurasiServis,
+                        },
+                        {
+                          title: "Achievement Servis",
+                          sub: "Ketepatan rencana servis",
+                          metric: pmKpiSummary.achievementServis,
+                        },
+                        {
+                          title: "Akurasi HM (±50j)",
+                          sub: "Toleransi ±50 jam",
+                          metric: pmKpiSummary.akurasiHm,
+                        },
+                        {
+                          title: "Akurasi Start (±1j)",
+                          sub: "Toleransi ±1 jam",
+                          metric: pmKpiSummary.akurasiStartTime,
+                        },
+                        {
+                          title: "Akurasi Lead (±2j)",
+                          sub: "Toleransi ±2 jam",
+                          metric: pmKpiSummary.akurasiLeadTime,
+                        },
+                      ].map((card) => {
+                        const hasPlan = card.metric.plan > 0;
+                        const kpiTheme = getKpiComplianceTheme(card.metric.pct, hasPlan);
+                        const barWidth = Math.max(0, Math.min(100, card.metric.pct));
                         return (
-                          <tr key={d.date} className="hover:bg-slate-50">
-                            <td className="py-2 px-3 font-bold text-slate-800">
-                              <div>{d.dayName}, {d.date}</div>
-                              {(d.leadMechanic || d.leadInspector) && (
-                                <div className="text-[9px] font-semibold text-orange-700">Lead: {d.leadMechanic || d.leadInspector}</div>
-                              )}
-                            </td>
-                            <td className="py-2 px-3 text-center font-mono font-bold">{d.targetUnits} Unit</td>
-                            <td className="py-2 px-3 text-center font-mono font-bold text-slate-700">{d.items.length}</td>
-                            <td className="py-2 px-3 text-center font-mono font-bold text-emerald-700 bg-emerald-50/30">{comp}</td>
-                            <td className="py-2 px-3 text-center font-mono font-bold text-amber-700">{inProg}</td>
-                            <td className="py-2 px-3 text-center font-mono font-bold text-slate-600">{sched}</td>
-                            <td className="py-2 px-3 text-center font-mono font-bold text-rose-700">{pend}</td>
-                            <td className={`py-2 px-3 text-center font-mono font-extrabold ${comp === 0 ? "text-slate-400" : rowTheme.valText}`}>{pct}%</td>
-                            <td className="py-2 px-3 text-right">
-                              <span
-                                className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase ${
-                                  comp === 0
-                                    ? "bg-slate-100 text-slate-500"
-                                    : rowTheme.badge
-                                }`}
-                              >
-                                {comp === 0 ? "Belum Mulai" : rowTheme.statusLabel}
+                          <div
+                            key={card.title}
+                            className={`rounded-xl border p-2.5 ${kpiTheme.cardBg} ${kpiTheme.border}`}
+                          >
+                            <span className="text-[8.5px] font-extrabold text-slate-700 uppercase tracking-wide block truncate">
+                              {card.title}
+                            </span>
+                            <div className="flex items-baseline justify-between gap-1 mt-1">
+                              <span className={`text-lg font-black font-mono leading-none ${kpiTheme.valText}`}>
+                                {hasPlan ? formatKpiPct(card.metric.pct) : "-"}
                               </span>
-                            </td>
-                          </tr>
+                              <span className="text-[8.5px] font-mono font-bold text-slate-600">
+                                {card.metric.actual}/{card.metric.plan}
+                              </span>
+                            </div>
+                            <div className="w-full h-1 bg-white/80 rounded-full overflow-hidden mt-1.5 border border-slate-200/70">
+                              <div
+                                className={`h-full rounded-full ${kpiTheme.barFill}`}
+                                style={{ width: `${hasPlan ? barWidth : 0}%` }}
+                              />
+                            </div>
+                            <span className="text-[7.5px] text-slate-500 font-medium block mt-1 truncate">
+                              {card.sub}
+                            </span>
+                          </div>
                         );
                       })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Daily Breakdown Table across the range */}
+                <div className={`${isPmMode ? "mt-3" : "mt-4"} border border-slate-200 rounded-xl overflow-hidden shadow-2xs`}>
+                  <table className={`w-full text-left border-collapse ${isPmMode ? "text-[9px]" : "text-[10px]"}`}>
+                    <thead className="bg-slate-50 text-slate-600 font-extrabold border-b border-slate-200 uppercase text-[8.5px]">
+                      {isPmMode ? (
+                        <tr>
+                          <th className="py-1.5 px-2.5">Hari &amp; Tanggal</th>
+                          <th className="py-1.5 px-1.5 text-center">Plan</th>
+                          <th className="py-1.5 px-1.5 text-center">Jadwal</th>
+                          <th className="py-1.5 px-1.5 text-center text-emerald-700">Comp</th>
+                          <th className="py-1.5 px-1.5 text-center text-amber-700">Prog</th>
+                          <th className="py-1.5 px-1.5 text-center text-rose-700">Pend</th>
+                          <th className="py-1.5 px-1.5 text-center text-slate-800">PM Comp.</th>
+                          <th className="py-1.5 px-1.5 text-center">Akurasi</th>
+                          <th className="py-1.5 px-1.5 text-center">Achiev.</th>
+                          <th className="py-1.5 px-1.5 text-center">HM ±50j</th>
+                          <th className="py-1.5 px-1.5 text-center">Start ±1j</th>
+                          <th className="py-1.5 px-1.5 text-center">Lead ±2j</th>
+                          <th className="py-1.5 px-2 text-right">Status</th>
+                        </tr>
+                      ) : (
+                        <tr>
+                          <th className="py-2 px-3">Hari &amp; Tanggal</th>
+                          <th className="py-2 px-3 text-center">Plan Target</th>
+                          <th className="py-2 px-3 text-center">Terjadwal</th>
+                          <th className="py-2 px-3 text-center text-emerald-700">Completed</th>
+                          <th className="py-2 px-3 text-center text-amber-700">In Progress</th>
+                          <th className="py-2 px-3 text-center text-slate-600">Scheduled</th>
+                          <th className="py-2 px-3 text-center text-rose-700">Pending</th>
+                          <th className="py-2 px-3 text-center">% Achieved</th>
+                          <th className="py-2 px-3 text-right">Status Harian</th>
+                        </tr>
+                      )}
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(() => {
+                        const allDays = activeScheduleData?.days || [];
+                        const maxVisibleRows = isPmMode ? 10 : 14;
+                        const visibleDays = allDays.slice(0, maxVisibleRows);
+                        const hiddenDayCount = allDays.length - visibleDays.length;
+
+                        return (
+                          <>
+                            {visibleDays.map((d) => {
+                              const comp = d.items.filter((i) => i.status === "Completed").length;
+                              const inProg = d.items.filter((i) => i.status === "In Progress").length;
+                              const sched = d.items.filter((i) => i.status === "Scheduled").length;
+                              const pend = d.items.filter((i) => i.status === "Pending").length;
+                              const pct = d.targetUnits > 0 ? Math.round((comp / d.targetUnits) * 100) : 0;
+                              const rowTheme = getAchievementTheme(pct);
+
+                              if (isPmMode) {
+                                const dayKpi = computePsKpiMetrics(d.items);
+                                const pmHasPlan = dayKpi.pmCompliance.plan > 0;
+                                const pmTheme = getKpiComplianceTheme(dayKpi.pmCompliance.pct, pmHasPlan);
+                                const fmtCell = (m: { plan: number; pct: number }) =>
+                                  m.plan > 0 ? formatKpiPct(m.pct) : "-";
+
+                                return (
+                                  <tr key={d.date} className="hover:bg-slate-50">
+                                    <td className="py-1.5 px-2.5 font-bold text-slate-800">
+                                      <div>{d.dayName}, {d.date}</div>
+                                      {(d.leadMechanic || d.leadInspector) && (
+                                        <div className="text-[8px] font-semibold text-orange-700">
+                                          Lead: {d.leadMechanic || d.leadInspector}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold">{d.targetUnits}</td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-slate-700">{d.items.length}</td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-emerald-700 bg-emerald-50/30">{comp}</td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-amber-700">{inProg}</td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-rose-700">{pend}</td>
+                                    <td className={`py-1.5 px-1.5 text-center font-mono font-black ${pmTheme.valText}`}>
+                                      {fmtCell(dayKpi.pmCompliance)}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-slate-700">
+                                      {fmtCell(dayKpi.akurasiServis)}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-slate-700">
+                                      {fmtCell(dayKpi.achievementServis)}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-slate-700">
+                                      {fmtCell(dayKpi.akurasiHm)}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-slate-700">
+                                      {fmtCell(dayKpi.akurasiStartTime)}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-center font-mono font-bold text-slate-700">
+                                      {fmtCell(dayKpi.akurasiLeadTime)}
+                                    </td>
+                                    <td className="py-1.5 px-2 text-right">
+                                      <span className={`px-1.5 py-0.5 rounded text-[7.5px] font-black uppercase ${pmTheme.badge}`}>
+                                        {!pmHasPlan
+                                          ? "N/A"
+                                          : dayKpi.pmCompliance.pct >= 90
+                                          ? "On Target"
+                                          : dayKpi.pmCompliance.pct >= 70
+                                          ? "Warning"
+                                          : "Below"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              }
+
+                              return (
+                                <tr key={d.date} className="hover:bg-slate-50">
+                                  <td className="py-2 px-3 font-bold text-slate-800">
+                                    <div>{d.dayName}, {d.date}</div>
+                                    {(d.leadMechanic || d.leadInspector) && (
+                                      <div className="text-[9px] font-semibold text-orange-700">Lead: {d.leadMechanic || d.leadInspector}</div>
+                                    )}
+                                  </td>
+                                  <td className="py-2 px-3 text-center font-mono font-bold">{d.targetUnits} Unit</td>
+                                  <td className="py-2 px-3 text-center font-mono font-bold text-slate-700">{d.items.length}</td>
+                                  <td className="py-2 px-3 text-center font-mono font-bold text-emerald-700 bg-emerald-50/30">{comp}</td>
+                                  <td className="py-2 px-3 text-center font-mono font-bold text-amber-700">{inProg}</td>
+                                  <td className="py-2 px-3 text-center font-mono font-bold text-slate-600">{sched}</td>
+                                  <td className="py-2 px-3 text-center font-mono font-bold text-rose-700">{pend}</td>
+                                  <td className={`py-2 px-3 text-center font-mono font-extrabold ${comp === 0 ? "text-slate-400" : rowTheme.valText}`}>{pct}%</td>
+                                  <td className="py-2 px-3 text-right">
+                                    <span
+                                      className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase ${
+                                        comp === 0
+                                          ? "bg-slate-100 text-slate-500"
+                                          : rowTheme.badge
+                                      }`}
+                                    >
+                                      {comp === 0 ? "Belum Mulai" : rowTheme.statusLabel}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+
+                            {hiddenDayCount > 0 && (
+                              <tr className="bg-slate-50/80 text-slate-500 italic">
+                                <td colSpan={isPmMode ? 13 : 9} className="py-1 px-2.5 text-center text-[8.5px]">
+                                  + {hiddenDayCount} hari lainnya dalam rentang {overallRangeLabel} telah diperhitungkan pada baris TOTAL KUMULATIF PERIODE di bawah.
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        );
+                      })()}
                       {/* Summary Row */}
                       {(() => {
+                        if (isPmMode && pmKpiSummary) {
+                          const hasPlan = pmKpiSummary.pmCompliance.plan > 0;
+                          const totalKpiTheme = getKpiComplianceTheme(pmKpiSummary.pmCompliance.pct, hasPlan);
+                          const fmtTot = (m: { plan: number; pct: number }) =>
+                            m.plan > 0 ? formatKpiPct(m.pct) : "-";
+                          return (
+                            <tr className="bg-slate-100/90 font-black text-slate-900 border-t border-slate-300">
+                              <td className="py-2 px-2.5 uppercase tracking-wider">TOTAL KUMULATIF</td>
+                              <td className="py-2 px-1.5 text-center font-mono">{totalWeekPlan}</td>
+                              <td className="py-2 px-1.5 text-center font-mono">{allItems.length}</td>
+                              <td className="py-2 px-1.5 text-center font-mono text-emerald-700">{totalCompleted}</td>
+                              <td className="py-2 px-1.5 text-center font-mono text-amber-700">{totalInProgress}</td>
+                              <td className="py-2 px-1.5 text-center font-mono text-rose-700">{totalPending}</td>
+                              <td className={`py-2 px-1.5 text-center font-mono font-black ${totalKpiTheme.valText}`}>
+                                {fmtTot(pmKpiSummary.pmCompliance)}
+                              </td>
+                              <td className="py-2 px-1.5 text-center font-mono">{fmtTot(pmKpiSummary.akurasiServis)}</td>
+                              <td className="py-2 px-1.5 text-center font-mono">{fmtTot(pmKpiSummary.achievementServis)}</td>
+                              <td className="py-2 px-1.5 text-center font-mono">{fmtTot(pmKpiSummary.akurasiHm)}</td>
+                              <td className="py-2 px-1.5 text-center font-mono">{fmtTot(pmKpiSummary.akurasiStartTime)}</td>
+                              <td className="py-2 px-1.5 text-center font-mono">{fmtTot(pmKpiSummary.akurasiLeadTime)}</td>
+                              <td className="py-2 px-2 text-right">
+                                <span className={`px-1.5 py-0.5 rounded text-[7.5px] font-black uppercase ${totalKpiTheme.badge}`}>
+                                  {!hasPlan
+                                    ? "N/A"
+                                    : pmKpiSummary.pmCompliance.pct >= 90
+                                    ? "On Target"
+                                    : pmKpiSummary.pmCompliance.pct >= 70
+                                    ? "Warning"
+                                    : "Below"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        }
+
                         const totalTheme = getAchievementTheme(overallAchievementPercent);
                         return (
                           <tr className="bg-slate-100/80 font-black text-slate-900 border-t border-slate-300">
@@ -1112,10 +1552,199 @@ export const PeriodicInspectionPdfExportModal: React.FC<
 
               {/* Slide Evaluasi Footer */}
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[8.5px] text-slate-400">
-                <span>Dokumen Resmi Presentasi Weekly &bull; PT Batara Dharma Persada</span>
+                <span>Dokumen Resmi Presentasi {isPmMode ? "Periodic Service" : "Weekly"} &bull; PT Batara Dharma Persada</span>
                 <span>Dicetak pada: {todayDateString}</span>
               </div>
             </div>
+
+            {/* ============================================================== */}
+            {/* SLIDES: DETAIL EVALUASI KPI PER UNIT (PM MODE)                 */}
+            {/* ============================================================== */}
+            {isPmMode &&
+              kpiDetailChunks.map((chunk) => (
+                <div
+                  key={chunk.id}
+                  ref={(el) => {
+                    kpiDetailSlideRefs.current[chunk.id] = el;
+                  }}
+                  style={{
+                    width: "1122px",
+                    height: "793px",
+                    display: activeSlideKey === chunk.id ? "flex" : "none",
+                  }}
+                  className="flex-col justify-between p-6 bg-white select-none"
+                >
+                  <div>
+                    {/* Header Slide Detail KPI Unit */}
+                    <div className="flex items-center justify-between pb-3 border-b-2 border-slate-800">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src="/coa-logo-bdp.png"
+                          alt="Logo PT Batara Dharma Persada"
+                          className="h-10 w-10 object-contain"
+                        />
+                        <div>
+                          <h1 className="text-sm font-black tracking-wider text-slate-900 uppercase">
+                            PT BATARA DHARMA PERSADA
+                          </h1>
+                          <span className="text-[10px] font-extrabold text-[#e95623] tracking-wide block">
+                            DETAIL EVALUASI KPI UNIT PERIODIC SERVICE (PLAN VS ACTUAL)
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg text-[11px] font-black bg-slate-900 text-white tracking-wide">
+                          {siteLabel.toUpperCase()}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg text-[11px] font-black bg-orange-100 text-[#e95623] border border-orange-200 tracking-wide">
+                          Periode: {overallRangeLabel}
+                        </span>
+                      </div>
+
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {chunk.label} / {totalSlidesIncluded} &bull; {todayDateString}
+                      </span>
+                    </div>
+
+                    {/* Evaluation Tolerance Legend */}
+                    <div className="mt-2.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-[8.5px]">
+                      <div className="font-semibold text-slate-600">
+                        <span className="font-black text-slate-800 uppercase mr-2">Standar KPI:</span>
+                        Akurasi HM (&plusmn;50 Jam) &bull; Akurasi Start Time (&plusmn;1 Jam) &bull; Akurasi Lead Time (&plusmn;2 Jam)
+                      </div>
+                      <span className="font-bold text-slate-500">
+                        Menampilkan unit {chunk.startIndex + 1}&ndash;{chunk.startIndex + chunk.items.length} dari {allItems.length} unit
+                      </span>
+                    </div>
+
+                    {/* Unit Detail Table */}
+                    <div className="mt-2.5 border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                      <table className="w-full text-left text-[8.5px] border-collapse">
+                        <thead className="bg-slate-50 text-slate-600 font-extrabold border-b border-slate-200 uppercase text-[8px]">
+                          <tr>
+                            <th className="py-1.5 px-2 text-center w-8">No</th>
+                            <th className="py-1.5 px-2">Tanggal</th>
+                            <th className="py-1.5 px-2">Unit &amp; Kategori</th>
+                            <th className="py-1.5 px-2">Tipe Servis</th>
+                            <th className="py-1.5 px-2 text-center">Status</th>
+                            <th className="py-1.5 px-2">HM Plan / Act (&plusmn;50j)</th>
+                            <th className="py-1.5 px-2">Start Plan / Act (&plusmn;1j)</th>
+                            <th className="py-1.5 px-2">Lead Plan / Act (&plusmn;2j)</th>
+                            <th className="py-1.5 px-2">Pengawas &amp; Mekanik</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {chunk.items.map((item, idx) => {
+                            const ev = evaluatePmItemKpi(item);
+                            const unitCat = resolvePsUnitCategory(item, masterUnits);
+                            const mechanicsList = resolveMechanicsArray(item);
+                            const renderPassBadge = (pass: boolean | null) => {
+                              if (pass === true) {
+                                return (
+                                  <span className="px-1 py-0.5 rounded bg-emerald-100 text-emerald-800 font-black text-[7px] uppercase">
+                                    OK
+                                  </span>
+                                );
+                              }
+                              if (pass === false) {
+                                return (
+                                  <span className="px-1 py-0.5 rounded bg-rose-100 text-rose-800 font-black text-[7px] uppercase">
+                                    MISS
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-400 font-bold text-[7px]">
+                                  -
+                                </span>
+                              );
+                            };
+
+                            const statusBadgeClass =
+                              item.status === "Completed"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : item.status === "In Progress"
+                                ? "bg-amber-100 text-amber-800"
+                                : item.status === "Pending"
+                                ? "bg-rose-100 text-rose-800"
+                                : "bg-slate-100 text-slate-700";
+
+                            return (
+                              <tr key={`${item.id}-${idx}`} className="hover:bg-slate-50/70">
+                                <td className="py-1.5 px-2 text-center font-mono font-bold text-slate-500">
+                                  {chunk.startIndex + idx + 1}
+                                </td>
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <div className="font-bold text-slate-800">{item.date}</div>
+                                  <div className="text-[7.5px] text-slate-400">{item.dayName}</div>
+                                </td>
+                                <td className="py-1.5 px-2">
+                                  <div className="font-black text-slate-900">{item.unitCode}</div>
+                                  <div className="text-[7.5px] font-semibold text-slate-500">{unitCat}</div>
+                                </td>
+                                <td className="py-1.5 px-2">
+                                  <div className="font-bold text-slate-800">{item.serviceType || "-"}</div>
+                                  {item.buntutSummary && (
+                                    <div className="text-[7.5px] text-slate-400 truncate max-w-[120px]">
+                                      + {item.buntutSummary}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-1.5 px-2 text-center">
+                                  <span className={`px-1.5 py-0.5 rounded text-[7.5px] font-black uppercase ${statusBadgeClass}`}>
+                                    {item.status}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 px-2 font-mono">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <span className="text-slate-700">
+                                      {ev.hm.planVal != null ? ev.hm.planVal.toLocaleString("id-ID") : item.planHmServis || "-"}
+                                      {" / "}
+                                      <strong>{ev.hm.actualVal != null ? ev.hm.actualVal.toLocaleString("id-ID") : "-"}</strong>
+                                    </span>
+                                    {renderPassBadge(ev.hm.pass)}
+                                  </div>
+                                </td>
+                                <td className="py-1.5 px-2 font-mono">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <span className="text-slate-700">
+                                      {item.planStartTime || "-"} / <strong>{item.actualStartTime || "-"}</strong>
+                                    </span>
+                                    {renderPassBadge(ev.startTime.pass)}
+                                  </div>
+                                </td>
+                                <td className="py-1.5 px-2 font-mono">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <span className="text-slate-700">
+                                      {item.planLeadTime || "-"} / <strong>{item.actualLeadTime || "-"}</strong>
+                                    </span>
+                                    {renderPassBadge(ev.leadTime.pass)}
+                                  </div>
+                                </td>
+                                <td className="py-1.5 px-2">
+                                  <div className="font-bold text-slate-700 truncate max-w-[140px]">
+                                    {item.supervisorName ? `Spv: ${item.supervisorName}` : item.leadName ? `Lead: ${item.leadName}` : "-"}
+                                  </div>
+                                  <div className="text-[7.5px] text-slate-500 truncate max-w-[140px]">
+                                    {mechanicsList.length > 0 ? mechanicsList.join(", ") : "-"}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Slide Footer */}
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[8.5px] text-slate-400">
+                    <span>Detail KPI Compliance Unit &bull; PT Batara Dharma Persada</span>
+                    <span>Dicetak pada: {todayDateString}</span>
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       </div>

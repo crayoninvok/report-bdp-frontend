@@ -9,16 +9,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  FileSpreadsheet,
+  FileText,
   Gauge,
   RefreshCw,
   Target,
   Timer,
   Wrench,
 } from "lucide-react";
-import { plantService, WeeklyScheduleData } from "../services/plantService";
+import { MasterUnit, plantService, WeeklyScheduleData } from "../services/plantService";
 import {
   computePsKpiMetrics,
   countInclusiveDays,
+  exportPmScheduleExcel,
   formatDateRangeLabel,
   formatIndoMonthYear,
   formatIndoShortDate,
@@ -39,7 +42,10 @@ interface PeriodicServiceKpiSectionProps {
   scheduleData: WeeklyScheduleData | null;
   selectedSite: string;
   isLoadingWeekly?: boolean;
+  masterUnits?: MasterUnit[];
   onJumpToDetail?: (range: { startDate: string; endDate: string }) => void;
+  onRangeChange?: (range: { startDate: string; endDate: string }) => void;
+  onExportPdf?: (range: { startDate: string; endDate: string }) => void;
 }
 
 interface KpiCardDescriptor {
@@ -530,7 +536,15 @@ const KpiCalendarRangePicker: React.FC<KpiCalendarRangePickerProps> = ({
 /** Executive KPI section implementing the 6 Periodic Service compliance formulas below the Hero Banner. */
 export const PeriodicServiceKpiSection: React.FC<
   PeriodicServiceKpiSectionProps
-> = ({ scheduleData, selectedSite, isLoadingWeekly = false, onJumpToDetail }) => {
+> = ({
+  scheduleData,
+  selectedSite,
+  isLoadingWeekly = false,
+  masterUnits = [],
+  onJumpToDetail,
+  onRangeChange,
+  onExportPdf,
+}) => {
   const todayStr = getLocalTodayIso();
   const currentWeekRange = useMemo(
     () => getLocalWeekRange(todayStr),
@@ -659,6 +673,28 @@ export const PeriodicServiceKpiSection: React.FC<
 
   const kpi = useMemo(() => computePsKpiMetrics(scopedItems), [scopedItems]);
 
+  useEffect(() => {
+    onRangeChange?.({ startDate, endDate });
+  }, [startDate, endDate, onRangeChange]);
+
+  const handleExportKpiExcel = () => {
+    const flatRows = scopedDays.flatMap((d) =>
+      d.items.map((item) => ({
+        ...item,
+        dayName: d.dayName || getIndoDayNameClient(d.date),
+        leadName: d.leadMechanic || d.leadInspector || null,
+      }))
+    );
+    exportPmScheduleExcel({
+      days: scopedDays,
+      filteredRows: flatRows,
+      masterUnits,
+      selectedSite,
+      startDate,
+      endDate,
+    });
+  };
+
   const dayCount = countInclusiveDays(startDate, endDate);
   const isSingleDay = startDate === endDate;
   const isTodaySelected = isSingleDay && startDate === todayStr;
@@ -777,6 +813,30 @@ export const PeriodicServiceKpiSection: React.FC<
             currentWeekRange={currentWeekRange}
             onApplyRange={(s, e) => setKpiRange({ startDate: s, endDate: e })}
           />
+
+          <button
+            type="button"
+            onClick={handleExportKpiExcel}
+            disabled={isLoadingRange || scopedDays.length === 0}
+            title="Download Excel KPI Compliance & Detail Periodic Service"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <FileSpreadsheet size={13} className="text-emerald-600" />
+            <span>Excel KPI</span>
+          </button>
+
+          {onExportPdf && (
+            <button
+              type="button"
+              onClick={() => onExportPdf({ startDate, endDate })}
+              disabled={isLoadingRange}
+              title="Export PDF Presentasi & KPI Periodic Service sesuai periode terpilih"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <FileText size={13} className="text-orange-400" />
+              <span>PDF KPI</span>
+            </button>
+          )}
         </div>
       </div>
 

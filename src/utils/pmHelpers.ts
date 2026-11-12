@@ -197,6 +197,21 @@ export function parseIncludedTrailers(buntutSummary?: string | null): string[] {
     .filter(Boolean);
 }
 
+/** Resolves display list of mechanics (up to 5) from array field or comma-separated fallback. */
+export function resolveMechanicsArray(item: PeriodicInspectionItem): string[] {
+  if (Array.isArray(item.mechanicNames) && item.mechanicNames.length > 0) {
+    return item.mechanicNames.slice(0, 5);
+  }
+  if (item.mechanicName) {
+    return item.mechanicName
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+  }
+  return [];
+}
+
 /** Resolves the unit category ("Prime Mover", "Vessel 1", "Dolly", "Vessel 2") for a PS item. */
 export function resolvePsUnitCategory(
   item: PeriodicInspectionItem,
@@ -536,7 +551,7 @@ export function computePsKpiMetrics(items: PeriodicInspectionItem[]): PsKpiSumma
   };
 }
 
-/** Exports PM detail & daily summary sheets to an .xlsx workbook. */
+/** Exports PM KPI compliance, daily summary & unit detail sheets to an .xlsx workbook. */
 export function exportPmScheduleExcel(params: {
   days: DaySchedule[];
   filteredRows: Array<PeriodicInspectionItem & { dayName: string; leadName?: string | null }>;
@@ -546,6 +561,11 @@ export function exportPmScheduleExcel(params: {
   endDate: string;
 }) {
   const { days, filteredRows, masterUnits, selectedSite, startDate, endDate } = params;
+
+  const scopedDays =
+    startDate && endDate
+      ? days.filter((d) => d.date >= startDate && d.date <= endDate)
+      : days;
 
   const detailSheetData = filteredRows.map((row, idx) => {
     const kpi = evaluatePmItemKpi(row);
@@ -558,6 +578,7 @@ export function exportPmScheduleExcel(params: {
       "Buntut Ikut PS": resolveTrailerSummary(row, masterUnits),
       "Tipe Servis": row.serviceType,
       Kategori: row.category || "Scheduled PS",
+      "Kategori KPI": kpi.isPlanned ? "Planned (Terjadwal)" : "Unscheduled / Breakdown",
       Shift: row.shift,
       "Plan Start Time": row.planStartTime || "-",
       "Actual Start Time": row.actualStartTime || "-",
@@ -574,64 +595,94 @@ export function exportPmScheduleExcel(params: {
       "HM Saat Ini": row.currentHm ?? row.liveHm ?? "",
       "Target HM Next": row.nextDueHm ?? "",
       "Nama Pengawas (SPV)": row.supervisorName || row.leadName || "-",
-      "Nama Mekanik": row.mechanicNames?.length
-        ? row.mechanicNames.join(", ")
-        : row.mechanicName || "-",
+      "Nama Mekanik": resolveMechanicsArray(row).join(", ") || "-",
       Catatan: row.notes || "",
     };
   });
 
-  const allItems = days.flatMap((d) => d.items);
+  const allItems = scopedDays.flatMap((d) => d.items);
   const kpiSummary = computePsKpiMetrics(allItems);
+  const siteLabel = selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur";
+  const formatMissingNote = (count?: number) =>
+    count && count > 0 ? `${count} unit belum isi aktual` : "0";
+  const formatTargetStatus = (pct: number, plan: number) => {
+    if (plan <= 0) return "Belum Ada Plan";
+    if (pct >= 90) return "Target Tercapai (>=90%)";
+    if (pct >= 70) return "Perlu Peningkatan (70-89%)";
+    return "Di Bawah Target (<70%)";
+  };
+
   const kpiSheetData = [
     {
+      Parameter: `PERIODE: ${startDate || "-"} s/d ${endDate || "-"}`,
+      Keterangan: `Job Site: ${siteLabel} | Total Item Periode: ${allItems.length} unit | Selesai: ${kpiSummary.executedCount} unit`,
+      Plan: "",
+      Actual: "",
+      "Persentase KPI": "",
+      "Belum Input Aktual": kpiSummary.incompleteActualCount > 0 ? `${kpiSummary.incompleteActualCount} unit Completed belum input HM/Jam aktual` : "Lengkap",
+      "Status Target": "",
+    },
+    {
       Parameter: "PM Compliance (Total Semua Parameter)",
-      Keterangan: "Total semua parameter",
+      Keterangan: "(Total Actual 5 parameter / Total Plan 5 parameter) x 100%",
       Plan: kpiSummary.pmCompliance.plan,
       Actual: kpiSummary.pmCompliance.actual,
-      Persentase: formatKpiPct(kpiSummary.pmCompliance.pct),
+      "Persentase KPI": kpiSummary.pmCompliance.plan > 0 ? formatKpiPct(kpiSummary.pmCompliance.pct) : "-",
+      "Belum Input Aktual": formatMissingNote(kpiSummary.incompleteActualCount),
+      "Status Target": formatTargetStatus(kpiSummary.pmCompliance.pct, kpiSummary.pmCompliance.plan),
     },
     {
       Parameter: "Akurasi Servis",
-      Keterangan: "Kesesuaian unit yang di service",
+      Keterangan: "Kesesuaian unit yang di service (Unit terencana selesai / Total selesai aktual)",
       Plan: kpiSummary.akurasiServis.plan,
       Actual: kpiSummary.akurasiServis.actual,
-      Persentase: formatKpiPct(kpiSummary.akurasiServis.pct),
+      "Persentase KPI": kpiSummary.akurasiServis.plan > 0 ? formatKpiPct(kpiSummary.akurasiServis.pct) : "-",
+      "Belum Input Aktual": "0",
+      "Status Target": formatTargetStatus(kpiSummary.akurasiServis.pct, kpiSummary.akurasiServis.plan),
     },
     {
       Parameter: "Achievement Servis",
-      Keterangan: "Ketepatan unit yang service",
+      Keterangan: "Ketepatan unit yang service (Unit terencana selesai / Total unit terencana)",
       Plan: kpiSummary.achievementServis.plan,
       Actual: kpiSummary.achievementServis.actual,
-      Persentase: formatKpiPct(kpiSummary.achievementServis.pct),
+      "Persentase KPI": kpiSummary.achievementServis.plan > 0 ? formatKpiPct(kpiSummary.achievementServis.pct) : "-",
+      "Belum Input Aktual": "0",
+      "Status Target": formatTargetStatus(kpiSummary.achievementServis.pct, kpiSummary.achievementServis.plan),
     },
     {
       Parameter: "Akurasi HM",
-      Keterangan: "Toleransi +/- 50 hrs",
+      Keterangan: "Kesesuaian HM service toleransi +/- 50 hrs",
       Plan: kpiSummary.akurasiHm.plan,
       Actual: kpiSummary.akurasiHm.actual,
-      Persentase: formatKpiPct(kpiSummary.akurasiHm.pct),
+      "Persentase KPI": kpiSummary.akurasiHm.plan > 0 ? formatKpiPct(kpiSummary.akurasiHm.pct) : "-",
+      "Belum Input Aktual": formatMissingNote(kpiSummary.akurasiHm.missingActualCount),
+      "Status Target": formatTargetStatus(kpiSummary.akurasiHm.pct, kpiSummary.akurasiHm.plan),
     },
     {
       Parameter: "Akurasi Start Time",
-      Keterangan: "Toleransi +/- 1 jam",
+      Keterangan: "Kesesuaian penarikan unit service, toleransi +/- 1 jam",
       Plan: kpiSummary.akurasiStartTime.plan,
       Actual: kpiSummary.akurasiStartTime.actual,
-      Persentase: formatKpiPct(kpiSummary.akurasiStartTime.pct),
+      "Persentase KPI": kpiSummary.akurasiStartTime.plan > 0 ? formatKpiPct(kpiSummary.akurasiStartTime.pct) : "-",
+      "Belum Input Aktual": formatMissingNote(kpiSummary.akurasiStartTime.missingActualCount),
+      "Status Target": formatTargetStatus(kpiSummary.akurasiStartTime.pct, kpiSummary.akurasiStartTime.plan),
     },
     {
       Parameter: "Akurasi Lead Time",
-      Keterangan: "Toleransi +/- 2 jam",
+      Keterangan: "Kesesuaian lead time unit service, toleransi +/- 2 jam",
       Plan: kpiSummary.akurasiLeadTime.plan,
       Actual: kpiSummary.akurasiLeadTime.actual,
-      Persentase: formatKpiPct(kpiSummary.akurasiLeadTime.pct),
+      "Persentase KPI": kpiSummary.akurasiLeadTime.plan > 0 ? formatKpiPct(kpiSummary.akurasiLeadTime.pct) : "-",
+      "Belum Input Aktual": formatMissingNote(kpiSummary.akurasiLeadTime.missingActualCount),
+      "Status Target": formatTargetStatus(kpiSummary.akurasiLeadTime.pct, kpiSummary.akurasiLeadTime.plan),
     },
   ];
 
-  const summarySheetData = days.map((d) => {
+  const summarySheetData = scopedDays.map((d) => {
     const completed = d.items.filter((i) => i.status === "Completed").length;
     const pct = d.targetUnits > 0 ? Math.round((completed / d.targetUnits) * 100) : 0;
     const dayKpi = computePsKpiMetrics(d.items);
+    const fmt = (m: KpiMetricEntry) => (m.plan > 0 ? formatKpiPct(m.pct) : "-");
     return {
       Tanggal: d.date,
       Hari: d.dayName,
@@ -642,21 +693,55 @@ export function exportPmScheduleExcel(params: {
       Scheduled: d.items.filter((i) => i.status === "Scheduled").length,
       Pending: d.items.filter((i) => i.status === "Pending").length,
       "% Achievement Target": `${pct}%`,
-      "PM Compliance": formatKpiPct(dayKpi.pmCompliance.pct),
+      "PM Compliance": fmt(dayKpi.pmCompliance),
+      "Akurasi Servis": fmt(dayKpi.akurasiServis),
+      "Achievement Servis": fmt(dayKpi.achievementServis),
+      "Akurasi HM": fmt(dayKpi.akurasiHm),
+      "Akurasi Start Time": fmt(dayKpi.akurasiStartTime),
+      "Akurasi Lead Time": fmt(dayKpi.akurasiLeadTime),
       "Lead Mekanik": d.leadMechanic || d.leadInspector || "-",
     };
   });
 
   const wb = XLSX.utils.book_new();
+  const wsKpi = XLSX.utils.json_to_sheet(kpiSheetData);
+  const wsSummary = XLSX.utils.json_to_sheet(
+    summarySheetData.length > 0 ? summarySheetData : [{ Info: "Tidak ada data ringkasan harian" }]
+  );
   const wsDetail = XLSX.utils.json_to_sheet(
     detailSheetData.length > 0
       ? detailSheetData
       : [{ Info: "Tidak ada jadwal Periodic Service pada periode ini" }]
   );
-  const wsKpi = XLSX.utils.json_to_sheet(kpiSheetData);
-  const wsSummary = XLSX.utils.json_to_sheet(
-    summarySheetData.length > 0 ? summarySheetData : [{ Info: "Tidak ada data ringkasan" }]
-  );
+
+  wsKpi["!cols"] = [
+    { wch: 36 },
+    { wch: 56 },
+    { wch: 10 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 36 },
+    { wch: 28 },
+  ];
+
+  wsSummary["!cols"] = [
+    { wch: 12 },
+    { wch: 10 },
+    { wch: 12 },
+    { wch: 11 },
+    { wch: 11 },
+    { wch: 12 },
+    { wch: 11 },
+    { wch: 10 },
+    { wch: 18 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 17 },
+    { wch: 17 },
+    { wch: 24 },
+  ];
 
   wsDetail["!cols"] = [
     { wch: 5 },
@@ -667,6 +752,7 @@ export function exportPmScheduleExcel(params: {
     { wch: 24 },
     { wch: 20 },
     { wch: 18 },
+    { wch: 22 },
     { wch: 10 },
     { wch: 14 },
     { wch: 14 },
@@ -688,8 +774,8 @@ export function exportPmScheduleExcel(params: {
   ];
 
   XLSX.utils.book_append_sheet(wb, wsKpi, "KPI Compliance");
-  XLSX.utils.book_append_sheet(wb, wsDetail, "Daftar Detail Servis");
   XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan Harian");
+  XLSX.utils.book_append_sheet(wb, wsDetail, "Daftar Detail Servis");
 
   const safeStart = (startDate || "start").replace(/-/g, "");
   const safeEnd = (endDate || "end").replace(/-/g, "");
