@@ -1005,7 +1005,7 @@ export const DailyPaDateDetailView: React.FC = () => {
                                           aria-label={`Total jam untuk ${act.activityText}`}
                                           className={`w-14 h-7 px-1.5 rounded-lg border text-[11px] font-extrabold text-center focus:outline-hidden focus:ring-2 focus:ring-sky-300 ${
                                             needsHours
-                                              ? "border-amber-300 bg-white text-amber-800 placeholder:text-amber-500"
+                                              ? "border-amber-300 bg-white text-amber-800"
                                               : "border-slate-200 bg-white text-slate-800"
                                           }`}
                                         />
