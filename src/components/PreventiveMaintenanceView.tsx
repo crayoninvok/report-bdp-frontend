@@ -57,12 +57,14 @@ import {
   formatKm,
   getPmStatusStyle,
   getPresetDateRange,
+  parseIncludedTrailers,
   PM_SERVICE_TYPES,
   PM_SHIFT_OPTIONS,
   PM_STATUS_OPTIONS,
   PS_CATEGORY_OPTIONS,
   PS_LEAD_TIME_OPTIONS,
   PS_START_TIME_OPTIONS,
+  resolvePsUnitCategory,
   resolveTrailerSummary,
 } from "../utils/pmHelpers";
 
@@ -191,6 +193,7 @@ export const PreventiveMaintenanceView: React.FC<
       planHmServis: "",
       supervisorName: "",
       mechanicNames: [],
+      includedTrailers: [],
       currentKm: "",
       currentHm: "",
       nextDueKm: "",
@@ -219,7 +222,6 @@ export const PreventiveMaintenanceView: React.FC<
       const [weeklyRes, unitsRes] = await Promise.all([
         plantService.getPmWeeklySchedule(anchorDate, selectedSite),
         plantService.getMasterUnits({
-          category: "Prime Mover",
           withTrailers: true,
           site: selectedSite,
         }),
@@ -334,8 +336,8 @@ export const PreventiveMaintenanceView: React.FC<
     fetchDetailRange(startDate, endDate);
   };
 
-  // Lookup maps
-  const activePrimeMovers = useMemo(
+  // All active service units (Head Prime Mover, Vessel 1, Dolly, Vessel 2) can be scheduled independently
+  const activeServiceUnits = useMemo(
     () => masterUnits.filter((u) => u.status === "Active"),
     [masterUnits]
   );
@@ -430,6 +432,7 @@ export const PreventiveMaintenanceView: React.FC<
         planHmServis: autoPlanHm,
         supervisorName: "",
         mechanicNames: [],
+        includedTrailers: [],
         currentKm: km != null ? String(km) : "",
         currentHm: hm != null ? String(hm) : "",
         nextDueKm: targets.nextDueKm != null ? String(targets.nextDueKm) : "",
@@ -459,6 +462,7 @@ export const PreventiveMaintenanceView: React.FC<
         planHmServis: item.planHmServis || "",
         supervisorName: item.supervisorName || "",
         mechanicNames: resolveMechanicsArray(item),
+        includedTrailers: parseIncludedTrailers(item.buntutSummary),
         currentKm:
           item.currentKm != null
             ? String(item.currentKm)
@@ -492,6 +496,8 @@ export const PreventiveMaintenanceView: React.FC<
         supervisorName: values.supervisorName,
         mechanicNames: values.mechanicNames,
         mechanicName: values.mechanicNames.join(", "),
+        includedTrailers: values.includedTrailers,
+        buntutSummary: values.includedTrailers.join(", "),
         currentKm: values.currentKm ? Number(values.currentKm) : null,
         currentHm: values.currentHm ? Number(values.currentHm) : null,
         nextDueKm: values.nextDueKm ? Number(values.nextDueKm) : null,
@@ -678,8 +684,9 @@ export const PreventiveMaintenanceView: React.FC<
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Bagian dari program <strong className="text-white">Preventive Maintenance</strong>{" "}
-              (bersama Periodic Inspection) untuk penjadwalan servis berkala berbasis interval{" "}
-              <strong className="text-white">KM (PS1/PS2/PS3)</strong> &amp;{" "}
+              (bersama Periodic Inspection) untuk penjadwalan servis berkala{" "}
+              <strong className="text-white">Head, Dolly &amp; Vessel secara mandiri</strong>{" "}
+              berbasis interval <strong className="text-white">KM (PS1/PS2/PS3)</strong> &amp;{" "}
               <strong className="text-white">HM (P1/P2/P3/P4)</strong> yang terintegrasi
               telemetri Volvo Connect, tim HR Plant, dan riwayat biaya GL.
             </p>
@@ -872,7 +879,7 @@ export const PreventiveMaintenanceView: React.FC<
                 <span className="text-2xl font-black text-slate-900 font-mono">
                   {scheduleData?.summary.totalWeekPlan ?? 0}
                 </span>
-                <span className="text-xs font-semibold text-slate-500">Unit Head</span>
+                <span className="text-xs font-semibold text-slate-500">Unit Servis</span>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
                 Default target: {scheduleData?.defaultDailyTarget ?? 4} unit / hari kerja
@@ -1086,8 +1093,13 @@ export const PreventiveMaintenanceView: React.FC<
                     ) : (
                       day.items.map((item) => {
                         const style = getPmStatusStyle(item.status);
+                        const unitCat = resolvePsUnitCategory(item, masterUnits);
                         const trailerText = resolveTrailerSummary(item, masterUnits);
-                        const radar = radarMap.get(item.unitCode);
+                        const hasExplicitBuntut = Boolean(item.buntutSummary?.trim());
+                        const radar =
+                          unitCat === "Prime Mover"
+                            ? radarMap.get(item.unitCode)
+                            : undefined;
                         const displayKm = item.currentKm ?? item.liveKm ?? radar?.liveKm;
                         const displayHm = item.currentHm ?? item.liveHm ?? radar?.liveHm;
                         const mechList = resolveMechanicsArray(item);
@@ -1132,9 +1144,14 @@ export const PreventiveMaintenanceView: React.FC<
                               </select>
                             </div>
 
-                            {/* Trailer / Buntut */}
+                            {/* Category / Optional Companion Buntut */}
                             <div className="text-[10px] font-mono text-slate-500 truncate">
-                              • {trailerText}
+                              •{" "}
+                              {hasExplicitBuntut
+                                ? `Ikut PS: ${trailerText}`
+                                : unitCat === "Prime Mover"
+                                ? "Head Only (Buntut terpisah)"
+                                : trailerText}
                             </div>
 
                             {/* Service Type + Shift */}
@@ -1408,7 +1425,9 @@ export const PreventiveMaintenanceView: React.FC<
                   ) : (
                     filteredDetailRows.map((row) => {
                       const stStyle = getPmStatusStyle(row.status);
+                      const unitCat = resolvePsUnitCategory(row, masterUnits);
                       const trailerText = resolveTrailerSummary(row, masterUnits);
+                      const hasExplicitBuntut = Boolean(row.buntutSummary?.trim());
                       const mechList = resolveMechanicsArray(row);
                       return (
                         <tr key={row.id} className="hover:bg-slate-50">
@@ -1421,11 +1440,18 @@ export const PreventiveMaintenanceView: React.FC<
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="font-mono font-black text-slate-900">
-                              {row.unitCode}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono font-black text-slate-900">
+                                {row.unitCode}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">
+                                {unitCat}
+                              </span>
                             </div>
                             <div className="text-[11px] font-mono text-slate-500">
-                              {trailerText}
+                              {hasExplicitBuntut
+                                ? `Ikut PS: ${trailerText}`
+                                : trailerText}
                             </div>
                           </td>
                           <td className="py-3 px-4">
@@ -1562,7 +1588,7 @@ export const PreventiveMaintenanceView: React.FC<
         mode={unitModalState.mode}
         selectedSite={selectedSite}
         initialValues={unitModalState.initialValues}
-        availableUnits={activePrimeMovers}
+        availableUnits={activeServiceUnits}
         radarMap={radarMap}
         supervisors={hrSupervisors}
         mechanics={hrMechanics}
@@ -1574,7 +1600,7 @@ export const PreventiveMaintenanceView: React.FC<
       <PmBulkAddModal
         isOpen={bulkModalDate !== null}
         date={bulkModalDate || ""}
-        availableUnits={activePrimeMovers}
+        availableUnits={activeServiceUnits}
         existingUnitCodesOnDate={bulkExistingCodes}
         radarMap={radarMap}
         isSaving={isMutating}

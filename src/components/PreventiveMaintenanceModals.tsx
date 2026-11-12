@@ -47,6 +47,7 @@ export interface PmUnitFormValues {
   planHmServis: string;
   supervisorName: string;
   mechanicNames: string[];
+  includedTrailers: string[];
   currentKm: string;
   currentHm: string;
   nextDueKm: string;
@@ -69,6 +70,15 @@ interface PmUnitFormModalProps {
 }
 
 const MAX_MECHANICS = 5;
+const UNIT_CATEGORY_FILTERS = [
+  "ALL",
+  "Prime Mover",
+  "Vessel 1",
+  "Dolly",
+  "Vessel 2",
+] as const;
+
+type UnitCategoryFilter = (typeof UNIT_CATEGORY_FILTERS)[number];
 
 /** Groups HR personnel by whether their branch matches the active job site. */
 function splitBySiteBranch(
@@ -104,16 +114,51 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
   onSubmit,
 }) => {
   const [form, setForm] = useState<PmUnitFormValues>(initialValues);
+  const [unitCategoryFilter, setUnitCategoryFilter] =
+    useState<UnitCategoryFilter>("ALL");
   const [showTelemetryInputs, setShowTelemetryInputs] = useState(false);
 
   React.useEffect(() => {
     setForm(initialValues);
+    setUnitCategoryFilter("ALL");
     setShowTelemetryInputs(mode === "edit");
   }, [initialValues, isOpen, mode]);
 
   const siteLabel = selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur";
   const selectedRadar = radarMap.get(form.unitCode);
   const selectedUnitObj = availableUnits.find((u) => u.unitCode === form.unitCode);
+  const isHeadUnit =
+    !selectedUnitObj || selectedUnitObj.category === "Prime Mover";
+
+  const attachedTrailerChoices = useMemo(() => {
+    const tr = selectedUnitObj?.trailers;
+    if (!tr) return [];
+    const list: Array<{ label: string; unitCode: string }> = [];
+    if (tr.vessel1) list.push({ label: "Vessel 1", unitCode: tr.vessel1.unitCode });
+    if (tr.dolly) list.push({ label: "Dolly", unitCode: tr.dolly.unitCode });
+    if (tr.vessel2) list.push({ label: "Vessel 2", unitCode: tr.vessel2.unitCode });
+    return list;
+  }, [selectedUnitObj]);
+
+  const filteredUnitsByCategory = useMemo(() => {
+    if (unitCategoryFilter === "ALL") return availableUnits;
+    return availableUnits.filter((u) => u.category === unitCategoryFilter);
+  }, [availableUnits, unitCategoryFilter]);
+
+  const unitsGroupedByCategory = useMemo(() => {
+    const groups: Array<{ category: string; items: MasterUnit[] }> = [
+      { category: "Prime Mover", items: [] },
+      { category: "Vessel 1", items: [] },
+      { category: "Dolly", items: [] },
+      { category: "Vessel 2", items: [] },
+    ];
+    for (const u of filteredUnitsByCategory) {
+      const target = groups.find((g) => g.category === u.category);
+      if (target) target.items.push(u);
+      else groups[0].items.push(u);
+    }
+    return groups.filter((g) => g.items.length > 0);
+  }, [filteredUnitsByCategory]);
 
   const groupedSupervisors = useMemo(
     () => splitBySiteBranch(supervisors, selectedSite),
@@ -144,25 +189,44 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
   }, [selectedRadar, form.planHmServis]);
 
   const handleUnitChange = (unitCode: string) => {
-    const r = radarMap.get(unitCode);
+    const unitObj = availableUnits.find((u) => u.unitCode === unitCode);
+    const isHead = !unitObj || unitObj.category === "Prime Mover";
+    const r = isHead ? radarMap.get(unitCode) : undefined;
     const liveKmVal = r?.liveKm ?? null;
     const liveHmVal = r?.liveHm ?? null;
-    const recService = r?.recommendedServiceType || form.serviceType;
-    const targets = computePmTargetsClient(recService, liveKmVal, liveHmVal);
+    const recService =
+      r?.recommendedServiceType ||
+      (isHead ? form.serviceType : "Greasing & PS");
+    const targets = isHead
+      ? computePmTargetsClient(recService, liveKmVal, liveHmVal)
+      : { nextDueKm: null, nextDueHm: null };
     const autoPlanHm = r?.targetHm
       ? `Target ${r.targetHm.toLocaleString("id-ID")} HM (${r.hmServiceLabel || "Live Volvo"})`
-      : r?.hmServiceLabel || form.planHmServis || PS_HM_SERVIS_OPTIONS[0];
+      : r?.hmServiceLabel || (isHead ? form.planHmServis || PS_HM_SERVIS_OPTIONS[0] : "");
 
     setForm((prev) => ({
       ...prev,
       unitCode,
       serviceType: recService,
       planHmServis: autoPlanHm,
+      includedTrailers: [],
       currentKm: liveKmVal != null ? String(liveKmVal) : "",
       currentHm: liveHmVal != null ? String(liveHmVal) : "",
       nextDueKm: targets.nextDueKm != null ? String(targets.nextDueKm) : "",
       nextDueHm: targets.nextDueHm != null ? String(targets.nextDueHm) : "",
     }));
+  };
+
+  const toggleIncludedTrailer = (trailerCode: string) => {
+    setForm((prev) => {
+      const exists = prev.includedTrailers.includes(trailerCode);
+      return {
+        ...prev,
+        includedTrailers: exists
+          ? prev.includedTrailers.filter((c) => c !== trailerCode)
+          : [...prev.includedTrailers, trailerCode],
+      };
+    });
   };
 
   const handleServiceTypeChange = (serviceType: string) => {
@@ -216,8 +280,8 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                   : `Edit Jadwal Periodic Service • ${form.unitCode}`}
               </h3>
               <p className="text-[11px] font-medium text-slate-500">
-                Site: <strong className="text-slate-700">{siteLabel}</strong> • Pilih unit
-                kepala (Prime Mover)
+                Site: <strong className="text-slate-700">{siteLabel}</strong> • Head, Dolly
+                &amp; Vessel dapat dijadwalkan terpisah
               </p>
             </div>
           </div>
@@ -252,66 +316,157 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
             />
           </div>
 
-          {/* Pilih Unit Kepala (Prime Mover) */}
+          {/* Pilih Unit Servis (Head / Vessel 1 / Dolly / Vessel 2 Mandiri) */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-slate-800">
-                Pilih Unit Kepala (Prime Mover) di {siteLabel}
+                Pilih Unit Servis di {siteLabel}
               </label>
               <span className="text-[11px] font-bold text-slate-400">
-                {availableUnits.length} Unit Aktif
+                {filteredUnitsByCategory.length} Unit Aktif
               </span>
             </div>
             {mode === "edit" ? (
-              <div className="px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 font-mono font-black text-slate-900 text-xs">
-                {form.unitCode} •{" "}
-                {selectedUnitObj?.trailers?.summary || selectedUnitObj?.buntutSummary || "-"}
+              <div className="px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 font-mono font-black text-slate-900 text-xs flex items-center justify-between gap-2">
+                <span>
+                  {form.unitCode} • {selectedUnitObj?.category || "Unit"}
+                </span>
+                {selectedUnitObj?.headUnitCode && !isHeadUnit && (
+                  <span className="text-[10px] font-sans font-bold text-slate-500">
+                    Pasangan: {selectedUnitObj.headUnitCode}
+                  </span>
+                )}
               </div>
             ) : (
-              <select
-                required
-                value={form.unitCode}
-                onChange={(e) => handleUnitChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-              >
-                <option value="">-- Pilih Unit Kepala (PM) --</option>
-                {availableUnits.map((u) => {
-                  const r = radarMap.get(u.unitCode);
-                  const tag =
-                    r && (r.readinessStatus === "Overdue" || r.readinessStatus === "Due Soon")
-                      ? ` [${r.readinessStatus} • Sisa ${r.remainingKm ?? "-"} km]`
-                      : r?.liveKm
-                      ? ` [${r.liveKm.toLocaleString("id-ID")} km]`
-                      : "";
-                  return (
-                    <option key={u.unitCode} value={u.unitCode}>
-                      {u.unitCode} • {u.trailers?.summary || u.buntutSummary || "-"}
-                      {tag}
-                    </option>
-                  );
-                })}
-              </select>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-1">
+                  {UNIT_CATEGORY_FILTERS.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setUnitCategoryFilter(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
+                        unitCategoryFilter === cat
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {cat === "ALL" ? "Semua Unit" : cat}
+                    </button>
+                  ))}
+                </div>
+                <select
+                  required
+                  value={form.unitCode}
+                  onChange={(e) => handleUnitChange(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                >
+                  <option value="">-- Pilih Unit (Head / Dolly / Vessel) --</option>
+                  {unitsGroupedByCategory.map((group) => (
+                    <optgroup key={group.category} label={group.category}>
+                      {group.items.map((u) => {
+                        const r =
+                          u.category === "Prime Mover"
+                            ? radarMap.get(u.unitCode)
+                            : undefined;
+                        const tag =
+                          r &&
+                          (r.readinessStatus === "Overdue" ||
+                            r.readinessStatus === "Due Soon")
+                            ? ` [${r.readinessStatus} • Sisa ${r.remainingKm ?? "-"} km]`
+                            : r?.liveKm
+                            ? ` [${r.liveKm.toLocaleString("id-ID")} km]`
+                            : u.category !== "Prime Mover" && u.headUnitCode
+                            ? ` [Pasangan ${u.headUnitCode}]`
+                            : "";
+                        return (
+                          <option key={u.unitCode} value={u.unitCode}>
+                            {u.unitCode} • {u.category} ({u.model}){tag}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
 
-          {/* Live Volvo Telemetry Preview */}
-          {selectedRadar && (
-            <div className="px-3.5 py-2.5 rounded-xl bg-orange-50/70 border border-orange-200 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-              <div className="flex items-center gap-2 text-slate-800">
-                <Gauge size={14} className="text-[#e95623]" />
-                <span>
-                  <strong>Volvo Live:</strong> {formatKm(selectedRadar.liveKm)} |{" "}
-                  {formatHm(selectedRadar.liveHm)}
-                </span>
-              </div>
-              <span className="font-bold text-slate-600">
-                Buntut:{" "}
-                <strong className="font-mono">
-                  {selectedUnitObj?.trailers?.summary ||
-                    selectedRadar.buntutSummary ||
-                    "-"}
-                </strong>
+          {/* Live Volvo Telemetry Preview (Prime Mover) & Opsional Buntut / Unit Mandiri Info */}
+          {form.unitCode && isHeadUnit && (
+            <div className="space-y-2">
+              {selectedRadar && (
+                <div className="px-3.5 py-2 rounded-xl bg-orange-50/70 border border-orange-200 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-800">
+                    <Gauge size={14} className="text-[#e95623]" />
+                    <span>
+                      <strong>Volvo Live (Head):</strong> {formatKm(selectedRadar.liveKm)}{" "}
+                      | {formatHm(selectedRadar.liveHm)}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-extrabold text-[#c74315]">
+                    {form.includedTrailers.length > 0
+                      ? `Ikut PS: ${form.includedTrailers.join(", ")}`
+                      : "Head Only (Buntut terpisah)"}
+                  </span>
+                </div>
+              )}
+
+              {attachedTrailerChoices.length > 0 && (
+                <div className="px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-slate-700">
+                      Buntut Ikut PS (Opsional — Default Tidak Ikut)
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-500">
+                      {form.includedTrailers.length}/{attachedTrailerChoices.length} dipilih
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Dolly &amp; Vessel tidak otomatis ikut PS saat Head diservis. Centang
+                    hanya jika ikut PS bersamaan:
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-0.5">
+                    {attachedTrailerChoices.map((tr) => {
+                      const checked = form.includedTrailers.includes(tr.unitCode);
+                      return (
+                        <label
+                          key={tr.unitCode}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-all ${
+                            checked
+                              ? "bg-orange-50 border-[#e95623] text-[#c74315]"
+                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleIncludedTrailer(tr.unitCode)}
+                            className="accent-[#e95623]"
+                          />
+                          <span>
+                            {tr.label} ({tr.unitCode})
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {form.unitCode && !isHeadUnit && selectedUnitObj && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-sky-50/70 border border-sky-200 flex flex-wrap items-center justify-between gap-2 text-[11px] text-sky-900">
+              <span>
+                <strong>Unit Mandiri:</strong> {selectedUnitObj.category} (
+                {selectedUnitObj.model}) &bull; Jadwal PS terpisah dari Head
               </span>
+              {selectedUnitObj.headUnitCode && (
+                <span className="font-mono font-bold text-sky-700">
+                  Gandengan Head: {selectedUnitObj.headUnitCode}
+                </span>
+              )}
             </div>
           )}
 
@@ -747,6 +902,8 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
 }) => {
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] =
+    useState<UnitCategoryFilter>("ALL");
   const [onlyDueFilter, setOnlyDueFilter] = useState(false);
   const [serviceType, setServiceType] = useState<string>(PM_SERVICE_TYPES[0]);
   const [shift, setShift] = useState<string>("Shift 1");
@@ -755,6 +912,7 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
     if (isOpen) {
       setSelectedCodes([]);
       setSearch("");
+      setCategoryFilter("ALL");
       setOnlyDueFilter(false);
     }
   }, [isOpen, date]);
@@ -762,7 +920,11 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
   const filteredUnits = useMemo(() => {
     const q = search.trim().toLowerCase();
     return availableUnits.filter((u) => {
-      const r = radarMap.get(u.unitCode);
+      if (categoryFilter !== "ALL" && u.category !== categoryFilter) {
+        return false;
+      }
+      const r =
+        u.category === "Prime Mover" ? radarMap.get(u.unitCode) : undefined;
       if (onlyDueFilter) {
         if (!r || (r.readinessStatus !== "Overdue" && r.readinessStatus !== "Due Soon")) {
           return false;
@@ -771,10 +933,11 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
       if (!q) return true;
       return (
         u.unitCode.toLowerCase().includes(q) ||
-        (u.trailers?.summary || u.buntutSummary || "").toLowerCase().includes(q)
+        u.category.toLowerCase().includes(q) ||
+        (u.headUnitCode || "").toLowerCase().includes(q)
       );
     });
-  }, [availableUnits, radarMap, search, onlyDueFilter]);
+  }, [availableUnits, radarMap, search, categoryFilter, onlyDueFilter]);
 
   const toggleCode = (code: string) => {
     setSelectedCodes((prev) =>
@@ -844,6 +1007,23 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
             </div>
           </div>
 
+          <div className="flex flex-wrap gap-1.5">
+            {UNIT_CATEGORY_FILTERS.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
+                  categoryFilter === cat
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {cat === "ALL" ? "Semua Kategori" : cat}
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="relative flex-1 min-w-48">
               <Search
@@ -854,7 +1034,7 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari PMxxx atau buntut..."
+                placeholder="Cari PMxxx, DLxxx, STxxx..."
                 className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
@@ -933,7 +1113,10 @@ export const PmBulkAddModal: React.FC<PmBulkAddModalProps> = ({
                     ) : null}
                   </div>
                   <div className="text-[10px] font-mono text-slate-500 truncate">
-                    {u.trailers?.summary || u.buntutSummary || "-"}
+                    {u.category} • {u.model}
+                    {u.category !== "Prime Mover" && u.headUnitCode
+                      ? ` (Head ${u.headUnitCode})`
+                      : " (Buntut terpisah)"}
                   </div>
                   {radar?.hasTelemetry && (
                     <div className="text-[10px] font-mono text-slate-600 mt-0.5">

@@ -421,6 +421,8 @@ export const plantService = {
     supervisorName?: string;
     mechanicNames?: string[];
     mechanicName?: string;
+    buntutSummary?: string | null;
+    includedTrailers?: string[];
     currentKm?: number | null;
     currentHm?: number | null;
     nextDueKm?: number | null;
@@ -475,6 +477,8 @@ export const plantService = {
       supervisorName?: string;
       mechanicNames?: string[];
       mechanicName?: string;
+      buntutSummary?: string | null;
+      includedTrailers?: string[];
       currentKm?: number | null;
       currentHm?: number | null;
       nextDueKm?: number | null;

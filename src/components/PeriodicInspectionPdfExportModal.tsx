@@ -868,11 +868,15 @@ export const PeriodicInspectionPdfExportModal: React.FC<
                                     const isInProgress = item.status === "In Progress";
                                     const isPending = item.status === "Pending";
                                     const unitInfo = masterUnits.find((u) => u.unitCode === item.unitCode);
-                                    const trailerText =
-                                      item.buntutSummary ||
-                                      unitInfo?.trailers?.summary ||
-                                      unitInfo?.buntutSummary ||
-                                      "-";
+                                    const trailerText = isPmMode
+                                      ? item.buntutSummary?.trim() ||
+                                        (unitInfo?.category === "Prime Mover"
+                                          ? "Head Only"
+                                          : unitInfo?.category || "-")
+                                      : item.buntutSummary ||
+                                        unitInfo?.trailers?.summary ||
+                                        unitInfo?.buntutSummary ||
+                                        "-";
 
                                     return (
                                       <div

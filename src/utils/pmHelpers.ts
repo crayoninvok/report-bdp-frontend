@@ -188,14 +188,38 @@ export function formatRupiah(val?: number | null): string {
   return `Rp ${Math.round(val).toLocaleString("id-ID")}`;
 }
 
-/** Resolves trailer / buntut summary string consistently from item or MasterUnit list. */
+/** Parses comma-separated buntut codes (when explicitly included in PS) into an array. */
+export function parseIncludedTrailers(buntutSummary?: string | null): string[] {
+  if (!buntutSummary) return [];
+  return buntutSummary
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+/** Resolves the unit category ("Prime Mover", "Vessel 1", "Dolly", "Vessel 2") for a PS item. */
+export function resolvePsUnitCategory(
+  item: PeriodicInspectionItem,
+  masterUnits: MasterUnit[]
+): string {
+  if (item.unit?.category) return item.unit.category;
+  const match = masterUnits.find((u) => u.unitCode === item.unitCode);
+  return match?.category || (item.unitCode.startsWith("PM") ? "Prime Mover" : "Unit");
+}
+
+/**
+ * Resolves trailer / buntut summary strictly from explicitly saved PS `buntutSummary`.
+ * Never auto-inherits a Head's full trailer chain because Dolly & Vessel PS is independent.
+ */
 export function resolveTrailerSummary(
   item: PeriodicInspectionItem,
   masterUnits: MasterUnit[]
 ): string {
-  if (item.buntutSummary) return item.buntutSummary;
-  const match = masterUnits.find((u) => u.unitCode === item.unitCode);
-  return match?.trailers?.summary || match?.buntutSummary || "-";
+  const explicit = item.buntutSummary?.trim();
+  if (explicit) return explicit;
+  const cat = resolvePsUnitCategory(item, masterUnits);
+  if (cat === "Prime Mover") return "Head Only";
+  return `${cat} (Mandiri)`;
 }
 
 /** Computes start and end YYYY-MM-DD strings for range presets. */
@@ -244,7 +268,8 @@ export function exportPmScheduleExcel(params: {
     Tanggal: row.date,
     Hari: row.dayName,
     Unit: row.unitCode,
-    Buntut: resolveTrailerSummary(row, masterUnits),
+    "Kategori Unit": resolvePsUnitCategory(row, masterUnits),
+    "Buntut Ikut PS": resolveTrailerSummary(row, masterUnits),
     "Tipe Servis": row.serviceType,
     Kategori: row.category || "Scheduled PS",
     Shift: row.shift,
@@ -295,6 +320,7 @@ export function exportPmScheduleExcel(params: {
     { wch: 12 },
     { wch: 10 },
     { wch: 10 },
+    { wch: 14 },
     { wch: 24 },
     { wch: 20 },
     { wch: 18 },
