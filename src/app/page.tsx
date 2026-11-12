@@ -22,6 +22,7 @@ import { GLDataView } from "../components/GLDataView";
 import { PlantDashboardView } from "../components/PlantDashboardView";
 import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
 import { PreventiveMaintenanceView } from "../components/PreventiveMaintenanceView";
+import { DailyPaReportView } from "../components/DailyPaReportView";
 import { TyreRimUsageView } from "../components/TyreRimUsageView";
 import { MasterUnitView } from "../components/MasterUnitView";
 import { DashboardCostOverallView } from "../components/DashboardCostOverallView";
@@ -319,6 +320,8 @@ export default function Home() {
                       ? "Plant & Maintenance • Periodic Inspection"
                       : activeMenu === "preventive-maintenance"
                       ? "Plant & Maintenance • Periodic Service"
+                      : activeMenu === "daily-pa-report"
+                      ? "Plant & Maintenance • Daily PA Report"
                       : activeMenu === "tyre-rim-usage"
                       ? "Plant & Maintenance • Tyre & Rim Usage"
                       : activeMenu === "master-unit"
@@ -596,6 +599,8 @@ export default function Home() {
               user={currentUser}
               onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
             />
+          ) : activeMenu === "daily-pa-report" ? (
+            <DailyPaReportView />
           ) : activeMenu === "tyre-rim-usage" ? (
             <TyreRimUsageView user={currentUser} />
           ) : activeMenu === "master-unit" ? (

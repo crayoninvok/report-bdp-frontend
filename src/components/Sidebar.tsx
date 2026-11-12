@@ -133,6 +133,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: ShieldCheck,
         },
         {
+          id: "daily-pa-report",
+          label: "Daily PA Report",
+          icon: FileText,
+        },
+        {
           id: "tyre-rim-usage",
           label: "Tyre & Rim Usage",
           icon: Disc,
