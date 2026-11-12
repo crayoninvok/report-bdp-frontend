@@ -131,8 +131,16 @@ export const DailyPaDateDetailView: React.FC = () => {
         applyReportPayload(paRes.data);
       }
       if (unitsRes.success) {
+        const haulingCategories = new Set([
+          "Prime Mover",
+          "Vessel 1",
+          "Dolly",
+          "Vessel 2",
+        ]);
         setMasterUnits(
-          unitsRes.data.filter((u) => u.status === "Active")
+          unitsRes.data.filter(
+            (u) => u.status === "Active" && haulingCategories.has(u.category)
+          )
         );
       }
     } catch (err) {

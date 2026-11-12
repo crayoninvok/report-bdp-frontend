@@ -28,7 +28,6 @@ const CATEGORY_TABS = [
   "Vessel 1",
   "Dolly",
   "Vessel 2",
-  "Unit Support",
 ] as const;
 
 const HAULING_SET = new Set(["Prime Mover", "Vessel 1", "Dolly", "Vessel 2"]);
@@ -58,11 +57,8 @@ export const DailyPaBulkAddUnitsModal: React.FC<DailyPaBulkAddUnitsModalProps> =
   const filteredUnits = useMemo(() => {
     const q = search.trim().toLowerCase();
     return masterUnits.filter((u) => {
-      if (categoryTab === "Unit Support") {
-        if (HAULING_SET.has(u.category)) return false;
-      } else if (categoryTab !== "Semua") {
-        if (u.category !== categoryTab) return false;
-      }
+      if (!HAULING_SET.has(u.category)) return false;
+      if (categoryTab !== "Semua" && u.category !== categoryTab) return false;
 
       if (!q) return true;
       return (
@@ -464,3 +460,4 @@ export const DailyPaActivityModal: React.FC<DailyPaActivityModalProps> = ({
     </div>
   );
 };
+
