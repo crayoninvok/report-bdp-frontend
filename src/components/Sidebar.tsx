@@ -237,7 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`relative flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out z-30 select-none shadow-sm ${
+      className={`relative flex flex-col h-full min-h-0 bg-white border-r border-slate-200 transition-all duration-300 ease-in-out z-30 select-none shadow-sm ${
         isCollapsed ? "w-20" : "w-72"
       }`}
     >
@@ -252,7 +252,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </button>
 
       {/* Header & Logo */}
-      <div className="flex h-18 items-center justify-between px-4 border-b border-slate-100">
+      <div className="flex h-18 shrink-0 items-center justify-between px-4 border-b border-slate-100">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 border border-slate-200 shadow-2xs">
             <img
@@ -288,7 +288,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* User Profile Info Card */}
-      <div className="p-3 border-b border-slate-100 bg-slate-50/60">
+      <div className="p-3 shrink-0 border-b border-slate-100 bg-slate-50/60">
         <div
           className={`flex items-center gap-3 rounded-xl p-2.5 transition-colors ${
             isCollapsed ? "justify-center p-1.5" : "bg-white border border-slate-200/80 shadow-xs"
@@ -326,7 +326,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 space-y-3 touch-pan-y">
         {navSections.map((section, sIdx) => (
           <div key={section.title} className="space-y-1">
             {sIdx > 0 && (
@@ -399,7 +399,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer / System Status & Logout */}
-      <div className="p-3 border-t border-slate-100 bg-slate-50/40 space-y-2">
+      <div className="p-3 shrink-0 border-t border-slate-100 bg-slate-50/40 space-y-2">
         {!isCollapsed && (
           <div className="flex items-center justify-between px-2 py-1 text-[11px] text-slate-500">
             <span className="flex items-center gap-1.5 font-medium">

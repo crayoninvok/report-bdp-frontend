@@ -428,7 +428,7 @@ export const DailyPaDateDetailView: React.FC = () => {
             className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative flex flex-col h-full z-10 w-72 max-w-[85vw] bg-white shadow-2xl">
+          <div className="relative flex flex-col h-full min-h-0 z-10 w-72 max-w-[85vw] bg-white shadow-2xl overflow-hidden">
             <Sidebar
               user={currentUser}
               activeMenu="daily-pa-report"
