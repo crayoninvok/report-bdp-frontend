@@ -1798,9 +1798,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
                 <RefreshCw size={11} className="animate-spin text-slate-400" />
               )}
             </div>
-            <div className="flex items-baseline gap-2">
-              <div
-                className={`text-2xl sm:text-3xl font-black tracking-tight ${
+            <div className="text-2xl sm:text-3xl font-black tracking-tight">
+              <span
+                className={`${
                   !paSummary || paSummary.recordedDaysCount === 0
                     ? "text-slate-400"
                     : paSummary.overallPaPercent >= paSummary.targetPa
@@ -1810,14 +1810,9 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
               >
                 {!paSummary || paSummary.recordedDaysCount === 0
                   ? "0,00"
-                  : formatNum(paSummary.overallPaPercent, 2)}{" "}
-                <span className="text-sm font-bold text-slate-500">%</span>
-              </div>
-              {paSummary && paSummary.recordedDaysCount > 0 && (
-                <span className="text-xs font-bold text-slate-400">
-                  (Rata-rata {paSummary.recordedDaysCount} Hari)
-                </span>
-              )}
+                  : formatNum(paSummary.overallPaPercent, 2)}
+              </span>{" "}
+              <span className="text-sm font-bold text-slate-500">%</span>
             </div>
           </div>
 
@@ -1826,21 +1821,6 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             <strong className="text-slate-900 font-extrabold">
               {paSummary ? formatNum(paSummary.targetPa, 0) : 93}%
             </strong>
-          </div>
-
-          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between font-medium">
-            <span>Data PA Periode:</span>
-            <span
-              className={`font-bold ${
-                !paSummary || paSummary.recordedDaysCount === 0
-                  ? "text-slate-400"
-                  : "text-[#e95623]"
-              }`}
-            >
-              {!paSummary || paSummary.recordedDaysCount === 0
-                ? "0 Hari Terdata"
-                : `${paSummary.recordedDaysCount} Hari (${paSummary.averageUnitsCount} Unit)`}
-            </span>
           </div>
         </div>
       </div>
