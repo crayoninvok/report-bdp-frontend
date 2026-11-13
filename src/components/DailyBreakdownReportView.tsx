@@ -373,7 +373,7 @@ export const DailyBreakdownReportView: React.FC = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="h-9 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-orange-400"
+                className="h-9 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white focus:outline-hidden focus:ring-2 focus:ring-orange-400"
               />
             </div>
             <button
@@ -438,7 +438,7 @@ export const DailyBreakdownReportView: React.FC = () => {
             placeholder="Cari Unit, WO, Komponen, Mekanik..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-400"
+            className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-400"
           />
         </div>
       </div>
@@ -460,8 +460,8 @@ export const DailyBreakdownReportView: React.FC = () => {
                 <th className="py-3 px-3 text-center whitespace-nowrap">Start Breakdown</th>
                 <th className="py-3 px-3 text-center whitespace-nowrap">Finish Breakdown</th>
                 <th className="py-3 px-3 text-right whitespace-nowrap">Durasi (Jam)</th>
-                <th className="py-3 px-4 min-w-[180px]">Breakdown Description</th>
-                <th className="py-3 px-4 min-w-[180px]">Detail Activity</th>
+                <th className="py-3 px-4 min-w-45">Breakdown Description</th>
+                <th className="py-3 px-4 min-w-45">Detail Activity</th>
                 <th className="py-3 px-3 whitespace-nowrap">Component</th>
                 <th className="py-3 px-3 whitespace-nowrap">Mechanic</th>
                 <th className="py-3 px-3 whitespace-nowrap">Supervisor</th>
