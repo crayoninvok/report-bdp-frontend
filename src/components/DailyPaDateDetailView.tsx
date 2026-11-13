@@ -464,7 +464,7 @@ export const DailyPaDateDetailView: React.FC = () => {
                 className="h-8 w-8 object-contain md:hidden shrink-0"
               />
               <div className="flex flex-col min-w-0">
-                <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-[140px] xs:max-w-[200px] sm:max-w-md lg:max-w-xl">
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-35 xs:max-w-50 sm:max-w-md lg:max-w-xl">
                   Daily PA • {navbarDateLabel}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline truncate">

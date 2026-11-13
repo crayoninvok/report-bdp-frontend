@@ -283,7 +283,7 @@ export default function Home() {
               />
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-xl">
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-[130px] xs:max-w-50 sm:max-w-xs md:max-w-md lg:max-w-xl">
                     {activeMenu === "dashboard-overall"
                       ? "Cost Analytics • Dashboard Cost Overall"
                       : activeMenu === "input-cost"
