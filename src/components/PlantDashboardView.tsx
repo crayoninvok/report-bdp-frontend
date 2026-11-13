@@ -62,17 +62,28 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
   return (
     <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 pb-8 animate-in fade-in duration-300">
       {/* Hero Banner & Global Controls */}
-      <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-slate-700/60">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 text-[11px] font-bold uppercase tracking-wider">
-              <Wrench className="w-3.5 h-3.5" />
+      <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-slate-950/20 border border-slate-700/60 p-6 sm:p-7 text-white">
+        {/* Background Image: Plant Heavy Equipment Workshop */}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 scale-105"
+          style={{ backgroundImage: "url('/bg-plantmaintenance.jpeg')" }}
+        />
+        {/* Dark Industrial Gradient Overlay for High Contrast & Readability */}
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/90 to-slate-900/75" />
+        {/* Dynamic Brand Accent Glow */}
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-[#e95623]/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 left-1/3 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-400/40 text-orange-200 text-[11px] font-black uppercase tracking-wider shadow-xs backdrop-blur-xs">
+              <Wrench className="w-3.5 h-3.5 text-[#e95623]" />
               Plant &amp; Maintenance Analytics
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-xs">
               Dashboard Plant
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
               Ringkasan visual biaya General Ledger Departemen Plant (YTD &amp; MTD) serta performa
               Preventive Maintenance (Periodic Inspection &amp; Periodic Service).
             </p>
@@ -80,13 +91,13 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
 
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Site Selector */}
-            <div className="flex items-center gap-1.5 bg-white/10 border border-white/15 rounded-xl px-3 py-2">
-              <MapPin className="w-3.5 h-3.5 text-orange-300 shrink-0" />
+            <div className="flex items-center gap-1.5 bg-slate-900/70 backdrop-blur-md border border-white/15 rounded-2xl px-3.5 py-2 shadow-xs hover:border-white/30 transition-colors">
+              <MapPin className="w-3.5 h-3.5 text-orange-400 shrink-0" />
               <select
                 value={site}
                 onChange={(e) => setSite(e.target.value)}
                 aria-label="Filter Job Site"
-                className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer"
               >
                 <option value="ALL" className="text-slate-900">
                   Semua Site (MPH &amp; SNY)
@@ -101,13 +112,13 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
             </div>
 
             {/* GL Scope Selector */}
-            <div className="flex items-center gap-1.5 bg-white/10 border border-white/15 rounded-xl px-3 py-2">
-              <Layers className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+            <div className="flex items-center gap-1.5 bg-slate-900/70 backdrop-blur-md border border-white/15 rounded-2xl px-3.5 py-2 shadow-xs hover:border-white/30 transition-colors">
+              <Layers className="w-3.5 h-3.5 text-sky-400 shrink-0" />
               <select
                 value={glScope}
                 onChange={(e) => setGlScope(e.target.value as PlantGlScope)}
                 aria-label="Scope Akun GL Plant"
-                className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer"
               >
                 <option value="all_plant" className="text-slate-900">
                   Semua Akun Plant (R&amp;M + Tyre/Oli/Grease)
@@ -122,15 +133,15 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
             </div>
 
             {/* MTD Month Selector */}
-            <div className="flex items-center gap-1.5 bg-white/10 border border-white/15 rounded-xl px-3 py-2">
-              <Calendar className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+            <div className="flex items-center gap-1.5 bg-slate-900/70 backdrop-blur-md border border-white/15 rounded-2xl px-3.5 py-2 shadow-xs hover:border-white/30 transition-colors">
+              <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <select
                 value={selectedMonth ?? data?.filters.month ?? ""}
                 onChange={(e) =>
                   setSelectedMonth(e.target.value ? Number(e.target.value) : undefined)
                 }
                 aria-label="Periode Bulan MTD GL"
-                className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer"
               >
                 {(data?.filters.availableMonths || []).map((m) => (
                   <option key={m.month} value={m.month} className="text-slate-900">
@@ -144,7 +155,7 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
               type="button"
               onClick={loadDashboard}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d54918] text-xs font-bold text-white shadow-xs transition-colors disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#e95623] hover:bg-[#d54918] text-xs font-black text-white shadow-md hover:shadow-lg transition-all disabled:opacity-60 cursor-pointer active:scale-95"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               Muat Ulang
