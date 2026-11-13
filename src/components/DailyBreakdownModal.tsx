@@ -818,7 +818,7 @@ export const DailyBreakdownModal: React.FC<DailyBreakdownModalProps> = ({
                 <div className="bg-white rounded-2xl border border-slate-200 p-3 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Search Input */}
-                    <div className="flex-1 relative min-w-[200px]">
+                    <div className="flex-1 relative min-w-50">
                       <Search
                         size={13}
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -858,45 +858,47 @@ export const DailyBreakdownModal: React.FC<DailyBreakdownModalProps> = ({
                   </div>
 
                   {/* Scrollable list of mechanics */}
-                  <div className="max-h-44 overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-100">
+                  <div className="max-h-44 overflow-y-auto rounded-xl border border-slate-200/80">
                     {filteredMechanics.length === 0 ? (
                       <div className="p-3 text-center text-slate-400 text-xs">
                         Tidak ada mekanik yang cocok dengan pencarian.
                       </div>
                     ) : (
-                      filteredMechanics.map((m) => {
-                        const isSelected = selectedMechanics.includes(m.fullName);
-                        return (
-                          <div
-                            key={m.id}
-                            onClick={() => handleToggleMechanic(m.fullName)}
-                            className={`flex items-center justify-between p-2 hover:bg-slate-50 cursor-pointer transition-colors ${
-                              isSelected ? "bg-orange-50/70" : ""
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
-                                  isSelected
-                                    ? "bg-[#e95623] border-[#e95623] text-white"
-                                    : "border-slate-300 bg-white"
-                                }`}
-                              >
-                                {isSelected && <Check size={11} strokeWidth={3} />}
+                      <div className="divide-y divide-slate-100">
+                        {filteredMechanics.map((m) => {
+                          const isSelected = selectedMechanics.includes(m.fullName);
+                          return (
+                            <div
+                              key={m.id}
+                              onClick={() => handleToggleMechanic(m.fullName)}
+                              className={`flex items-center justify-between p-2 hover:bg-slate-50 cursor-pointer transition-colors ${
+                                isSelected ? "bg-orange-50/70" : ""
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
+                                    isSelected
+                                      ? "bg-[#e95623] border-[#e95623] text-white"
+                                      : "border-slate-300 bg-white"
+                                  }`}
+                                >
+                                  {isSelected && <Check size={11} strokeWidth={3} />}
+                                </div>
+                                <span className="font-bold text-slate-800">{m.fullName}</span>
                               </div>
-                              <span className="font-bold text-slate-800">{m.fullName}</span>
+                              <div className="flex items-center gap-1.5 text-[10px]">
+                                <span className="px-1.5 py-0.5 rounded font-semibold bg-slate-100 text-slate-600">
+                                  {m.jobPosition || "Mekanik"}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded font-bold bg-blue-50 text-blue-700">
+                                  {m.branchName || "Site"}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px]">
-                              <span className="px-1.5 py-0.5 rounded font-semibold bg-slate-100 text-slate-600">
-                                {m.jobPosition || "Mekanik"}
-                              </span>
-                              <span className="px-1.5 py-0.5 rounded font-bold bg-blue-50 text-blue-700">
-                                {m.branchName || "Site"}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
 
