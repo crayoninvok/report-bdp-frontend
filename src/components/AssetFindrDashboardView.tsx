@@ -9,6 +9,7 @@ import {
   UnitProductionPerformance,
   OperatorProductionPerformance,
 } from "../services/assetfindrService";
+import { plantService, DailyPaRangeSummary } from "../services/plantService";
 import { AssetFindrTokenModal } from "./AssetFindrTokenModal";
 
 import { useNotification } from "../context/NotificationContext";
@@ -137,6 +138,50 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
   const [lowestOperators, setLowestOperators] = useState<OperatorProductionPerformance[]>([]);
   const [operatorMetricFilter, setOperatorMetricFilter] = useState<"tonase" | "ritase">("tonase");
 
+  // Daily Physical Availability (Daily PA) Range States
+  const [paSummary, setPaSummary] = useState<DailyPaRangeSummary | null>(null);
+  const [isLoadingPa, setIsLoadingPa] = useState<boolean>(false);
+
+  // Load Daily PA Summary from Plant & Maintenance Daily PA Report
+  const loadPaSummary = useCallback(async () => {
+    try {
+      setIsLoadingPa(true);
+      const plantSite =
+        selectedJobsite === "senyiur"
+          ? "Senyiur"
+          : selectedJobsite === "muara_pahu"
+          ? "MuaraPahu"
+          : undefined;
+
+      const res = await plantService.getDailyPaRangeSummary(
+        startDate,
+        endDate,
+        plantSite
+      );
+      if (res && res.success && res.data) {
+        setPaSummary(res.data);
+      } else {
+        setPaSummary(null);
+      }
+    } catch (err: any) {
+      console.warn("Daily PA tidak tersedia untuk periode ini:", err?.message);
+      // Fallback: Jika data PA tidak ada biarkan 0 saja
+      setPaSummary({
+        startDate,
+        endDate,
+        jobSite: selectedJobsite,
+        recordedDaysCount: 0,
+        overallPaPercent: 0,
+        targetPa: 93,
+        averageUnitsCount: 0,
+        totalBreakdownCount: 0,
+        days: [],
+      });
+    } finally {
+      setIsLoadingPa(false);
+    }
+  }, [startDate, endDate, selectedJobsite]);
+
   // Load Daily Production Data from API
   const loadDailyProduction = useCallback(async () => {
     try {
@@ -168,7 +213,8 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
 
   useEffect(() => {
     loadDailyProduction();
-  }, [loadDailyProduction]);
+    loadPaSummary();
+  }, [loadDailyProduction, loadPaSummary]);
 
   // Handle Switching Filter Granularity
   const handleFilterModeChange = (mode: FilterGranularity) => {
@@ -1057,12 +1103,15 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             )}
 
             <button
-              onClick={loadDailyProduction}
-              disabled={isLoading}
+              onClick={() => {
+                loadDailyProduction();
+                loadPaSummary();
+              }}
+              disabled={isLoading || isLoadingPa}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#e95623] hover:bg-[#d0491d] text-white text-xs font-black shadow-xs hover:shadow transition-all cursor-pointer disabled:opacity-50"
             >
-              <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-              <span>{isLoading ? "Memuat..." : "Segarkan"}</span>
+              <RefreshCw size={14} className={isLoading || isLoadingPa ? "animate-spin" : ""} />
+              <span>{isLoading || isLoadingPa ? "Memuat..." : "Segarkan"}</span>
             </button>
           </div>
         </div>
@@ -1426,10 +1475,10 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         </div>
       )}
 
-      {/* KPI Cards: DS, NS, and Total */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Cards: DS, NS, Total, and Physical Availability (PA) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {/* Card 1: Grand Total Tonase */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all">
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
               <Scale size={24} />
@@ -1476,7 +1525,7 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
         </div>
 
         {/* Speedometer Actual vs Plan Produksi */}
-        <div className="sm:col-span-2 lg:col-span-2 bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all flex flex-col justify-between">
+        <div className="sm:col-span-2 lg:col-span-2 xl:col-span-2 bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all flex flex-col justify-between">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-slate-800 to-slate-950 text-white flex items-center justify-center shadow-xs">
@@ -1671,8 +1720,8 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
           </div>
         </div>
 
-        {/* Card 4: Daily Average & Payload */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all">
+        {/* Card 3: Daily Average & Payload */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center">
               <TrendingUp size={24} />
@@ -1703,6 +1752,94 @@ export const AssetFindrDashboardView: React.FC<AssetFindrDashboardViewProps> = (
             <span>Target Plan Harian:</span>
             <span className="font-bold text-[#e95623]">
               {formatNum(planDailyTonase, 0)} Ton/Hari
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Physical Availability (PA) Armada dari Daily PA Report */}
+        <div className="sm:col-span-2 lg:col-span-4 xl:col-span-1 bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-600 flex items-center justify-center shrink-0">
+                <ShieldCheck size={24} />
+              </div>
+              <div className="lg:block xl:hidden hidden">
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+                  Plant &amp; Maintenance • Physical Availability
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  Data PA dihitung dari tanggal terdata pada periode filter aktif
+                </span>
+              </div>
+            </div>
+            <span
+              className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                !paSummary || paSummary.recordedDaysCount === 0
+                  ? "bg-slate-100 text-slate-500 border-slate-200"
+                  : paSummary.overallPaPercent >= paSummary.targetPa
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-rose-50 text-rose-700 border-rose-200"
+              }`}
+            >
+              {!paSummary || paSummary.recordedDaysCount === 0
+                ? "Belum Ada Data"
+                : paSummary.overallPaPercent >= paSummary.targetPa
+                ? `Tercapai (≥${formatNum(paSummary.targetPa, 0)}%)`
+                : `Di Bawah Target (<${formatNum(paSummary.targetPa, 0)}%)`}
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 block uppercase tracking-wider">
+                Physical Availability (PA)
+              </span>
+              {isLoadingPa && (
+                <RefreshCw size={11} className="animate-spin text-slate-400" />
+              )}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <div
+                className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                  !paSummary || paSummary.recordedDaysCount === 0
+                    ? "text-slate-400"
+                    : paSummary.overallPaPercent >= paSummary.targetPa
+                    ? "text-emerald-600"
+                    : "text-rose-600"
+                }`}
+              >
+                {!paSummary || paSummary.recordedDaysCount === 0
+                  ? "0,00"
+                  : formatNum(paSummary.overallPaPercent, 2)}{" "}
+                <span className="text-sm font-bold text-slate-500">%</span>
+              </div>
+              {paSummary && paSummary.recordedDaysCount > 0 && (
+                <span className="text-xs font-bold text-slate-400">
+                  (Rata-rata {paSummary.recordedDaysCount} Hari)
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <span>Target PA:</span>
+            <strong className="text-slate-900 font-extrabold">
+              {paSummary ? formatNum(paSummary.targetPa, 0) : 93}%
+            </strong>
+          </div>
+
+          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between font-medium">
+            <span>Data PA Periode:</span>
+            <span
+              className={`font-bold ${
+                !paSummary || paSummary.recordedDaysCount === 0
+                  ? "text-slate-400"
+                  : "text-[#e95623]"
+              }`}
+            >
+              {!paSummary || paSummary.recordedDaysCount === 0
+                ? "0 Hari Terdata"
+                : `${paSummary.recordedDaysCount} Hari (${paSummary.averageUnitsCount} Unit)`}
             </span>
           </div>
         </div>

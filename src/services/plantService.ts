@@ -706,6 +706,23 @@ export const plantService = {
     );
   },
 
+  getDailyPaRangeSummary: async (
+    startDate: string,
+    endDate: string,
+    jobSite?: string
+  ): Promise<{
+    success: boolean;
+    data: DailyPaRangeSummary;
+  }> => {
+    const query = new URLSearchParams({ startDate, endDate });
+    if (jobSite && jobSite !== "all") query.append("jobSite", jobSite);
+    return requestPlantJson(
+      `${API_BASE_URL}/plant/daily-pa/range-summary?${query.toString()}`,
+      { headers: getAuthHeaders() },
+      "Gagal memuat ringkasan PA periode"
+    );
+  },
+
   updateDailyPaSettings: async (payload: {
     date: string;
     jobSite: string;
@@ -960,6 +977,18 @@ export interface DailyPaMonthlyDaySummary {
   belowTargetUnitCount: number;
   overallPaPercent: number;
   targetPa: number;
+}
+
+export interface DailyPaRangeSummary {
+  startDate: string;
+  endDate: string;
+  jobSite: string;
+  recordedDaysCount: number;
+  overallPaPercent: number;
+  targetPa: number;
+  averageUnitsCount: number;
+  totalBreakdownCount: number;
+  days: DailyPaMonthlyDaySummary[];
 }
 
 export type PlantGlScope = "all_plant" | "rm_only" | "tyre_oli_grease";
