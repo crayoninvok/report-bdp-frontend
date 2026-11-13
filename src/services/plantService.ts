@@ -805,6 +805,70 @@ export const plantService = {
       },
       "Gagal menghapus BD Activity"
     ),
+
+  // Daily Breakdown Report endpoints
+  getDailyBreakdownList: async (params?: {
+    site?: string;
+    date?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    category?: string;
+    search?: string;
+  }): Promise<DailyBreakdownResponse> => {
+    const query = new URLSearchParams();
+    if (params?.site) query.append("site", params.site);
+    if (params?.date) query.append("date", params.date);
+    if (params?.startDate) query.append("startDate", params.startDate);
+    if (params?.endDate) query.append("endDate", params.endDate);
+    if (params?.status) query.append("status", params.status);
+    if (params?.category) query.append("category", params.category);
+    if (params?.search) query.append("search", params.search);
+
+    const qs = query.toString();
+    return requestPlantJson<DailyBreakdownResponse>(
+      `${API_BASE_URL}/plant/daily-breakdown${qs ? `?${qs}` : ""}`,
+      { headers: getAuthHeaders() },
+      "Gagal memuat data Daily Breakdown Report"
+    );
+  },
+
+  createDailyBreakdown: async (
+    payload: DailyBreakdownInput
+  ): Promise<{ success: boolean; data: DailyBreakdownItem; message?: string }> =>
+    requestPlantJson(
+      `${API_BASE_URL}/plant/daily-breakdown`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      },
+      "Gagal mencatat data breakdown baru"
+    ),
+
+  updateDailyBreakdown: async (
+    id: string,
+    payload: Partial<DailyBreakdownInput>
+  ): Promise<{ success: boolean; data: DailyBreakdownItem; message?: string }> =>
+    requestPlantJson(
+      `${API_BASE_URL}/plant/daily-breakdown/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      },
+      "Gagal memperbarui data breakdown"
+    ),
+
+  deleteDailyBreakdown: async (id: string): Promise<{ success: boolean; message?: string }> =>
+    requestPlantJson(
+      `${API_BASE_URL}/plant/daily-breakdown/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      },
+      "Gagal menghapus data breakdown"
+    ),
 };
 
 async function requestPlantJson<T>(
@@ -1266,3 +1330,80 @@ export interface TyreRimUsageResponse {
   };
   transactions: TyreRimTransactionItem[];
 }
+
+export interface DailyBreakdownItem {
+  id: string;
+  jobSite: string;
+  date: string; // YYYY-MM-DD
+  unitCode: string;
+  unitType?: string | null;
+  woNumber?: string | null;
+  hm?: number | null;
+  km?: number | null;
+  category: "SCM" | "USM" | "TSM" | "TUM" | "ICM" | string;
+  startTime?: string | null;
+  finishTime?: string | null;
+  durationHours: number;
+  breakdownDescription: string;
+  detailActivity?: string | null;
+  component?: string | null;
+  mechanic?: string | null;
+  supervisor?: string | null;
+  location?: string | null;
+  status: "Open" | "Close" | string;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  unit?: {
+    unitCode: string;
+    brand: string;
+    model: string;
+    category: string;
+    status: string;
+    currentHm?: number | null;
+    currentKm?: number | null;
+  } | null;
+}
+
+export interface DailyBreakdownSummary {
+  total: number;
+  open: number;
+  close: number;
+  totalDurationHours: number;
+  categories: {
+    SCM: number;
+    USM: number;
+    TSM: number;
+    TUM: number;
+    ICM: number;
+  };
+}
+
+export interface DailyBreakdownResponse {
+  success: boolean;
+  data: DailyBreakdownItem[];
+  summary: DailyBreakdownSummary;
+}
+
+export interface DailyBreakdownInput {
+  date: string;
+  jobSite?: string;
+  unitCode: string;
+  unitType?: string;
+  woNumber?: string;
+  hm?: number | null;
+  km?: number | null;
+  category: string;
+  startTime?: string;
+  finishTime?: string;
+  durationHours?: number;
+  breakdownDescription: string;
+  detailActivity?: string;
+  component?: string;
+  mechanic?: string;
+  supervisor?: string;
+  location?: string;
+  status?: string;
+  notes?: string;
+}
+
