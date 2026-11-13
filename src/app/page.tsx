@@ -283,7 +283,7 @@ export default function Home() {
               />
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-[130px] xs:max-w-50 sm:max-w-xs md:max-w-md lg:max-w-xl">
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-32.5 xs:max-w-50 sm:max-w-xs md:max-w-md lg:max-w-xl">
                     {activeMenu === "dashboard-overall"
                       ? "Cost Analytics • Dashboard Cost Overall"
                       : activeMenu === "input-cost"
@@ -392,7 +392,7 @@ export default function Home() {
 
               {/* Notification Popover Dropdown */}
               {isNotifOpen && (
-                <div className="absolute right-[-45px] xs:right-[-20px] sm:right-0 top-10 w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute -right-11.25 xs:-right-5 sm:right-0 top-10 w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                   {/* Popover Header */}
                   <div className="p-3.5 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
                     <div className="flex items-center gap-2">
