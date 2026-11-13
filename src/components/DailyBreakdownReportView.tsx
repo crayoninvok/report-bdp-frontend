@@ -186,7 +186,7 @@ export const DailyBreakdownReportView: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1700px] mx-auto space-y-6 animate-in fade-in duration-300 pb-24">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 animate-in fade-in duration-300 pb-24">
       {/* 1. Header Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-bl from-orange-100/50 via-rose-50/30 to-transparent rounded-full -mr-32 -mt-32 pointer-events-none" />
@@ -399,7 +399,7 @@ export const DailyBreakdownReportView: React.FC = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+          <div className="flex items-center gap-1.5 pl-0 sm:pl-2 border-l-0 sm:border-l border-slate-200">
             <span className="text-xs font-bold text-slate-400">Status:</span>
             <select
               value={statusFilter}
@@ -413,7 +413,7 @@ export const DailyBreakdownReportView: React.FC = () => {
           </div>
 
           {/* Category Filter */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+          <div className="flex items-center gap-1.5 pl-0 sm:pl-2 border-l-0 sm:border-l border-slate-200">
             <span className="text-xs font-bold text-slate-400">Kategori:</span>
             <select
               value={categoryFilter}

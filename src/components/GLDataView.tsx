@@ -344,7 +344,7 @@ export const GLDataView: React.FC<GLDataViewProps> = ({ user }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-4 animate-in fade-in duration-200 pb-16">
       {/* ================= TOP CONTROL & FILTER BAR ================= */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
         {/* Row 1: Header Title, Metadata Strips, and Action Buttons */}

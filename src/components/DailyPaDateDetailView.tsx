@@ -428,7 +428,7 @@ export const DailyPaDateDetailView: React.FC = () => {
             className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative flex flex-col h-full z-10 w-72 bg-white shadow-2xl">
+          <div className="relative flex flex-col h-full z-10 w-72 max-w-[85vw] bg-white shadow-2xl">
             <Sidebar
               user={currentUser}
               activeMenu="daily-pa-report"
@@ -436,6 +436,7 @@ export const DailyPaDateDetailView: React.FC = () => {
                 setIsMobileSidebarOpen(false);
                 handleSelectMenu(menu);
               }}
+              onCloseMobile={() => setIsMobileSidebarOpen(false)}
               onLogout={handleLogout}
             />
           </div>
@@ -445,35 +446,35 @@ export const DailyPaDateDetailView: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Top Navbar */}
-        <header className="h-16 shrink-0 bg-white border-b border-slate-200/90 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 z-20 shadow-xs">
-          <div className="flex items-center gap-3">
+        <header className="h-16 shrink-0 bg-white border-b border-slate-200/90 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 z-20 shadow-xs">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+              className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 shrink-0"
               aria-label="Buka Menu"
             >
               <Menu size={18} />
             </button>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 min-w-0">
               <img
                 src="/coa-logo-bdp.png"
                 alt="Report Management Portal PT Batara Dharma Persada"
-                className="h-8 w-8 object-contain md:hidden"
+                className="h-8 w-8 object-contain md:hidden shrink-0"
               />
-              <div className="flex flex-col">
-                <span className="text-sm font-extrabold text-slate-800">
-                  Plant &amp; Maintenance • Daily PA Report • {navbarDateLabel}
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-[140px] xs:max-w-[200px] sm:max-w-md lg:max-w-xl">
+                  Daily PA • {navbarDateLabel}
                 </span>
-                <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
+                <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline truncate">
                   Report Management Portal &bull; PT Batara Dharma Persada
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {canSwitchSite ? (
               <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80">
                 {(["MuaraPahu", "Senyiur"] as const).map((siteKey) => (
@@ -481,20 +482,22 @@ export const DailyPaDateDetailView: React.FC = () => {
                     key={siteKey}
                     type="button"
                     onClick={() => setSelectedSite(siteKey)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                       selectedSite === siteKey
                         ? "bg-white text-sky-700 shadow-xs"
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    {siteKey === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}
+                    <span className="sm:hidden">{siteKey === "MuaraPahu" ? "MPH" : "SNY"}</span>
+                    <span className="hidden sm:inline">{siteKey === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}</span>
                   </button>
                 ))}
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/80">
                 <MapPin size={13} className="text-[#e95623]" />
-                <span>{siteDisplayLabel}</span>
+                <span className="sm:hidden">{siteDisplayLabel === "Muara Pahu" ? "MPH" : siteDisplayLabel === "Senyiur" ? "SNY" : siteDisplayLabel}</span>
+                <span className="hidden sm:inline">{siteDisplayLabel}</span>
               </div>
             )}
           </div>

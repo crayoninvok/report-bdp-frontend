@@ -27,6 +27,7 @@ import {
   TrendingUp,
   CalendarCheck,
   AlertTriangle,
+  X,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -34,6 +35,7 @@ interface SidebarProps {
   activeMenu: string;
   onSelectMenu: (menu: string) => void;
   onLogout: () => void;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -41,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeMenu,
   onSelectMenu,
   onLogout,
+  onCloseMobile,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -238,10 +241,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isCollapsed ? "w-20" : "w-72"
       }`}
     >
-      {/* Toggle button on the sidebar edge */}
+      {/* Toggle button on the sidebar edge (Desktop/Laptop only) */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3.5 top-7 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-[#e95623] transition-all"
+        className="hidden md:flex absolute -right-3.5 top-7 z-40 h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-[#e95623] transition-all cursor-pointer"
         title={isCollapsed ? "Buka Sidebar" : "Tutup Sidebar"}
         aria-label="Toggle Sidebar"
       >
@@ -249,7 +252,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </button>
 
       {/* Header & Logo */}
-      <div className="flex h-18 items-center px-4 border-b border-slate-100">
+      <div className="flex h-18 items-center justify-between px-4 border-b border-slate-100">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 border border-slate-200 shadow-2xs">
             <img
@@ -269,6 +272,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
         </div>
+
+        {/* Mobile Close Button */}
+        {onCloseMobile && (
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            aria-label="Tutup Menu Sidebar"
+            title="Tutup Menu"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* User Profile Info Card */}

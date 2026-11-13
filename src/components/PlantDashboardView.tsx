@@ -60,7 +60,7 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
   }, [loadDashboard]);
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 pb-8 animate-in fade-in duration-300">
       {/* Hero Banner & Global Controls */}
       <div className="bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-slate-700/60">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">

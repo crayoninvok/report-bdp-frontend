@@ -789,12 +789,12 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       </div>
 
       {/* Map Canvas Container */}
-      <div className="relative w-full h-155 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+      <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[620px] rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
         {/* Map DOM Container */}
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
         {/* Map Legend Overlay at Bottom Left */}
-        <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white p-3 rounded-2xl shadow-lg border border-slate-800 text-[11px] space-y-1.5 max-w-xs pointer-events-none">
+        <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border border-slate-800 text-[10px] sm:text-[11px] space-y-1 sm:space-y-1.5 max-w-[calc(100vw-2.5rem)] sm:max-w-xs pointer-events-none">
           <span className="font-extrabold block text-slate-300 uppercase tracking-wider text-[10px]">
             Status Armada Real-time
           </span>

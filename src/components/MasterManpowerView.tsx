@@ -195,7 +195,7 @@ export const MasterManpowerView: React.FC<MasterManpowerViewProps> = ({ user }) 
   }, [stats]);
 
   return (
-    <div className="space-y-6 pb-16 animate-in fade-in duration-200">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 pb-16 animate-in fade-in duration-200">
       {/* ============================================================== */}
       {/* 1. TOP HEADER & GOOGLE SPREADSHEET SYNC BAR */}
       {/* ============================================================== */}

@@ -243,10 +243,10 @@ export default function Home() {
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
           <div
-            className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative flex flex-col h-full z-10 w-72 bg-white shadow-2xl">
+          <div className="relative flex flex-col h-full z-10 w-72 max-w-[85vw] bg-white shadow-2xl">
             <Sidebar
               user={currentUser}
               activeMenu={activeMenu}
@@ -255,6 +255,7 @@ export default function Home() {
                 setIsMobileSidebarOpen(false);
               }}
               onLogout={handleLogout}
+              onCloseMobile={() => setIsMobileSidebarOpen(false)}
             />
           </div>
         </div>
@@ -263,26 +264,26 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Top Navbar */}
-        <header className="h-16 shrink-0 bg-white border-b border-slate-200/90 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 z-20 shadow-xs">
-          <div className="flex items-center gap-3">
+        <header className="h-16 shrink-0 bg-white border-b border-slate-200/90 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 z-20 shadow-xs">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+              className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
               aria-label="Buka Menu"
             >
               <Menu size={18} />
             </button>
 
             {/* Title with Logo */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
               <img
                 src="/coa-logo-bdp.png"
                 alt="Report Management Portal PT Batara Dharma Persada"
-                className="h-8 w-8 object-contain md:hidden"
+                className="h-7 w-7 sm:h-8 sm:w-8 object-contain md:hidden shrink-0"
               />
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold text-slate-800">
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-xl">
                     {activeMenu === "dashboard-overall"
                       ? "Cost Analytics • Dashboard Cost Overall"
                       : activeMenu === "input-cost"
@@ -338,12 +339,12 @@ export default function Home() {
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeMenu === "coal-fuel-gl" ? "bg-batara-orange-50 text-[#e95623] border border-batara-orange-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                    <span className={`hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${activeMenu === "coal-fuel-gl" ? "bg-batara-orange-50 text-[#e95623] border border-batara-orange-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
                       {activeMenu === "coal-fuel-gl" ? "Data GL" : "Maintenance"}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
+                <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline truncate">
                   Report Management Portal &bull; PT Batara Dharma Persada
                 </span>
               </div>
@@ -351,16 +352,23 @@ export default function Home() {
           </div>
 
           {/* Right Header items */}
-          <div className="flex items-center gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Site indicator badge in header */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/80">
-              <MapPin size={13} className="text-[#e95623]" />
-              <span>
+            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/80">
+              <MapPin size={13} className="text-[#e95623] shrink-0" />
+              <span className="hidden xs:inline">
                 {currentUser.jobSite === "MuaraPahu"
                   ? "Muara Pahu"
                   : currentUser.jobSite === "Senyiur"
                   ? "Senyiur"
                   : "Head Office"}
+              </span>
+              <span className="xs:hidden font-mono text-[10px] font-bold">
+                {currentUser.jobSite === "MuaraPahu"
+                  ? "MPH"
+                  : currentUser.jobSite === "Senyiur"
+                  ? "SNY"
+                  : "HO"}
               </span>
             </div>
 
@@ -368,7 +376,7 @@ export default function Home() {
             <div className="relative" ref={notifRef}>
               <button
                 onClick={handleToggleNotif}
-                className={`relative flex h-8 w-8 items-center justify-center rounded-lg border transition-all cursor-pointer ${
+                className={`relative flex h-8 w-8 items-center justify-center rounded-xl border transition-all cursor-pointer ${
                   isNotifOpen
                     ? "bg-orange-50 border-orange-300 text-[#e95623]"
                     : "border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -384,7 +392,7 @@ export default function Home() {
 
               {/* Notification Popover Dropdown */}
               {isNotifOpen && (
-                <div className="absolute right-0 top-10 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-[-45px] xs:right-[-20px] sm:right-0 top-10 w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                   {/* Popover Header */}
                   <div className="p-3.5 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
                     <div className="flex items-center gap-2">

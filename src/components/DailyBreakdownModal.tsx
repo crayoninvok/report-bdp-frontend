@@ -933,8 +933,8 @@ export const DailyBreakdownModal: React.FC<DailyBreakdownModalProps> = ({
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Status Breakdown
                 </label>
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 font-extrabold cursor-pointer">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <label className="flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:py-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 font-extrabold cursor-pointer">
                     <input
                       type="radio"
                       name="breakdown-status"
@@ -945,7 +945,7 @@ export const DailyBreakdownModal: React.FC<DailyBreakdownModalProps> = ({
                     />
                     <span>Open (Dalam Penanganan / Belum Selesai)</span>
                   </label>
-                  <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 font-extrabold cursor-pointer">
+                  <label className="flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 font-extrabold cursor-pointer">
                     <input
                       type="radio"
                       name="breakdown-status"

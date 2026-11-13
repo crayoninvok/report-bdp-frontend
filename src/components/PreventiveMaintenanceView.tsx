@@ -680,7 +680,7 @@ export const PreventiveMaintenanceView: React.FC<
   const kpiTheme = getAchievementTheme(achievementPct);
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 pb-10 animate-in fade-in duration-300">
       {/* Toast Notification */}
       {toast && (
         <div
