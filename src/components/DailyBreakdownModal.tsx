@@ -735,14 +735,14 @@ export const DailyBreakdownModal: React.FC<DailyBreakdownModalProps> = ({
               {/* Supervisor Dropdown */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Supervisor (SPV) <span className="text-slate-400 font-normal">&bull; Database Manpower</span>
+                  Supervisor (SPV) <span className="text-slate-400 font-normal">&bull; Departemen Plant</span>
                 </label>
                 <select
                   value={supervisor}
                   onChange={(e) => setSupervisor(e.target.value)}
                   className="w-full h-9 px-3 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-400 cursor-pointer"
                 >
-                  <option value="">-- Pilih SPV dari Database Manpower --</option>
+                  <option value="">-- Pilih SPV Departemen Plant --</option>
                   {supervisorsList.map((s) => (
                     <option key={s.id} value={s.fullName}>
                       {s.fullName} ({s.jobPosition || "SPV"} - {s.branchName || "Site"})
