@@ -789,7 +789,7 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
       </div>
 
       {/* Map Canvas Container */}
-      <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[620px] rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+      <div className="relative w-full h-100 sm:h-125 lg:h-155 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
         {/* Map DOM Container */}
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
