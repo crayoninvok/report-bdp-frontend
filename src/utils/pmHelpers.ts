@@ -4,7 +4,8 @@ import { DaySchedule, MasterUnit, PeriodicInspectionItem, WeeklyScheduleData } f
 export const PM_SERVICE_TYPES = [
   "PS1 (12.000 KM)",
   "PS2 (24.000 KM)",
-  "PS3 (48.000 KM)",
+  "PS3 (36.000 KM)",
+  "PS4 (48.000 KM)",
   "P1 (250 HM)",
   "P2 (500 HM)",
   "P3 (1000 HM)",
@@ -146,8 +147,10 @@ export function computePmTargetsClient(
   let nextDueHm: number | null = null;
 
   if (currentKm != null && !isNaN(currentKm) && currentKm > 0) {
-    if (sUpper.includes("48.000") || sUpper.includes("48000") || sUpper.includes("PS3")) {
+    if (sUpper.includes("48.000") || sUpper.includes("48000") || sUpper.includes("PS4")) {
       nextDueKm = Math.round(currentKm + 48000);
+    } else if (sUpper.includes("36.000") || sUpper.includes("36000") || sUpper.includes("PS3")) {
+      nextDueKm = Math.round(currentKm + 36000);
     } else if (sUpper.includes("24.000") || sUpper.includes("24000") || sUpper.includes("PS2")) {
       nextDueKm = Math.round(currentKm + 24000);
     } else if (sUpper.includes("12.000") || sUpper.includes("12000") || sUpper.includes("PS1")) {

@@ -1836,6 +1836,10 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden"
                   >
                     <option value="PI Regular">PI Regular</option>
+                    <option value="PS1 (12.000 KM)">PS1 (12.000 KM)</option>
+                    <option value="PS2 (24.000 KM)">PS2 (24.000 KM)</option>
+                    <option value="PS3 (36.000 KM)">PS3 (36.000 KM)</option>
+                    <option value="PS4 (48.000 KM)">PS4 (48.000 KM)</option>
                     <option value="P1 (250 HM)">P1 (250 HM)</option>
                     <option value="P2 (500 HM)">P2 (500 HM)</option>
                     <option value="P3 (1000 HM)">P3 (1000 HM)</option>
@@ -1999,9 +2003,14 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden"
                 >
                   <option value="PI Regular">PI Regular</option>
+                  <option value="PS1 (12.000 KM)">PS1 (12.000 KM)</option>
+                  <option value="PS2 (24.000 KM)">PS2 (24.000 KM)</option>
+                  <option value="PS3 (36.000 KM)">PS3 (36.000 KM)</option>
+                  <option value="PS4 (48.000 KM)">PS4 (48.000 KM)</option>
                   <option value="P1 (250 HM)">P1 (250 HM)</option>
                   <option value="P2 (500 HM)">P2 (500 HM)</option>
                   <option value="P3 (1000 HM)">P3 (1000 HM)</option>
+                  <option value="P4 (2000 HM)">P4 (2000 HM)</option>
                 </select>
               </div>
 
@@ -2203,6 +2212,10 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden"
                   >
                     <option value="PI Regular">PI Regular</option>
+                    <option value="PS1 (12.000 KM)">PS1 (12.000 KM)</option>
+                    <option value="PS2 (24.000 KM)">PS2 (24.000 KM)</option>
+                    <option value="PS3 (36.000 KM)">PS3 (36.000 KM)</option>
+                    <option value="PS4 (48.000 KM)">PS4 (48.000 KM)</option>
                     <option value="P1 (250 HM)">P1 (250 HM)</option>
                     <option value="P2 (500 HM)">P2 (500 HM)</option>
                     <option value="P3 (1000 HM)">P3 (1000 HM)</option>

@@ -726,7 +726,7 @@ export const PreventiveMaintenanceView: React.FC<
               Penjadwalan servis berkala{" "}
               <strong className="text-white">Head, Dolly &amp; Vessel</strong>{" "}
               secara mandiri berbasis interval{" "}
-              <strong className="text-white">KM (PS1/PS2/PS3)</strong> &amp;{" "}
+              <strong className="text-white">KM (PS1/PS2/PS3/PS4)</strong> &amp;{" "}
               <strong className="text-white">HM (P1/P2/P3/P4)</strong>.
             </p>
           </div>

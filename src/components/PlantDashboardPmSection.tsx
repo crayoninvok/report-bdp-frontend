@@ -688,7 +688,7 @@ export const PlantDashboardPmSection: React.FC<PlantDashboardPmSectionProps> = (
         {/* Interval Breakdown Bar (7 cols) */}
         <PlantChartCard
           className="lg:col-span-7"
-          title="Sebaran Interval Periodic Service (PS1–PS3 KM & P1–P4 HM)"
+          title="Sebaran Interval Periodic Service (PS1–PS4 KM & P1–P4 HM)"
           subtitle="Komposisi workload jadwal servis berkala berdasarkan tier KM / HM dan status pengerjaan"
           badge="INTERVAL KM / HM"
           badgeTone="violet"
@@ -881,3 +881,4 @@ export const PlantDashboardPmSection: React.FC<PlantDashboardPmSectionProps> = (
     </section>
   );
 };
+
