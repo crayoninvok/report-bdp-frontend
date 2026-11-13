@@ -23,6 +23,7 @@ import { PlantDashboardView } from "../components/PlantDashboardView";
 import { PeriodicInspectionView } from "../components/PeriodicInspectionView";
 import { PreventiveMaintenanceView } from "../components/PreventiveMaintenanceView";
 import { DailyPaReportView } from "../components/DailyPaReportView";
+import { DailyBreakdownReportView } from "../components/DailyBreakdownReportView";
 import { TyreRimUsageView } from "../components/TyreRimUsageView";
 import { MasterUnitView } from "../components/MasterUnitView";
 import { DashboardCostOverallView } from "../components/DashboardCostOverallView";
@@ -321,7 +322,9 @@ export default function Home() {
                       : activeMenu === "preventive-maintenance"
                       ? "Plant & Maintenance • Periodic Service"
                       : activeMenu === "daily-pa-report"
-                      ? "Plant & Maintenance • Daily PA Report"
+                      ? "Plant & Maintenance • Daily PA Report"
+                      : activeMenu === "daily-breakdown-report"
+                      ? "Plant & Maintenance • Daily Breakdown Report"
                       : activeMenu === "tyre-rim-usage"
                       ? "Plant & Maintenance • Tyre & Rim Usage"
                       : activeMenu === "master-unit"
@@ -601,6 +604,8 @@ export default function Home() {
             />
           ) : activeMenu === "daily-pa-report" ? (
             <DailyPaReportView />
+          ) : activeMenu === "daily-breakdown-report" ? (
+            <DailyBreakdownReportView />
           ) : activeMenu === "tyre-rim-usage" ? (
             <TyreRimUsageView user={currentUser} />
           ) : activeMenu === "master-unit" ? (

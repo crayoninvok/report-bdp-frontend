@@ -26,6 +26,7 @@ import {
   Radio,
   TrendingUp,
   CalendarCheck,
+  AlertTriangle,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -136,6 +137,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "daily-pa-report",
           label: "Daily PA Report",
           icon: FileText,
+        },
+        {
+          id: "daily-breakdown-report",
+          label: "Daily Breakdown Report",
+          icon: AlertTriangle,
         },
         {
           id: "tyre-rim-usage",
