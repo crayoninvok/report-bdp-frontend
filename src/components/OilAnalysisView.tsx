@@ -501,7 +501,7 @@ export const OilAnalysisView: React.FC<OilAnalysisViewProps> = ({ user }) => {
                       {/* CONTAMINATION (Colspan 3) - Sky Blue */}
                       <th
                         colSpan={3}
-                        className="py-1.5 px-3 border-r border-slate-200 bg-sky-50 text-sky-900 border-b border-sky-200"
+                        className="py-1.5 px-3 border-r border-r-slate-200 bg-sky-50 text-sky-900 border-b border-b-sky-200"
                       >
                         CONTAMINATION
                       </th>
@@ -509,7 +509,7 @@ export const OilAnalysisView: React.FC<OilAnalysisViewProps> = ({ user }) => {
                       {/* WEAR METAL (Colspan 5) - Emerald Green */}
                       <th
                         colSpan={5}
-                        className="py-1.5 px-3 border-r border-slate-200 bg-emerald-50 text-emerald-900 border-b border-emerald-200"
+                        className="py-1.5 px-3 border-r border-r-slate-200 bg-emerald-50 text-emerald-900 border-b border-b-emerald-200"
                       >
                         WEAR METAL
                       </th>
@@ -517,7 +517,7 @@ export const OilAnalysisView: React.FC<OilAnalysisViewProps> = ({ user }) => {
                       {/* PHYSICAL TEST (Colspan 4) - Orange / Peach */}
                       <th
                         colSpan={4}
-                        className="py-1.5 px-3 border-r border-slate-200 bg-orange-50 text-orange-900 border-b border-orange-200"
+                        className="py-1.5 px-3 border-r border-r-slate-200 bg-orange-50 text-orange-900 border-b border-b-orange-200"
                       >
                         PHYSICAL TEST
                       </th>
