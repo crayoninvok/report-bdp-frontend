@@ -22,9 +22,12 @@ import {
   History,
   ShieldAlert,
   ChevronDown,
+  Printer,
+  FileDown,
 } from "lucide-react";
 import { HistoricalComponentModal } from "./HistoricalComponentModal";
 import { PlanReplacementModal, PlanReplacementItem } from "./PlanReplacementModal";
+import { PlanReplacementPdfModal } from "./PlanReplacementPdfModal";
 
 export interface HistoricalComponentItem {
   id: string;
@@ -190,6 +193,7 @@ export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = (
   const [isPlanModalOpen, setIsPlanModalOpen] = useState<boolean>(false);
   const [editingPlanItem, setEditingPlanItem] = useState<PlanReplacementItem | null>(null);
   const [activePlanMonthForAdd, setActivePlanMonthForAdd] = useState<string>("November 2026");
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
 
   // Data items state
   const [items, setItems] = useState<HistoricalComponentItem[]>([]);
@@ -572,16 +576,28 @@ export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = (
                 <span>Tambah Komponen</span>
               </button>
             ) : (
-              <button
-                onClick={() => {
-                  setEditingPlanItem(null);
-                  setIsPlanModalOpen(true);
-                }}
-                className="px-4 py-2 bg-[#e95623] hover:bg-[#d54918] active:scale-98 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Plus size={15} />
-                <span>Input Plan Replacement</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPdfModalOpen(true)}
+                  className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                  title="Export PDF / Cetak Laporan Plan Component Replacement"
+                >
+                  <Printer size={15} className="text-[#e95623]" />
+                  <span>Export PDF / Cetak</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingPlanItem(null);
+                    setIsPlanModalOpen(true);
+                  }}
+                  className="px-4 py-2 bg-[#e95623] hover:bg-[#d54918] active:scale-98 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus size={15} />
+                  <span>Input Plan Replacement</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -1010,6 +1026,15 @@ export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = (
         initialData={editingPlanItem}
         defaultSite={selectedSite === "MuaraPahu" ? "MUARA PAHU" : "SENYIUR"}
         defaultMonthYear={activePlanMonthForAdd}
+      />
+
+      {/* Modal Export PDF & Cetak Plan Component Replacement */}
+      <PlanReplacementPdfModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        planItems={planItems}
+        selectedSite={selectedSite}
+        selectedPeriod={planPeriodFilter}
       />
     </div>
   );
