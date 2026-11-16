@@ -52,6 +52,10 @@ export interface DailyPairedPoint {
   statusLabel: string;
   statusType: "both_up" | "both_down" | "divergent" | "flat";
   senyiurDeficit: number;
+  senyiurId?: string;
+  muaraPahuId?: string;
+  senyiurEntry?: RiverJournalEntry;
+  muaraPahuEntry?: RiverJournalEntry;
 }
 
 export interface SiteTrendPoint {

@@ -13,6 +13,7 @@ import {
 import { riverJournalService } from "../services/riverJournalService";
 import { InputRiverJournalModal } from "./InputRiverJournalModal";
 import { RiverJournalPdfExportModal } from "./RiverJournalPdfExportModal";
+import { EditRiverJournalModal } from "./EditRiverJournalModal";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -49,6 +50,10 @@ import {
   BarChart3,
   Layers,
   Info,
+  Pencil,
+  Check,
+  X,
+  Maximize2,
 } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -210,6 +215,86 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
   };
 
   // =========================================================================
+  // EDIT RIVER JOURNAL (INLINE & MODAL EDITING)
+  // =========================================================================
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [inlineMuaraPahu, setInlineMuaraPahu] = useState<string>("");
+  const [inlineSenyiur, setInlineSenyiur] = useState<string>("");
+  const [isSavingInline, setIsSavingInline] = useState<boolean>(false);
+
+  const [editModalItem, setEditModalItem] = useState<DailyPairedPoint | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+
+  const handleStartInlineEdit = (item: DailyPairedPoint) => {
+    setEditingDate(item.date);
+    setInlineMuaraPahu(String(item.muaraPahu));
+    setInlineSenyiur(String(item.senyiur));
+  };
+
+  const handleCancelInlineEdit = () => {
+    setEditingDate(null);
+    setInlineMuaraPahu("");
+    setInlineSenyiur("");
+  };
+
+  const handleSaveInlineEdit = async (item: DailyPairedPoint) => {
+    const mpVal = parseFloat(inlineMuaraPahu.replace(",", "."));
+    const snyVal = parseFloat(inlineSenyiur.replace(",", "."));
+
+    if (isNaN(mpVal) || mpVal <= 0) {
+      showError("Kedalaman Jetty Muara Pahu harus berupa angka positif!");
+      return;
+    }
+    if (isNaN(snyVal) || snyVal <= 0) {
+      showError("Kedalaman Dermaga Senyiur harus berupa angka positif!");
+      return;
+    }
+
+    setIsSavingInline(true);
+    try {
+      await riverJournalService.updatePaired({
+        date: item.date,
+        muaraPahuDepth: Number(mpVal.toFixed(2)),
+        senyiurDepth: Number(snyVal.toFixed(2)),
+        muaraPahuId: item.muaraPahuId,
+        senyiurId: item.senyiurId,
+        userInput: user.name || "Petugas Lapangan",
+      });
+      showSuccess(
+        `Berhasil memperbarui kedalaman sungai tanggal ${item.date} (MP: ${mpVal.toFixed(2)}m, SNY: ${snyVal.toFixed(2)}m)`,
+        "Perubahan Disimpan"
+      );
+      setEditingDate(null);
+      await loadData();
+    } catch (err: any) {
+      showError(err.message || "Gagal menyimpan perubahan kedalaman sungai.");
+    } finally {
+      setIsSavingInline(false);
+    }
+  };
+
+  const handleOpenEditModal = (item: DailyPairedPoint) => {
+    setEditModalItem(item);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveFromModal = async (payload: {
+    date: string;
+    muaraPahuDepth: number;
+    senyiurDepth: number;
+    muaraPahuId?: string;
+    senyiurId?: string;
+    userInput?: string;
+  }) => {
+    await riverJournalService.updatePaired(payload);
+    showSuccess(
+      `Berhasil memperbarui kedalaman sungai tanggal ${payload.date} (MP: ${payload.muaraPahuDepth.toFixed(2)}m, SNY: ${payload.senyiurDepth.toFixed(2)}m)`,
+      "Perubahan Disimpan"
+    );
+    await loadData();
+  };
+
+  // =========================================================================
   // HYDROLOGICAL CORRELATION ENGINE (SENYIUR VS MUARA PAHU)
   // =========================================================================
   const {
@@ -225,7 +310,15 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
     amplificationRatio,
   } = useMemo(() => {
     // 1. Group latest depth per date for Senyiur & Muara Pahu
-    const dateMap = new Map<string, { senyiur?: number; muaraPahu?: number }>();
+    const dateMap = new Map<
+      string,
+      {
+        senyiur?: number;
+        muaraPahu?: number;
+        senyiurEntry?: RiverJournalEntry;
+        muaraPahuEntry?: RiverJournalEntry;
+      }
+    >();
 
     [...entries]
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -233,8 +326,10 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
         const item = dateMap.get(e.date) || {};
         if (e.site === "Senyiur") {
           item.senyiur = e.waterDepth;
+          item.senyiurEntry = e;
         } else if (e.site === "MuaraPahu") {
           item.muaraPahu = e.waterDepth;
+          item.muaraPahuEntry = e;
         }
         dateMap.set(e.date, item);
       });
@@ -308,6 +403,10 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
         statusLabel,
         statusType,
         senyiurDeficit: Number((sny - 4.0).toFixed(2)),
+        senyiurId: val.senyiurEntry?.id,
+        muaraPahuId: val.muaraPahuEntry?.id,
+        senyiurEntry: val.senyiurEntry,
+        muaraPahuEntry: val.muaraPahuEntry,
       });
     }
 
@@ -1497,12 +1596,13 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                 <th className="py-3 px-3 w-36 text-right">&Delta; Senyiur</th>
                 <th className="py-3 px-4 min-w-50">Keselarasan Arah Fluktuasi</th>
                 <th className="py-3 px-3 w-40 text-right">Defisit Draft Senyiur</th>
+                <th className="py-3 px-3 w-32 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw size={24} className="animate-spin text-blue-600" />
                       <span className="text-xs font-semibold">Menghitung matriks korelasi sungai...</span>
@@ -1510,13 +1610,45 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                   </td>
                 </tr>
               ) : (
-                [...pairedData].reverse().map((item, idx) => {
-                  const isUp = item.statusType === "both_up";
-                  const isDown = item.statusType === "both_down";
+                [...pairedData].reverse().map((item, idx, reversedArr) => {
+                  const isEditing = editingDate === item.date;
+
+                  // Compute live preview when inline editing
+                  const prevItem = reversedArr[idx + 1];
+                  const liveMP = parseFloat(inlineMuaraPahu.replace(",", ".")) || 0;
+                  const liveSny = parseFloat(inlineSenyiur.replace(",", ".")) || 0;
+                  const liveDeltaMP = prevItem ? Number((liveMP - prevItem.muaraPahu).toFixed(2)) : item.deltaMuaraPahu;
+                  const liveDeltaSny = prevItem ? Number((liveSny - prevItem.senyiur).toFixed(2)) : item.deltaSenyiur;
+                  const liveDeficit = Number((liveSny - 4.0).toFixed(2));
+                  let liveStatusLabel = item.statusLabel;
+                  let liveStatusType: DailyPairedPoint["statusType"] = item.statusType;
+                  if (prevItem) {
+                    if (liveDeltaMP > 0 && liveDeltaSny > 0) {
+                      liveStatusLabel = "Keduanya Naik (Banjir Kiriman)";
+                      liveStatusType = "both_up";
+                    } else if (liveDeltaMP < 0 && liveDeltaSny < 0) {
+                      liveStatusLabel = "Keduanya Turun (Fase Surut)";
+                      liveStatusType = "both_down";
+                    } else if (liveDeltaMP === 0 || liveDeltaSny === 0) {
+                      liveStatusLabel = "Stabil / Respon Lambat";
+                      liveStatusType = "flat";
+                    } else {
+                      liveStatusLabel = liveDeltaMP > 0 ? "MP Naik, Senyiur Turun" : "MP Turun, Senyiur Naik";
+                      liveStatusType = "divergent";
+                    }
+                  }
+
+                  const isUp = isEditing ? liveStatusType === "both_up" : item.statusType === "both_up";
+                  const isDown = isEditing ? liveStatusType === "both_down" : item.statusType === "both_down";
+
                   return (
                     <tr
                       key={item.date}
-                      className="hover:bg-slate-50/80 transition-colors"
+                      className={
+                        isEditing
+                          ? "bg-amber-50/70 ring-2 ring-amber-400/60 ring-inset transition-colors"
+                          : "hover:bg-slate-50/80 transition-colors"
+                      }
                     >
                       <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-400">
                         {idx + 1}
@@ -1524,48 +1656,91 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                       <td className="py-2.5 px-3 font-semibold text-slate-900 whitespace-nowrap">
                         {item.date}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-extrabold text-emerald-800">
-                        {item.muaraPahu.toFixed(2)} m
-                      </td>
+                      {isEditing ? (
+                        <td className="py-2 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="20"
+                              value={inlineMuaraPahu}
+                              onChange={(e) => setInlineMuaraPahu(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSaveInlineEdit(item);
+                                if (e.key === "Escape") handleCancelInlineEdit();
+                              }}
+                              className="w-20 px-2 py-1 text-right font-mono font-black text-xs text-emerald-950 bg-white border-2 border-emerald-500 rounded-lg shadow-inner focus:outline-hidden focus:ring-2 focus:ring-emerald-400"
+                              autoFocus
+                            />
+                            <span className="text-[10px] font-bold text-slate-500">m</span>
+                          </div>
+                        </td>
+                      ) : (
+                        <td className="py-2.5 px-3 text-right font-mono font-extrabold text-emerald-800">
+                          {item.muaraPahu.toFixed(2)} m
+                        </td>
+                      )}
                       <td className="py-2.5 px-3 text-right font-mono text-xs">
                         <span
                           className={`inline-flex items-center gap-0.5 font-bold ${
-                            item.deltaMuaraPahu > 0
+                            (isEditing ? liveDeltaMP : item.deltaMuaraPahu) > 0
                               ? "text-emerald-600"
-                              : item.deltaMuaraPahu < 0
+                              : (isEditing ? liveDeltaMP : item.deltaMuaraPahu) < 0
                               ? "text-rose-600"
                               : "text-slate-400"
                           }`}
                         >
-                          {item.deltaMuaraPahu > 0 ? (
+                          {(isEditing ? liveDeltaMP : item.deltaMuaraPahu) > 0 ? (
                             <ArrowUpRight size={13} />
-                          ) : item.deltaMuaraPahu < 0 ? (
+                          ) : (isEditing ? liveDeltaMP : item.deltaMuaraPahu) < 0 ? (
                             <ArrowDownRight size={13} />
                           ) : null}
-                          {item.deltaMuaraPahu >= 0 ? "+" : ""}
-                          {item.deltaMuaraPahu.toFixed(2)}m
+                          {(isEditing ? liveDeltaMP : item.deltaMuaraPahu) >= 0 ? "+" : ""}
+                          {(isEditing ? liveDeltaMP : item.deltaMuaraPahu).toFixed(2)}m
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-extrabold text-amber-800">
-                        {item.senyiur.toFixed(2)} m
-                      </td>
+                      {isEditing ? (
+                        <td className="py-2 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="20"
+                              value={inlineSenyiur}
+                              onChange={(e) => setInlineSenyiur(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSaveInlineEdit(item);
+                                if (e.key === "Escape") handleCancelInlineEdit();
+                              }}
+                              className="w-20 px-2 py-1 text-right font-mono font-black text-xs text-amber-950 bg-white border-2 border-amber-500 rounded-lg shadow-inner focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                            />
+                            <span className="text-[10px] font-bold text-slate-500">m</span>
+                          </div>
+                        </td>
+                      ) : (
+                        <td className="py-2.5 px-3 text-right font-mono font-extrabold text-amber-800">
+                          {item.senyiur.toFixed(2)} m
+                        </td>
+                      )}
                       <td className="py-2.5 px-3 text-right font-mono text-xs">
                         <span
                           className={`inline-flex items-center gap-0.5 font-bold ${
-                            item.deltaSenyiur > 0
+                            (isEditing ? liveDeltaSny : item.deltaSenyiur) > 0
                               ? "text-emerald-600"
-                              : item.deltaSenyiur < 0
+                              : (isEditing ? liveDeltaSny : item.deltaSenyiur) < 0
                               ? "text-rose-600"
                               : "text-slate-400"
                           }`}
                         >
-                          {item.deltaSenyiur > 0 ? (
+                          {(isEditing ? liveDeltaSny : item.deltaSenyiur) > 0 ? (
                             <ArrowUpRight size={13} />
-                          ) : item.deltaSenyiur < 0 ? (
+                          ) : (isEditing ? liveDeltaSny : item.deltaSenyiur) < 0 ? (
                             <ArrowDownRight size={13} />
                           ) : null}
-                          {item.deltaSenyiur >= 0 ? "+" : ""}
-                          {item.deltaSenyiur.toFixed(2)}m
+                          {(isEditing ? liveDeltaSny : item.deltaSenyiur) >= 0 ? "+" : ""}
+                          {(isEditing ? liveDeltaSny : item.deltaSenyiur).toFixed(2)}m
                         </span>
                       </td>
                       <td className="py-2.5 px-4">
@@ -1575,7 +1750,7 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                               : isDown
                               ? "bg-blue-100 text-blue-800 border border-blue-200"
-                              : item.statusType === "flat"
+                              : (isEditing ? liveStatusType : item.statusType) === "flat"
                               ? "bg-slate-100 text-slate-700"
                               : "bg-amber-100 text-amber-800 border border-amber-200"
                           }`}
@@ -1587,11 +1762,69 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
                           ) : (
                             <Info size={11} />
                           )}
-                          <span>{item.statusLabel}</span>
+                          <span>{isEditing ? liveStatusLabel : item.statusLabel}</span>
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">
-                        {item.senyiurDeficit.toFixed(2)} m (Kurang)
+                        {(isEditing ? liveDeficit : item.senyiurDeficit).toFixed(2)} m (Kurang)
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        {isEditing ? (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveInlineEdit(item)}
+                              disabled={isSavingInline}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                              title="Simpan perubahan (Enter)"
+                            >
+                              {isSavingInline ? (
+                                <RefreshCw size={11} className="animate-spin" />
+                              ) : (
+                                <Check size={11} />
+                              )}
+                              <span>Simpan</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelInlineEdit}
+                              disabled={isSavingInline}
+                              className="inline-flex items-center justify-center h-6 w-6 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold transition-all cursor-pointer"
+                              title="Batal (Esc)"
+                            >
+                              <X size={11} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(item)}
+                              disabled={isSavingInline}
+                              className="inline-flex items-center justify-center h-6 w-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                              title="Buka form modal detail"
+                            >
+                              <Maximize2 size={11} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleStartInlineEdit(item)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-[#e95623] hover:border-orange-200 border border-slate-200 text-slate-700 text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+                              title="Edit cepat nilai kedalaman sungai"
+                            >
+                              <Pencil size={11} />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(item)}
+                              className="h-6 w-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+                              title="Buka form modal edit detail"
+                            >
+                              <Maximize2 size={11} />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1608,6 +1841,24 @@ export const RiverJournalView: React.FC<RiverJournalViewProps> = ({ user }) => {
           user={user}
           onClose={() => setIsInputModalOpen(false)}
           onSubmit={handleCreateEntry}
+        />
+      )}
+
+      {/* Edit River Journal Modal */}
+      {isEditModalOpen && editModalItem && (
+        <EditRiverJournalModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditModalItem(null);
+          }}
+          onSave={handleSaveFromModal}
+          initialData={editModalItem}
+          user={user}
+          previousDayData={(() => {
+            const idx = pairedData.findIndex((p) => p.date === editModalItem.date);
+            return idx > 0 ? pairedData[idx - 1] : null;
+          })()}
         />
       )}
 

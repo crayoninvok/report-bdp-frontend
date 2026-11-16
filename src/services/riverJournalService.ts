@@ -300,6 +300,159 @@ export const riverJournalService = {
   },
 
   /**
+   * Update single entry by id
+   */
+  async updateEntry(
+    id: string,
+    payload: Partial<CreateRiverJournalPayload>
+  ): Promise<RiverJournalEntry | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/river-journal/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const current = getLocalStoredEntries();
+          saveLocalStoredEntries(current.map((e) => (e.id === id ? json.data : e)));
+          return json.data;
+        }
+      }
+    } catch (e) {
+      console.warn("Backend update failed, updating locally:", e);
+    }
+
+    const current = getLocalStoredEntries();
+    const existing = current.find((e) => e.id === id);
+    if (!existing) return null;
+    const updated: RiverJournalEntry = {
+      ...existing,
+      ...payload,
+      waterDepth: payload.waterDepth !== undefined ? payload.waterDepth : existing.waterDepth,
+      updatedAt: new Date().toISOString(),
+    };
+    saveLocalStoredEntries(current.map((e) => (e.id === id ? updated : e)));
+    return updated;
+  },
+
+  /**
+   * Update or upsert paired depth measurements for a specific date (Muara Pahu & Senyiur)
+   */
+  async updatePaired(payload: {
+    date: string;
+    muaraPahuDepth?: number;
+    senyiurDepth?: number;
+    muaraPahuId?: string;
+    senyiurId?: string;
+    userInput?: string;
+  }): Promise<{ success: boolean; data?: RiverJournalEntry[] }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/river-journal/pair`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const current = getLocalStoredEntries();
+          const updatedIds = new Set(json.data.map((d: RiverJournalEntry) => d.id));
+          const updatedDates = new Set(json.data.map((d: RiverJournalEntry) => `${d.date}_${d.site}`));
+
+          const filtered = current.filter(
+            (c) => !updatedIds.has(c.id) && !updatedDates.has(`${c.date}_${c.site}`)
+          );
+          saveLocalStoredEntries([...json.data, ...filtered]);
+          return { success: true, data: json.data };
+        }
+      }
+    } catch (e) {
+      console.warn("Backend update paired failed, falling back to local update:", e);
+    }
+
+    // Fallback locally
+    const current = getLocalStoredEntries();
+    const updatedRecords: RiverJournalEntry[] = [];
+
+    if (payload.muaraPahuDepth !== undefined) {
+      const existingIdx = current.findIndex(
+        (c) => (payload.muaraPahuId && c.id === payload.muaraPahuId) || (c.site === "MuaraPahu" && c.date === payload.date)
+      );
+      const autoDesc = payload.muaraPahuDepth < 4.0 ? "Surut (Tugboat Tidak Bisa Masuk)" : "Air Sudah Aman";
+      const conclusion = payload.muaraPahuDepth < 4.0 ? "Kondisi air sungai masih surut, tugboat belum bisa masuk ke sungai." : "Operasional Lancar";
+      if (existingIdx !== -1) {
+        current[existingIdx] = {
+          ...current[existingIdx],
+          waterDepth: payload.muaraPahuDepth,
+          autoDescription: autoDesc,
+          conclusion,
+          userInput: payload.userInput || current[existingIdx].userInput,
+          updatedAt: new Date().toISOString(),
+        };
+        updatedRecords.push(current[existingIdx]);
+      } else {
+        const newRec: RiverJournalEntry = {
+          id: `local-mp-${Date.now()}`,
+          externalId: current.length + 1,
+          date: payload.date,
+          inputTime: "08:00",
+          location: "Jetty Muara Pahu",
+          site: "MuaraPahu",
+          waterDepth: payload.muaraPahuDepth,
+          minThreshold: 4.0,
+          autoDescription: autoDesc,
+          userInput: payload.userInput || "Petugas Lapangan",
+          conclusion,
+          createdAt: new Date().toISOString(),
+        };
+        current.push(newRec);
+        updatedRecords.push(newRec);
+      }
+    }
+
+    if (payload.senyiurDepth !== undefined) {
+      const existingIdx = current.findIndex(
+        (c) => (payload.senyiurId && c.id === payload.senyiurId) || (c.site === "Senyiur" && c.date === payload.date)
+      );
+      const autoDesc = payload.senyiurDepth < 4.0 ? "Surut (Tugboat Tidak Bisa Masuk)" : "Air Sudah Aman";
+      const conclusion = payload.senyiurDepth < 4.0 ? "Kondisi air sungai masih surut, tugboat belum bisa masuk ke sungai." : "Operasional Lancar";
+      if (existingIdx !== -1) {
+        current[existingIdx] = {
+          ...current[existingIdx],
+          waterDepth: payload.senyiurDepth,
+          autoDescription: autoDesc,
+          conclusion,
+          userInput: payload.userInput || current[existingIdx].userInput,
+          updatedAt: new Date().toISOString(),
+        };
+        updatedRecords.push(current[existingIdx]);
+      } else {
+        const newRec: RiverJournalEntry = {
+          id: `local-sny-${Date.now()}`,
+          externalId: current.length + 1,
+          date: payload.date,
+          inputTime: "08:00",
+          location: "Dermaga Senyiur KM 0",
+          site: "Senyiur",
+          waterDepth: payload.senyiurDepth,
+          minThreshold: 4.0,
+          autoDescription: autoDesc,
+          userInput: payload.userInput || "Petugas Lapangan",
+          conclusion,
+          createdAt: new Date().toISOString(),
+        };
+        current.push(newRec);
+        updatedRecords.push(newRec);
+      }
+    }
+
+    saveLocalStoredEntries([...current]);
+    return { success: true, data: updatedRecords };
+  },
+
+  /**
    * Delete entry
    */
   async deleteEntry(id: string): Promise<boolean> {
