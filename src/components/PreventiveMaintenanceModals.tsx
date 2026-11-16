@@ -660,7 +660,7 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
                   setForm((p) => ({ ...p, planHmServis: e.target.value }))
                 }
                 placeholder="e.g. 5250 HM atau 250 HM"
-                className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 placeholder:text-slate-400"
               />
             </div>
           </div>
