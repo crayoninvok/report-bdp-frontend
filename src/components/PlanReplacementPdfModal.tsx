@@ -325,7 +325,7 @@ export const PlanReplacementPdfModal: React.FC<PlanReplacementPdfModalProps> = (
           <div
             id="plan-replacement-printable-document"
             ref={printAreaRef}
-            className="bg-white text-black w-[1120px] min-h-[792px] p-8 sm:p-10 shadow-2xl print:shadow-none print:w-full print:p-0 font-sans leading-normal"
+            className="bg-white text-black w-280 min-h-198 p-8 sm:p-10 shadow-2xl print:shadow-none print:w-full print:p-0 font-sans leading-normal"
             style={{ fontFamily: "'Arial', 'Segoe UI', sans-serif" }}
           >
             {/* 1. Header matching user uploaded image */}
@@ -517,3 +517,4 @@ export const PlanReplacementPdfModal: React.FC<PlanReplacementPdfModalProps> = (
     </div>
   );
 };
+
