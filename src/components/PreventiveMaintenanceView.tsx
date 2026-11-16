@@ -434,9 +434,7 @@ export const PreventiveMaintenanceView: React.FC<
       prefillRadar?.recommendedServiceType || PM_SERVICE_TYPES[0];
     const targets = computePmTargetsClient(serviceType, km, hm);
     const autoPlanHm = prefillRadar?.targetHm
-      ? `Target ${prefillRadar.targetHm.toLocaleString("id-ID")} HM (${
-          prefillRadar.hmServiceLabel || "Live Volvo"
-        })`
+      ? `${prefillRadar.targetHm.toLocaleString("id-ID")} HM`
       : "";
 
     setUnitModalState({

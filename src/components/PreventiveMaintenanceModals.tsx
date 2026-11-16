@@ -37,7 +37,6 @@ import {
   PM_SHIFT_OPTIONS,
   PM_STATUS_OPTIONS,
   PS_CATEGORY_OPTIONS,
-  PS_HM_SERVIS_OPTIONS,
   PS_LEAD_TIME_OPTIONS,
   PS_START_TIME_OPTIONS,
   START_TIME_TOLERANCE_MINUTES,
@@ -230,24 +229,6 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
     [mechanics, selectedSite]
   );
 
-  const hmServisChoices = useMemo(() => {
-    const opts: string[] = [];
-    if (selectedRadar?.targetHm) {
-      opts.push(
-        `Target ${selectedRadar.targetHm.toLocaleString("id-ID")} HM (${
-          selectedRadar.hmServiceLabel || "Live Volvo"
-        })`
-      );
-    }
-    for (const preset of PS_HM_SERVIS_OPTIONS) {
-      if (!opts.includes(preset)) opts.push(preset);
-    }
-    if (form.planHmServis && !opts.includes(form.planHmServis)) {
-      opts.unshift(form.planHmServis);
-    }
-    return opts;
-  }, [selectedRadar, form.planHmServis]);
-
   const handleUnitChange = (unitCode: string) => {
     const unitObj = availableUnits.find((u) => u.unitCode === unitCode);
     const isHead = !unitObj || unitObj.category === "Prime Mover";
@@ -265,11 +246,12 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
       ? computePmTargetsClient(recService, liveKmVal, liveHmVal)
       : { nextDueKm: null, nextDueHm: null };
     const autoPlanHm =
-      isHead && r?.targetHm
-        ? `Target ${r.targetHm.toLocaleString("id-ID")} HM (${r.hmServiceLabel || "Live Volvo"})`
+      form.planHmServis ||
+      (isHead && r?.targetHm
+        ? `${r.targetHm.toLocaleString("id-ID")} HM`
         : isHead
-        ? r?.hmServiceLabel || form.planHmServis || PS_HM_SERVIS_OPTIONS[0]
-        : "";
+        ? "250 HM"
+        : "");
 
     setForm((prev) => ({
       ...prev,
@@ -651,23 +633,35 @@ export const PmUnitFormModal: React.FC<PmUnitFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                Plan HM Servis
-              </label>
-              <select
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-800">
+                  Plan HM Servis
+                </label>
+                {selectedRadar?.targetHm != null && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((p) => ({
+                        ...p,
+                        planHmServis: `${selectedRadar.targetHm!.toLocaleString("id-ID")} HM`,
+                      }))
+                    }
+                    className="text-[10px] font-bold text-[#e95623] hover:underline cursor-pointer"
+                    title="Gunakan Target HM dari Live Volvo"
+                  >
+                    Target: {selectedRadar.targetHm.toLocaleString("id-ID")} HM
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
                 value={form.planHmServis}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, planHmServis: e.target.value }))
                 }
-                className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-              >
-                <option value="">-- Pilih Target HM Servis --</option>
-                {hmServisChoices.map((hmOpt) => (
-                  <option key={hmOpt} value={hmOpt}>
-                    {hmOpt}
-                  </option>
-                ))}
-              </select>
+                placeholder="e.g. 5250 HM atau 250 HM"
+                className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 placeholder:font-normal placeholder:text-slate-400"
+              />
             </div>
           </div>
 
