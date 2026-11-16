@@ -27,6 +27,8 @@ import {
   TrendingUp,
   CalendarCheck,
   AlertTriangle,
+  History,
+  Droplets,
   X,
 } from "lucide-react";
 
@@ -145,6 +147,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "daily-breakdown-report",
           label: "Daily Breakdown Report",
           icon: AlertTriangle,
+        },
+        {
+          id: "historical-component",
+          label: "Historical Component",
+          icon: History,
+        },
+        {
+          id: "oil-analysis",
+          label: "Oil Analysis",
+          icon: Droplets,
         },
         {
           id: "tyre-rim-usage",

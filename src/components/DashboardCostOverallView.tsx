@@ -79,9 +79,9 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
 
-  // Period range filters (Jan - Okt for monthly, W41 - W42 for weekly)
+  // Period range filters (Jan - Nov for monthly, W41 - W45 for weekly)
   const [startPeriod, setStartPeriod] = useState<string>("Jan");
-  const [endPeriod, setEndPeriod] = useState<string>("Okt");
+  const [endPeriod, setEndPeriod] = useState<string>("Nov");
 
   // Detail Modal state
   const [activeModalItem, setActiveModalItem] = useState<CostCategoryEntity | null>(null);
@@ -134,7 +134,7 @@ export const DashboardCostOverallView: React.FC<DashboardCostOverallViewProps> =
     }
     return timeMode === "monthly"
       ? ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agst", "Sept", "Okt", "Nov"]
-      : ["W41", "W42", "W43", "W44"];
+      : ["W41", "W42", "W43", "W44", "W45"];
   }, [activeDataset, timeMode]);
 
   // Load data from backend
