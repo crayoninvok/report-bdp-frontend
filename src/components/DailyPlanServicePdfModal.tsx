@@ -370,24 +370,24 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-sans">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
                   Periodic Service – Daily Plan Service
                 </h1>
               </div>
             </div>
 
             {/* Subheader Company Info */}
-            <div className="text-xs leading-relaxed text-slate-800 mb-4 font-sans">
+            <div className="text-xs leading-relaxed text-slate-800 mb-4">
               <div className="font-black tracking-wide text-slate-900 uppercase">
                 PT BATARA DHARMA PERSADA
               </div>
-              <div className="font-extrabold text-slate-700 tracking-wide uppercase">
+              <div className="font-extrabold text-[#e95623] tracking-wide uppercase">
                 PLANT &amp; MAINTENANCE DEPARTMENT - {siteLabel}
               </div>
             </div>
 
             {/* Document Title Centered */}
-            <div className="text-center my-4 font-sans">
+            <div className="text-center my-4">
               <h2 className="text-base sm:text-lg font-black tracking-wider uppercase text-slate-900 underline underline-offset-4 decoration-2">
                 DAILY MAINTENANCE SERVICE
               </h2>
