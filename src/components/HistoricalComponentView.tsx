@@ -40,7 +40,7 @@ export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = (
       </div>
 
       {/* Placeholder Empty Content Area */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-xs flex flex-col items-center justify-center min-h-[380px] space-y-4">
+      <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-xs flex flex-col items-center justify-center min-h-95 space-y-4">
         <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#e95623] shadow-xs">
           <History size={32} />
         </div>
@@ -60,3 +60,4 @@ export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = (
     </div>
   );
 };
+
