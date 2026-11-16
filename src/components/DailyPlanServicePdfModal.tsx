@@ -348,9 +348,9 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
             style={{ width: "100%", maxWidth: "1122px", minHeight: "750px" }}
           >
             {/* Top Logo & Header */}
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex items-start gap-3.5 mb-3">
               {/* Batara Double Chevron Arrow Logo */}
-              <div className="shrink-0 flex items-center">
+              <div className="shrink-0 flex items-center pt-0.5">
                 <svg width="42" height="38" viewBox="0 0 42 38" fill="none">
                   <path
                     d="M3 35L17 19L3 3H10L24 19L10 35H3Z"
@@ -363,21 +363,25 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-serif">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-sans">
                   Periodic Service – Daily Plan Service
                 </h1>
               </div>
             </div>
 
             {/* Subheader Company Info */}
-            <div className="text-[11px] leading-tight font-semibold text-slate-800 mb-4">
-              <div>PT BATARA DHARMA PERSADA</div>
-              <div>PLANT &amp; MAINTENANCE DEPARTMENT - {siteLabel}</div>
+            <div className="text-xs leading-relaxed text-slate-800 mb-4 font-sans">
+              <div className="font-black tracking-wide text-slate-900 uppercase">
+                PT BATARA DHARMA PERSADA
+              </div>
+              <div className="font-extrabold text-slate-700 tracking-wide uppercase">
+                PLANT &amp; MAINTENANCE DEPARTMENT - {siteLabel}
+              </div>
             </div>
 
             {/* Document Title Centered */}
-            <div className="text-center my-4">
-              <h2 className="text-sm sm:text-base font-black tracking-wider uppercase underline underline-offset-4 decoration-1">
+            <div className="text-center my-4 font-sans">
+              <h2 className="text-base sm:text-lg font-black tracking-wider uppercase text-slate-900 underline underline-offset-4 decoration-2">
                 DAILY MAINTENANCE SERVICE
               </h2>
             </div>
@@ -566,3 +570,4 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
     </div>
   );
 };
+

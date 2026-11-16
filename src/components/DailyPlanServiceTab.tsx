@@ -356,18 +356,22 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
               </svg>
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-serif">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-sans">
                 Periodic Service – Daily Plan Service
               </h1>
-              <div className="text-xs font-semibold text-slate-600 leading-relaxed mt-0.5">
-                <div>PT BATARA DHARMA PERSADA</div>
-                <div>PLANT &amp; MAINTENANCE DEPARTMENT - {siteLabel}</div>
+              <div className="text-xs leading-relaxed mt-1 font-sans">
+                <div className="font-black tracking-wide text-slate-900 uppercase">
+                  PT BATARA DHARMA PERSADA
+                </div>
+                <div className="font-extrabold text-slate-700 tracking-wide uppercase">
+                  PLANT &amp; MAINTENANCE DEPARTMENT - {siteLabel}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="text-center mt-3 pt-3 border-t border-slate-100">
-            <h2 className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-900 underline underline-offset-4 decoration-1">
+          <div className="text-center mt-3 pt-3 border-t border-slate-100 font-sans">
+            <h2 className="text-base sm:text-lg font-black tracking-wider uppercase text-slate-900 underline underline-offset-4 decoration-2">
               DAILY MAINTENANCE SERVICE
             </h2>
           </div>
