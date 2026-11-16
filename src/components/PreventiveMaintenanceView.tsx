@@ -43,6 +43,7 @@ import {
 } from "./PeriodicInspectionPdfExportModal";
 import { PreventiveMaintenanceRadarTab } from "./PreventiveMaintenanceRadarTab";
 import { PeriodicServiceKpiSection } from "./PeriodicServiceKpiSection";
+import { DailyPlanServiceTab } from "./DailyPlanServiceTab";
 import {
   CompletionActualInput,
   PendingConfirmAction,
@@ -78,7 +79,7 @@ interface PreventiveMaintenanceViewProps {
   onNavigateToMasterUnit?: () => void;
 }
 
-type ActiveTabType = "weekly" | "detail" | "radar";
+type ActiveTabType = "weekly" | "daily-plan" | "detail" | "radar";
 
 /** Shifts a YYYY-MM-DD date string by N days safely in local calendar time. */
 function shiftDateString(dateStr: string, deltaDays: number): string {
@@ -853,6 +854,24 @@ export const PreventiveMaintenanceView: React.FC<
 
           <button
             type="button"
+            onClick={() => setActiveTab("daily-plan")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === "daily-plan"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <FileSpreadsheet size={15} className={activeTab === "daily-plan" ? "text-[#e95623]" : ""} />
+            <span>Daily Plan Service</span>
+            {(scheduleData?.summary.totalWeekScheduled || 0) > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-orange-100 text-[#e95623]">
+                {scheduleData?.summary.totalWeekScheduled}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab("detail")}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === "detail"
@@ -1377,6 +1396,24 @@ export const PreventiveMaintenanceView: React.FC<
             })}
           </div>
         </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* TAB: DAILY PLAN SERVICE                                             */}
+      {/* =================================================================== */}
+      {activeTab === "daily-plan" && (
+        <DailyPlanServiceTab
+          scheduleData={scheduleData}
+          selectedSite={selectedSite}
+          masterUnits={masterUnits}
+          anchorDate={anchorDate}
+          onAnchorDateChange={setAnchorDate}
+          onEditItem={openEditModal}
+          onAddItem={openAddModal}
+          onDeleteItem={(item) => setConfirmAction({ type: "delete", item })}
+          onRefresh={refreshAll}
+          isMutating={isMutating}
+        />
       )}
 
       {/* =================================================================== */}
