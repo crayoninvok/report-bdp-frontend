@@ -793,6 +793,67 @@ export const VolvoMap: React.FC<VolvoMapProps> = ({
         {/* Map DOM Container */}
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
+        {/* Mini Compass Rose at Top Left */}
+        <div
+          onClick={handleFitAll}
+          className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 flex items-center gap-2 bg-slate-900/90 hover:bg-slate-900 backdrop-blur-md text-white p-1.5 sm:p-2 rounded-2xl shadow-xl border border-slate-700/80 select-none transition-all cursor-pointer group active:scale-95"
+          title="Kompas Orientasi Peta (Utara / True North) - Klik untuk reset zoom armada"
+        >
+          {/* Compass Rose Circular Dial */}
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
+              {/* Outer Ring */}
+              <circle cx="50" cy="50" r="46" fill="#0b1120" stroke="#334155" strokeWidth="2.5" />
+              <circle cx="50" cy="50" r="41" fill="none" stroke="#475569" strokeWidth="1" strokeDasharray="2,3" />
+
+              {/* Cardinal Ticks */}
+              <line x1="50" y1="6" x2="50" y2="12" stroke="#ef4444" strokeWidth="3" />
+              <line x1="94" y1="50" x2="88" y2="50" stroke="#94a3b8" strokeWidth="2" />
+              <line x1="50" y1="94" x2="50" y2="88" stroke="#94a3b8" strokeWidth="2" />
+              <line x1="6" y1="50" x2="12" y2="50" stroke="#94a3b8" strokeWidth="2" />
+
+              {/* Intercardinal Ticks */}
+              <line x1="21" y1="21" x2="25" y2="25" stroke="#64748b" strokeWidth="1.2" />
+              <line x1="79" y1="21" x2="75" y2="25" stroke="#64748b" strokeWidth="1.2" />
+              <line x1="79" y1="79" x2="75" y2="75" stroke="#64748b" strokeWidth="1.2" />
+              <line x1="21" y1="79" x2="25" y2="75" stroke="#64748b" strokeWidth="1.2" />
+
+              {/* North Needle (Red / Vibrant) */}
+              <polygon points="50,14 43,50 50,45" fill="#ef4444" />
+              <polygon points="50,14 57,50 50,45" fill="#dc2626" />
+
+              {/* South Needle (Silver / White) */}
+              <polygon points="50,86 43,50 50,55" fill="#e2e8f0" />
+              <polygon points="50,86 57,50 50,55" fill="#94a3b8" />
+
+              {/* East & West Mini Points */}
+              <polygon points="86,50 50,44 55,50" fill="#64748b" />
+              <polygon points="86,50 50,56 55,50" fill="#475569" />
+              <polygon points="14,50 50,44 45,50" fill="#64748b" />
+              <polygon points="14,50 50,56 45,50" fill="#475569" />
+
+              {/* Center Pivot Pin */}
+              <circle cx="50" cy="50" r="4.5" fill="#f8fafc" stroke="#0f172a" strokeWidth="1.5" />
+              <circle cx="50" cy="50" r="1.5" fill="#ef4444" />
+
+              {/* Cardinal Labels */}
+              <text x="50" y="27" textAnchor="middle" fontSize="11" fontWeight="900" fill="#ef4444" fontFamily="sans-serif">N</text>
+              <text x="50" y="80" textAnchor="middle" fontSize="8" fontWeight="700" fill="#94a3b8" fontFamily="sans-serif">S</text>
+              <text x="80" y="53" textAnchor="middle" fontSize="8" fontWeight="700" fill="#94a3b8" fontFamily="sans-serif">E</text>
+              <text x="20" y="53" textAnchor="middle" fontSize="8" fontWeight="700" fill="#94a3b8" fontFamily="sans-serif">W</text>
+            </svg>
+          </div>
+
+          {/* Orientation Label */}
+          <div className="pr-1 flex flex-col justify-center">
+            <div className="flex items-center gap-1 leading-none">
+              <span className="text-[10px] font-black tracking-wider text-rose-400">N</span>
+              <span className="text-[9px] font-bold text-slate-200">0° UTARA</span>
+            </div>
+            <span className="text-[8px] font-medium text-slate-400 leading-tight mt-0.5">True North</span>
+          </div>
+        </div>
+
         {/* Map Legend Overlay at Bottom Left */}
         <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border border-slate-800 text-[10px] sm:text-[11px] space-y-1 sm:space-y-1.5 max-w-[calc(100vw-2.5rem)] sm:max-w-xs pointer-events-none">
           <span className="font-extrabold block text-slate-300 uppercase tracking-wider text-[10px]">
