@@ -623,7 +623,10 @@ export default function Home() {
           ) : activeMenu === "historical-component" ? (
             <HistoricalComponentView user={currentUser} />
           ) : activeMenu === "oil-analysis" ? (
-            <OilAnalysisView user={currentUser} />
+            <OilAnalysisView
+              user={currentUser}
+              onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
           ) : activeMenu === "tyre-rim-usage" ? (
             <TyreRimUsageView user={currentUser} />
           ) : activeMenu === "master-unit" ? (

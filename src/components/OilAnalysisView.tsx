@@ -23,6 +23,11 @@ import {
   Layers,
   Wrench,
   Check,
+  Radio,
+  ShieldCheck,
+  FileText,
+  Database,
+  RefreshCw,
 } from "lucide-react";
 import { plantService } from "../services/plantService";
 import {
@@ -34,6 +39,7 @@ import { OilSamplingUploadModal } from "./OilSamplingUploadModal";
 
 interface OilAnalysisViewProps {
   user?: User;
+  onNavigateToMasterUnit?: () => void;
 }
 
 const STORAGE_KEY = "BDP_OIL_ANALYSIS_SAMPLES";
@@ -131,7 +137,27 @@ const DEFAULT_CRITICAL_METRICS = [
   { title: "Rear Final Drive RH Component Critical", count: 63, subtext: "7 hari = 9 unit/hari", compKey: "REAR FINAL DRIVE RH" },
 ];
 
-export const OilAnalysisView: React.FC<OilAnalysisViewProps> = ({ user }) => {
+export const OilAnalysisView: React.FC<OilAnalysisViewProps> = ({
+  user,
+  onNavigateToMasterUnit,
+}) => {
+  // Selected Site
+  const defaultSite = user?.jobSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
+  const [selectedSite, setSelectedSite] = useState<"MuaraPahu" | "Senyiur">(defaultSite);
+  const [onlineCount, setOnlineCount] = useState<number>(70);
+
+  // Fetch telemetry online count when site changes
+  useEffect(() => {
+    plantService
+      .getPmRadar(selectedSite)
+      .then((res) => {
+        if (res?.telemetryMeta?.onlineCount !== undefined) {
+          setOnlineCount(res.telemetryMeta.onlineCount);
+        }
+      })
+      .catch(() => {});
+  }, [selectedSite]);
+
   // State for all samples
   const [samples, setSamples] = useState<OilSampleItem[]>(INITIAL_OIL_SAMPLES);
 
@@ -261,6 +287,104 @@ export const OilAnalysisView: React.FC<OilAnalysisViewProps> = ({ user }) => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
+      {/* 0. Hero Section Header matching Periodic Service / Maintenance */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/bg-plantmaintenance.jpeg')" }}
+        />
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/88 to-slate-900/70" />
+
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-xs">
+                <ShieldCheck size={13} />
+                PLANT &amp; MAINTENANCE • OIL ANALYSIS (SOS)
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                <Radio size={12} className="animate-pulse text-emerald-300" />
+                Volvo Live: {onlineCount} Unit Online
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Oil Analysis &amp; Condition Monitoring
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Monitoring hasil uji laboratorium sampel oli &amp; pelumas alat berat (SOS), keausan wear metal, tingkat kontaminasi, dan rekomendasi perawatan berkala.
+            </p>
+          </div>
+
+          {/* Controls Strip matching image */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Site Switcher */}
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="inline-flex p-1 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15">
+                {(["MuaraPahu", "Senyiur"] as const).map((site) => (
+                  <button
+                    key={site}
+                    type="button"
+                    onClick={() => setSelectedSite(site)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      selectedSite === site
+                        ? "bg-[#e95623] text-white shadow-md"
+                        : "text-slate-200 hover:bg-white/10"
+                    }`}
+                  >
+                    {site === "MuaraPahu" ? "Site Muara Pahu" : "Site Senyiur"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Refresh button under site buttons as in image */}
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) setSamples(JSON.parse(saved));
+                  } catch {}
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Refresh Data Sampling"
+              >
+                <RefreshCw size={11} />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            {/* Upload Data Sampling */}
+            <button
+              type="button"
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all cursor-pointer"
+            >
+              <UploadCloud size={15} className="text-[#e95623]" />
+              <span>Upload Data Sampling</span>
+            </button>
+
+            {/* Target Metric Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white/12 text-white border border-white/20 select-none">
+              <Sparkles size={15} className="text-orange-300" />
+              <span>Target: 4 Unit/Hari</span>
+            </div>
+
+            {/* Master Unit link if available */}
+            {onNavigateToMasterUnit && (
+              <button
+                type="button"
+                onClick={onNavigateToMasterUnit}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 transition-all cursor-pointer"
+              >
+                <Database size={14} />
+                <span>Master Unit</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* 1. Top 8 Summary Metric Cards matching Image 1 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 overflow-x-auto pb-1">
         {DEFAULT_CRITICAL_METRICS.map((metric, idx) => (
