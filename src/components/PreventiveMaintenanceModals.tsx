@@ -1391,7 +1391,7 @@ export const PmTargetModal: React.FC<PmTargetModalProps> = ({
     if (specificDate && specificDayTarget != null) {
       setVal(String(specificDayTarget));
     } else {
-      setVal(String(defaultDailyTarget || 4));
+      setVal(String(defaultDailyTarget != null ? defaultDailyTarget : 4));
     }
   }, [isOpen, defaultDailyTarget, specificDate, specificDayTarget]);
 
@@ -1421,7 +1421,7 @@ export const PmTargetModal: React.FC<PmTargetModalProps> = ({
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            const parsed = Math.max(1, parseInt(val || "4", 10));
+            const parsed = Math.max(0, parseInt(val || "0", 10));
             if (specificDate) {
               await onSaveDayTarget(specificDate, parsed);
             } else {
@@ -1436,7 +1436,7 @@ export const PmTargetModal: React.FC<PmTargetModalProps> = ({
             </label>
             <input
               type="number"
-              min={1}
+              min={0}
               max={50}
               required
               value={val}
