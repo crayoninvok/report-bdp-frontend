@@ -8,6 +8,7 @@ import {
   DaySchedule,
   WeeklyScheduleData,
   PeriodicInspectionItem,
+  PlantPersonnelItem,
 } from "../services/plantService";
 import { useNotification } from "../context/NotificationContext";
 import * as XLSX from "xlsx";
@@ -47,6 +48,7 @@ import {
   Download,
   FileDown,
   UserCheck,
+  Users,
 } from "lucide-react";
 
 export const LEAD_INSPECTOR_OPTIONS = [
@@ -55,6 +57,25 @@ export const LEAD_INSPECTOR_OPTIONS = [
   "Angga Z",
   "Noffan A",
 ] as const;
+
+function splitPersonnelBySite(
+  list: PlantPersonnelItem[],
+  selectedSite: "MuaraPahu" | "Senyiur"
+) {
+  const siteBranch = selectedSite === "Senyiur" ? "senyiur" : "muara pahu";
+  const inSite: PlantPersonnelItem[] = [];
+  const otherSite: PlantPersonnelItem[] = [];
+
+  for (const person of list) {
+    const branch = (person.branchName || "").toLowerCase();
+    if (branch.includes(siteBranch) || siteBranch.includes(branch)) {
+      inSite.push(person);
+    } else {
+      otherSite.push(person);
+    }
+  }
+  return { inSite, otherSite };
+}
 
 const INDO_MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
@@ -253,16 +274,35 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
     }
   }, []);
 
+  // HR Personnel States (Supervisors & Mechanics)
+  const [hrSupervisors, setHrSupervisors] = useState<PlantPersonnelItem[]>([]);
+  const [hrMechanics, setHrMechanics] = useState<PlantPersonnelItem[]>([]);
+
+  const fetchPersonnel = useCallback(async () => {
+    try {
+      const res = await plantService.getPlantPersonnel(selectedSite);
+      setHrSupervisors(res.data?.supervisors || []);
+      setHrMechanics(res.data?.mechanics || []);
+    } catch (err) {
+      console.error("Failed to fetch HR Plant personnel:", err);
+    }
+  }, [selectedSite]);
+
   useEffect(() => {
     loadSchedule(currentDateStr, selectedSite);
     loadMasterUnits();
-  }, [loadSchedule, loadMasterUnits, currentDateStr, selectedSite]);
+    fetchPersonnel();
+  }, [loadSchedule, loadMasterUnits, fetchPersonnel, currentDateStr, selectedSite]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([loadSchedule(currentDateStr, selectedSite), loadMasterUnits()]);
+    await Promise.all([
+      loadSchedule(currentDateStr, selectedSite),
+      loadMasterUnits(),
+      fetchPersonnel(),
+    ]);
     setIsRefreshing(false);
-    showSuccess("Data jadwal & unit berhasil disinkronkan");
+    showSuccess("Data jadwal, unit & personel HR berhasil disinkronkan");
   };
 
   const handleSiteChange = (newSite: "MuaraPahu" | "Senyiur") => {
@@ -334,6 +374,47 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
     if (!selectedUnitObj) return null;
     return selectedUnitObj.trailers || null;
   }, [selectedUnitObj]);
+
+  // Group HR Personnel by Current Site vs Other Sites
+  const groupedPersonnel = useMemo(() => {
+    const mechSplit = splitPersonnelBySite(hrMechanics, selectedSite);
+    const spvSplit = splitPersonnelBySite(hrSupervisors, selectedSite);
+    return {
+      inSiteMechanics: mechSplit.inSite,
+      otherSiteMechanics: mechSplit.otherSite,
+      inSiteSupervisors: spvSplit.inSite,
+      otherSiteSupervisors: spvSplit.otherSite,
+      allSupervisors: hrSupervisors,
+      allMechanics: hrMechanics,
+      totalCount: hrMechanics.length + hrSupervisors.length,
+    };
+  }, [hrMechanics, hrSupervisors, selectedSite]);
+
+  // Dynamic Lead Inspector options from HR Personnel + legacy fallback
+  const leadInspectorOptions = useMemo(() => {
+    const list: string[] = [];
+    const seen = new Set<string>();
+
+    const addName = (n?: string | null) => {
+      const clean = (n || "").trim();
+      if (clean && !seen.has(clean.toLowerCase())) {
+        seen.add(clean.toLowerCase());
+        list.push(clean);
+      }
+    };
+
+    // 1. In-site supervisors
+    for (const s of groupedPersonnel.inSiteSupervisors) addName(s.fullName);
+    // 2. In-site mechanics
+    for (const m of groupedPersonnel.inSiteMechanics) addName(m.fullName);
+    // 3. Other supervisors & mechanics
+    for (const s of groupedPersonnel.otherSiteSupervisors) addName(s.fullName);
+    for (const m of groupedPersonnel.otherSiteMechanics) addName(m.fullName);
+    // 4. Default fallback options
+    for (const opt of LEAD_INSPECTOR_OPTIONS) addName(opt);
+
+    return list;
+  }, [groupedPersonnel]);
 
   // -------------------------------------------------------------
   // Add Unit Schedule Handler
@@ -1269,8 +1350,8 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                             }`}
                             title={`Lead Inspector: ${day.leadInspector || "Belum dipilih"}`}
                           >
-                            <option value="">-- Pilih Lead --</option>
-                            {LEAD_INSPECTOR_OPTIONS.map((name) => (
+                            <option value="">-- Pilih Lead (HR) --</option>
+                            {leadInspectorOptions.map((name) => (
                               <option key={name} value={name} className="text-slate-800 font-medium">
                                 {name}
                               </option>
@@ -1913,16 +1994,78 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
               {/* PIC Mekanik & Catatan */}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Nama Inspector / PIC Mekanik (Opsional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Budi / Workshop Team"
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Users size={13} className="text-[#e95623]" />
+                      <span>Nama Inspector / PIC Mekanik (Data HR)</span>
+                    </label>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      Data HR ({groupedPersonnel.totalCount})
+                    </span>
+                  </div>
+
+                  <select
                     value={inspectorName}
                     onChange={(e) => setInspectorName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden"
-                  />
+                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 bg-white"
+                  >
+                    <option value="">-- Pilih Inspector / Mekanik dari HR (Opsional) --</option>
+                    {inspectorName &&
+                      !hrMechanics.some((m) => m.fullName === inspectorName) &&
+                      !hrSupervisors.some((s) => s.fullName === inspectorName) && (
+                        <option value={inspectorName}>
+                          {inspectorName} (Tersimpan)
+                        </option>
+                      )}
+                    {groupedPersonnel.inSiteMechanics.length > 0 && (
+                      <optgroup
+                        label={`Mekanik • Site ${
+                          selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"
+                        } (${groupedPersonnel.inSiteMechanics.length})`}
+                      >
+                        {groupedPersonnel.inSiteMechanics.map((mech) => (
+                          <option key={mech.id} value={mech.fullName}>
+                            {mech.fullName} ({mech.jobPosition || "Mekanik"})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {groupedPersonnel.inSiteSupervisors.length > 0 && (
+                      <optgroup
+                        label={`SPV / Pengawas Plant • Site ${
+                          selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"
+                        } (${groupedPersonnel.inSiteSupervisors.length})`}
+                      >
+                        {groupedPersonnel.inSiteSupervisors.map((spv) => (
+                          <option key={spv.id} value={spv.fullName}>
+                            {spv.fullName} ({spv.jobPosition || "SPV"})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {groupedPersonnel.otherSiteMechanics.length > 0 && (
+                      <optgroup
+                        label={`Mekanik • Site Lainnya (${groupedPersonnel.otherSiteMechanics.length})`}
+                      >
+                        {groupedPersonnel.otherSiteMechanics.map((mech) => (
+                          <option key={mech.id} value={mech.fullName}>
+                            {mech.fullName} ({mech.jobPosition || "Mekanik"} • {mech.branchName || "-"})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {groupedPersonnel.otherSiteSupervisors.length > 0 && (
+                      <optgroup
+                        label={`SPV • Site Lainnya (${groupedPersonnel.otherSiteSupervisors.length})`}
+                      >
+                        {groupedPersonnel.otherSiteSupervisors.map((spv) => (
+                          <option key={spv.id} value={spv.fullName}>
+                            {spv.fullName} ({spv.jobPosition || "SPV"} • {spv.branchName || "-"})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
                 </div>
 
                 <div>
@@ -2204,16 +2347,22 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
 
               {targetModalMode === "specific" && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Lead Inspector
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Users size={13} className="text-[#e95623]" />
+                      <span>Lead Inspector (Data HR)</span>
+                    </label>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      Data HR ({groupedPersonnel.totalCount})
+                    </span>
+                  </div>
                   <select
                     value={targetLeadInspector}
                     onChange={(e) => setTargetLeadInspector(e.target.value)}
                     className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#e95623]"
                   >
                     <option value="">-- Belum Dipilih --</option>
-                    {LEAD_INSPECTOR_OPTIONS.map((name) => (
+                    {leadInspectorOptions.map((name) => (
                       <option key={name} value={name}>
                         {name}
                       </option>
@@ -2336,18 +2485,80 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Mekanik / Inspector
-                </label>
-                <input
-                  type="text"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Users size={13} className="text-[#e95623]" />
+                    <span>Mekanik / Inspector (Data HR)</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Data HR ({groupedPersonnel.totalCount})
+                  </span>
+                </div>
+
+                <select
                   value={itemToEdit.inspectorName || ""}
                   onChange={(e) =>
                     setItemToEdit({ ...itemToEdit, inspectorName: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden"
-                  placeholder="Nama mekanik atau workshop lead"
-                />
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 bg-white"
+                >
+                  <option value="">-- Pilih Inspector / Mekanik dari HR --</option>
+                  {itemToEdit.inspectorName &&
+                    !hrMechanics.some((m) => m.fullName === itemToEdit.inspectorName) &&
+                    !hrSupervisors.some((s) => s.fullName === itemToEdit.inspectorName) && (
+                      <option value={itemToEdit.inspectorName}>
+                        {itemToEdit.inspectorName} (Tersimpan)
+                      </option>
+                    )}
+                  {groupedPersonnel.inSiteMechanics.length > 0 && (
+                    <optgroup
+                      label={`Mekanik • Site ${
+                        selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"
+                      } (${groupedPersonnel.inSiteMechanics.length})`}
+                    >
+                      {groupedPersonnel.inSiteMechanics.map((mech) => (
+                        <option key={mech.id} value={mech.fullName}>
+                          {mech.fullName} ({mech.jobPosition || "Mekanik"})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {groupedPersonnel.inSiteSupervisors.length > 0 && (
+                    <optgroup
+                      label={`SPV / Pengawas Plant • Site ${
+                        selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"
+                      } (${groupedPersonnel.inSiteSupervisors.length})`}
+                    >
+                      {groupedPersonnel.inSiteSupervisors.map((spv) => (
+                        <option key={spv.id} value={spv.fullName}>
+                          {spv.fullName} ({spv.jobPosition || "SPV"})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {groupedPersonnel.otherSiteMechanics.length > 0 && (
+                    <optgroup
+                      label={`Mekanik • Site Lainnya (${groupedPersonnel.otherSiteMechanics.length})`}
+                    >
+                      {groupedPersonnel.otherSiteMechanics.map((mech) => (
+                        <option key={mech.id} value={mech.fullName}>
+                          {mech.fullName} ({mech.jobPosition || "Mekanik"} • {mech.branchName || "-"})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {groupedPersonnel.otherSiteSupervisors.length > 0 && (
+                    <optgroup
+                      label={`SPV • Site Lainnya (${groupedPersonnel.otherSiteSupervisors.length})`}
+                    >
+                      {groupedPersonnel.otherSiteSupervisors.map((spv) => (
+                        <option key={spv.id} value={spv.fullName}>
+                          {spv.fullName} ({spv.jobPosition || "SPV"} • {spv.branchName || "-"})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
               </div>
 
               <div>
