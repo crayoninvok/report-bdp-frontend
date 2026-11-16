@@ -71,16 +71,16 @@ export const KNOWN_AREAS: KnownArea[] = [
     id: "jetty-muara-pahu",
     name: "Area Jetty Muara Pahu",
     shortName: "Jetty Muara Pahu",
-    category: "Jetty & Loading Terminal (Radius 3 km)",
+    category: "Jetty & Loading Terminal (Radius 5 km)",
     emoji: "⚓",
     // 0°14'36.5"S = -0.2434722, 116°01'09.6"E = 116.0193333
     center: [-0.2434722, 116.0193333],
     zoom: 13,
     color: "#0d9488",
     fillColor: "#14b8a6",
-    radiusMeters: 3000,
+    radiusMeters: 5000,
     description:
-      "Geofence Area Jetty Muara Pahu radius 3 km dari titik pusat 0°14'36.5\"S 116°01'09.6\"E.",
+      "Geofence Area Jetty Muara Pahu radius 5 km (diperluas ke sisi Utara mencakup area antrian armada hauling) dari titik pusat 0°14'36.5\"S 116°01'09.6\"E.",
   },
   {
     id: "jetty-senyiur",
