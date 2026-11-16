@@ -617,9 +617,13 @@ export default function Home() {
               onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
             />
           ) : activeMenu === "daily-pa-report" ? (
-            <DailyPaReportView />
+            <DailyPaReportView
+              onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
           ) : activeMenu === "daily-breakdown-report" ? (
-            <DailyBreakdownReportView />
+            <DailyBreakdownReportView
+              onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
           ) : activeMenu === "historical-component" ? (
             <HistoricalComponentView
               user={currentUser}
@@ -631,7 +635,10 @@ export default function Home() {
               onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
             />
           ) : activeMenu === "tyre-rim-usage" ? (
-            <TyreRimUsageView user={currentUser} />
+            <TyreRimUsageView
+              user={currentUser}
+              onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
           ) : activeMenu === "master-unit" ? (
             <MasterUnitView
               user={currentUser}

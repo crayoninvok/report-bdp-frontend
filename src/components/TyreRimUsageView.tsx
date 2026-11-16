@@ -50,13 +50,21 @@ import {
   PieChart as PieChartIcon,
   Activity,
   LayoutGrid,
+  ShieldCheck,
+  Radio,
+  Sparkles,
+  Database,
 } from "lucide-react";
 
 interface TyreRimUsageViewProps {
   user: User;
+  onNavigateToMasterUnit?: () => void;
 }
 
-export const TyreRimUsageView: React.FC<TyreRimUsageViewProps> = ({ user }) => {
+export const TyreRimUsageView: React.FC<TyreRimUsageViewProps> = ({
+  user,
+  onNavigateToMasterUnit,
+}) => {
   // Filters
   const [selectedSite, setSelectedSite] = useState<"ALL" | "MPH" | "SNY">("ALL");
   const [selectedItemType, setSelectedItemType] = useState<"ALL" | "TYRE" | "RIM">("ALL");
@@ -64,6 +72,19 @@ export const TyreRimUsageView: React.FC<TyreRimUsageViewProps> = ({ user }) => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [onlineCount, setOnlineCount] = useState<number>(70);
+
+  // Fetch telemetry online count when site changes
+  useEffect(() => {
+    plantService
+      .getPmRadar(selectedSite === "SNY" ? "Senyiur" : "MuaraPahu")
+      .then((res) => {
+        if (res?.telemetryMeta?.onlineCount !== undefined) {
+          setOnlineCount(res.telemetryMeta.onlineCount);
+        }
+      })
+      .catch(() => {});
+  }, [selectedSite]);
 
   // Data states
   const [data, setData] = useState<TyreRimUsageResponse | null>(null);
@@ -413,85 +434,107 @@ export const TyreRimUsageView: React.FC<TyreRimUsageViewProps> = ({ user }) => {
 
   return (
     <div className="space-y-5 p-4 sm:p-6 max-w-7xl mx-auto">
-      {/* 1. Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-orange-50 text-[#e95623] border border-orange-200/80 flex items-center justify-center shadow-2xs">
-              <Disc size={20} className="animate-spin-slow" />
-            </div>
-            <div>
-              <h1 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-                Tyre &amp; Rim Usage Monitoring
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  GL Beban Tyre (05110203)
-                </span>
-              </h1>
-              <p className="text-xs text-slate-500 font-medium">
-                Analisis real-time konsumsi dan pemasangan ban &amp; velg armada operasional dari jurnal pengeluaran barang (Good Issue)
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* 0. Hero Section Header matching Periodic Service / Maintenance */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/bg-plantmaintenance.jpeg')" }}
+        />
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/88 to-slate-900/70" />
 
-        {/* Site Selector & Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Site Filter Pills */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
-            <button
-              onClick={() => setSelectedSite("ALL")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                selectedSite === "ALL"
-                  ? "bg-white text-slate-800 shadow-2xs"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              Semua Site
-            </button>
-            <button
-              onClick={() => setSelectedSite("MPH")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedSite === "MPH"
-                  ? "bg-blue-600 text-white shadow-2xs"
-                  : "text-slate-500 hover:text-blue-700"
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-300 inline-block" />
-              Muara Pahu
-            </button>
-            <button
-              onClick={() => setSelectedSite("SNY")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedSite === "SNY"
-                  ? "bg-emerald-600 text-white shadow-2xs"
-                  : "text-slate-500 hover:text-emerald-700"
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block" />
-              Senyiur
-            </button>
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-xs">
+                <ShieldCheck size={13} />
+                PLANT &amp; MAINTENANCE • TYRE &amp; RIM USAGE
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                <Radio size={12} className="animate-pulse text-emerald-300" />
+                Volvo Live: {onlineCount} Unit Online
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">
+                <Disc size={12} className="text-[#e95623]" />
+                GL Beban Tyre (05110203)
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Tyre &amp; Rim Usage Monitoring
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Analisis real-time konsumsi dan pemasangan ban &amp; velg armada operasional dari jurnal pengeluaran barang (Good Issue) unit hauling.
+            </p>
           </div>
 
-          {/* Refresh Button */}
-          <button
-            onClick={() => loadData(true)}
-            disabled={isRefreshing}
-            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer shadow-2xs hover:border-slate-300 disabled:opacity-50"
-            title="Refresh Data"
-          >
-            <RefreshCw size={15} className={isRefreshing ? "animate-spin text-[#e95623]" : ""} />
-          </button>
+          {/* Controls Strip matching image */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Site Switcher */}
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="inline-flex p-1 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15">
+                {[
+                  { key: "ALL", label: "Semua Site" },
+                  { key: "MPH", label: "Site Muara Pahu" },
+                  { key: "SNY", label: "Site Senyiur" },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setSelectedSite(s.key as any)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      selectedSite === s.key
+                        ? "bg-[#e95623] text-white shadow-md"
+                        : "text-slate-200 hover:bg-white/10"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
 
-          {/* Export CSV Button */}
-          <button
-            onClick={handleExportCsv}
-            disabled={transactions.length === 0}
-            className="px-3.5 py-2 rounded-xl bg-linear-to-r from-[#e95623] to-[#d44818] hover:from-[#d44818] hover:to-[#be3e12] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            title="Download data transaksi format CSV / Excel"
-          >
-            <Download size={14} />
-            <span>Ekspor CSV</span>
-          </button>
+              {/* Refresh button under site buttons as in image */}
+              <button
+                type="button"
+                onClick={() => loadData(true)}
+                disabled={isRefreshing}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                title="Refresh Data Tyre & Rim"
+              >
+                <RefreshCw size={11} className={isRefreshing ? "animate-spin text-[#e95623]" : ""} />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            {/* Export CSV Button */}
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={transactions.length === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all cursor-pointer disabled:opacity-50"
+              title="Download data transaksi format CSV"
+            >
+              <Download size={15} className="text-[#e95623]" />
+              <span>Ekspor CSV</span>
+            </button>
+
+            {/* Target Metric Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white/12 text-white border border-white/20 select-none">
+              <Sparkles size={15} className="text-orange-300" />
+              <span>Target: 4 Unit/Hari</span>
+            </div>
+
+            {/* Master Unit link if available */}
+            {onNavigateToMasterUnit && (
+              <button
+                type="button"
+                onClick={onNavigateToMasterUnit}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 transition-all cursor-pointer"
+              >
+                <Database size={14} />
+                <span>Master Unit</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -19,6 +19,10 @@ import {
   Wrench,
   Truck,
   Check,
+  ShieldCheck,
+  Radio,
+  Sparkles,
+  Database,
 } from "lucide-react";
 import {
   DailyBreakdownItem,
@@ -29,11 +33,30 @@ import {
 import { useNotification } from "../context/NotificationContext";
 import { DailyBreakdownModal, BREAKDOWN_CATEGORIES } from "./DailyBreakdownModal";
 
-export const DailyBreakdownReportView: React.FC = () => {
+interface DailyBreakdownReportViewProps {
+  onNavigateToMasterUnit?: () => void;
+}
+
+export const DailyBreakdownReportView: React.FC<DailyBreakdownReportViewProps> = ({
+  onNavigateToMasterUnit,
+}) => {
   const { showSuccess, showError, confirm } = useNotification();
 
   // Filter States
   const [selectedSite, setSelectedSite] = useState<"MuaraPahu" | "Senyiur">("MuaraPahu");
+  const [onlineCount, setOnlineCount] = useState<number>(70);
+
+  // Fetch telemetry online count when site changes
+  useEffect(() => {
+    plantService
+      .getPmRadar(selectedSite)
+      .then((res) => {
+        if (res?.telemetryMeta?.onlineCount !== undefined) {
+          setOnlineCount(res.telemetryMeta.onlineCount);
+        }
+      })
+      .catch(() => {});
+  }, [selectedSite]);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
@@ -187,52 +210,71 @@ export const DailyBreakdownReportView: React.FC = () => {
 
   return (
     <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 animate-in fade-in duration-300 pb-24">
-      {/* 1. Header Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-bl from-orange-100/50 via-rose-50/30 to-transparent rounded-full -mr-32 -mt-32 pointer-events-none" />
+      {/* 0. Hero Section Header matching Periodic Service / Maintenance */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/bg-plantmaintenance.jpeg')" }}
+        />
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/88 to-slate-900/70" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-1.5">
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div className="space-y-2.5 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-100 text-[#e95623] border border-orange-200 flex items-center gap-1.5">
-                <Wrench size={11} />
-                Plant &amp; Maintenance
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-xs">
+                <ShieldCheck size={13} />
+                PLANT &amp; MAINTENANCE • DAILY BREAKDOWN
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1.5">
-                <AlertTriangle size={11} />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                <Radio size={12} className="animate-pulse text-emerald-300" />
+                Volvo Live: {onlineCount} Unit Online
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-200 border border-rose-400/30">
+                <AlertTriangle size={12} className="text-rose-300" />
                 Breakdown &amp; Downtime Monitoring
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white">
-                Coal Hauling Fleet
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               Daily Breakdown Report
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-3xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Pencatatan dan pemantauan data harian breakdown unit armada, rincian aktivitas perbaikan, durasi downtime, jam kerja (HM/KM), serta status perbaikan operasional.
             </p>
           </div>
 
           {/* Action Strip: Site Switcher & Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Site Switcher */}
-            <div className="inline-flex p-1 rounded-2xl bg-slate-100 border border-slate-200/80">
-              {(["MuaraPahu", "Senyiur"] as const).map((site) => (
-                <button
-                  key={site}
-                  type="button"
-                  onClick={() => setSelectedSite(site)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    selectedSite === site
-                      ? "bg-white text-slate-900 shadow-xs"
-                      : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {site === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}
-                </button>
-              ))}
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="inline-flex p-1 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15">
+                {(["MuaraPahu", "Senyiur"] as const).map((site) => (
+                  <button
+                    key={site}
+                    type="button"
+                    onClick={() => setSelectedSite(site)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      selectedSite === site
+                        ? "bg-[#e95623] text-white shadow-md"
+                        : "text-slate-200 hover:bg-white/10"
+                    }`}
+                  >
+                    {site === "MuaraPahu" ? "Site Muara Pahu" : "Site Senyiur"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Refresh button under site buttons as in image */}
+              <button
+                type="button"
+                onClick={() => loadData(true)}
+                disabled={isLoading || isRefreshing}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                title="Refresh Data Breakdown"
+              >
+                <RefreshCw size={11} className={isRefreshing ? "animate-spin text-[#e95623]" : ""} />
+                <span>Refresh</span>
+              </button>
             </div>
 
             {/* Export Excel Button */}
@@ -240,23 +282,11 @@ export const DailyBreakdownReportView: React.FC = () => {
               type="button"
               onClick={handleExportExcel}
               disabled={breakdownList.length === 0}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all cursor-pointer disabled:opacity-50"
               title="Download format Spreadsheet Excel"
             >
-              <Download size={13} className="text-emerald-600" />
+              <Download size={15} className="text-emerald-600" />
               <span>Export Excel</span>
-            </button>
-
-            {/* Refresh Button */}
-            <button
-              type="button"
-              onClick={() => loadData(true)}
-              disabled={isLoading || isRefreshing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-              title="Refresh Data"
-            >
-              <RefreshCw size={13} className={isRefreshing ? "animate-spin text-[#e95623]" : ""} />
-              <span className="hidden sm:inline">Refresh</span>
             </button>
 
             {/* Input Breakdown Baru Button */}
@@ -266,11 +296,29 @@ export const DailyBreakdownReportView: React.FC = () => {
                 setItemToEdit(null);
                 setIsModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-[#e95623] hover:bg-[#d84818] text-white shadow-md transition-all cursor-pointer"
             >
               <Plus size={15} />
               <span>Input Breakdown Baru</span>
             </button>
+
+            {/* Target Metric Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white/12 text-white border border-white/20 select-none">
+              <Sparkles size={15} className="text-orange-300" />
+              <span>Target: 4 Unit/Hari</span>
+            </div>
+
+            {/* Master Unit link if available */}
+            {onNavigateToMasterUnit && (
+              <button
+                type="button"
+                onClick={onNavigateToMasterUnit}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 transition-all cursor-pointer"
+              >
+                <Database size={14} />
+                <span>Master Unit</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

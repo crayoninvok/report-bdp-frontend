@@ -7,6 +7,11 @@ import {
   CalendarCheck,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
+  Radio,
+  Sparkles,
+  Database,
+  RefreshCw,
 } from "lucide-react";
 import {
   DailyPaMonthlyDaySummary,
@@ -19,13 +24,33 @@ import {
   getTodayIsoDate,
 } from "../utils/dailyPaHelpers";
 
-export const DailyPaReportView: React.FC = () => {
+interface DailyPaReportViewProps {
+  onNavigateToMasterUnit?: () => void;
+}
+
+export const DailyPaReportView: React.FC<DailyPaReportViewProps> = ({
+  onNavigateToMasterUnit,
+}) => {
   const todayIso = useMemo(() => getTodayIsoDate(), []);
   const now = useMemo(() => new Date(), []);
 
   const [viewYear, setViewYear] = useState<number>(() => now.getFullYear());
   const [viewMonth, setViewMonth] = useState<number>(() => now.getMonth());
   const [siteFilter, setSiteFilter] = useState<"" | "MuaraPahu" | "Senyiur">("");
+  const [onlineCount, setOnlineCount] = useState<number>(70);
+
+  // Fetch telemetry online count when site changes
+  useEffect(() => {
+    plantService
+      .getPmRadar(siteFilter === "MuaraPahu" ? "MuaraPahu" : "Senyiur")
+      .then((res) => {
+        if (res?.telemetryMeta?.onlineCount !== undefined) {
+          setOnlineCount(res.telemetryMeta.onlineCount);
+        }
+      })
+      .catch(() => {});
+  }, [siteFilter]);
+
   const [summaryMap, setSummaryMap] = useState<
     Record<string, DailyPaMonthlyDaySummary>
   >({});
@@ -94,104 +119,176 @@ export const DailyPaReportView: React.FC = () => {
 
   return (
     <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-5">
-      {/* Header & Month Navigation */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-3.5">
-          <div className="h-11 w-11 rounded-2xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center shrink-0">
-            <CalendarCheck size={22} />
-          </div>
-          <div>
+      {/* 0. Hero Section Header matching Periodic Service / Maintenance */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/bg-plantmaintenance.jpeg')" }}
+        />
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/88 to-slate-900/70" />
+
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div className="space-y-2.5 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight">
-                Daily PA Report
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-xs">
+                <ShieldCheck size={13} />
+                PLANT &amp; MAINTENANCE • DAILY PA REPORT
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                <Radio size={12} className="animate-pulse text-emerald-300" />
+                Volvo Live: {onlineCount} Unit Online
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">
+                <CalendarCheck size={12} className="text-[#e95623]" />
                 {INDONESIAN_MONTHS[viewMonth]} {viewYear}
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Klik tanggal pada kalender untuk membuka halaman detail Daily PA Report pada tanggal tersebut.
+
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Daily Physical Availability (PA) Report
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Monitoring ketersediaan fisik armada hauling, breakdown downtime, serta performa kesiapan unit harian berbasis tanggal kalender operasional.
             </p>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={siteFilter}
-            onChange={(e) =>
-              setSiteFilter(e.target.value as "" | "MuaraPahu" | "Senyiur")
-            }
-            aria-label="Filter Job Site"
-            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-sky-300 cursor-pointer"
-          >
-            <option value="">Semua Site</option>
-            <option value="MuaraPahu">Muara Pahu</option>
-            <option value="Senyiur">Senyiur</option>
-          </select>
+          {/* Controls Strip matching image */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Site Switcher */}
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="inline-flex p-1 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15">
+                {[
+                  { key: "", label: "Semua Site" },
+                  { key: "MuaraPahu", label: "Site Muara Pahu" },
+                  { key: "Senyiur", label: "Site Senyiur" },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setSiteFilter(s.key as any)}
+                    className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      siteFilter === s.key
+                        ? "bg-[#e95623] text-white shadow-md"
+                        : "text-slate-200 hover:bg-white/10"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
 
-          <button
-            type="button"
-            onClick={handlePrevMonth}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
-            title="Bulan Sebelumnya"
-            aria-label="Bulan Sebelumnya"
-          >
-            <ChevronLeft size={16} />
-          </button>
+              {/* Refresh button under site buttons as in image */}
+              <button
+                type="button"
+                onClick={() => {
+                  plantService
+                    .getDailyPaMonthlySummary(
+                      viewYear,
+                      viewMonth + 1,
+                      siteFilter || undefined
+                    )
+                    .then((res) => {
+                      if (!res.success) return;
+                      const map: Record<string, DailyPaMonthlyDaySummary> = {};
+                      for (const d of res.data.days) {
+                        map[d.date] = d;
+                      }
+                      setSummaryMap(map);
+                    })
+                    .catch(() => {});
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Refresh Data Bulanan"
+              >
+                <RefreshCw size={11} />
+                <span>Refresh</span>
+              </button>
+            </div>
 
-          <select
-            value={viewMonth}
-            onChange={(e) => setViewMonth(Number(e.target.value))}
-            aria-label="Pilih Bulan"
-            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-sky-300 cursor-pointer"
-          >
-            {INDONESIAN_MONTHS.map((name, idx) => (
-              <option key={name} value={idx}>
-                {name}
-              </option>
-            ))}
-          </select>
+            {/* Month & Year Navigation Box */}
+            <div className="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="p-1.5 text-slate-200 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+                title="Bulan Sebelumnya"
+              >
+                <ChevronLeft size={16} />
+              </button>
 
-          <select
-            value={viewYear}
-            onChange={(e) => setViewYear(Number(e.target.value))}
-            aria-label="Pilih Tahun"
-            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-sky-300 cursor-pointer"
-          >
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+              <select
+                value={viewMonth}
+                onChange={(e) => setViewMonth(Number(e.target.value))}
+                aria-label="Pilih Bulan"
+                className="px-2 py-1 bg-white/10 text-white rounded-lg text-xs font-bold border border-white/15 focus:outline-hidden cursor-pointer"
+              >
+                {INDONESIAN_MONTHS.map((name, idx) => (
+                  <option key={name} value={idx} className="bg-slate-900 text-white">
+                    {name}
+                  </option>
+                ))}
+              </select>
 
-          <button
-            type="button"
-            onClick={handleNextMonth}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
-            title="Bulan Berikutnya"
-            aria-label="Bulan Berikutnya"
-          >
-            <ChevronRight size={16} />
-          </button>
+              <select
+                value={viewYear}
+                onChange={(e) => setViewYear(Number(e.target.value))}
+                aria-label="Pilih Tahun"
+                className="px-2 py-1 bg-white/10 text-white rounded-lg text-xs font-bold border border-white/15 focus:outline-hidden cursor-pointer"
+              >
+                {yearOptions.map((y) => (
+                  <option key={y} value={y} className="bg-slate-900 text-white">
+                    {y}
+                  </option>
+                ))}
+              </select>
 
-          {!isViewingCurrentMonth && (
-            <button
-              type="button"
-              onClick={handleResetToday}
-              className="h-9 px-3.5 rounded-xl border border-sky-200 bg-sky-50 text-xs font-bold text-sky-700 hover:bg-sky-100 transition-colors cursor-pointer"
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="p-1.5 text-slate-200 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+                title="Bulan Berikutnya"
+              >
+                <ChevronRight size={16} />
+              </button>
+
+              {!isViewingCurrentMonth && (
+                <button
+                  type="button"
+                  onClick={handleResetToday}
+                  className="px-2.5 py-1 rounded-lg bg-[#e95623] hover:bg-[#d84b1a] text-white text-[11px] font-extrabold transition-all cursor-pointer"
+                >
+                  Bulan Ini
+                </button>
+              )}
+            </div>
+
+            {/* Buka Hari Ini Button */}
+            <Link
+              href={`/daily-pa-report/${todayIso}`}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all cursor-pointer"
             >
-              Bulan Ini
-            </button>
-          )}
+              <span>Buka Hari Ini</span>
+              <ArrowUpRight size={14} className="text-[#e95623]" />
+            </Link>
 
-          <Link
-            href={`/daily-pa-report/${todayIso}`}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors"
-          >
-            <span>Buka Hari Ini</span>
-            <ArrowUpRight size={14} />
-          </Link>
+            {/* Target Metric Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white/12 text-white border border-white/20 select-none">
+              <Sparkles size={15} className="text-orange-300" />
+              <span>Target PA: 90%</span>
+            </div>
+
+            {/* Master Unit link if available */}
+            {onNavigateToMasterUnit && (
+              <button
+                type="button"
+                onClick={onNavigateToMasterUnit}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 transition-all cursor-pointer"
+              >
+                <Database size={14} />
+                <span>Master Unit</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
