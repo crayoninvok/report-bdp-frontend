@@ -606,7 +606,7 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
             {/* Column 1: Planner */}
             <div
               onClick={() => setIsApprovalModalOpen(true)}
-              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-43.75 transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
                 approvalData.planner.isApproved
                   ? "bg-white border-emerald-300 shadow-2xs"
                   : "bg-slate-50/70 border-slate-200 hover:border-slate-300"
@@ -651,7 +651,7 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
             {/* Column 2: Maintenance Superintendent */}
             <div
               onClick={() => setIsApprovalModalOpen(true)}
-              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-43.75 transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
                 approvalData.maintenanceSupt.isApproved
                   ? "bg-white border-emerald-300 shadow-2xs"
                   : "bg-slate-50/70 border-slate-200 hover:border-slate-300"
@@ -697,7 +697,7 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
             {/* Column 3: Logistic Superintendent */}
             <div
               onClick={() => setIsApprovalModalOpen(true)}
-              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-43.75 transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
                 approvalData.logisticSupt.isApproved
                   ? "bg-white border-emerald-300 shadow-2xs"
                   : "bg-slate-50/70 border-slate-200 hover:border-slate-300"
@@ -743,7 +743,7 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
             {/* Column 4: Production Superintendent */}
             <div
               onClick={() => setIsApprovalModalOpen(true)}
-              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-43.75 transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
                 approvalData.productionSupt.isApproved
                   ? "bg-white border-emerald-300 shadow-2xs"
                   : "bg-slate-50/70 border-slate-200 hover:border-slate-300"

@@ -520,7 +520,7 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
 
               <div className="grid grid-cols-4 gap-4 text-center text-xs font-sans">
                 {/* Column 1: Planner */}
-                <div className="flex flex-col justify-between min-h-[145px] p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
+                <div className="flex flex-col justify-between min-h-36.25 p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
                   <div className="font-bold text-slate-800">
                     {activeApproval.planner.roleTitle}
                   </div>
@@ -556,7 +556,7 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
                 </div>
 
                 {/* Column 2: Maintenance Superintendent */}
-                <div className="flex flex-col justify-between min-h-[145px] p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
+                <div className="flex flex-col justify-between min-h-36.25 p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
                   <div className="font-bold text-slate-800">
                     {activeApproval.maintenanceSupt.roleTitle}
                   </div>
@@ -592,7 +592,7 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
                 </div>
 
                 {/* Column 3: Logistic Superintendent */}
-                <div className="flex flex-col justify-between min-h-[145px] p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
+                <div className="flex flex-col justify-between min-h-36.25 p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
                   <div className="font-bold text-slate-800">
                     {activeApproval.logisticSupt.roleTitle}
                   </div>
@@ -628,7 +628,7 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
                 </div>
 
                 {/* Column 4: Production Superintendent */}
-                <div className="flex flex-col justify-between min-h-[145px] p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
+                <div className="flex flex-col justify-between min-h-36.25 p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
                   <div className="font-bold text-slate-800">
                     {activeApproval.productionSupt.roleTitle}
                   </div>
