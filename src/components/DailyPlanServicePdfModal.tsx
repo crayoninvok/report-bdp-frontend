@@ -394,10 +394,11 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
             </div>
 
             {/* Tables for each date in daysToDisplay */}
-            {daysToDisplay.map((day: DaySchedule) => {
-              const items = day.items;
-              return (
-                <div key={day.date} className="mb-6 last:mb-2 page-break-inside-avoid">
+            <div className="space-y-6">
+              {daysToDisplay.map((day: DaySchedule) => {
+                const items = day.items;
+                return (
+                  <div key={day.date} className="page-break-inside-avoid">
                   {/* Date Section Header */}
                   <div className="text-xs font-black text-slate-900 mb-1.5 flex items-center justify-between">
                     <span>Tanggal : {formatIndoFullDate(day.date)}</span>
@@ -510,6 +511,7 @@ export const DailyPlanServicePdfModal: React.FC<DailyPlanServicePdfModalProps> =
                 </div>
               );
             })}
+          </div>
 
             {/* Signature & Approval Block */}
             <div className="mt-8 pt-4 border-t border-slate-300 page-break-inside-avoid">
