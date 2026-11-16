@@ -24,7 +24,11 @@ import {
   ChevronDown,
   Printer,
   FileDown,
+  ShieldCheck,
+  Radio,
+  FileText,
 } from "lucide-react";
+import { plantService } from "../services/plantService";
 import { HistoricalComponentModal } from "./HistoricalComponentModal";
 import { PlanReplacementModal, PlanReplacementItem } from "./PlanReplacementModal";
 import { PlanReplacementPdfModal } from "./PlanReplacementPdfModal";
@@ -115,6 +119,7 @@ export function calculateComponentMetrics(item: HistoricalComponentItem) {
 
 interface HistoricalComponentViewProps {
   user?: User;
+  onNavigateToMasterUnit?: () => void;
 }
 
 const STORAGE_KEY = "BDP_HISTORICAL_COMPONENTS_DATA";
@@ -172,13 +177,29 @@ const DEFAULT_PLAN_ITEMS: PlanReplacementItem[] = [
   },
 ];
 
-export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = ({ user }) => {
+export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = ({
+  user,
+  onNavigateToMasterUnit,
+}) => {
   // Active Tab: "update" or "plan"
   const [activeTab, setActiveTab] = useState<"update" | "plan">("update");
 
   // Selected Site (default user's site or Senyiur)
   const defaultSite = user?.jobSite === "MuaraPahu" ? "MuaraPahu" : "Senyiur";
   const [selectedSite, setSelectedSite] = useState<string>(defaultSite);
+  const [onlineCount, setOnlineCount] = useState<number>(70);
+
+  // Fetch telemetry online count when site changes
+  useEffect(() => {
+    plantService
+      .getPmRadar(selectedSite === "ALL" ? "MuaraPahu" : selectedSite)
+      .then((res) => {
+        if (res?.telemetryMeta?.onlineCount !== undefined) {
+          setOnlineCount(res.telemetryMeta.onlineCount);
+        }
+      })
+      .catch(() => {});
+  }, [selectedSite]);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -391,59 +412,147 @@ export const HistoricalComponentView: React.FC<HistoricalComponentViewProps> = (
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
-      {/* Top Header Card */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
-        <div className="absolute -right-6 -bottom-8 opacity-5 pointer-events-none text-slate-900">
-          <History size={260} />
-        </div>
+      {/* 0. Hero Section Header matching Periodic Service & Oil Analysis */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/bg-plantmaintenance.jpeg')" }}
+        />
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-900/88 to-slate-900/70" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div className="space-y-2.5 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
-                <History size={13} className="text-[#e95623]" />
-                Plant & Maintenance
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-xs">
+                <ShieldCheck size={13} />
+                PLANT &amp; MAINTENANCE • HISTORICAL COMPONENT
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-[#e95623] border border-orange-200">
-                Component Lifecycle
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                <Radio size={12} className="animate-pulse text-emerald-300" />
+                Volvo Live: {onlineCount} Unit Online
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Historical Component
+
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Historical Component &amp; Plan Replacement
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Monitoring riwayat penggantian komponen, target lifetime, estimasi jatuh tempo penggantian, serta status kesiapan spare part alat berat.
             </p>
           </div>
 
-          {/* Metric Summary Cards matching uploaded design */}
-          <div className="flex items-center gap-3 overflow-x-auto pb-1 sm:pb-0">
-            {/* Card 1: Monitoring */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 min-w-36 sm:min-w-40 shadow-xs flex flex-col justify-between">
-              <span className="text-[11px] font-semibold text-slate-500">Component Monitoring</span>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-slate-800">{summaryCounts.monitoring}</span>
-                <span className="text-xs font-semibold text-slate-500">Unit</span>
+          {/* Controls Strip matching image */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Site Switcher */}
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="inline-flex p-1 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15">
+                {(["MuaraPahu", "Senyiur"] as const).map((site) => (
+                  <button
+                    key={site}
+                    type="button"
+                    onClick={() => setSelectedSite(site)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      selectedSite === site
+                        ? "bg-[#e95623] text-white shadow-md"
+                        : "text-slate-200 hover:bg-white/10"
+                    }`}
+                  >
+                    {site === "MuaraPahu" ? "Site Muara Pahu" : "Site Senyiur"}
+                  </button>
+                ))}
               </div>
+
+              {/* Refresh button under site buttons as in image */}
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) setItems(JSON.parse(saved));
+                    const savedPlan = localStorage.getItem(PLAN_STORAGE_KEY);
+                    if (savedPlan) setPlanItems(JSON.parse(savedPlan));
+                  } catch {}
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Refresh Data Komponen"
+              >
+                <RefreshCw size={11} />
+                <span>Refresh</span>
+              </button>
             </div>
 
-            {/* Card 2: Prepare */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 min-w-36 sm:min-w-40 shadow-xs flex flex-col justify-between">
-              <span className="text-[11px] font-semibold text-slate-500">Component Prepare</span>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-slate-800">{summaryCounts.prepare}</span>
-                <span className="text-xs font-semibold text-slate-500">Unit</span>
-              </div>
+            {/* Export PDF Presentasi */}
+            <button
+              type="button"
+              onClick={() => setIsPdfModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all cursor-pointer"
+            >
+              <FileDown size={15} className="text-[#e95623]" />
+              <span>Export PDF Presentasi</span>
+            </button>
+
+            {/* Target Metric Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white/12 text-white border border-white/20 select-none">
+              <Sparkles size={15} className="text-orange-300" />
+              <span>Target: 4 Unit/Hari</span>
             </div>
 
-            {/* Card 3: Critical */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 min-w-36 sm:min-w-40 shadow-xs flex flex-col justify-between">
-              <span className="text-[11px] font-semibold text-slate-500">Component Critical</span>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-rose-600">{summaryCounts.critical}</span>
-                <span className="text-xs font-semibold text-slate-500">Unit</span>
-              </div>
-            </div>
+            {/* Master Unit link if available */}
+            {onNavigateToMasterUnit && (
+              <button
+                type="button"
+                onClick={onNavigateToMasterUnit}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 transition-all cursor-pointer"
+              >
+                <Database size={14} />
+                <span>Master Unit</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 1. Metric Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Card 1: Monitoring */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">Component Monitoring (&ge; 3,000 Jam)</span>
+            <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+              <CheckCircle2 size={16} />
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-black text-slate-800">{summaryCounts.monitoring}</span>
+            <span className="text-xs font-semibold text-slate-500">Unit Komponen</span>
+          </div>
+        </div>
+
+        {/* Card 2: Prepare */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">Component Prepare (&lt; 3,000 Jam)</span>
+            <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+              <AlertTriangle size={16} />
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-black text-slate-800">{summaryCounts.prepare}</span>
+            <span className="text-xs font-semibold text-slate-500">Unit Komponen</span>
+          </div>
+        </div>
+
+        {/* Card 3: Critical */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-rose-500">Component Critical (&le; 0 Jam)</span>
+            <span className="p-1.5 rounded-lg bg-rose-50 text-rose-600">
+              <ShieldAlert size={16} />
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-black text-rose-600">{summaryCounts.critical}</span>
+            <span className="text-xs font-semibold text-rose-500">Unit Komponen</span>
           </div>
         </div>
       </div>

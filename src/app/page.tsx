@@ -621,7 +621,10 @@ export default function Home() {
           ) : activeMenu === "daily-breakdown-report" ? (
             <DailyBreakdownReportView />
           ) : activeMenu === "historical-component" ? (
-            <HistoricalComponentView user={currentUser} />
+            <HistoricalComponentView
+              user={currentUser}
+              onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
           ) : activeMenu === "oil-analysis" ? (
             <OilAnalysisView
               user={currentUser}
