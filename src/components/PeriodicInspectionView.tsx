@@ -290,13 +290,26 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
   };
 
   // -------------------------------------------------------------
-  // Filtered Prime Movers for Current Site & Active Status
+  // Filtered Prime Movers & Support Units for Current Site & Active Status
   // -------------------------------------------------------------
   const availableSitePrimeMovers = useMemo(() => {
     return primeMovers.filter(
       (pm) => pm.jobSite === selectedSite && pm.status === "Active"
     );
   }, [primeMovers, selectedSite]);
+
+  // Support units for Current Site & Active Status
+  const availableSiteSupportUnits = useMemo(() => {
+    return masterUnits.filter(
+      (u) =>
+        u.jobSite === selectedSite &&
+        u.status === "Active" &&
+        u.category !== "Prime Mover" &&
+        u.category !== "Vessel 1" &&
+        u.category !== "Dolly" &&
+        u.category !== "Vessel 2"
+    );
+  }, [masterUnits, selectedSite]);
 
   // Lookup for already scheduled units in current week
   const scheduledUnitCodesInWeek = useMemo(() => {
@@ -310,12 +323,17 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
     return set;
   }, [scheduleData]);
 
-  // Selected unit trailer buntut preview
-  const selectedUnitTrailers = useMemo(() => {
+  // Selected unit object (Prime Mover or Support)
+  const selectedUnitObj = useMemo(() => {
     if (!selectedUnitCode) return null;
-    const pm = primeMovers.find((u) => u.unitCode === selectedUnitCode);
-    return pm?.trailers || null;
-  }, [selectedUnitCode, primeMovers]);
+    return masterUnits.find((u) => u.unitCode === selectedUnitCode) || null;
+  }, [selectedUnitCode, masterUnits]);
+
+  // Selected unit trailer buntut preview (only if unit has trailers)
+  const selectedUnitTrailers = useMemo(() => {
+    if (!selectedUnitObj) return null;
+    return selectedUnitObj.trailers || null;
+  }, [selectedUnitObj]);
 
   // -------------------------------------------------------------
   // Add Unit Schedule Handler
@@ -1722,7 +1740,7 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                   <span>Jadwalkan Unit Periodic Inspection</span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Site: <strong>{selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}</strong> &bull; Pilih unit kepala (Prime Mover)
+                  Site: <strong>{selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}</strong> &bull; Pilih unit kepala (Prime Mover) atau Unit Support
                 </p>
               </div>
               <button
@@ -1748,38 +1766,58 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                 />
               </div>
 
-              {/* Unit Kepala Selector */}
+              {/* Unit Selector (Prime Mover & Support) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700">
-                    Pilih Unit Kepala (Prime Mover) di {selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}
+                    Pilih Unit (Prime Mover / Support) di {selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}
                   </label>
                   <span className="text-[10px] text-slate-400 font-semibold">
-                    {availableSitePrimeMovers.length} Unit Aktif
+                    {availableSitePrimeMovers.length + availableSiteSupportUnits.length} Unit Aktif
                   </span>
                 </div>
 
                 <select
                   value={selectedUnitCode}
                   onChange={(e) => setSelectedUnitCode(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 font-medium"
                   required
                 >
-                  <option value="">-- Pilih Unit Kepala (PM) --</option>
-                  {availableSitePrimeMovers.map((pm) => {
-                    const isAlreadyScheduled = scheduledUnitCodesInWeek.has(pm.unitCode);
-                    return (
-                      <option key={pm.unitCode} value={pm.unitCode}>
-                        {pm.unitCode} - Volvo FH16 #{pm.pairIndex} ({pm.jobSite})
-                        {isAlreadyScheduled ? " (Sudah Terjadwal Minggu Ini)" : ""}
-                      </option>
-                    );
-                  })}
+                  <option value="">-- Pilih Unit (Prime Mover / Support) --</option>
+
+                  {/* Prime Mover Group */}
+                  <optgroup label={`Prime Mover • Hauling (${availableSitePrimeMovers.length} Unit)`}>
+                    {availableSitePrimeMovers.map((pm) => {
+                      const isAlreadyScheduled = scheduledUnitCodesInWeek.has(pm.unitCode);
+                      return (
+                        <option key={pm.unitCode} value={pm.unitCode}>
+                          {pm.unitCode} - Volvo FH16 #{pm.pairIndex} ({pm.jobSite})
+                          {isAlreadyScheduled ? " (Sudah Terjadwal Minggu Ini)" : ""}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+
+                  {/* Support Unit Group */}
+                  {availableSiteSupportUnits.length > 0 && (
+                    <optgroup label={`Unit Support (${availableSiteSupportUnits.length} Unit)`}>
+                      {availableSiteSupportUnits.map((u) => {
+                        const isAlreadyScheduled = scheduledUnitCodesInWeek.has(u.unitCode);
+                        const desc = [u.brand, u.model].filter(Boolean).join(" ");
+                        return (
+                          <option key={u.unitCode} value={u.unitCode}>
+                            {u.unitCode} - {desc ? `${desc} ` : ""}[{u.category}] ({u.jobSite})
+                            {isAlreadyScheduled ? " (Sudah Terjadwal Minggu Ini)" : ""}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
-              {/* Buntut Rangkaian Preview Card */}
-              {selectedUnitCode && (
+              {/* Unit Info & Trailer Preview Card */}
+              {selectedUnitCode && (selectedUnitTrailers?.vessel1 || selectedUnitTrailers?.dolly || selectedUnitTrailers?.vessel2) ? (
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Rangkaian Trailer Terhubung (Otomatis Ikut Masuk):
@@ -1822,7 +1860,19 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
                     </div>
                   </div>
                 </div>
-              )}
+              ) : selectedUnitCode && selectedUnitObj && selectedUnitObj.category !== "Prime Mover" ? (
+                <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 flex items-center justify-between text-xs">
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-blue-950 block">Unit Support Terpilih</span>
+                    <span className="text-[11px] text-blue-800">
+                      <strong>{selectedUnitObj.category}</strong> &bull; {selectedUnitObj.brand || ""} {selectedUnitObj.model || ""}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200">
+                    Stand-Alone Support
+                  </span>
+                </div>
+              ) : null}
 
               {/* Tipe Servis & Shift */}
               <div className="grid grid-cols-2 gap-3">
@@ -1961,34 +2011,83 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
               </button>
             </div>
 
-            {/* Quick Grid of Available Prime Movers */}
-            <div className="max-h-60 overflow-y-auto p-2 border border-slate-200 rounded-2xl grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {availableSitePrimeMovers.map((pm) => {
-                const isSelected = bulkSelectedUnits.includes(pm.unitCode);
-                const isAlreadyScheduled = scheduledUnitCodesInWeek.has(pm.unitCode);
+            {/* Quick Grid of Available Units (Prime Mover & Support) */}
+            <div className="max-h-64 overflow-y-auto p-2.5 border border-slate-200 rounded-2xl space-y-3">
+              {/* Prime Movers Group */}
+              <div>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Prime Mover ({availableSitePrimeMovers.length} Unit)
+                </span>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {availableSitePrimeMovers.map((pm) => {
+                    const isSelected = bulkSelectedUnits.includes(pm.unitCode);
+                    const isAlreadyScheduled = scheduledUnitCodesInWeek.has(pm.unitCode);
 
-                return (
-                  <button
-                    key={pm.unitCode}
-                    type="button"
-                    onClick={() => handleToggleBulkUnit(pm.unitCode)}
-                    className={`p-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer relative ${
-                      isSelected
-                        ? "bg-[#e95623] text-white border-[#e95623] shadow-xs"
-                        : isAlreadyScheduled
-                        ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>{pm.unitCode}</span>
-                    {isAlreadyScheduled && !isSelected && (
-                      <span className="block text-[8px] font-semibold text-amber-600">
-                        Minggu Ini
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                    return (
+                      <button
+                        key={pm.unitCode}
+                        type="button"
+                        onClick={() => handleToggleBulkUnit(pm.unitCode)}
+                        className={`p-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer relative ${
+                          isSelected
+                            ? "bg-[#e95623] text-white border-[#e95623] shadow-xs"
+                            : isAlreadyScheduled
+                            ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <span>{pm.unitCode}</span>
+                        {isAlreadyScheduled && !isSelected && (
+                          <span className="block text-[8px] font-semibold text-amber-600">
+                            Minggu Ini
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Support Units Group */}
+              {availableSiteSupportUnits.length > 0 && (
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                    Unit Support ({availableSiteSupportUnits.length} Unit)
+                  </span>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {availableSiteSupportUnits.map((u) => {
+                      const isSelected = bulkSelectedUnits.includes(u.unitCode);
+                      const isAlreadyScheduled = scheduledUnitCodesInWeek.has(u.unitCode);
+
+                      return (
+                        <button
+                          key={u.unitCode}
+                          type="button"
+                          onClick={() => handleToggleBulkUnit(u.unitCode)}
+                          className={`p-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer relative ${
+                            isSelected
+                              ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                              : isAlreadyScheduled
+                              ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          }`}
+                          title={`${u.unitCode} - ${u.brand || ""} ${u.model || ""} (${u.category})`}
+                        >
+                          <span>{u.unitCode}</span>
+                          <span className={`block text-[8px] truncate ${isSelected ? "text-blue-100" : "text-slate-400"}`}>
+                            {u.category}
+                          </span>
+                          {isAlreadyScheduled && !isSelected && (
+                            <span className="block text-[8px] font-semibold text-amber-600">
+                              Minggu Ini
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Service & Shift Selection */}
