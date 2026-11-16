@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 import {
@@ -17,6 +17,16 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { PlanReplacementItem } from "./PlanReplacementModal";
+import {
+  ApprovedStamp,
+  formatIndoFullDate,
+} from "./DailyPlanApprovalModal";
+import {
+  PlanReplacementApprovalData,
+  PlanReplacementApprovalModal,
+  getDefaultPlanApprovalData,
+  getPlanApprovalStorageKey,
+} from "./PlanReplacementApprovalModal";
 
 interface PlanReplacementPdfModalProps {
   isOpen: boolean;
@@ -35,13 +45,42 @@ export const PlanReplacementPdfModal: React.FC<PlanReplacementPdfModalProps> = (
 }) => {
   const [siteFilter, setSiteFilter] = useState<string>(selectedSite || "ALL");
   const [periodFilter, setPeriodFilter] = useState<string>(selectedPeriod || "ALL");
-  const [plannerName, setPlannerName] = useState<string>("");
-  const [supervisorName, setSupervisorName] = useState<string>("");
-  const [superintendentName, setSuperintendentName] = useState<string>("");
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportProgress, setExportProgress] = useState<string>("");
 
+  // Approval Data State
+  const [approvalData, setApprovalData] = useState<PlanReplacementApprovalData>(() => {
+    try {
+      const key = getPlanApprovalStorageKey(selectedSite);
+      const saved = localStorage.getItem(key);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return getDefaultPlanApprovalData(selectedSite);
+  });
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
+
   const printAreaRef = useRef<HTMLDivElement>(null);
+
+  // Sync approval data when siteFilter changes
+  useEffect(() => {
+    try {
+      const key = getPlanApprovalStorageKey(siteFilter);
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setApprovalData(JSON.parse(saved));
+        return;
+      }
+    } catch {}
+    setApprovalData(getDefaultPlanApprovalData(siteFilter));
+  }, [siteFilter]);
+
+  const handleSaveApproval = (newData: PlanReplacementApprovalData) => {
+    setApprovalData(newData);
+    try {
+      const key = getPlanApprovalStorageKey(siteFilter);
+      localStorage.setItem(key, JSON.stringify(newData));
+    } catch {}
+  };
 
   // Available periods
   const availablePeriods = useMemo(() => {
@@ -279,45 +318,40 @@ export const PlanReplacementPdfModal: React.FC<PlanReplacementPdfModalProps> = (
           </div>
         </div>
 
-        {/* Configuration Bar for Signatory Names (Hidden on Print) */}
-        <div className="px-6 py-2.5 bg-slate-100 border-b border-slate-200 text-xs flex flex-wrap items-center gap-4 text-slate-700 shrink-0 print:hidden">
-          <span className="font-bold text-slate-800 flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-emerald-600" />
-            <span>Kustomisasi Nama Penandatangan:</span>
-          </span>
+        {/* Configuration Bar for Signatories & Cap Approved (Same as PS) */}
+        <div className="px-6 py-2.5 bg-slate-100/90 border-b border-slate-200 text-[11px] flex flex-wrap items-center justify-between gap-3 text-slate-700 shrink-0 print:hidden">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-bold flex items-center gap-1.5 text-slate-800">
+              <CheckCircle2 size={14} className="text-emerald-600" />
+              <span>Status Tanda Tangan &amp; Cap:</span>
+            </span>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-slate-500">Planner:</span>
-            <input
-              type="text"
-              placeholder="Nama Planner"
-              value={plannerName}
-              onChange={(e) => setPlannerName(e.target.value)}
-              className="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg w-36 focus:outline-hidden focus:ring-1 focus:ring-[#e95623]"
-            />
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                Cap Approved:{" "}
+                {[
+                  approvalData.planner.isApproved,
+                  approvalData.supervisor.isApproved,
+                  approvalData.superintendent.isApproved,
+                ].filter(Boolean).length}
+                /3
+              </span>
+
+              <span className="text-slate-600 font-bold">
+                • {approvalData.documentLocation},{" "}
+                {formatIndoFullDate(approvalData.documentDate)}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-slate-500">Supervisor:</span>
-            <input
-              type="text"
-              placeholder="Nama Supervisor"
-              value={supervisorName}
-              onChange={(e) => setSupervisorName(e.target.value)}
-              className="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg w-36 focus:outline-hidden focus:ring-1 focus:ring-[#e95623]"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-slate-500">Superintendent:</span>
-            <input
-              type="text"
-              placeholder="Nama Superintendent"
-              value={superintendentName}
-              onChange={(e) => setSuperintendentName(e.target.value)}
-              className="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg w-40 focus:outline-hidden focus:ring-1 focus:ring-[#e95623]"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsApprovalModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer"
+          >
+            <ShieldCheck size={13} />
+            <span>Edit Nama, Tanggal &amp; Cap Approved</span>
+          </button>
         </div>
 
         {/* Preview & Printable Area (A4 Landscape Formatted Document) */}
@@ -468,45 +502,117 @@ export const PlanReplacementPdfModal: React.FC<PlanReplacementPdfModalProps> = (
               </div>
             )}
 
-            {/* 3. Signature Approval Block matching user uploaded image */}
-            <div className="mt-14 pt-4 break-inside-avoid">
-              <div className="grid grid-cols-3 gap-6 text-[11px] text-black">
-                {/* Column 1: Dibuat Oleh */}
-                <div className="flex flex-col justify-between h-28">
-                  <div>
-                    <span className="font-bold">Dibuat Oleh :</span>
+            {/* 3. Signature & Approval Block (Styled exactly as in PS) */}
+            <div className="mt-8 pt-4 border-t border-slate-300 page-break-inside-avoid">
+              <div className="text-xs font-black text-slate-900 mb-3 font-sans">
+                {approvalData.documentLocation},{" "}
+                {formatIndoFullDate(approvalData.documentDate)}
+              </div>
+
+              <div className="grid grid-cols-3 gap-6 text-center text-xs font-sans">
+                {/* Column 1: Planner */}
+                <div className="flex flex-col justify-between min-h-36 p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
+                  <div className="font-bold text-slate-800">
+                    {approvalData.planner.roleTitle}
                   </div>
+
+                  <div className="my-1.5 flex items-center justify-center">
+                    {approvalData.planner.isApproved ? (
+                      <ApprovedStamp
+                        dateStr={approvalData.planner.date}
+                        isCompact
+                      />
+                    ) : (
+                      <div className="h-8 flex items-center justify-center text-[10px] text-slate-400 italic">
+                        (Tanda Tangan Manual)
+                      </div>
+                    )}
+                  </div>
+
                   <div>
-                    {plannerName ? (
-                      <div className="font-bold underline uppercase text-xs mb-1">{plannerName}</div>
-                    ) : null}
-                    <div className="font-semibold text-black">Maintenance Planner</div>
+                    <div className="font-black text-slate-900 underline underline-offset-2">
+                      {approvalData.planner.name || approvalData.planner.position}
+                    </div>
+                    <div className="text-[10px] text-slate-700 font-bold mt-0.5">
+                      {approvalData.planner.position}
+                    </div>
+                    <div className="text-[9px] text-slate-500">
+                      {approvalData.planner.department}
+                    </div>
+                    <div className="text-[8px] text-emerald-800 font-bold mt-0.5">
+                      Tgl: {formatIndoFullDate(approvalData.planner.date)}
+                    </div>
                   </div>
                 </div>
 
-                {/* Column 2: Diperiksa Oleh */}
-                <div className="flex flex-col justify-between h-28">
-                  <div>
-                    <span className="font-bold">Diperiksa Oleh :</span>
+                {/* Column 2: Supervisor */}
+                <div className="flex flex-col justify-between min-h-36 p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
+                  <div className="font-bold text-slate-800">
+                    {approvalData.supervisor.roleTitle}
                   </div>
+
+                  <div className="my-1.5 flex items-center justify-center">
+                    {approvalData.supervisor.isApproved ? (
+                      <ApprovedStamp
+                        dateStr={approvalData.supervisor.date}
+                        isCompact
+                      />
+                    ) : (
+                      <div className="h-8 flex items-center justify-center text-[10px] text-slate-400 italic">
+                        (Tanda Tangan Manual)
+                      </div>
+                    )}
+                  </div>
+
                   <div>
-                    {supervisorName ? (
-                      <div className="font-bold underline uppercase text-xs mb-1">{supervisorName}</div>
-                    ) : null}
-                    <div className="font-semibold text-black">Maintenance Supervisor</div>
+                    <div className="font-black text-slate-900 underline underline-offset-2">
+                      {approvalData.supervisor.name || approvalData.supervisor.position}
+                    </div>
+                    <div className="text-[10px] text-slate-700 font-bold mt-0.5">
+                      {approvalData.supervisor.position}
+                    </div>
+                    <div className="text-[9px] text-slate-500">
+                      {approvalData.supervisor.department}
+                    </div>
+                    <div className="text-[8px] text-emerald-800 font-bold mt-0.5">
+                      Tgl: {formatIndoFullDate(approvalData.supervisor.date)}
+                    </div>
                   </div>
                 </div>
 
-                {/* Column 3: Disetujui Oleh */}
-                <div className="flex flex-col justify-between h-28">
-                  <div>
-                    <span className="font-bold">Disetujui Oleh :</span>
+                {/* Column 3: Superintendent */}
+                <div className="flex flex-col justify-between min-h-36 p-2.5 rounded-xl bg-slate-50/50 border border-slate-200">
+                  <div className="font-bold text-slate-800">
+                    {approvalData.superintendent.roleTitle}
                   </div>
+
+                  <div className="my-1.5 flex items-center justify-center">
+                    {approvalData.superintendent.isApproved ? (
+                      <ApprovedStamp
+                        dateStr={approvalData.superintendent.date}
+                        isCompact
+                      />
+                    ) : (
+                      <div className="h-8 flex items-center justify-center text-[10px] text-slate-400 italic">
+                        (Tanda Tangan Manual)
+                      </div>
+                    )}
+                  </div>
+
                   <div>
-                    {superintendentName ? (
-                      <div className="font-bold underline uppercase text-xs mb-1">{superintendentName}</div>
-                    ) : null}
-                    <div className="font-semibold text-black">Maintenance Superintendent</div>
+                    <div className="font-black text-slate-900 underline underline-offset-2">
+                      {approvalData.superintendent.name ||
+                        approvalData.superintendent.position}
+                    </div>
+                    <div className="text-[10px] text-slate-700 font-bold mt-0.5">
+                      {approvalData.superintendent.position}
+                    </div>
+                    <div className="text-[9px] text-slate-500">
+                      {approvalData.superintendent.department}
+                    </div>
+                    <div className="text-[8px] text-emerald-800 font-bold mt-0.5">
+                      Tgl: {formatIndoFullDate(approvalData.superintendent.date)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -514,7 +620,15 @@ export const PlanReplacementPdfModal: React.FC<PlanReplacementPdfModalProps> = (
           </div>
         </div>
       </div>
+
+      {/* Interactive Approval Modal (Same as PS) */}
+      <PlanReplacementApprovalModal
+        isOpen={isApprovalModalOpen}
+        onClose={() => setIsApprovalModalOpen(false)}
+        initialData={approvalData}
+        onSave={handleSaveApproval}
+        selectedSite={siteFilter}
+      />
     </div>
   );
 };
-
