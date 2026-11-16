@@ -31,6 +31,14 @@ import {
   DailyPlanServicePdfModal,
   parseWorkOrderDetails,
 } from "./DailyPlanServicePdfModal";
+import {
+  DailyPlanApprovalData,
+  DailyPlanApprovalModal,
+  getDefaultApprovalData,
+  getApprovalStorageKey,
+  ApprovedStamp,
+  formatIndoFullDate,
+} from "./DailyPlanApprovalModal";
 
 interface DailyPlanServiceTabProps {
   scheduleData: WeeklyScheduleData | null;
@@ -43,22 +51,6 @@ interface DailyPlanServiceTabProps {
   onDeleteItem: (item: PeriodicInspectionItem) => void;
   onRefresh: () => Promise<void>;
   isMutating: boolean;
-}
-
-function formatIndoFullDate(dateStr: string): string {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length === 3) {
-    const y = parseInt(parts[0], 10);
-    const m = parseInt(parts[1], 10) - 1;
-    const d = parseInt(parts[2], 10);
-    const months = [
-      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ];
-    return `${d} ${months[m]} ${y}`;
-  }
-  return dateStr;
 }
 
 function formatDateDmy(dateStr: string): string {
@@ -98,6 +90,46 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
   const [editMr, setEditMr] = useState<string>("");
   const [editActivity, setEditActivity] = useState<string>("");
   const [isSavingQuickEdit, setIsSavingQuickEdit] = useState<boolean>(false);
+
+  // Approval & Signature state
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
+  const [approvalData, setApprovalData] = useState<DailyPlanApprovalData>(() =>
+    getDefaultApprovalData(selectedSite)
+  );
+
+  // Sync / Load approvals from localStorage when selectedSite or week range changes
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storageKey = getApprovalStorageKey(
+      selectedSite,
+      scheduleData?.weekRange.startDate
+    );
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setApprovalData(JSON.parse(saved));
+        return;
+      }
+    } catch {
+      // fallback
+    }
+    setApprovalData(getDefaultApprovalData(selectedSite));
+  }, [selectedSite, scheduleData?.weekRange.startDate]);
+
+  const handleSaveApproval = (newData: DailyPlanApprovalData) => {
+    setApprovalData(newData);
+    if (typeof window !== "undefined") {
+      const storageKey = getApprovalStorageKey(
+        selectedSite,
+        scheduleData?.weekRange.startDate
+      );
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(newData));
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const siteLabel = selectedSite === "MuaraPahu" ? "MUARA PAHU" : "SENYIUR";
   const siteProperCase = selectedSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur";
@@ -550,59 +582,206 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
 
         {/* Signature & Approval Block */}
         <div className="mt-8 pt-6 border-t border-slate-300 space-y-4">
-          <div className="text-xs font-black text-slate-900">
-            {todayFormatted}
+          {/* Header Location & Date + Action Edit Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs font-black text-slate-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200"></span>
+              <span>
+                {approvalData.documentLocation},{" "}
+                {formatIndoFullDate(approvalData.documentDate)}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsApprovalModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 shadow-2xs transition-all cursor-pointer hover:shadow-xs active:scale-98"
+            >
+              <CheckCircle2 size={14} className="text-emerald-600" />
+              <span>Edit Tanda Tangan &amp; Cap Approved</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center text-xs">
             {/* Column 1: Planner */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between h-32">
-              <div className="font-bold text-slate-700">Dibuat Oleh :</div>
+            <div
+              onClick={() => setIsApprovalModalOpen(true)}
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+                approvalData.planner.isApproved
+                  ? "bg-white border-emerald-300 shadow-2xs"
+                  : "bg-slate-50/70 border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700">
+                  {approvalData.planner.roleTitle}
+                </span>
+                <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-emerald-600 transition-opacity flex items-center gap-1">
+                  <Pencil size={11} /> Edit
+                </span>
+              </div>
+
+              {/* Stamp Area */}
+              <div className="my-2 flex items-center justify-center">
+                {approvalData.planner.isApproved ? (
+                  <ApprovedStamp dateStr={approvalData.planner.date} />
+                ) : (
+                  <div className="h-10 w-full flex items-center justify-center border border-dashed border-slate-300 rounded-xl text-[11px] font-medium text-slate-400 bg-slate-50">
+                    (Belum Ada Cap Approved)
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div className="font-black text-slate-900 underline underline-offset-2">
-                  Maintenance Planner
+                  {approvalData.planner.name || approvalData.planner.position}
                 </div>
-                <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                  Plant &amp; Maintenance
+                <div className="text-[10px] text-slate-600 font-semibold mt-0.5">
+                  {approvalData.planner.position}
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  {approvalData.planner.department}
+                </div>
+                <div className="text-[9px] text-emerald-700 font-bold mt-1">
+                  Tgl: {formatIndoFullDate(approvalData.planner.date)}
                 </div>
               </div>
             </div>
 
             {/* Column 2: Maintenance Superintendent */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between h-32">
-              <div className="font-bold text-slate-700">Disetujui Oleh :</div>
+            <div
+              onClick={() => setIsApprovalModalOpen(true)}
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+                approvalData.maintenanceSupt.isApproved
+                  ? "bg-white border-emerald-300 shadow-2xs"
+                  : "bg-slate-50/70 border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700">
+                  {approvalData.maintenanceSupt.roleTitle}
+                </span>
+                <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-emerald-600 transition-opacity flex items-center gap-1">
+                  <Pencil size={11} /> Edit
+                </span>
+              </div>
+
+              {/* Stamp Area */}
+              <div className="my-2 flex items-center justify-center">
+                {approvalData.maintenanceSupt.isApproved ? (
+                  <ApprovedStamp dateStr={approvalData.maintenanceSupt.date} />
+                ) : (
+                  <div className="h-10 w-full flex items-center justify-center border border-dashed border-slate-300 rounded-xl text-[11px] font-medium text-slate-400 bg-slate-50">
+                    (Belum Ada Cap Approved)
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div className="font-black text-slate-900 underline underline-offset-2">
-                  Maintenance Superintendent
+                  {approvalData.maintenanceSupt.name ||
+                    approvalData.maintenanceSupt.position}
                 </div>
-                <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                  Plant Department
+                <div className="text-[10px] text-slate-600 font-semibold mt-0.5">
+                  {approvalData.maintenanceSupt.position}
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  {approvalData.maintenanceSupt.department}
+                </div>
+                <div className="text-[9px] text-emerald-700 font-bold mt-1">
+                  Tgl: {formatIndoFullDate(approvalData.maintenanceSupt.date)}
                 </div>
               </div>
             </div>
 
             {/* Column 3: Logistic Superintendent */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between h-32">
-              <div className="font-bold text-slate-700">Disetujui Oleh :</div>
+            <div
+              onClick={() => setIsApprovalModalOpen(true)}
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+                approvalData.logisticSupt.isApproved
+                  ? "bg-white border-emerald-300 shadow-2xs"
+                  : "bg-slate-50/70 border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700">
+                  {approvalData.logisticSupt.roleTitle}
+                </span>
+                <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-emerald-600 transition-opacity flex items-center gap-1">
+                  <Pencil size={11} /> Edit
+                </span>
+              </div>
+
+              {/* Stamp Area */}
+              <div className="my-2 flex items-center justify-center">
+                {approvalData.logisticSupt.isApproved ? (
+                  <ApprovedStamp dateStr={approvalData.logisticSupt.date} />
+                ) : (
+                  <div className="h-10 w-full flex items-center justify-center border border-dashed border-slate-300 rounded-xl text-[11px] font-medium text-slate-400 bg-slate-50">
+                    (Belum Ada Cap Approved)
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div className="font-black text-slate-900 underline underline-offset-2">
-                  Logistic Superintendent
+                  {approvalData.logisticSupt.name ||
+                    approvalData.logisticSupt.position}
                 </div>
-                <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                  Supply Chain &amp; Logistics
+                <div className="text-[10px] text-slate-600 font-semibold mt-0.5">
+                  {approvalData.logisticSupt.position}
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  {approvalData.logisticSupt.department}
+                </div>
+                <div className="text-[9px] text-emerald-700 font-bold mt-1">
+                  Tgl: {formatIndoFullDate(approvalData.logisticSupt.date)}
                 </div>
               </div>
             </div>
 
             {/* Column 4: Production Superintendent */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between h-32">
-              <div className="font-bold text-slate-700">Disetujui Oleh :</div>
+            <div
+              onClick={() => setIsApprovalModalOpen(true)}
+              className={`p-4 rounded-2xl border flex flex-col justify-between min-h-[175px] transition-all cursor-pointer group hover:shadow-md relative overflow-hidden ${
+                approvalData.productionSupt.isApproved
+                  ? "bg-white border-emerald-300 shadow-2xs"
+                  : "bg-slate-50/70 border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700">
+                  {approvalData.productionSupt.roleTitle}
+                </span>
+                <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-emerald-600 transition-opacity flex items-center gap-1">
+                  <Pencil size={11} /> Edit
+                </span>
+              </div>
+
+              {/* Stamp Area */}
+              <div className="my-2 flex items-center justify-center">
+                {approvalData.productionSupt.isApproved ? (
+                  <ApprovedStamp dateStr={approvalData.productionSupt.date} />
+                ) : (
+                  <div className="h-10 w-full flex items-center justify-center border border-dashed border-slate-300 rounded-xl text-[11px] font-medium text-slate-400 bg-slate-50">
+                    (Belum Ada Cap Approved)
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div className="font-black text-slate-900 underline underline-offset-2">
-                  Production Superintendent
+                  {approvalData.productionSupt.name ||
+                    approvalData.productionSupt.position}
                 </div>
-                <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                  Mining &amp; Hauling Operations
+                <div className="text-[10px] text-slate-600 font-semibold mt-0.5">
+                  {approvalData.productionSupt.position}
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  {approvalData.productionSupt.department}
+                </div>
+                <div className="text-[9px] text-emerald-700 font-bold mt-1">
+                  Tgl: {formatIndoFullDate(approvalData.productionSupt.date)}
                 </div>
               </div>
             </div>
@@ -701,6 +880,17 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
         scheduleData={scheduleData}
         selectedSite={selectedSite}
         masterUnits={masterUnits}
+        approvalData={approvalData}
+        onUpdateApprovalData={handleSaveApproval}
+      />
+
+      {/* Approval & Signature Modal */}
+      <DailyPlanApprovalModal
+        isOpen={isApprovalModalOpen}
+        onClose={() => setIsApprovalModalOpen(false)}
+        initialData={approvalData}
+        onSave={handleSaveApproval}
+        selectedSite={selectedSite}
       />
     </div>
   );
