@@ -280,13 +280,23 @@ export const plantService = {
 
   // 5. Update Daily Plan Target or Lead Inspector for a specific date
   upsertDailyPlan: async (
-    arg1: string | { date: string; targetUnits?: number; leadInspector?: string | null; notes?: string },
+    arg1:
+      | string
+      | {
+          date: string;
+          targetUnits?: number;
+          leadInspector?: string | null;
+          notes?: string;
+          jobSite?: string;
+          site?: string;
+        },
     targetUnits?: number,
-    notes?: string
+    notes?: string,
+    jobSite?: string
   ): Promise<any> => {
     let bodyData: any = {};
     if (typeof arg1 === "string") {
-      bodyData = { date: arg1, targetUnits, notes };
+      bodyData = { date: arg1, targetUnits, notes, jobSite };
     } else {
       bodyData = arg1;
     }
@@ -310,6 +320,8 @@ export const plantService = {
     status?: string;
     inspectorName?: string;
     notes?: string;
+    jobSite?: string;
+    site?: string;
   }): Promise<PeriodicInspectionItem> => {
     const res = await fetch(`${API_BASE_URL}/plant/periodic-inspection/item`, {
       method: "POST",
@@ -330,6 +342,8 @@ export const plantService = {
     unitCodes: string[];
     serviceType?: string;
     shift?: string;
+    jobSite?: string;
+    site?: string;
   }): Promise<any> => {
     const res = await fetch(`${API_BASE_URL}/plant/periodic-inspection/bulk-add`, {
       method: "POST",

@@ -446,6 +446,7 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
         inspectorName: inspectorName.trim() || undefined,
         notes: notes.trim() || undefined,
         status: "Scheduled",
+        jobSite: selectedSite,
       });
 
       showSuccess(`Unit ${selectedUnitCode} berhasil dijadwalkan!`);
@@ -488,6 +489,7 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
         unitCodes: bulkSelectedUnits,
         shift: bulkShift,
         serviceType: bulkServiceType,
+        jobSite: selectedSite,
       });
 
       showSuccess(`${bulkSelectedUnits.length} unit berhasil ditambahkan ke jadwal!`);
@@ -699,6 +701,7 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
       await plantService.upsertDailyPlan({
         date,
         leadInspector: inspectorName || null,
+        jobSite: selectedSite,
       });
       showSuccess(
         inspectorName
@@ -728,6 +731,7 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
           date: targetSpecificDate,
           targetUnits: targetInputNumber,
           leadInspector: targetLeadInspector || null,
+          jobSite: selectedSite,
         });
         showSuccess(`Target plan tanggal ${targetSpecificDate} diperbarui ke ${targetInputNumber} Unit`);
       }
