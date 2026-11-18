@@ -18,6 +18,8 @@ import {
   Search,
   Trash2,
   Truck,
+  FileDown,
+  Printer,
 } from "lucide-react";
 import { authService } from "../services/authService";
 import {
@@ -42,6 +44,7 @@ import {
   DailyPaActivityModal,
   DailyPaBulkAddUnitsModal,
 } from "./DailyPaModals";
+import { DailyPaPdfExportModal } from "./DailyPaPdfExportModal";
 
 type TableFilterMode = "all" | "bd_only" | "below_target" | "missing_hours";
 
@@ -87,6 +90,7 @@ export const DailyPaDateDetailView: React.FC = () => {
 
   // Modals state
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [activityModalTarget, setActivityModalTarget] = useState<{
     unitEntryId: string;
     unitCode: string;
@@ -597,6 +601,17 @@ export const DailyPaDateDetailView: React.FC = () => {
                         <ChevronRight size={15} />
                       </Link>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => setIsPdfModalOpen(true)}
+                      disabled={!reportData || reportData.units.length === 0}
+                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#e95623] hover:bg-[#d84818] disabled:opacity-50 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors ml-1"
+                      title="Download PDF Laporan Daily PA"
+                    >
+                      <FileDown size={14} />
+                      <span>Download PDF</span>
+                    </button>
                   </div>
                 </div>
 
@@ -777,6 +792,17 @@ export const DailyPaDateDetailView: React.FC = () => {
                         className={isSyncingPiPs ? "animate-spin text-sky-600" : ""}
                       />
                       <span>Tarik Ulang PI &amp; PS</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsPdfModalOpen(true)}
+                      disabled={!reportData || reportData.units.length === 0}
+                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#e95623] hover:bg-[#d84818] disabled:opacity-50 text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer transition-colors"
+                      title="Download PDF atau Cetak Laporan Daily PA"
+                    >
+                      <FileDown size={15} />
+                      <span>Download PDF</span>
                     </button>
 
                     {missingPiPsHoursCount > 0 && (
@@ -1162,6 +1188,16 @@ export const DailyPaDateDetailView: React.FC = () => {
         editingActivity={activityModalTarget?.editingActivity || null}
         isSubmitting={isMutating}
         onSave={handleSaveActivityModal}
+      />
+
+      {/* Export PDF Modal */}
+      <DailyPaPdfExportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        reportData={reportData}
+        selectedSite={selectedSite}
+        dateIso={rawDate || todayIso}
+        masterUnits={masterUnits}
       />
     </div>
   );
