@@ -16,6 +16,7 @@ import {
   PeriodicInspectionPdfExportModal,
   getAchievementTheme,
 } from "./PeriodicInspectionPdfExportModal";
+import { PeriodicInspectionDetailPdfModal } from "./PeriodicInspectionDetailPdfModal";
 import {
   Calendar,
   Clock,
@@ -47,6 +48,7 @@ import {
   FileSpreadsheet,
   Download,
   FileDown,
+  Printer,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -172,6 +174,8 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
 
   // Modal: PDF Presentation Export (A4 Landscape Weekly Deck)
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
+  // Modal: PDF Detail Export (A4 Landscape Detail List Report)
+  const [isDetailPdfModalOpen, setIsDetailPdfModalOpen] = useState<boolean>(false);
 
   // -------------------------------------------------------------
   // Data Fetching
@@ -1536,12 +1540,21 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
               </button>
 
               <button
-                onClick={() => setIsPdfModalOpen(true)}
+                onClick={() => setIsDetailPdfModalOpen(true)}
                 className="px-3.5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-98"
-                title="Buka dialog Export PDF Presentasi"
+                title="Cetak & Export PDF Laporan Detail Inspeksi"
               >
                 <FileDown size={14} />
-                <span>Export PDF Presentasi</span>
+                <span>Export PDF Detail</span>
+              </button>
+
+              <button
+                onClick={() => setIsPdfModalOpen(true)}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+                title="Buka dialog Export PDF Presentasi Mingguan (Deck)"
+              >
+                <Printer size={13} className="text-orange-400" />
+                <span>PDF Presentasi</span>
               </button>
 
               <button
@@ -2607,6 +2620,23 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
         masterUnits={masterUnits}
         initialStartDate={detailRangeMode === "custom" ? detailCustomStart : undefined}
         initialEndDate={detailRangeMode === "custom" ? detailCustomEnd : undefined}
+      />
+
+      {/* ---------------------------------------------------------
+          Modal: PDF Detail Report Export (A4 Landscape Table & Signatures)
+      ---------------------------------------------------------- */}
+      <PeriodicInspectionDetailPdfModal
+        isOpen={isDetailPdfModalOpen}
+        onClose={() => setIsDetailPdfModalOpen(false)}
+        items={filteredDetailItems.length > 0 ? filteredDetailItems : allDetailItems}
+        selectedSite={selectedSite}
+        dateRangeText={
+          activeDetailSchedule?.weekRange.formatted ||
+          (detailCustomStart && detailCustomEnd
+            ? `${detailCustomStart} s/d ${detailCustomEnd}`
+            : "Periode Aktif")
+        }
+        masterUnits={masterUnits}
       />
     </div>
   );
