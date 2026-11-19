@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   ShieldAlert,
   AlertTriangle,
@@ -45,9 +45,10 @@ import {
 import { useNotification } from "../context/NotificationContext";
 
 interface HazardReportFormPageProps {
-  user: any;
-  onNavigateToList: () => void;
+  user?: any;
+  onNavigateToList?: () => void;
   onNavigateToDashboard?: () => void;
+  isStandalone?: boolean;
 }
 
 // ----------------------------------------------------------------------
@@ -157,6 +158,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   user,
   onNavigateToList,
   onNavigateToDashboard,
+  isStandalone = false,
 }) => {
   const { showSuccess, showError } = useNotification();
 
@@ -168,9 +170,13 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
     user?.namaLengkap || user?.username || ""
   );
   const [nrpPelapor, setNrpPelapor] = useState<string>(user?.nik || "");
-  const [tanggalPelaporan, setTanggalPelaporan] = useState<string>(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [tanggalPelaporan, setTanggalPelaporan] = useState<string>("");
+
+  useEffect(() => {
+    if (!tanggalPelaporan) {
+      setTanggalPelaporan(new Date().toISOString().slice(0, 10));
+    }
+  }, [tanggalPelaporan]);
   const [departemenPelapor, setDepartemenPelapor] = useState<string>("PLANT");
   const [lokasiBahaya, setLokasiBahaya] = useState<string>("WORKSHOP");
   const [rincianBahaya, setRincianBahaya] = useState<string>("");
@@ -435,13 +441,22 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
             >
               Kirim Hazard Report Lainnya
             </button>
-            <button
-              type="button"
-              onClick={onNavigateToList}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
-            >
-              Lihat Daftar Laporan (Monitoring)
-            </button>
+            {onNavigateToList ? (
+              <button
+                type="button"
+                onClick={onNavigateToList}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Lihat Daftar Laporan (Monitoring)
+              </button>
+            ) : isStandalone ? (
+              <a
+                href="/"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer text-center inline-block"
+              >
+                Kembali ke Portal Batara
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
@@ -481,14 +496,24 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onNavigateToList}
-              className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-2xl border border-slate-200 transition-colors cursor-pointer"
-            >
-              <ArrowLeft size={14} />
-              <span>Daftar Laporan</span>
-            </button>
+            {onNavigateToList ? (
+              <button
+                type="button"
+                onClick={onNavigateToList}
+                className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-2xl border border-slate-200 transition-colors cursor-pointer"
+              >
+                <ArrowLeft size={14} />
+                <span>Daftar Laporan</span>
+              </button>
+            ) : isStandalone ? (
+              <a
+                href="/"
+                className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-2xl border border-slate-200 transition-colors cursor-pointer"
+              >
+                <ArrowLeft size={14} />
+                <span>Portal Batara</span>
+              </a>
+            ) : null}
           </div>
         </div>
       </div>

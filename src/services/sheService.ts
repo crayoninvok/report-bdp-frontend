@@ -329,7 +329,46 @@ const DEFAULT_HAZARDS: HazardReportItem[] = [
   },
 ];
 
+export interface SheFormSettings {
+  isOpen: boolean;
+  closedMessage: string;
+  updatedAt: string;
+}
+
+const FORM_SETTINGS_KEY = "bdp_she_form_settings_v1";
+
+const DEFAULT_FORM_SETTINGS: SheFormSettings = {
+  isOpen: true,
+  closedMessage:
+    "Formulir Pelaporan Bahaya (Hazard Report) saat ini sedang ditutup sementara oleh Tim SHE PT Batara Dharma Persada. Silakan hubungi Safety Officer atau pengawas area untuk pelaporan langsung.",
+  updatedAt: new Date().toISOString(),
+};
+
 export const sheService = {
+  getFormSettings: (): SheFormSettings => {
+    if (typeof window === "undefined") return DEFAULT_FORM_SETTINGS;
+    const stored = localStorage.getItem(FORM_SETTINGS_KEY);
+    if (!stored) return DEFAULT_FORM_SETTINGS;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return DEFAULT_FORM_SETTINGS;
+    }
+  },
+
+  updateFormSettings: (updates: Partial<SheFormSettings>): SheFormSettings => {
+    const current = sheService.getFormSettings();
+    const next: SheFormSettings = {
+      ...current,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem(FORM_SETTINGS_KEY, JSON.stringify(next));
+      window.dispatchEvent(new Event("bdp-she-form-settings-changed"));
+    }
+    return next;
+  },
   getHazards: async (site?: "MuaraPahu" | "Senyiur" | "ALL"): Promise<HazardReportItem[]> => {
     try {
       if (typeof window === "undefined") return DEFAULT_HAZARDS;

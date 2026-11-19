@@ -34,6 +34,10 @@ import {
   Loader2,
   CloudUpload,
   ClipboardCheck,
+  Copy,
+  Check,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
@@ -87,6 +91,10 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxTitle, setLightboxTitle] = useState<string>("");
 
+  // Public Form Settings & Control (Open / Close Link)
+  const [formSettings, setFormSettings] = useState(() => sheService.getFormSettings());
+  const [isCopiedLink, setIsCopiedLink] = useState(false);
+
   // Upload States
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
@@ -132,6 +140,51 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   useEffect(() => {
     loadHazards();
   }, [loadHazards]);
+
+  // Sync Form Settings across tabs and storage events
+  useEffect(() => {
+    const handleSyncSettings = () => {
+      setFormSettings(sheService.getFormSettings());
+    };
+    window.addEventListener("storage", handleSyncSettings);
+    window.addEventListener("bdp-she-form-settings-changed", handleSyncSettings);
+    return () => {
+      window.removeEventListener("storage", handleSyncSettings);
+      window.removeEventListener("bdp-she-form-settings-changed", handleSyncSettings);
+    };
+  }, []);
+
+  const handleToggleFormStatus = () => {
+    const nextStatus = !formSettings.isOpen;
+    const updated = sheService.updateFormSettings({ isOpen: nextStatus });
+    setFormSettings(updated);
+    if (nextStatus) {
+      showSuccess("Link formulir Hazard Report berhasil DIBUKA untuk umum.");
+    } else {
+      showInfo("Link formulir Hazard Report berhasil DITUTUP sementara.");
+    }
+  };
+
+  const handleCopyFormLink = () => {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/hazard-report/form`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setIsCopiedLink(true);
+        showSuccess("Tautan formulir umum berhasil disalin!");
+        setTimeout(() => setIsCopiedLink(false), 2500);
+      })
+      .catch(() => {
+        showError("Gagal menyalin tautan.");
+      });
+  };
+
+  const handleOpenFormInNewTab = () => {
+    if (typeof window !== "undefined") {
+      window.open("/hazard-report/form", "_blank");
+    }
+  };
 
   // Filtered List
   const filteredHazards = useMemo(() => {
@@ -438,27 +491,58 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               <span>Export PDF</span>
             </button>
 
-            {/* Dedicated Checklist Page Button */}
-            {onNavigateToForm && (
+            {/* Kontrol Link Publik (Buka / Tutup & Salin Link) */}
+            <div className="inline-flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+              {/* Status Badge & Toggle Button */}
               <button
                 type="button"
-                onClick={onNavigateToForm}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-orange-50 text-[#e95623] hover:bg-orange-100 border border-orange-200 text-xs font-bold transition-colors cursor-pointer"
-                title="Buka Formulir Khusus Pengisian (Tampilan Halaman Penuh Checklist)"
+                onClick={handleToggleFormStatus}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  formSettings.isOpen
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs"
+                    : "bg-rose-500 hover:bg-rose-600 text-white shadow-xs"
+                }`}
+                title={
+                  formSettings.isOpen
+                    ? "Status: BUKA (Siapapun dapat mengisi form). Klik untuk MENUTUP formulir."
+                    : "Status: DITUTUP (Pengisian dinonaktifkan). Klik untuk MEMBUKA formulir."
+                }
               >
-                <ClipboardCheck size={15} />
-                <span>Buka Form Checklist</span>
+                {formSettings.isOpen ? <Unlock size={13} /> : <Lock size={13} />}
+                <span>{formSettings.isOpen ? "Link: Buka" : "Link: Ditutup"}</span>
               </button>
-            )}
 
-            {/* Add New Report Button */}
+              {/* Salin Link Button */}
+              <button
+                type="button"
+                onClick={handleCopyFormLink}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-white transition-all cursor-pointer"
+                title="Salin tautan formulir publik (/hazard-report/form) ke clipboard"
+              >
+                {isCopiedLink ? (
+                  <>
+                    <Check size={14} className="text-emerald-600" />
+                    <span className="text-emerald-600 font-bold">Tersalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={13} />
+                    <span>Salin Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Main Button: Input Hazard Report (New Tab) */}
             <button
               type="button"
-              onClick={handleOpenCreateModal}
+              onClick={handleOpenFormInNewTab}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md shadow-[#e95623]/30 transition-all cursor-pointer hover:scale-[1.02]"
+              title="Buka Formulir Hazard Report di Tab Baru (/hazard-report/form)"
             >
               <Plus size={16} />
-              <span>Input Cepat (Modal)</span>
+              <span>Input Hazard Report</span>
+              <ExternalLink size={13} className="opacity-80" />
             </button>
           </div>
         </div>
