@@ -16,60 +16,6 @@ import {
   Search,
 } from "lucide-react";
 import { HazardReportItem } from "../services/sheService";
-import {
-  ApprovedStamp,
-  formatIndoFullDate,
-} from "./DailyPlanApprovalModal";
-
-export interface HazardPdfSigner {
-  roleTitle: string;
-  position: string;
-  department: string;
-  name: string;
-  date: string;
-  isApproved: boolean;
-}
-
-export interface HazardPdfApprovalData {
-  documentLocation: string;
-  documentDate: string;
-  safetyOfficer: HazardPdfSigner;
-  sheSupervisor: HazardPdfSigner;
-  projectManager: HazardPdfSigner;
-}
-
-function getDefaultApprovalData(site: string): HazardPdfApprovalData {
-  const today = new Date().toISOString().slice(0, 10);
-  const location = site === "MuaraPahu" ? "Muara Pahu" : "Senyiur";
-  return {
-    documentLocation: location,
-    documentDate: today,
-    safetyOfficer: {
-      roleTitle: "Dibuat Oleh :",
-      position: "Safety Officer",
-      department: "Safety, Health & Environment",
-      name: "Safety Officer",
-      date: today,
-      isApproved: true,
-    },
-    sheSupervisor: {
-      roleTitle: "Diperiksa Oleh :",
-      position: "SHE Supervisor / Coordinator",
-      department: "Safety, Health & Environment",
-      name: "SHE Supervisor",
-      date: today,
-      isApproved: true,
-    },
-    projectManager: {
-      roleTitle: "Disetujui Oleh :",
-      position: "Project Manager / KTT",
-      department: "Operational Site",
-      name: "Project Manager",
-      date: today,
-      isApproved: true,
-    },
-  };
-}
 
 export interface HazardReportPdfModalProps {
   isOpen: boolean;
@@ -93,10 +39,6 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
   const [exportProgress, setExportProgress] = useState("");
 
   const printAreaRef = useRef<HTMLDivElement>(null);
-
-  const approvalData = useMemo(() => {
-    return getDefaultApprovalData(selectedSite === "ALL" ? "MuaraPahu" : selectedSite);
-  }, [selectedSite]);
 
   const filteredItems = useMemo(() => {
     return hazards.filter((h) => {
@@ -584,112 +526,12 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
               </table>
             </div>
 
-            {/* Document Approval Footer */}
-            <div
-              className="pt-4 border-t-2 border-slate-800"
-              style={{ pageBreakInside: "avoid" }}
-            >
-              <div className="flex items-center justify-between mb-3 text-[11px] text-slate-600 font-semibold">
-                <span>
-                  Lokasi Pengesahan:{" "}
-                  <strong className="text-slate-900">
-                    {approvalData.documentLocation}
-                  </strong>
-                </span>
-                <span>
-                  Tanggal Dokumen:{" "}
-                  <strong className="text-slate-900">
-                    {formatIndoFullDate(approvalData.documentDate)}
-                  </strong>
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                {/* Signer 1 */}
-                <div className="border border-slate-300 rounded-xl p-3 bg-white flex flex-col justify-between min-h-36 text-center">
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
-                      {approvalData.safetyOfficer.roleTitle}
-                    </span>
-                    <span className="text-xs font-black text-slate-800 block mt-0.5">
-                      {approvalData.safetyOfficer.position}
-                    </span>
-                    <span className="text-[9.5px] text-slate-400 block">
-                      {approvalData.safetyOfficer.department}
-                    </span>
-                  </div>
-                  <div className="my-2 flex items-center justify-center">
-                    <ApprovedStamp dateStr={approvalData.safetyOfficer.date} isCompact />
-                  </div>
-                  <div className="pt-2 border-t border-slate-200">
-                    <span className="text-xs font-black text-slate-900 block underline">
-                      {approvalData.safetyOfficer.name}
-                    </span>
-                    <span className="text-[9.5px] text-slate-500 font-semibold">
-                      Tgl: {approvalData.safetyOfficer.date}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Signer 2 */}
-                <div className="border border-slate-300 rounded-xl p-3 bg-white flex flex-col justify-between min-h-36 text-center">
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
-                      {approvalData.sheSupervisor.roleTitle}
-                    </span>
-                    <span className="text-xs font-black text-slate-800 block mt-0.5">
-                      {approvalData.sheSupervisor.position}
-                    </span>
-                    <span className="text-[9.5px] text-slate-400 block">
-                      {approvalData.sheSupervisor.department}
-                    </span>
-                  </div>
-                  <div className="my-2 flex items-center justify-center">
-                    <ApprovedStamp dateStr={approvalData.sheSupervisor.date} isCompact />
-                  </div>
-                  <div className="pt-2 border-t border-slate-200">
-                    <span className="text-xs font-black text-slate-900 block underline">
-                      {approvalData.sheSupervisor.name}
-                    </span>
-                    <span className="text-[9.5px] text-slate-500 font-semibold">
-                      Tgl: {approvalData.sheSupervisor.date}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Signer 3 */}
-                <div className="border border-slate-300 rounded-xl p-3 bg-white flex flex-col justify-between min-h-36 text-center">
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
-                      {approvalData.projectManager.roleTitle}
-                    </span>
-                    <span className="text-xs font-black text-slate-800 block mt-0.5">
-                      {approvalData.projectManager.position}
-                    </span>
-                    <span className="text-[9.5px] text-slate-400 block">
-                      {approvalData.projectManager.department}
-                    </span>
-                  </div>
-                  <div className="my-2 flex items-center justify-center">
-                    <ApprovedStamp dateStr={approvalData.projectManager.date} isCompact />
-                  </div>
-                  <div className="pt-2 border-t border-slate-200">
-                    <span className="text-xs font-black text-slate-900 block underline">
-                      {approvalData.projectManager.name}
-                    </span>
-                    <span className="text-[9.5px] text-slate-500 font-semibold">
-                      Tgl: {approvalData.projectManager.date}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-2 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-400 font-medium">
-                <span>
-                  Dokumen K3L internal operasional armada PT Batara Dharma Persada.
-                </span>
-                <span>Format Dokumen: BDP-SHE-HIRA-REP-A4L</span>
-              </div>
+            {/* Document Footer Note */}
+            <div className="mt-4 pt-2 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-400 font-medium">
+              <span>
+                Dokumen K3L internal operasional armada PT Batara Dharma Persada.
+              </span>
+              <span>Format Dokumen: BDP-SHE-HIRA-REP-A4L</span>
             </div>
           </div>
         </div>
