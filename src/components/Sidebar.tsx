@@ -265,7 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`relative flex flex-col h-full min-h-0 bg-white border-r border-slate-200 transition-all duration-300 ease-in-out z-30 select-none shadow-sm ${
+      className={`relative flex flex-col h-full min-h-0 bg-white border-r border-slate-200 transition-[width] duration-200 ease-in-out z-30 select-none shadow-sm ${
         isCollapsed ? "w-20" : "w-72"
       }`}
     >
@@ -323,7 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }`}
         >
           <div className="relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-batara-orange-50 text-[#e95623] font-black text-sm border border-batara-orange-200 shadow-xs">
-            {user.name.slice(0, 2).toUpperCase()}
+            {(user?.name || "User").slice(0, 2).toUpperCase()}
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-[#18bebc] ring-2 ring-white" />
           </div>
 

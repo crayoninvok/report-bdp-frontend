@@ -551,7 +551,7 @@ export default function Home() {
         </header>
 
         {/* Scrollable View Container */}
-        <main className="flex-1 overflow-y-auto bg-slate-50">
+        <main className="flex-1 min-w-0 overflow-y-auto bg-slate-50">
           {activeMenu === "dashboard-overall" ? (
             <DashboardCostOverallView user={currentUser} />
           ) : activeMenu === "input-cost" ? (

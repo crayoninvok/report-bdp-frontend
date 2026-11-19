@@ -16,7 +16,6 @@ import {
   Award,
   AlertCircle,
   Layers,
-  Flame,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -38,6 +37,38 @@ import {
 } from "../services/sheService";
 import { useNotification } from "../context/NotificationContext";
 
+// Safe Error Boundary to prevent chart measuring/resizing crashes from breaking the page
+class ChartErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any) {
+    console.error("SHE Chart render error caught safely:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          <div className="h-full w-full flex items-center justify-center p-4 text-xs text-slate-400">
+            Grafik tidak dapat dimuat saat ini.
+          </div>
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
+
 interface SheDashboardViewProps {
   user: any;
   onNavigateToHazardReport?: () => void;
@@ -49,12 +80,17 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
 }) => {
   const { showError } = useNotification();
 
+  const [isMounted, setIsMounted] = useState(false);
   const [selectedSite, setSelectedSite] = useState<"MuaraPahu" | "Senyiur" | "ALL">(
     user?.jobSite === "Senyiur" ? "Senyiur" : "MuaraPahu"
   );
   const [data, setData] = useState<SheDashboardData | null>(null);
   const [recentHazards, setRecentHazards] = useState<HazardReportItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -84,16 +120,16 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
       : "Site Senyiur";
 
   return (
-    <div className="space-y-7 pb-8">
+    <div className="space-y-7 pb-8 min-w-0">
       {/* ---------------------------------------------------------
           Corporate Header Banner
       ---------------------------------------------------------- */}
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 shadow-xl p-6 sm:p-7">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 shadow-xl p-6 sm:p-7 min-w-0">
         <div className="absolute -right-16 -top-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute right-32 -bottom-16 w-64 h-64 bg-[#e95623]/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-2">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 min-w-0">
+          <div className="space-y-2 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-xs">
                 <HardHat size={13} />
@@ -156,10 +192,10 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           SECTION 1: DATA PELAPORAN BAHAYA (HAZARD REPORT)
           - SECTION UTAMA KARENA MODUL HAZARD REPORT SUDAH AKTIF -
       ========================================================== */}
-      <section className="space-y-4">
+      <section className="space-y-4 min-w-0">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
-          <div className="space-y-0.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 min-w-0">
+          <div className="space-y-0.5 min-w-0">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10.5px] font-black uppercase tracking-wider bg-orange-100 text-[#e95623] border border-orange-200">
                 <ShieldAlert size={12} />
@@ -188,9 +224,9 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
         </div>
 
         {/* 5 Hazard KPI Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 min-w-0">
           {/* Card 1: Total Hazard */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-[11px] font-bold uppercase tracking-wider">Total Hazard</span>
               <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700">
@@ -209,7 +245,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* Card 2: KTA (Kondisi Tidak Aman) */}
-          <div className="bg-white border border-orange-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-orange-300 transition-all">
+          <div className="bg-white border border-orange-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-orange-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-[#e95623]">
               <span className="text-[11px] font-bold uppercase tracking-wider">Kondisi Tdk Aman (KTA)</span>
               <div className="p-1.5 rounded-lg bg-orange-100 text-[#e95623]">
@@ -228,7 +264,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* Card 3: TTA (Tindakan Tidak Aman) */}
-          <div className="bg-white border border-amber-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-amber-300 transition-all">
+          <div className="bg-white border border-amber-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-amber-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-amber-700">
               <span className="text-[11px] font-bold uppercase tracking-wider">Tindakan Tdk Aman (TTA)</span>
               <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
@@ -247,7 +283,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* Card 4: Open Hazard */}
-          <div className="bg-rose-50/40 border border-rose-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-rose-300 transition-all">
+          <div className="bg-rose-50/40 border border-rose-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-rose-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-rose-700">
               <span className="text-[11px] font-bold uppercase tracking-wider">Hazard Open</span>
               <div className="p-1.5 rounded-lg bg-rose-100 text-rose-700">
@@ -266,7 +302,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* Card 5: Closed Hazard */}
-          <div className="bg-emerald-50/40 border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
+          <div className="bg-emerald-50/40 border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-emerald-800">
               <span className="text-[11px] font-bold uppercase tracking-wider">Hazard Closed</span>
               <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
@@ -286,10 +322,10 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
         </div>
 
         {/* Hazard Charts: Tren Bulanan & Distribusi Kategori */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0">
           {/* Left: Monthly Trend Chart */}
-          <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+          <div className="lg:col-span-8 min-w-0 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 min-w-0">
               <div>
                 <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                   <TrendingUp size={16} className="text-[#e95623]" />
@@ -302,45 +338,56 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
               <span className="text-xs font-bold text-slate-400">{siteLabel}</span>
             </div>
 
-            <div className="h-72 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={data?.monthlyTrends || []}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#64748b" }} />
-                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1e293b",
-                      color: "#fff",
-                      borderRadius: "12px",
-                      border: "none",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-                  <Bar
-                    dataKey="hazards"
-                    name="Temuan Bahaya"
-                    fill="#e95623"
-                    radius={[6, 6, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="resolved"
-                    name="Tindakan Selesai"
-                    fill="#10b981"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="h-72 w-full pt-2 min-w-0">
+              {!isMounted || loading || !data?.monthlyTrends || data.monthlyTrends.length === 0 ? (
+                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+                  <RefreshCw size={20} className="animate-spin text-[#e95623] mr-2" />
+                  <span>Memuat grafik tren bulanan...</span>
+                </div>
+              ) : (
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
+                    <BarChart
+                      data={data.monthlyTrends}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#1e293b",
+                          color: "#fff",
+                          borderRadius: "12px",
+                          border: "none",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+                      <Bar
+                        dataKey="hazards"
+                        name="Temuan Bahaya"
+                        fill="#e95623"
+                        radius={[6, 6, 0, 0]}
+                        isAnimationActive={false}
+                      />
+                      <Bar
+                        dataKey="resolved"
+                        name="Tindakan Selesai"
+                        fill="#10b981"
+                        radius={[6, 6, 0, 0]}
+                        isAnimationActive={false}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
+              )}
             </div>
           </div>
 
           {/* Right: Category Distribution Donut Chart */}
-          <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4">
-            <div className="pb-2 border-b border-slate-100">
+          <div className="lg:col-span-4 min-w-0 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4">
+            <div className="pb-2 border-b border-slate-100 min-w-0">
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <Layers size={16} className="text-[#e95623]" />
                 <span>Distribusi Kategori Bahaya</span>
@@ -348,33 +395,43 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
               <p className="text-xs text-slate-500 mt-0.5">Komposisi jenis temuan K3L</p>
             </div>
 
-            <div className="h-56 w-full relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data?.categoryDistribution || []}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {(data?.categoryDistribution || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1e293b",
-                      color: "#fff",
-                      borderRadius: "10px",
-                      border: "none",
-                      fontSize: "11px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="h-56 w-full relative min-w-0">
+              {!isMounted || loading || !data?.categoryDistribution || data.categoryDistribution.length === 0 ? (
+                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+                  <RefreshCw size={20} className="animate-spin text-[#e95623] mr-2" />
+                  <span>Memuat data kategori...</span>
+                </div>
+              ) : (
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
+                    <PieChart>
+                      <Pie
+                        data={data.categoryDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={4}
+                        dataKey="value"
+                        isAnimationActive={false}
+                      >
+                        {data.categoryDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#1e293b",
+                          color: "#fff",
+                          borderRadius: "10px",
+                          border: "none",
+                          fontSize: "11px",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
+              )}
             </div>
 
             <div className="space-y-1.5 pt-1 border-t border-slate-100">
@@ -392,9 +449,9 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
         </div>
 
         {/* Hazard Risk Matrix & Recent Reports */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0">
           {/* Risk Level Distribution */}
-          <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-3.5">
+          <div className="lg:col-span-4 min-w-0 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-3.5">
             <div className="pb-2 border-b border-slate-100">
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <AlertTriangle size={16} className="text-rose-600" />
@@ -441,7 +498,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* Recent Hazard Observations Widget */}
-          <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-3.5">
+          <div className="lg:col-span-8 min-w-0 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-3.5">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div>
                 <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
@@ -519,9 +576,9 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
       {/* =========================================================
           SECTION 2: INDIKATOR KINERJA K3L & KESELAMATAN OPERASIONAL
       ========================================================== */}
-      <section className="space-y-4 pt-4 border-t border-slate-200">
+      <section className="space-y-4 pt-4 border-t border-slate-200 min-w-0">
         {/* Section Header */}
-        <div className="pb-1">
+        <div className="pb-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10.5px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
               <ShieldCheck size={12} />
@@ -537,9 +594,9 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
         </div>
 
         {/* 4 Core Safety Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 min-w-0">
           {/* Safe Man Hours */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-[11px] font-bold uppercase tracking-wider">Jam Kerja Selamat</span>
               <Activity size={16} className="text-[#e95623]" />
@@ -554,7 +611,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* Days Without LTI */}
-          <div className="bg-emerald-50/30 border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
+          <div className="bg-emerald-50/30 border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-emerald-700">
               <span className="text-[11px] font-bold uppercase tracking-wider">Hari Tanpa LTI</span>
               <Award size={16} className="text-emerald-500" />
@@ -569,7 +626,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* LTIFR & TRIFR */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-[11px] font-bold uppercase tracking-wider">LTIFR / TRIFR</span>
               <CheckCircle2 size={16} className="text-emerald-500" />
@@ -582,7 +639,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
           </div>
 
           {/* Environmental Compliance */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all min-w-0">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-[11px] font-bold uppercase tracking-wider">Kepatuhan Lingkungan</span>
               <Leaf size={16} className="text-emerald-500" />
