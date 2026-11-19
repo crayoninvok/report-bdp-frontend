@@ -583,12 +583,20 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       const legacyStatus: HazardStatus = isClose ? "Closed" : "Open";
       const payload: Partial<HazardReportItem> = {
         ...formData,
-        namaPelapor: (formData.namaPelapor || "").trim(),
-        reporterName: (formData.namaPelapor || "").trim(),
-        nrpPelapor: (formData.nrpPelapor || "").trim(),
-        departemenPelapor: formData.departemenPelapor,
-        reporterDept: formData.departemenPelapor,
-        jabatanPelapor: formData.jabatanPelapor,
+        namaPelapor: itemToEdit
+          ? (itemToEdit.namaPelapor || itemToEdit.reporterName || formData.namaPelapor)
+          : (formData.namaPelapor || "").trim(),
+        reporterName: itemToEdit
+          ? (itemToEdit.reporterName || itemToEdit.namaPelapor || formData.namaPelapor)
+          : (formData.namaPelapor || "").trim(),
+        nrpPelapor: itemToEdit ? (itemToEdit.nrpPelapor || formData.nrpPelapor) : (formData.nrpPelapor || "").trim(),
+        departemenPelapor: itemToEdit
+          ? (itemToEdit.departemenPelapor || itemToEdit.reporterDept || formData.departemenPelapor)
+          : formData.departemenPelapor,
+        reporterDept: itemToEdit
+          ? (itemToEdit.reporterDept || itemToEdit.departemenPelapor || formData.departemenPelapor)
+          : formData.departemenPelapor,
+        jabatanPelapor: itemToEdit ? (itemToEdit.jabatanPelapor || formData.jabatanPelapor) : formData.jabatanPelapor,
         identifikasiBahaya: ident,
         title: ident,
         lokasiBahaya: finalLokasi,
@@ -1768,164 +1776,217 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
 
               {/* Identitas Pelapor (Exact GForm Fields) */}
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                <span className="text-[11px] font-black uppercase text-slate-600 block">
-                  Identitas Pelapor
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                  <div className="relative" ref={modalManpowerRef}>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[10px] font-bold text-slate-500">Nama Pelapor</label>
-                      <span className="text-[9px] text-slate-400">
-                        {loadingManpower ? "..." : `${manpowerList.length} MP/SY`}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase text-slate-600 flex items-center gap-1.5">
+                    Identitas Pelapor
+                    {itemToEdit && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        <Lock size={9} /> Terkunci (Tidak dapat diubah saat edit)
                       </span>
-                    </div>
-                    <div className="relative">
+                    )}
+                  </span>
+                  {!itemToEdit && (
+                    <span className="text-[9px] text-slate-400">
+                      {loadingManpower ? "..." : `${manpowerList.length} MP/SY`}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                  {itemToEdit ? (
+                    /* Read-Only Nama Pelapor on Edit */
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Nama Pelapor</label>
                       <input
                         type="text"
-                        placeholder="Ketik cari nama..."
                         value={formData.namaPelapor}
-                        onFocus={() => {
-                          setModalManpowerQuery(formData.namaPelapor);
-                          setIsModalManpowerOpen(true);
-                        }}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFormData((prev) => ({
-                            ...prev,
-                            namaPelapor: val,
-                            reporterName: val,
-                          }));
-                          setModalManpowerQuery(val);
-                          setIsModalManpowerOpen(true);
-                        }}
-                        autoComplete="off"
-                        className="w-full text-xs px-2.5 pr-8 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                        readOnly
+                        disabled
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed select-none"
                       />
-                      {formData.namaPelapor && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              namaPelapor: "",
-                              reporterName: "",
-                              nrpPelapor: "",
-                            }));
-                            setModalManpowerQuery("");
+                    </div>
+                  ) : (
+                    /* Searchable Combobox on Create */
+                    <div className="relative" ref={modalManpowerRef}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <label className="text-[10px] font-bold text-slate-500">Nama Pelapor</label>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Ketik cari nama..."
+                          value={formData.namaPelapor}
+                          onFocus={() => {
+                            setModalManpowerQuery(formData.namaPelapor);
                             setIsModalManpowerOpen(true);
                           }}
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Dropdown suggestions */}
-                    {isModalManpowerOpen && (
-                      <div className="absolute z-50 left-0 -right-24 top-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                        <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Search size={11} className="text-[#e95623]" />
-                            Master Manpower ({filteredModalManpower.length})
-                          </span>
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData((prev) => ({
+                              ...prev,
+                              namaPelapor: val,
+                              reporterName: val,
+                            }));
+                            setModalManpowerQuery(val);
+                            setIsModalManpowerOpen(true);
+                          }}
+                          autoComplete="off"
+                          className="w-full text-xs px-2.5 pr-8 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                        />
+                        {formData.namaPelapor && (
                           <button
                             type="button"
-                            onClick={() => setIsModalManpowerOpen(false)}
-                            className="text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                namaPelapor: "",
+                                reporterName: "",
+                                nrpPelapor: "",
+                              }));
+                              setModalManpowerQuery("");
+                              setIsModalManpowerOpen(true);
+                            }}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
                           >
-                            Tutup
+                            <X size={12} />
                           </button>
-                        </div>
-                        <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
-                          {filteredModalManpower.length === 0 ? (
-                            <div className="p-3 text-center text-slate-400 text-[11px]">
-                              Tidak ditemukan. Tekan tutup untuk simpan nama manual.
-                            </div>
-                          ) : (
-                            filteredModalManpower.map((m) => {
-                              const isMp = (m.branchName || "").toLowerCase().includes("muara pahu");
-                              return (
-                                <div
-                                  key={m.id || m.employeeId}
-                                  onClick={() => handleSelectModalManpower(m)}
-                                  className="p-2 hover:bg-orange-50/70 transition-colors cursor-pointer text-left group"
-                                >
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[11px] font-black text-slate-900 group-hover:text-[#e95623]">
-                                      {m.fullName}
-                                    </span>
-                                    <span
-                                      className={`text-[8.5px] font-black px-1 py-0.2 rounded border ${
-                                        isMp
-                                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                      }`}
-                                    >
-                                      {m.branchName || "Site"}
-                                    </span>
-                                  </div>
-                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                    <span className="font-mono font-bold text-slate-700">NRP: {m.employeeId}</span>
-                                    <span>&bull;</span>
-                                    <span>Dept: {m.organization}</span>
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+
+                      {/* Dropdown suggestions */}
+                      {isModalManpowerOpen && (
+                        <div className="absolute z-50 left-0 -right-24 top-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                          <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <Search size={11} className="text-[#e95623]" />
+                              Master Manpower ({filteredModalManpower.length})
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setIsModalManpowerOpen(false)}
+                              className="text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                            >
+                              Tutup
+                            </button>
+                          </div>
+                          <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
+                            {filteredModalManpower.length === 0 ? (
+                              <div className="p-3 text-center text-slate-400 text-[11px]">
+                                Tidak ditemukan. Tekan tutup untuk simpan nama manual.
+                              </div>
+                            ) : (
+                              filteredModalManpower.map((m) => {
+                                const isMp = (m.branchName || "").toLowerCase().includes("muara pahu");
+                                return (
+                                  <div
+                                    key={m.id || m.employeeId}
+                                    onClick={() => handleSelectModalManpower(m)}
+                                    className="p-2 hover:bg-orange-50/70 transition-colors cursor-pointer text-left group"
+                                  >
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="text-[11px] font-black text-slate-900 group-hover:text-[#e95623]">
+                                        {m.fullName}
+                                      </span>
+                                      <span
+                                        className={`text-[8.5px] font-black px-1 py-0.2 rounded border ${
+                                          isMp
+                                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        }`}
+                                      >
+                                        {m.branchName || "Site"}
+                                      </span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                      <span className="font-mono font-bold text-slate-700">NRP: {m.employeeId}</span>
+                                      <span>&bull;</span>
+                                      <span>Dept: {m.organization}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-[10px] font-bold text-slate-500 block mb-0.5">NRP Pelapor</label>
                     <input
                       type="text"
                       value={formData.nrpPelapor}
+                      readOnly={Boolean(itemToEdit)}
+                      disabled={Boolean(itemToEdit)}
                       onChange={(e) => setFormData({ ...formData, nrpPelapor: e.target.value })}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
+                      className={`w-full text-xs px-2.5 py-1.5 rounded-lg border ${
+                        itemToEdit
+                          ? "border-slate-200 bg-slate-100 text-slate-600 font-semibold cursor-not-allowed select-none"
+                          : "border-slate-300 bg-white"
+                      }`}
                     />
                   </div>
+
                   <div>
                     <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Departemen</label>
-                    <select
-                      value={formData.departemenPelapor}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          departemenPelapor: e.target.value,
-                          reporterDept: e.target.value,
-                        })
-                      }
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
-                    >
-                      {DEPARTEMEN_OPTIONS.map((dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
-                      ))}
-                      {!DEPARTEMEN_OPTIONS.includes(formData.departemenPelapor as any) && formData.departemenPelapor && (
-                        <option value={formData.departemenPelapor}>{formData.departemenPelapor}</option>
-                      )}
-                    </select>
+                    {itemToEdit ? (
+                      <input
+                        type="text"
+                        value={formData.departemenPelapor}
+                        readOnly
+                        disabled
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed select-none"
+                      />
+                    ) : (
+                      <select
+                        value={formData.departemenPelapor}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            departemenPelapor: e.target.value,
+                            reporterDept: e.target.value,
+                          })
+                        }
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                      >
+                        {DEPARTEMEN_OPTIONS.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                        {!DEPARTEMEN_OPTIONS.includes(formData.departemenPelapor as any) && formData.departemenPelapor && (
+                          <option value={formData.departemenPelapor}>{formData.departemenPelapor}</option>
+                        )}
+                      </select>
+                    )}
                   </div>
+
                   <div>
                     <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Jabatan Pelapor</label>
-                    <select
-                      value={formData.jabatanPelapor}
-                      onChange={(e) => setFormData({ ...formData, jabatanPelapor: e.target.value })}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
-                    >
-                      {JABATAN_OPTIONS.map((jab) => (
-                        <option key={jab} value={jab}>
-                          {jab}
-                        </option>
-                      ))}
-                      {!JABATAN_OPTIONS.includes(formData.jabatanPelapor as any) && formData.jabatanPelapor && (
-                        <option value={formData.jabatanPelapor}>{formData.jabatanPelapor}</option>
-                      )}
-                    </select>
+                    {itemToEdit ? (
+                      <input
+                        type="text"
+                        value={formData.jabatanPelapor}
+                        readOnly
+                        disabled
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed select-none"
+                      />
+                    ) : (
+                      <select
+                        value={formData.jabatanPelapor}
+                        onChange={(e) => setFormData({ ...formData, jabatanPelapor: e.target.value })}
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                      >
+                        {JABATAN_OPTIONS.map((jab) => (
+                          <option key={jab} value={jab}>
+                            {jab}
+                          </option>
+                        ))}
+                        {!JABATAN_OPTIONS.includes(formData.jabatanPelapor as any) && formData.jabatanPelapor && (
+                          <option value={formData.jabatanPelapor}>{formData.jabatanPelapor}</option>
+                        )}
+                      </select>
+                    )}
                   </div>
                 </div>
               </div>
