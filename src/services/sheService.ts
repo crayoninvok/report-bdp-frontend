@@ -14,6 +14,27 @@ export type HazardStatus = "Open" | "In Progress" | "Closed";
 export interface HazardReportItem {
   id: string;
   reportNumber: string;
+
+  // Exact Google Form Fields
+  jenisPelaporan?: "KTA" | "TTA";
+  namaPelapor?: string;
+  nrpPelapor?: string;
+  tanggalPelaporan?: string;
+  departemenPelapor?: string;
+  lokasiBahaya?: string;
+  rincianBahaya?: string;
+  penanggungJawabArea?: string;
+  penanggungJawabAreaLainnya?: string;
+  statusGForm?: "OPEN" | "CLOSE";
+  project?: "SENYIUR" | "MUARA PAHU";
+  jabatanPelapor?: string;
+  jabatanPelaporLainnya?: string;
+  identifikasiBahaya?: string;
+  tindakanPerbaikan?: string;
+  dokumentasiSebelum?: string;
+  dokumentasiSesudah?: string;
+
+  // General fields for table, dashboard & reports
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
   jobSite: "MuaraPahu" | "Senyiur";
