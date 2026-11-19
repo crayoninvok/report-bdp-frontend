@@ -185,6 +185,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   }, [tanggalPelaporan]);
   const [departemenPelapor, setDepartemenPelapor] = useState<string>("PLANT");
   const [lokasiBahaya, setLokasiBahaya] = useState<string>("WORKSHOP");
+  const [lokasiBahayaLainnya, setLokasiBahayaLainnya] = useState<string>("");
   const [rincianBahaya, setRincianBahaya] = useState<string>("");
 
   const [penanggungJawabArea, setPenanggungJawabArea] = useState<string>("PLANT");
@@ -344,6 +345,8 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   // Reset / Clear Form
   const handleClearForm = () => {
     setJenisPelaporan("KTA");
+    setLokasiBahaya("WORKSHOP");
+    setLokasiBahayaLainnya("");
     setRincianBahaya("");
     setIdentifikasiBahaya(KTA_ITEMS[0]);
     setIdentifikasiBahayaLainnya("");
@@ -352,7 +355,9 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
     setDokumentasiSebelumPublicId("");
     setDokumentasiSesudah("");
     setDokumentasiSesudahPublicId("");
+    setPenanggungJawabArea("PLANT");
     setPenanggungJawabAreaLainnya("");
+    setJabatanPelapor("WORKER");
     setJabatanPelaporLainnya("");
     setStatusGForm("OPEN");
     setSubmittedReportNumber(null);
@@ -374,6 +379,11 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
       showError("Harap pilih Tanggal Pelaporan.");
       return;
     }
+
+    const finalLokasi =
+      lokasiBahaya === "Lainnya"
+        ? lokasiBahayaLainnya.trim() || "Lainnya"
+        : lokasiBahaya;
 
     const finalPic =
       penanggungJawabArea === "Yang lain"
@@ -408,7 +418,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
         nrpPelapor: nrpPelapor.trim(),
         tanggalPelaporan,
         departemenPelapor,
-        lokasiBahaya,
+        lokasiBahaya: finalLokasi,
         rincianBahaya: rincianBahaya.trim(),
         penanggungJawabArea: finalPic,
         statusGForm,
@@ -423,7 +433,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
         jobSite: siteValue,
         date: tanggalPelaporan,
         time: new Date().toTimeString().slice(0, 5),
-        location: lokasiBahaya,
+        location: finalLokasi,
         category: categoryValue,
         riskLevel: "Medium",
         title: finalIdentifikasi,
@@ -492,7 +502,9 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block">Lokasi:</span>
-                <strong className="text-slate-800">{lokasiBahaya}</strong>
+                <strong className="text-slate-800">
+                  {lokasiBahaya === "Lainnya" ? (lokasiBahayaLainnya || "Lainnya") : lokasiBahaya}
+                </strong>
               </div>
               <div>
                 <span className="text-slate-400 block">Status:</span>
@@ -952,7 +964,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
             </div>
           </div>
 
-          {/* LOKASI BAHAYA* (17 Options) */}
+          {/* LOKASI BAHAYA* (17 Options + Lainnya) */}
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-2">
               LOKASI BAHAYA <span className="text-rose-500">*</span>
@@ -975,7 +987,31 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setLokasiBahaya("Lainnya")}
+                className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition-all cursor-pointer ${
+                  lokasiBahaya === "Lainnya"
+                    ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                Lainnya : (diisi sendiri)
+              </button>
             </div>
+
+            {lokasiBahaya === "Lainnya" && (
+              <div className="mt-2.5">
+                <input
+                  type="text"
+                  placeholder="Tuliskan lokasi lainnya (misal: Hauling Road KM 14, Pit, Disposal, dll)..."
+                  value={lokasiBahayaLainnya}
+                  onChange={(e) => setLokasiBahayaLainnya(e.target.value)}
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">

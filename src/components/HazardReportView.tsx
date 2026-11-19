@@ -226,6 +226,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   // Form State (Exact Google Form Fields & Compatibility)
   const [isCustomIdentifikasi, setIsCustomIdentifikasi] = useState(false);
   const [customIdentifikasiText, setCustomIdentifikasiText] = useState("");
+  const [isCustomLokasi, setIsCustomLokasi] = useState(false);
+  const [customLokasiText, setCustomLokasiText] = useState("");
   const [formData, setFormData] = useState({
     jenisPelaporan: "KTA" as "KTA" | "TTA",
     namaPelapor: user?.namaLengkap || user?.username || "",
@@ -389,6 +391,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const handleOpenCreateModal = () => {
     setIsCustomIdentifikasi(false);
     setCustomIdentifikasiText("");
+    setIsCustomLokasi(false);
+    setCustomLokasiText("");
     setItemToEdit(null);
     setFormData({
       jenisPelaporan: "KTA",
@@ -446,6 +450,16 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
     } else {
       setIsCustomIdentifikasi(false);
       setCustomIdentifikasiText("");
+    }
+
+    const rawLokasi = item.lokasiBahaya || item.location || "WORKSHOP";
+    const inLokasiList = LOKASI_OPTIONS.includes(rawLokasi as any);
+    if (!inLokasiList && rawLokasi) {
+      setIsCustomLokasi(true);
+      setCustomLokasiText(rawLokasi);
+    } else {
+      setIsCustomLokasi(false);
+      setCustomLokasiText("");
     }
 
     setFormData({
@@ -550,6 +564,12 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       return;
     }
 
+    const finalLokasi = (isCustomLokasi ? customLokasiText : formData.lokasiBahaya).trim() || "WORKSHOP";
+    if (isCustomLokasi && !customLokasiText.trim()) {
+      showError("Harap tuliskan lokasi bahaya.");
+      return;
+    }
+
     try {
       const isClose = formData.statusGForm === "CLOSE";
       const legacyStatus: HazardStatus = isClose ? "Closed" : "Open";
@@ -557,7 +577,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         ...formData,
         identifikasiBahaya: ident,
         title: ident,
-        location: formData.lokasiBahaya,
+        lokasiBahaya: finalLokasi,
+        location: finalLokasi,
         description: formData.rincianBahaya || formData.description,
         correctiveAction: formData.tindakanPerbaikan || formData.correctiveAction,
         picName: formData.penanggungJawabArea,
@@ -1311,18 +1332,57 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                     Lokasi Bahaya <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    value={formData.lokasiBahaya}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lokasiBahaya: e.target.value, location: e.target.value })
-                    }
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                    value={isCustomLokasi ? "Lainnya" : formData.lokasiBahaya}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "Lainnya") {
+                        setIsCustomLokasi(true);
+                        const fallback = customLokasiText.trim();
+                        setFormData({
+                          ...formData,
+                          lokasiBahaya: fallback,
+                          location: fallback,
+                        });
+                      } else {
+                        setIsCustomLokasi(false);
+                        setFormData({
+                          ...formData,
+                          lokasiBahaya: val,
+                          location: val,
+                        });
+                      }
+                    }}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 cursor-pointer"
                   >
                     {LOKASI_OPTIONS.map((loc) => (
                       <option key={loc} value={loc}>
                         {loc}
                       </option>
                     ))}
+                    <option value="Lainnya">Lainnya : (diisi sendiri)...</option>
                   </select>
+
+                  {/* Input Teks Tambahan Jika Memilih 'Lainnya' */}
+                  {isCustomLokasi && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        placeholder="Tuliskan lokasi lainnya..."
+                        value={customLokasiText}
+                        onChange={(e) => {
+                          const txt = e.target.value;
+                          setCustomLokasiText(txt);
+                          setFormData({
+                            ...formData,
+                            lokasiBahaya: txt,
+                            location: txt,
+                          });
+                        }}
+                        required
+                        className="w-full text-xs px-3 py-2 rounded-xl border border-orange-300 font-semibold bg-orange-50/40 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
