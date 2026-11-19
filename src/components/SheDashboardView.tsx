@@ -393,10 +393,14 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
             </div>
 
             <div className="h-56 w-full relative min-w-0">
-              {!isMounted || loading || !data?.categoryDistribution || data.categoryDistribution.length === 0 ? (
+              {!isMounted || loading ? (
                 <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
                   <RefreshCw size={20} className="animate-spin text-[#e95623] mr-2" />
                   <span>Memuat data kategori...</span>
+                </div>
+              ) : !data?.categoryDistribution || data.categoryDistribution.length === 0 ? (
+                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+                  <span>Belum ada data kategori</span>
                 </div>
               ) : (
                 <ChartErrorBoundary>
