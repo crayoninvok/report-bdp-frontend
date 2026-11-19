@@ -7,13 +7,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   TrendingUp,
-  Activity,
   HardHat,
-  Leaf,
   FileText,
   RefreshCw,
   ArrowRight,
-  Award,
   AlertCircle,
   Layers,
 } from "lucide-react";
@@ -569,85 +566,6 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
                 })
               )}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================
-          SECTION 2: INDIKATOR KINERJA K3L & KESELAMATAN OPERASIONAL
-      ========================================================== */}
-      <section className="space-y-4 pt-4 border-t border-slate-200 min-w-0">
-        {/* Section Header */}
-        <div className="pb-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10.5px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-              <ShieldCheck size={12} />
-              INDIKATOR K3L
-            </span>
-          </div>
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-            Indikator Kinerja Keselamatan Kerja &amp; Lingkungan
-          </h2>
-          <p className="text-xs text-slate-500">
-            Statistik akumulasi jam kerja selamat, rasio nihil kecelakaan fatal/LTI, dan kepatuhan lingkungan hidup PT Batara Dharma Persada.
-          </p>
-        </div>
-
-        {/* 4 Core Safety Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 min-w-0">
-          {/* Safe Man Hours */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all min-w-0">
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Jam Kerja Selamat</span>
-              <Activity size={16} className="text-[#e95623]" />
-            </div>
-            <div className="mt-2.5">
-              <span className="text-xl sm:text-2xl font-black text-slate-900">
-                {data?.safeManHours.toLocaleString("id-ID") ?? "1.285.400"}
-              </span>
-              <span className="text-xs font-semibold text-slate-400 ml-1">Jam</span>
-            </div>
-            <span className="text-[10px] font-bold text-emerald-600 mt-1">LTI Free Hours</span>
-          </div>
-
-          {/* Days Without LTI */}
-          <div className="bg-emerald-50/30 border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all min-w-0">
-            <div className="flex items-center justify-between text-emerald-700">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Hari Tanpa LTI</span>
-              <Award size={16} className="text-emerald-500" />
-            </div>
-            <div className="mt-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-emerald-700">
-                {data?.daysWithoutLti ?? 435}
-              </span>
-              <span className="text-xs font-semibold text-emerald-600 ml-1">Hari</span>
-            </div>
-            <span className="text-[10px] font-bold text-emerald-700 mt-1">Zero LTI Maintained</span>
-          </div>
-
-          {/* LTIFR & TRIFR */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all min-w-0">
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider">LTIFR / TRIFR</span>
-              <CheckCircle2 size={16} className="text-emerald-500" />
-            </div>
-            <div className="mt-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900">0.00</span>
-              <span className="text-xs font-semibold text-slate-400 ml-1">Rate</span>
-            </div>
-            <span className="text-[10px] font-semibold text-slate-500 mt-1">Target Industri: &lt; 0.50</span>
-          </div>
-
-          {/* Environmental Compliance */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all min-w-0">
-            <div className="flex items-center justify-between text-slate-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Kepatuhan Lingkungan</span>
-              <Leaf size={16} className="text-emerald-500" />
-            </div>
-            <div className="mt-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-emerald-700">100%</span>
-            </div>
-            <span className="text-[10px] font-semibold text-slate-500 mt-1">B3 &amp; Silt Trap Compliant</span>
           </div>
         </div>
       </section>
