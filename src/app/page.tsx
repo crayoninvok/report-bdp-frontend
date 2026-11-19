@@ -38,6 +38,7 @@ import { HRDashboardView } from "../components/HRDashboardView";
 import { ATRDashboardView } from "../components/ATRDashboardView";
 import { SheDashboardView } from "../components/SheDashboardView";
 import { HazardReportView } from "../components/HazardReportView";
+import { HazardReportFormPage } from "../components/HazardReportFormPage";
 
 import {
   Menu,
@@ -346,6 +347,8 @@ export default function Home() {
                       ? "Human Resource & Development • Master Manpower Data"
                       : activeMenu === "she-dashboard"
                       ? "Safety Health & Environment • Dashboard"
+                      : activeMenu === "hazard-report-form"
+                      ? "Safety Health & Environment • Form Input Hazard Report"
                       : activeMenu === "hazard-report"
                       ? "Safety Health & Environment • Hazard Report"
                       : "Dashboard Cost"}
@@ -668,10 +671,17 @@ export default function Home() {
               user={currentUser}
               onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
             />
+          ) : activeMenu === "hazard-report-form" ? (
+            <HazardReportFormPage
+              user={currentUser}
+              onNavigateToList={() => setActiveMenu("hazard-report")}
+              onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
+            />
           ) : activeMenu === "hazard-report" ? (
             <HazardReportView
               user={currentUser}
               onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
+              onNavigateToForm={() => setActiveMenu("hazard-report-form")}
             />
           ) : (
             <DashboardView

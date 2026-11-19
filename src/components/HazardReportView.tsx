@@ -33,6 +33,7 @@ import {
   ExternalLink,
   Loader2,
   CloudUpload,
+  ClipboardCheck,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
@@ -53,11 +54,13 @@ import { useNotification } from "../context/NotificationContext";
 interface HazardReportViewProps {
   user: any;
   onNavigateToDashboard?: () => void;
+  onNavigateToForm?: () => void;
 }
 
 export const HazardReportView: React.FC<HazardReportViewProps> = ({
   user,
   onNavigateToDashboard,
+  onNavigateToForm,
 }) => {
   const { confirm, showSuccess, showError, showInfo } = useNotification();
 
@@ -435,6 +438,19 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               <span>Export PDF</span>
             </button>
 
+            {/* Dedicated Checklist Page Button */}
+            {onNavigateToForm && (
+              <button
+                type="button"
+                onClick={onNavigateToForm}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-orange-50 text-[#e95623] hover:bg-orange-100 border border-orange-200 text-xs font-bold transition-colors cursor-pointer"
+                title="Buka Formulir Khusus Pengisian (Tampilan Halaman Penuh Checklist)"
+              >
+                <ClipboardCheck size={15} />
+                <span>Buka Form Checklist</span>
+              </button>
+            )}
+
             {/* Add New Report Button */}
             <button
               type="button"
@@ -442,7 +458,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md shadow-[#e95623]/30 transition-all cursor-pointer hover:scale-[1.02]"
             >
               <Plus size={16} />
-              <span>Input Hazard Baru</span>
+              <span>Input Cepat (Modal)</span>
             </button>
           </div>
         </div>

@@ -200,6 +200,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: LayoutDashboard,
         },
         {
+          id: "hazard-report-form",
+          label: "Form Hazard Report",
+          icon: ClipboardCheck,
+        },
+        {
           id: "hazard-report",
           label: "Hazard Report",
           icon: ShieldAlert,
