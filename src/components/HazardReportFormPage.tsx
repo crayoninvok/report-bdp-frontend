@@ -1,18 +1,35 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
+  ShieldAlert,
+  AlertTriangle,
   CheckCircle2,
   Camera,
-  Upload,
+  UploadCloud,
   X,
   ArrowLeft,
+  Send,
   RefreshCw,
+  MapPin,
+  User,
+  Calendar,
+  Sparkles,
+  Check,
+  Building2,
   ZoomIn,
   Trash2,
   Loader2,
   ExternalLink,
-  Plus,
+  ChevronRight,
+  Briefcase,
+  Layers,
+  Search,
+  CheckCircle,
+  Clock,
+  Tag,
+  ShieldCheck,
+  Info,
 } from "lucide-react";
 import {
   sheService,
@@ -34,7 +51,7 @@ interface HazardReportFormPageProps {
 }
 
 // ----------------------------------------------------------------------
-// Exact Google Form Choices & Options
+// Exact Google Form Options & Choices
 // ----------------------------------------------------------------------
 const DEPARTEMEN_OPTIONS = [
   "PLANT",
@@ -172,6 +189,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   // Section 2: Identifikasi Bahaya KTA / TTA
   const [identifikasiBahaya, setIdentifikasiBahaya] = useState<string>(KTA_ITEMS[0]);
   const [identifikasiBahayaLainnya, setIdentifikasiBahayaLainnya] = useState<string>("");
+  const [searchIdentifikasi, setSearchIdentifikasi] = useState<string>("");
 
   // Tindakan Perbaikan
   const [tindakanPerbaikan, setTindakanPerbaikan] = useState<string>("");
@@ -193,6 +211,14 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   // Submission Flow
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedReportNumber, setSubmittedReportNumber] = useState<string | null>(null);
+
+  // Filtered Identifikasi Items
+  const currentItems = jenisPelaporan === "KTA" ? KTA_ITEMS : TTA_ITEMS;
+  const filteredIdentifikasiItems = useMemo(() => {
+    if (!searchIdentifikasi.trim()) return currentItems;
+    const q = searchIdentifikasi.toLowerCase();
+    return currentItems.filter((i) => i.toLowerCase().includes(q));
+  }, [currentItems, searchIdentifikasi]);
 
   // Upload handler to Cloudinary: bdp-reportapp/hse-folder
   const handleUploadPhoto = async (
@@ -343,708 +369,917 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   };
 
   // --------------------------------------------------------------------
-  // SUBMISSION CONFIRMATION (Google Form Style)
+  // SUBMISSION CONFIRMATION (Custom Batara Modern Card)
   // --------------------------------------------------------------------
   if (submittedReportNumber) {
     return (
-      <div className="min-h-[85vh] bg-[#f0ebf8] py-10 px-4 flex flex-col items-center">
-        <div className="w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Top Google Form Purple/Orange Header Bar */}
-          <div className="h-2.5 bg-[#673ab7]" />
+      <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in zoom-in-95">
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden text-center p-8 sm:p-10 space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+            <CheckCircle2 size={36} />
+          </div>
 
-          <div className="p-8 space-y-4">
-            <h1 className="text-3xl font-normal text-slate-900 font-sans tracking-tight">
-              HAZARD REPORT
-            </h1>
-            <p className="text-sm text-slate-800">Tanggapan Anda telah direkam.</p>
+          <div className="space-y-2">
+            <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+              Laporan Terdaftar
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Hazard Report Berhasil Dikirim!
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
+              Terima kasih atas laporan Anda. Data telah tersimpan ke sistem pemantauan keselamatan kerja PT Batara Dharma Persada.
+            </p>
+          </div>
 
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
-              <span className="font-bold text-slate-500 uppercase block text-[10px]">
-                Nomor Registrasi Laporan
-              </span>
-              <span className="text-base font-black text-slate-900 font-mono block">
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-w-md mx-auto text-left space-y-2 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <span className="text-slate-400 font-bold text-[10px] uppercase">No. Laporan:</span>
+              <span className="font-mono font-black text-slate-900 text-sm">
                 {submittedReportNumber}
               </span>
-              <span className="text-slate-500 block text-[11px]">
-                Project: <strong>{project}</strong> &bull; Jenis: <strong>{jenisPelaporan}</strong> &bull; Lokasi: <strong>{lokasiBahaya}</strong>
-              </span>
             </div>
-
-            {dokumentasiSebelum && (
-              <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg flex items-center gap-2">
-                <CheckCircle2 size={16} />
-                <span>Foto bukti dokumentasi tersimpan aman di Cloudinary (hse-folder).</span>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div>
+                <span className="text-slate-400 block">Project:</span>
+                <strong className="text-slate-800">{project}</strong>
               </div>
-            )}
-
-            <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
-              <button
-                type="button"
-                onClick={handleClearForm}
-                className="text-xs text-[#1a73e8] hover:underline font-medium cursor-pointer"
-              >
-                Kirim tanggapan lain
-              </button>
-              <span className="hidden sm:inline text-slate-300">&bull;</span>
-              <button
-                type="button"
-                onClick={onNavigateToList}
-                className="text-xs text-[#1a73e8] hover:underline font-medium cursor-pointer"
-              >
-                Lihat Daftar Hazard Report (Monitoring)
-              </button>
+              <div>
+                <span className="text-slate-400 block">Jenis:</span>
+                <strong className="text-slate-800">{jenisPelaporan}</strong>
+              </div>
+              <div>
+                <span className="text-slate-400 block">Lokasi:</span>
+                <strong className="text-slate-800">{lokasiBahaya}</strong>
+              </div>
+              <div>
+                <span className="text-slate-400 block">Status:</span>
+                <strong className={statusGForm === "OPEN" ? "text-rose-600" : "text-emerald-600"}>
+                  {statusGForm}
+                </strong>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 text-center text-xs text-slate-500 space-y-1">
-          <p>Konten ini dibuat oleh Departemen SHE PT Batara Dharma Persada.</p>
-          <span className="text-[11px] text-slate-400">Google Formulir - Form Identik</span>
+          {dokumentasiSebelum && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-xs font-bold text-[#e95623]">
+              <Sparkles size={12} />
+              <span>Foto bukti tersimpan di Cloudinary: bdp-reportapp/hse-folder</span>
+            </div>
+          )}
+
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={handleClearForm}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md shadow-[#e95623]/25 transition-all cursor-pointer"
+            >
+              Kirim Hazard Report Lainnya
+            </button>
+            <button
+              type="button"
+              onClick={onNavigateToList}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+            >
+              Lihat Daftar Laporan (Monitoring)
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   // --------------------------------------------------------------------
-  // MAIN GOOGLE FORM CLONE UI
+  // MAIN CUSTOM DESIGN (Batara Dharma Persada Design System)
   // --------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#f0ebf8] py-8 px-4 flex flex-col items-center">
-      {/* Top Navbar Actions */}
-      <div className="w-full max-w-2xl flex items-center justify-between mb-4">
-        <button
-          type="button"
-          onClick={onNavigateToList}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-300 shadow-2xs hover:bg-slate-50 cursor-pointer"
-        >
-          <ArrowLeft size={14} />
-          <span>Kembali ke Monitoring</span>
-        </button>
+    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+      {/* ---------------------------------------------------------
+          Top Corporate Header & Navigation
+      ---------------------------------------------------------- */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 transition-all">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#e95623] to-[#cf4010] flex items-center justify-center text-white shadow-md shadow-[#e95623]/25">
+              <ShieldAlert size={26} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 text-[#e95623]">
+                  SHE Department
+                </span>
+                <span className="text-xs font-semibold text-slate-400">
+                  PT Batara Dharma Persada
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                Formulir Pelaporan Bahaya (Hazard Report)
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Pelaporan resmi Kondisi Tidak Aman (KTA) &amp; Tindakan Tidak Aman (TTA) operasional tambang.
+              </p>
+            </div>
+          </div>
 
-        <span className="text-xs text-slate-500 font-medium">
-          Formulir Pelaporan Bahaya (KTA &bull; TTA)
-        </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onNavigateToList}
+              className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-2xl border border-slate-200 transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={14} />
+              <span>Daftar Laporan</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* =========================================================
-            HEADER CARD (Google Form Title)
+            CARD 1: Project & Jenis Pelaporan Bahaya
         ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-2.5 bg-[#673ab7]" />
-          <div className="p-6 sm:p-7 space-y-3">
-            <h1 className="text-2xl sm:text-3xl font-normal text-slate-900 tracking-tight font-sans">
-              HAZARD REPORT
-            </h1>
-            <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
-              FORMULIR PELAPORAN BAHAYA
-            </p>
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-xl bg-[#e95623] text-white flex items-center justify-center font-black text-xs">
+              1
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                Klasifikasi Pelaporan &amp; Project Site
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Pilih job site dan jenis kondisi atau tindakan bahaya yang ditemukan.
+              </p>
+            </div>
+          </div>
 
-            <div className="pt-2 border-t border-slate-100 text-xs text-slate-600 flex items-center justify-between">
-              <div>
-                <span>{user?.email || "dathariqf@gmail.com"}</span>
-                <span className="text-[#1a73e8] ml-2 cursor-pointer hover:underline">
-                  Ganti akun
-                </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* PROJECT* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                PROJECT SITE <span className="text-rose-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["MUARA PAHU", "SENYIUR"] as const).map((proj) => (
+                  <button
+                    key={proj}
+                    type="button"
+                    onClick={() => setProject(proj)}
+                    className={`py-3 px-3 rounded-2xl border text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      project === proj
+                        ? "bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/10"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Building2 size={14} />
+                    <span>{proj}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              Nama, alamat email, dan foto yang terkait dengan Akun Google Anda akan direkam saat Anda mengupload file dan mengirimkan formulir ini.
-            </p>
-
-            <div className="text-xs text-rose-600 font-medium border-t border-slate-100 pt-2">
-              * Menunjukkan pertanyaan yang wajib diisi
+            {/* JENIS PELAPORAN BAHAYA* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                JENIS PELAPORAN BAHAYA <span className="text-rose-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: "KTA" as const, label: "KTA", desc: "Kondisi Tidak Aman" },
+                    { id: "TTA" as const, label: "TTA", desc: "Tindakan Tidak Aman" },
+                  ] as const
+                ).map((j) => (
+                  <button
+                    key={j.id}
+                    type="button"
+                    onClick={() => {
+                      setJenisPelaporan(j.id);
+                      setIdentifikasiBahaya(j.id === "KTA" ? KTA_ITEMS[0] : TTA_ITEMS[0]);
+                    }}
+                    className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      jenisPelaporan === j.id
+                        ? "bg-linear-to-br from-[#e95623] to-[#cf4010] text-white border-[#e95623] shadow-sm ring-2 ring-[#e95623]/25"
+                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span className="text-xs font-black block">{j.label}</span>
+                    <span
+                      className={`text-[10px] block font-medium ${
+                        jenisPelaporan === j.id ? "text-orange-100" : "text-slate-400"
+                      }`}
+                    >
+                      {j.desc}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* =========================================================
-            QUESTION 1: JENIS PELAPORAN BAHAYA*
+            CARD 2: Identitas Pelapor & Tanggal
         ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            JENIS PELAPORAN BAHAYA <span className="text-rose-600">*</span>
-          </label>
-          <div className="space-y-2.5 pt-1">
-            {(["KTA", "TTA"] as const).map((opt) => (
-              <label
-                key={opt}
-                className="flex items-center gap-3 text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="jenisPelaporan"
-                  value={opt}
-                  checked={jenisPelaporan === opt}
-                  onChange={() => {
-                    setJenisPelaporan(opt);
-                    setIdentifikasiBahaya(opt === "KTA" ? KTA_ITEMS[0] : TTA_ITEMS[0]);
-                  }}
-                  className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-                />
-                <span>{opt}</span>
-              </label>
-            ))}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs">
+              2
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                Identitas Pelapor &amp; Waktu
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Informasi pihak yang mengamati atau menemukan bahaya di lapangan.
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* =========================================================
-            QUESTION 2: NAMA PELAPOR*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            NAMA PELAPOR <span className="text-rose-600">*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Jawaban Anda"
-            value={namaPelapor}
-            onChange={(e) => setNamaPelapor(e.target.value)}
-            required
-            className="w-full text-sm py-2 border-b border-slate-300 focus:border-[#673ab7] focus:outline-hidden transition-colors"
-          />
-        </div>
-
-        {/* =========================================================
-            QUESTION 3: NRP PELAPOR*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            NRP PELAPOR <span className="text-rose-600">*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Jawaban Anda"
-            value={nrpPelapor}
-            onChange={(e) => setNrpPelapor(e.target.value)}
-            required
-            className="w-full text-sm py-2 border-b border-slate-300 focus:border-[#673ab7] focus:outline-hidden transition-colors"
-          />
-        </div>
-
-        {/* =========================================================
-            QUESTION 4: TANGGAL PELAPORAN*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            TANGGAL PELAPORAN <span className="text-rose-600">*</span>
-          </label>
-          <input
-            type="date"
-            value={tanggalPelaporan}
-            onChange={(e) => setTanggalPelaporan(e.target.value)}
-            required
-            className="text-sm py-1.5 px-3 border border-slate-300 rounded-md focus:border-[#673ab7] focus:outline-hidden bg-white"
-          />
-        </div>
-
-        {/* =========================================================
-            QUESTION 5: DEPARTEMEN PELAPOR*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            DEPARTEMEN PELAPOR <span className="text-rose-600">*</span>
-          </label>
-          <div className="space-y-2.5 pt-1">
-            {DEPARTEMEN_OPTIONS.map((dept) => (
-              <label
-                key={dept}
-                className="flex items-center gap-3 text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="departemenPelapor"
-                  value={dept}
-                  checked={departemenPelapor === dept}
-                  onChange={(e) => setDepartemenPelapor(e.target.value)}
-                  className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-                />
-                <span>{dept}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {/* NAMA PELAPOR* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                NAMA PELAPOR <span className="text-rose-500">*</span>
               </label>
-            ))}
+              <div className="relative">
+                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Nama lengkap pelapor"
+                  value={namaPelapor}
+                  onChange={(e) => setNamaPelapor(e.target.value)}
+                  required
+                  className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                />
+              </div>
+            </div>
+
+            {/* NRP PELAPOR* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                NRP PELAPOR <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="e.g. BDP-2024-001"
+                  value={nrpPelapor}
+                  onChange={(e) => setNrpPelapor(e.target.value)}
+                  required
+                  className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                />
+              </div>
+            </div>
+
+            {/* TANGGAL PELAPORAN* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                TANGGAL PELAPORAN <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={tanggalPelaporan}
+                  onChange={(e) => setTanggalPelaporan(e.target.value)}
+                  required
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 font-medium bg-white focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* =========================================================
-            QUESTION 6: LOKASI BAHAYA*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            LOKASI BAHAYA <span className="text-rose-600">*</span>
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-            {LOKASI_OPTIONS.map((loc) => (
-              <label
-                key={loc}
-                className="flex items-center gap-3 text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="lokasiBahaya"
-                  value={loc}
-                  checked={lokasiBahaya === loc}
-                  onChange={(e) => setLokasiBahaya(e.target.value)}
-                  className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-                />
-                <span>{loc}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            {/* DEPARTEMEN PELAPOR* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                DEPARTEMEN PELAPOR <span className="text-rose-500">*</span>
               </label>
-            ))}
-          </div>
-        </div>
+              <div className="flex flex-wrap gap-1.5">
+                {DEPARTEMEN_OPTIONS.map((dept) => (
+                  <button
+                    key={dept}
+                    type="button"
+                    onClick={() => setDepartemenPelapor(dept)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      departemenPelapor === dept
+                        ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {dept}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* =========================================================
-            QUESTION 7: RINCIAN IDENTIFIKASI BAHAYA
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            RINCIAN IDENTIFIKASI BAHAYA
-          </label>
-          <textarea
-            rows={3}
-            placeholder="Jawaban Anda"
-            value={rincianBahaya}
-            onChange={(e) => setRincianBahaya(e.target.value)}
-            className="w-full text-sm p-2 border-b border-slate-300 focus:border-[#673ab7] focus:outline-hidden transition-colors"
-          />
-        </div>
-
-        {/* =========================================================
-            QUESTION 8: PENANGGUNG JAWAB AREA*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            PENANGGUNG JAWAB AREA <span className="text-rose-600">*</span>
-          </label>
-          <div className="space-y-2.5 pt-1">
-            {PENANGGUNG_JAWAB_OPTIONS.map((pic) => (
-              <label
-                key={pic}
-                className="flex items-center gap-3 text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="penanggungJawabArea"
-                  value={pic}
-                  checked={penanggungJawabArea === pic}
-                  onChange={(e) => setPenanggungJawabArea(e.target.value)}
-                  className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-                />
-                <span>{pic}</span>
+            {/* JABATAN PELAPOR* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                JABATAN PELAPOR <span className="text-rose-500">*</span>
               </label>
-            ))}
+              <div className="flex flex-wrap gap-1.5">
+                {JABATAN_OPTIONS.map((jab) => (
+                  <button
+                    key={jab}
+                    type="button"
+                    onClick={() => setJabatanPelapor(jab)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      jabatanPelapor === jab
+                        ? "bg-[#e95623] text-white border-[#e95623] shadow-xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {jab}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setJabatanPelapor("Yang lain")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    jabatanPelapor === "Yang lain"
+                      ? "bg-[#e95623] text-white border-[#e95623] shadow-xs"
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Yang lain
+                </button>
+              </div>
 
-            {/* Yang lain: */}
-            <div className="flex items-center gap-3 text-sm text-slate-800">
-              <input
-                type="radio"
-                name="penanggungJawabArea"
-                value="Yang lain"
-                checked={penanggungJawabArea === "Yang lain"}
-                onChange={() => setPenanggungJawabArea("Yang lain")}
-                className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-              />
-              <span className="shrink-0">Yang lain:</span>
-              <input
-                type="text"
-                value={penanggungJawabAreaLainnya}
-                onChange={(e) => {
-                  setPenanggungJawabArea("Yang lain");
-                  setPenanggungJawabAreaLainnya(e.target.value);
-                }}
-                className="flex-1 text-sm py-1 border-b border-slate-300 focus:border-[#673ab7] focus:outline-hidden"
-              />
+              {jabatanPelapor === "Yang lain" && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    placeholder="Sebutkan jabatan pelapor..."
+                    value={jabatanPelaporLainnya}
+                    onChange={(e) => setJabatanPelaporLainnya(e.target.value)}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* =========================================================
-            QUESTION 9: STATUS*
+            CARD 3: Lokasi Bahaya & Penanggung Jawab Area
         ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            STATUS <span className="text-rose-600">*</span>
-          </label>
-          <div className="space-y-2.5 pt-1">
-            {(["OPEN", "CLOSE"] as const).map((st) => (
-              <label
-                key={st}
-                className="flex items-center gap-3 text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="statusGForm"
-                  value={st}
-                  checked={statusGForm === st}
-                  onChange={() => setStatusGForm(st)}
-                  className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-                />
-                <span>{st}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* =========================================================
-            QUESTION 10: PROJECT*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            PROJECT <span className="text-rose-600">*</span>
-          </label>
-          <div className="space-y-2.5 pt-1">
-            {(["SENYIUR", "MUARA PAHU"] as const).map((proj) => (
-              <label
-                key={proj}
-                className="flex items-center gap-3 text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="project"
-                  value={proj}
-                  checked={project === proj}
-                  onChange={() => setProject(proj)}
-                  className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-                />
-                <span>{proj}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* =========================================================
-            QUESTION 11: JABATAN PELAPOR*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            JABATAN PELAPOR <span className="text-rose-600">*</span>
-          </label>
-          <div className="space-y-2.5 pt-1">
-            {JABATAN_OPTIONS.map((jab) => (
-              <label
-                key={jab}
-                className="flex items-center gap-3 text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="jabatanPelapor"
-                  value={jab}
-                  checked={jabatanPelapor === jab}
-                  onChange={(e) => setJabatanPelapor(e.target.value)}
-                  className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-                />
-                <span>{jab}</span>
-              </label>
-            ))}
-
-            {/* Yang lain: */}
-            <div className="flex items-center gap-3 text-sm text-slate-800">
-              <input
-                type="radio"
-                name="jabatanPelapor"
-                value="Yang lain"
-                checked={jabatanPelapor === "Yang lain"}
-                onChange={() => setJabatanPelapor("Yang lain")}
-                className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
-              />
-              <span className="shrink-0">Yang lain:</span>
-              <input
-                type="text"
-                value={jabatanPelaporLainnya}
-                onChange={(e) => {
-                  setJabatanPelapor("Yang lain");
-                  setJabatanPelaporLainnya(e.target.value);
-                }}
-                className="flex-1 text-sm py-1 border-b border-slate-300 focus:border-[#673ab7] focus:outline-hidden"
-              />
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs">
+              3
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                Lokasi Bahaya &amp; Penanggung Jawab Area
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Pilih area spesifik lokasi bahaya dan pihak pengawas yang bertanggung jawab.
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* =========================================================
-            QUESTION 12: IDENTIFIKASI BAHAYA (DIISI SESUAI DENGAN JENIS PELAPORAN KTA/TTA)*
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
+          {/* LOKASI BAHAYA* (17 Options) */}
           <div>
-            <span className="text-xs font-black uppercase text-[#673ab7] tracking-wider block mb-0.5">
-              {jenisPelaporan === "KTA" ? "KONDISI TIDAK AMAN" : "TINDAKAN TIDAK AMAN"}
-            </span>
-            <label className="text-sm font-medium text-slate-900 block leading-snug">
-              IDENTIFIKASI BAHAYA - DIISI SESUAI DENGAN JENIS PELAPORAN ({jenisPelaporan}) <span className="text-rose-600">*</span>
+            <label className="text-xs font-bold text-slate-700 block mb-2">
+              LOKASI BAHAYA <span className="text-rose-500">*</span>
             </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {LOKASI_OPTIONS.map((loc) => {
+                const isSelected = lokasiBahaya === loc;
+                return (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setLokasiBahaya(loc)}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {loc}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="space-y-3 pt-2">
-            {(jenisPelaporan === "KTA" ? KTA_ITEMS : TTA_ITEMS).map((item, idx) => (
-              <label
-                key={idx}
-                className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="identifikasiBahaya"
-                  value={item}
-                  checked={identifikasiBahaya === item}
-                  onChange={() => setIdentifikasiBahaya(item)}
-                  className="mt-0.5 w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300 shrink-0"
-                />
-                <span className="leading-snug">{item}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+            {/* PENANGGUNG JAWAB AREA* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                PENANGGUNG JAWAB AREA <span className="text-rose-500">*</span>
               </label>
-            ))}
+              <div className="flex flex-wrap gap-1.5">
+                {PENANGGUNG_JAWAB_OPTIONS.map((pic) => (
+                  <button
+                    key={pic}
+                    type="button"
+                    onClick={() => setPenanggungJawabArea(pic)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      penanggungJawabArea === pic
+                        ? "bg-[#e95623] text-white border-[#e95623] shadow-xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {pic}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPenanggungJawabArea("Yang lain")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    penanggungJawabArea === "Yang lain"
+                      ? "bg-[#e95623] text-white border-[#e95623] shadow-xs"
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Yang lain
+                </button>
+              </div>
+
+              {penanggungJawabArea === "Yang lain" && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    placeholder="Sebutkan penanggung jawab area..."
+                    value={penanggungJawabAreaLainnya}
+                    onChange={(e) => setPenanggungJawabAreaLainnya(e.target.value)}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* STATUS* */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                STATUS PENANGANAN <span className="text-rose-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  {
+                    id: "OPEN" as const,
+                    label: "OPEN",
+                    desc: "Belum Ditangani",
+                    color: "bg-rose-50 text-rose-700 border-rose-200",
+                    active: "bg-rose-600 text-white border-rose-600 ring-2 ring-rose-200",
+                  },
+                  {
+                    id: "CLOSE" as const,
+                    label: "CLOSE",
+                    desc: "Tindakan Selesai",
+                    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    active: "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-200",
+                  },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setStatusGForm(st.id)}
+                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                      statusGForm === st.id ? st.active : `${st.color} hover:opacity-90`
+                    }`}
+                  >
+                    <span className="text-xs font-black block">{st.label}</span>
+                    <span
+                      className={`text-[10px] block mt-0.5 ${
+                        statusGForm === st.id ? "text-white/90" : "opacity-80"
+                      }`}
+                    >
+                      {st.desc}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================
+            CARD 4: IDENTIFIKASI BAHAYA (KTA / TTA Options)
+        ========================================================== */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-[#e95623] text-white flex items-center justify-center font-black text-xs">
+                4
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                  IDENTIFIKASI BAHAYA - {jenisPelaporan === "KTA" ? "KONDISI TIDAK AMAN" : "TINDAKAN TIDAK AMAN"} <span className="text-rose-500">*</span>
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Pilih salah satu temuan spesifik dari daftar resmi K3 Pertambangan berikut:
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Search inside KTA/TTA options */}
+            <div className="relative w-full sm:w-64">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari opsi bahaya..."
+                value={searchIdentifikasi}
+                onChange={(e) => setSearchIdentifikasi(e.target.value)}
+                className="w-full text-[11px] pl-8 pr-7 py-1.5 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#e95623]"
+              />
+              {searchIdentifikasi && (
+                <button
+                  type="button"
+                  onClick={() => setSearchIdentifikasi("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* List of KTA / TTA items */}
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {filteredIdentifikasiItems.map((item, idx) => {
+              const isSelected = identifikasiBahaya === item;
+              return (
+                <label
+                  key={idx}
+                  className={`flex items-start gap-3 p-3 rounded-2xl border text-xs cursor-pointer transition-all ${
+                    isSelected
+                      ? "bg-orange-50/80 border-[#e95623] text-slate-900 font-bold shadow-2xs ring-1 ring-[#e95623]/25"
+                      : "bg-slate-50/60 border-slate-200/90 text-slate-700 hover:bg-slate-100/70"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="identifikasiBahaya"
+                    value={item}
+                    checked={isSelected}
+                    onChange={() => setIdentifikasiBahaya(item)}
+                    className="mt-0.5 text-[#e95623] focus:ring-[#e95623] cursor-pointer shrink-0"
+                  />
+                  <span className="leading-relaxed flex-1">{item}</span>
+                  {isSelected && (
+                    <CheckCircle2 size={16} className="text-[#e95623] shrink-0 mt-0.5" />
+                  )}
+                </label>
+              );
+            })}
 
             {/* Yang lain: */}
-            <div className="flex items-center gap-3 text-sm text-slate-800 pt-1">
+            <label
+              className={`flex items-start gap-3 p-3 rounded-2xl border text-xs cursor-pointer transition-all ${
+                identifikasiBahaya === "Yang lain"
+                  ? "bg-orange-50/80 border-[#e95623] text-slate-900 font-bold shadow-2xs ring-1 ring-[#e95623]/25"
+                  : "bg-slate-50/60 border-slate-200/90 text-slate-700 hover:bg-slate-100/70"
+              }`}
+            >
               <input
                 type="radio"
                 name="identifikasiBahaya"
                 value="Yang lain"
                 checked={identifikasiBahaya === "Yang lain"}
                 onChange={() => setIdentifikasiBahaya("Yang lain")}
-                className="w-4 h-4 text-[#673ab7] focus:ring-[#673ab7] border-slate-300"
+                className="mt-0.5 text-[#e95623] focus:ring-[#e95623] cursor-pointer shrink-0"
               />
-              <span className="shrink-0">Yang lain:</span>
-              <input
-                type="text"
-                placeholder="Tuliskan temuan lainnya..."
-                value={identifikasiBahayaLainnya}
-                onChange={(e) => {
-                  setIdentifikasiBahaya("Yang lain");
-                  setIdentifikasiBahayaLainnya(e.target.value);
-                }}
-                className="flex-1 text-sm py-1 border-b border-slate-300 focus:border-[#673ab7] focus:outline-hidden"
+              <div className="flex-1 space-y-1">
+                <span>Yang lain:</span>
+                {identifikasiBahaya === "Yang lain" && (
+                  <input
+                    type="text"
+                    placeholder="Tuliskan temuan identifikasi bahaya lainnya..."
+                    value={identifikasiBahayaLainnya}
+                    onChange={(e) => setIdentifikasiBahayaLainnya(e.target.value)}
+                    className="w-full text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white"
+                  />
+                )}
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* =========================================================
+            CARD 5: Uraian Rincian Bahaya & Tindakan Perbaikan
+        ========================================================== */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs">
+              5
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                Rincian Temuan &amp; Tindakan Perbaikan
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Deskripsi kondisi riil di lapangan dan rencana tindak lanjut perbaikan.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* RINCIAN IDENTIFIKASI BAHAYA */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                RINCIAN IDENTIFIKASI BAHAYA
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Jelaskan secara rinci kondisi atau tindakan yang ditemukan serta potensi dampak bahaya bila tidak segera ditangani..."
+                value={rincianBahaya}
+                onChange={(e) => setRincianBahaya(e.target.value)}
+                className="w-full text-xs p-3 rounded-2xl border border-slate-300 leading-relaxed font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+              />
+            </div>
+
+            {/* TINDAKAN PERBAIKAN YANG DIPERLUKAN */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                TINDAKAN PERBAIKAN YANG DIPERLUKAN
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Rekomendasi tindakan pencegahan, perbaikan langsung di tempat, atau instruksi perbaikan teknis..."
+                value={tindakanPerbaikan}
+                onChange={(e) => setTindakanPerbaikan(e.target.value)}
+                className="w-full text-xs p-3 rounded-2xl border border-slate-300 leading-relaxed font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
               />
             </div>
           </div>
         </div>
 
         {/* =========================================================
-            QUESTION 13: TINDAKAN PERBAIKAN YANG DIPERLUKAN
+            CARD 6: DOKUMENTASI FOTO (Sebelum & Sesudah) - Cloudinary
         ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <label className="text-sm font-medium text-slate-900 block">
-            TINDAKAN PERBAIKAN YANG DIPERLUKAN
-          </label>
-          <textarea
-            rows={3}
-            placeholder="Jawaban Anda"
-            value={tindakanPerbaikan}
-            onChange={(e) => setTindakanPerbaikan(e.target.value)}
-            className="w-full text-sm p-2 border-b border-slate-300 focus:border-[#673ab7] focus:outline-hidden transition-colors"
-          />
-        </div>
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-[#e95623] text-white flex items-center justify-center font-black text-xs">
+                6
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                  DOKUMENTASI FOTO BUKTI (CLOUDINARY)
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Foto bukti temuan kondisi sebelum perbaikan &amp; sesudah tindakan penanganan.
+                </p>
+              </div>
+            </div>
 
-        {/* =========================================================
-            QUESTION 14: DOKUMENTASI SEBELUM (Cloudinary Upload)
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <div>
-            <label className="text-sm font-medium text-slate-900 block">
-              DOKUMENTASI SEBELUM
-            </label>
-            <span className="text-[11px] text-slate-400 block mt-0.5">
-              Upload 1 file yang didukung. Maks 10 MB (Tersimpan di Cloudinary: bdp-reportapp/hse-folder)
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 self-start sm:self-auto">
+              Folder: <code className="text-[#e95623] font-bold">bdp-reportapp/hse-folder</code>
             </span>
           </div>
 
-          {dokumentasiSebelum ? (
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={getCloudinaryThumbnail(dokumentasiSebelum, 100, 80)}
-                  alt="Dokumentasi Sebelum"
-                  className="w-16 h-12 rounded object-cover border border-slate-300 cursor-pointer"
-                  onClick={() => setLightboxUrl(dokumentasiSebelum)}
-                />
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">
-                    Foto Temuan Sebelum
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* DOKUMENTASI SEBELUM */}
+            <div className="p-4 bg-slate-50/70 rounded-2xl border border-slate-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800">
+                  DOKUMENTASI SEBELUM (BEFORE)
+                </span>
+                {dokumentasiSebelum && (
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 size={10} /> Cloudinary OK
                   </span>
+                )}
+              </div>
+
+              {dokumentasiSebelum ? (
+                <div className="space-y-2">
+                  <div className="relative group rounded-xl overflow-hidden border border-slate-200 h-36 bg-slate-900 flex items-center justify-center">
+                    <img
+                      src={getCloudinaryThumbnail(dokumentasiSebelum, 400, 300)}
+                      alt="Foto Sebelum"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => setLightboxUrl(dokumentasiSebelum)}
+                        className="px-2.5 py-1 rounded bg-white text-slate-800 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <ZoomIn size={12} /> Lihat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDokumentasiSebelum("");
+                          setDokumentasiSebelumPublicId("");
+                        }}
+                        className="px-2.5 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 size={12} /> Hapus
+                      </button>
+                    </div>
+                  </div>
                   <a
                     href={dokumentasiSebelum}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#1a73e8] hover:underline flex items-center gap-1 mt-0.5"
+                    className="text-[10px] text-[#e95623] hover:underline font-bold flex items-center gap-1 justify-center"
                   >
-                    <ExternalLink size={10} /> Lihat foto di Cloudinary
+                    <ExternalLink size={10} /> Buka Foto Asli di Cloudinary
                   </a>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setDokumentasiSebelum("");
-                  setDokumentasiSebelumPublicId("");
-                }}
-                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"
-                title="Hapus foto"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ) : (
-            <div>
-              <input
-                ref={inputSebelumRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleUploadPhoto(e, "sebelum")}
-              />
-              <button
-                type="button"
-                disabled={isUploadingSebelum}
-                onClick={() => inputSebelumRef.current?.click()}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-[#1a73e8] hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-60"
-              >
-                {isUploadingSebelum ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin text-[#1a73e8]" />
-                    <span>Mengupload ke Cloudinary...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload size={14} />
-                    <span>Tambahkan file</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* =========================================================
-            QUESTION 15: DOKUMENTASI SESUDAH (Cloudinary Upload)
-        ========================================================== */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-3">
-          <div>
-            <label className="text-sm font-medium text-slate-900 block">
-              DOKUMENTASI SESUDAH
-            </label>
-            <span className="text-[11px] text-slate-400 block mt-0.5">
-              Upload 1 file yang didukung. Maks 10 MB (Tersimpan di Cloudinary: bdp-reportapp/hse-folder)
-            </span>
-          </div>
-
-          {dokumentasiSesudah ? (
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={getCloudinaryThumbnail(dokumentasiSesudah, 100, 80)}
-                  alt="Dokumentasi Sesudah"
-                  className="w-16 h-12 rounded object-cover border border-slate-300 cursor-pointer"
-                  onClick={() => setLightboxUrl(dokumentasiSesudah)}
-                />
+              ) : (
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">
-                    Foto Bukti Sesudah
+                  <input
+                    ref={inputSebelumRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleUploadPhoto(e, "sebelum")}
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingSebelum}
+                    onClick={() => inputSebelumRef.current?.click()}
+                    className="w-full h-32 border-2 border-dashed border-slate-300 hover:border-[#e95623] rounded-2xl flex flex-col items-center justify-center gap-1 bg-white hover:bg-orange-50/20 transition-all cursor-pointer disabled:opacity-60"
+                  >
+                    {isUploadingSebelum ? (
+                      <>
+                        <Loader2 size={22} className="text-[#e95623] animate-spin" />
+                        <span className="text-xs font-bold text-slate-700">
+                          Mengunggah ke Cloudinary...
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-8 h-8 rounded-full bg-orange-100 text-[#e95623] flex items-center justify-center">
+                          <Camera size={16} />
+                        </div>
+                        <span className="text-xs font-bold text-slate-800">
+                          Ambil / Unggah Foto Temuan
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Format JPG, PNG, WebP (Maks 10MB)
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* DOKUMENTASI SESUDAH */}
+            <div className="p-4 bg-slate-50/70 rounded-2xl border border-slate-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800">
+                  DOKUMENTASI SESUDAH (AFTER)
+                </span>
+                {dokumentasiSesudah && (
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 size={10} /> Cloudinary OK
                   </span>
+                )}
+              </div>
+
+              {dokumentasiSesudah ? (
+                <div className="space-y-2">
+                  <div className="relative group rounded-xl overflow-hidden border border-emerald-300 h-36 bg-slate-900 flex items-center justify-center">
+                    <img
+                      src={getCloudinaryThumbnail(dokumentasiSesudah, 400, 300)}
+                      alt="Foto Sesudah"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => setLightboxUrl(dokumentasiSesudah)}
+                        className="px-2.5 py-1 rounded bg-white text-slate-800 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <ZoomIn size={12} /> Lihat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDokumentasiSesudah("");
+                          setDokumentasiSesudahPublicId("");
+                        }}
+                        className="px-2.5 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 size={12} /> Hapus
+                      </button>
+                    </div>
+                  </div>
                   <a
                     href={dokumentasiSesudah}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#1a73e8] hover:underline flex items-center gap-1 mt-0.5"
+                    className="text-[10px] text-emerald-700 hover:underline font-bold flex items-center gap-1 justify-center"
                   >
-                    <ExternalLink size={10} /> Lihat foto di Cloudinary
+                    <ExternalLink size={10} /> Buka Foto Asli di Cloudinary
                   </a>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setDokumentasiSesudah("");
-                  setDokumentasiSesudahPublicId("");
-                }}
-                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"
-                title="Hapus foto"
-              >
-                <Trash2 size={16} />
-              </button>
+              ) : (
+                <div>
+                  <input
+                    ref={inputSesudahRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleUploadPhoto(e, "sesudah")}
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingSesudah}
+                    onClick={() => inputSesudahRef.current?.click()}
+                    className="w-full h-32 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-1 bg-white hover:bg-emerald-50/20 transition-all cursor-pointer disabled:opacity-60"
+                  >
+                    {isUploadingSesudah ? (
+                      <>
+                        <Loader2 size={22} className="text-emerald-600 animate-spin" />
+                        <span className="text-xs font-bold text-slate-700">
+                          Mengunggah ke Cloudinary...
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                          <ShieldCheck size={16} />
+                        </div>
+                        <span className="text-xs font-bold text-slate-800">
+                          Unggah Foto Bukti Perbaikan
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Dilampirkan saat tindakan telah selesai
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
-          ) : (
-            <div>
-              <input
-                ref={inputSesudahRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleUploadPhoto(e, "sesudah")}
-              />
-              <button
-                type="button"
-                disabled={isUploadingSesudah}
-                onClick={() => inputSesudahRef.current?.click()}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-[#1a73e8] hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-60"
-              >
-                {isUploadingSesudah ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin text-[#1a73e8]" />
-                    <span>Mengupload ke Cloudinary...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload size={14} />
-                    <span>Tambahkan file</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* =========================================================
-            BOTTOM ACTIONS (Google Form Style)
+            BOTTOM SUBMIT BAR
         ========================================================== */}
-        <div className="pt-2 flex items-center justify-between">
-          <button
-            type="submit"
-            disabled={isSubmitting || isUploadingSebelum || isUploadingSesudah}
-            className="px-6 py-2.5 rounded-lg bg-[#673ab7] hover:bg-[#5b32a3] text-white text-sm font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-60 flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={15} className="animate-spin" />
-                <span>Mengirim...</span>
-              </>
-            ) : (
-              <span>Kirim</span>
-            )}
-          </button>
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md p-5 flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-4 z-30">
+          <div className="text-xs text-slate-500 flex items-center gap-2">
+            <ShieldCheck size={16} className="text-[#e95623]" />
+            <span>
+              Laporan terkirim otomatis ke sistem pengawasan K3 PT Batara Dharma Persada.
+            </span>
+          </div>
 
-          <button
-            type="button"
-            onClick={handleClearForm}
-            className="text-xs font-semibold text-[#1a73e8] hover:bg-white/60 px-3 py-2 rounded-lg transition-colors cursor-pointer"
-          >
-            Kosongkan formulir
-          </button>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleClearForm}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              Kosongkan Formulir
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || isUploadingSebelum || isUploadingSesudah}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md shadow-[#e95623]/25 transition-all cursor-pointer disabled:opacity-60 hover:scale-[1.01]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  <span>Mengirim Laporan...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={15} />
+                  <span>Kirim Hazard Report</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
 
-      {/* Lightbox Preview */}
+      {/* Lightbox Modal */}
       {lightboxUrl && (
         <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs"
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in"
           onClick={() => setLightboxUrl(null)}
         >
           <div
-            className="relative max-w-3xl max-h-[90vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            className="relative max-w-4xl max-h-[90vh] bg-slate-900 rounded-3xl overflow-hidden border border-slate-700 shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-4 py-2.5 bg-slate-950 text-white flex items-center justify-between">
-              <span className="text-xs font-bold">Pratinjau Foto Cloudinary</span>
+            <div className="px-5 py-3 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
+              <span className="text-xs font-bold">Pratinjau Foto Dokumentasi (Cloudinary)</span>
               <button
                 type="button"
                 onClick={() => setLightboxUrl(null)}
-                className="p-1 rounded text-slate-400 hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
-            <div className="p-2 flex items-center justify-center bg-black">
+            <div className="p-2 flex items-center justify-center bg-black/60 overflow-auto">
               <img
                 src={getCloudinaryFullPreview(lightboxUrl)}
-                alt="Dokumentasi Full"
-                className="max-h-[75vh] max-w-full object-contain rounded"
+                alt="Foto Penuh"
+                className="max-h-[75vh] max-w-full rounded-xl object-contain shadow-lg"
               />
             </div>
           </div>
