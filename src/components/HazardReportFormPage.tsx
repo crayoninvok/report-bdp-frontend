@@ -634,7 +634,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                   value={namaPelapor}
                   onChange={(e) => setNamaPelapor(e.target.value)}
                   required
-                  className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                  className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
             </div>
@@ -652,7 +652,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                   value={nrpPelapor}
                   onChange={(e) => setNrpPelapor(e.target.value)}
                   required
-                  className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                  className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
             </div>
@@ -668,7 +668,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                   value={tanggalPelaporan}
                   onChange={(e) => setTanggalPelaporan(e.target.value)}
                   required
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 font-medium bg-white focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 font-medium bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
             </div>
@@ -738,7 +738,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                     placeholder="Sebutkan jabatan pelapor..."
                     value={jabatanPelaporLainnya}
                     onChange={(e) => setJabatanPelaporLainnya(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   />
                 </div>
               )}
@@ -831,7 +831,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                     placeholder="Sebutkan penanggung jawab area..."
                     value={penanggungJawabAreaLainnya}
                     onChange={(e) => setPenanggungJawabAreaLainnya(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   />
                 </div>
               )}
@@ -976,7 +976,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                     placeholder="Tuliskan temuan identifikasi bahaya lainnya..."
                     value={identifikasiBahayaLainnya}
                     onChange={(e) => setIdentifikasiBahayaLainnya(e.target.value)}
-                    className="w-full text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   />
                 )}
               </div>
@@ -1013,7 +1013,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                 placeholder="Jelaskan secara rinci kondisi atau tindakan yang ditemukan serta potensi dampak bahaya bila tidak segera ditangani..."
                 value={rincianBahaya}
                 onChange={(e) => setRincianBahaya(e.target.value)}
-                className="w-full text-xs p-3 rounded-2xl border border-slate-300 leading-relaxed font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                className="w-full text-xs p-3 rounded-2xl border border-slate-300 leading-relaxed font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
 
@@ -1027,7 +1027,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                 placeholder="Rekomendasi tindakan pencegahan, perbaikan langsung di tempat, atau instruksi perbaikan teknis..."
                 value={tindakanPerbaikan}
                 onChange={(e) => setTindakanPerbaikan(e.target.value)}
-                className="w-full text-xs p-3 rounded-2xl border border-slate-300 leading-relaxed font-medium focus:ring-2 focus:ring-[#e95623]/30 focus:border-[#e95623]"
+                className="w-full text-xs p-3 rounded-2xl border border-slate-300 leading-relaxed font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
               />
             </div>
           </div>
