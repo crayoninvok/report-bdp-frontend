@@ -181,7 +181,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
         </div>
 
         {/* Days Without LTI */}
-        <div className="bg-white border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between bg-emerald-50/20">
+        <div className="bg-emerald-50/20 border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-emerald-700">
             <span className="text-[11px] font-bold uppercase">Hari Tanpa LTI</span>
             <Award size={16} className="text-emerald-500" />
