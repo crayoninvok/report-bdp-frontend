@@ -760,7 +760,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
 
               {/* Autocomplete Dropdown List */}
               {isManpowerDropdownOpen && (
-                <div className="absolute z-50 left-0 right-0 sm:right-auto sm:w-[380px] md:w-[420px] max-w-[calc(100vw-2rem)] top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute z-50 left-0 right-0 sm:right-auto sm:w-95 md:w-105 max-w-[calc(100vw-2rem)] top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                   <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-[11px] font-semibold text-slate-500">
                     <span className="flex items-center gap-1.5">
                       <Search size={12} className="text-[#e95623]" />
@@ -1135,7 +1135,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                 placeholder="Cari opsi bahaya..."
                 value={searchIdentifikasi}
                 onChange={(e) => setSearchIdentifikasi(e.target.value)}
-                className="w-full text-xs pl-8 pr-7 py-2 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#e95623] bg-slate-50/60 focus:bg-white"
+                className="w-full text-xs pl-8 pr-7 py-2 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#e95623] bg-white"
               />
               {searchIdentifikasi && (
                 <button
@@ -1305,7 +1305,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                       alt="Foto Sebelum"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
-                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                    <div className="absolute inset-x-0 bottom-0 p-2 bg-linear-to-t from-black/80 via-black/40 to-transparent sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                       <button
                         type="button"
                         onClick={() => setLightboxUrl(dokumentasiSebelum)}
@@ -1395,7 +1395,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                       alt="Foto Sesudah"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
-                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                    <div className="absolute inset-x-0 bottom-0 p-2 bg-linear-to-t from-black/80 via-black/40 to-transparent sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                       <button
                         type="button"
                         onClick={() => setLightboxUrl(dokumentasiSesudah)}
