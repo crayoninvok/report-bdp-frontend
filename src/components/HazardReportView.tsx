@@ -796,7 +796,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         </div>
 
         {/* Status OPEN */}
-        <div className="bg-white rounded-2xl border border-rose-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-rose-50/40 to-transparent">
+        <div className="bg-white rounded-2xl border border-rose-200/80 shadow-2xs p-4 flex flex-col justify-between bg-linear-to-br from-rose-50/40 to-transparent">
           <span className="text-[10px] font-bold uppercase text-rose-600">Open (Belum Selesai)</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-rose-700">{stats.open}</span>
@@ -806,7 +806,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         </div>
 
         {/* Status CLOSE */}
-        <div className="bg-white rounded-2xl border border-emerald-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-emerald-50/40 to-transparent">
+        <div className="bg-white rounded-2xl border border-emerald-200/80 shadow-2xs p-4 flex flex-col justify-between bg-linear-to-br from-emerald-50/40 to-transparent">
           <span className="text-[10px] font-bold uppercase text-emerald-600">Close (Selesai)</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-emerald-700">{stats.closed}</span>
@@ -818,7 +818,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         </div>
 
         {/* Kondisi Tidak Aman (KTA) */}
-        <div className="bg-white rounded-2xl border border-orange-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-orange-50/40 to-transparent">
+        <div className="bg-white rounded-2xl border border-orange-200/80 shadow-2xs p-4 flex flex-col justify-between bg-linear-to-br from-orange-50/40 to-transparent">
           <span className="text-[10px] font-bold uppercase text-orange-600">KTA (Kondisi Bahaya)</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-orange-700">{stats.kta}</span>
@@ -828,7 +828,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         </div>
 
         {/* Tindakan Tidak Aman (TTA) */}
-        <div className="bg-white rounded-2xl border border-purple-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-purple-50/40 to-transparent">
+        <div className="bg-white rounded-2xl border border-purple-200/80 shadow-2xs p-4 flex flex-col justify-between bg-linear-to-br from-purple-50/40 to-transparent">
           <span className="text-[10px] font-bold uppercase text-purple-600">TTA (Tindakan Bahaya)</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-purple-700">{stats.tta}</span>
@@ -838,7 +838,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         </div>
 
         {/* Foto Dokumentasi */}
-        <div className="bg-white rounded-2xl border border-sky-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-sky-50/40 to-transparent">
+        <div className="bg-white rounded-2xl border border-sky-200/80 shadow-2xs p-4 flex flex-col justify-between bg-linear-to-br from-sky-50/40 to-transparent">
           <span className="text-[10px] font-bold uppercase text-sky-600">Foto Dokumentasi</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-sky-700">{stats.withPhoto}</span>
