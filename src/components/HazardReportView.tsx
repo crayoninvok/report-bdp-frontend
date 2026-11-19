@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   ShieldAlert,
   AlertTriangle,
@@ -26,6 +26,13 @@ import {
   MapPin,
   Tag,
   ShieldCheck,
+  Camera,
+  UploadCloud,
+  Image as ImageIcon,
+  ZoomIn,
+  ExternalLink,
+  Loader2,
+  CloudUpload,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
@@ -35,6 +42,11 @@ import {
   HazardRiskLevel,
   HazardStatus,
 } from "../services/sheService";
+import {
+  uploadHazardPhoto,
+  getCloudinaryThumbnail,
+  getCloudinaryFullPreview,
+} from "../services/cloudinaryService";
 import { HazardReportPdfModal } from "./HazardReportPdfModal";
 import { useNotification } from "../context/NotificationContext";
 
@@ -68,6 +80,16 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const [itemToEdit, setItemToEdit] = useState<HazardReportItem | null>(null);
   const [detailItem, setDetailItem] = useState<HazardReportItem | null>(null);
 
+  // Lightbox Modal for Photo Preview
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxTitle, setLightboxTitle] = useState<string>("");
+
+  // Upload States
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const evidenceInputRef = useRef<HTMLInputElement>(null);
+
   // Form State
   const [formData, setFormData] = useState({
     jobSite: "MuaraPahu" as "MuaraPahu" | "Senyiur",
@@ -86,6 +108,10 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
     picDept: "Maintenance",
     dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
     status: "Open" as HazardStatus,
+    photoUrl: "",
+    photoPublicId: "",
+    evidenceUrl: "",
+    evidencePublicId: "",
   });
 
   const loadHazards = useCallback(async () => {
@@ -156,6 +182,10 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       picDept: "Maintenance",
       dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
       status: "Open",
+      photoUrl: "",
+      photoPublicId: "",
+      evidenceUrl: "",
+      evidencePublicId: "",
     });
     setIsFormModalOpen(true);
   };
@@ -180,8 +210,62 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       picDept: item.picDept,
       dueDate: item.dueDate,
       status: item.status,
+      photoUrl: item.photoUrl || "",
+      photoPublicId: item.photoPublicId || "",
+      evidenceUrl: item.evidenceUrl || "",
+      evidencePublicId: item.evidencePublicId || "",
     });
     setIsFormModalOpen(true);
+  };
+
+  // Handle Photo Upload to Cloudinary
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    target: "photo" | "evidence"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showError("File harus berupa gambar (JPG, PNG, WebP).");
+      return;
+    }
+
+    if (target === "photo") {
+      setIsUploadingPhoto(true);
+    } else {
+      setIsUploadingEvidence(true);
+    }
+
+    try {
+      const res = await uploadHazardPhoto(file, "bdp-reportapp/hse-folder");
+      if (res.secure_url) {
+        if (target === "photo") {
+          setFormData((prev) => ({
+            ...prev,
+            photoUrl: res.secure_url,
+            photoPublicId: res.public_id || "",
+          }));
+          showSuccess("Foto bukti temuan berhasil disimpan ke Cloudinary (hse-folder).");
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            evidenceUrl: res.secure_url,
+            evidencePublicId: res.public_id || "",
+          }));
+          showSuccess("Foto bukti penyelesaian berhasil disimpan ke Cloudinary (hse-folder).");
+        }
+      }
+    } catch (err: any) {
+      showError(err.message || "Gagal mengunggah foto ke Cloudinary.");
+    } finally {
+      if (target === "photo") {
+        setIsUploadingPhoto(false);
+      } else {
+        setIsUploadingEvidence(false);
+      }
+      e.target.value = "";
+    }
   };
 
   // Submit Create or Edit
@@ -267,6 +351,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       "Target Selesai (Due Date)": h.dueDate,
       "Tgl Selesai": h.completionDate || "-",
       Status: h.status,
+      "Foto Bukti Temuan (Cloudinary)": h.photoUrl || "-",
+      "Foto Bukti Penyelesaian (Cloudinary)": h.evidenceUrl || "-",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataRows);
@@ -282,97 +368,81 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   return (
     <div className="space-y-6">
       {/* ---------------------------------------------------------
-          Corporate Header Banner
+          Top Corporate Header & Site Selector
       ---------------------------------------------------------- */}
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 shadow-xl p-6 sm:p-7">
-        <div className="absolute -right-16 -top-16 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute right-32 -bottom-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#e95623] text-white shadow-xs">
-                <ShieldAlert size={13} />
-                SAFETY, HEALTH &amp; ENVIRONMENT (SHE)
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                <ShieldCheck size={12} />
-                HIRA &bull; Hazard Identification &amp; Risk Assessment
-              </span>
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 transition-all">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#e95623] to-[#cf4010] flex items-center justify-center text-white shadow-md shadow-[#e95623]/25">
+              <ShieldAlert size={26} />
             </div>
-
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Hazard Report &amp; Observation System
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
-              Pencatatan dan pemantauan kondisi tidak aman (Unsafe Condition), tindakan tidak aman (Unsafe Action),
-              potensi insiden near-miss, serta pengawalan tindakan perbaikan di seluruh area tambang &amp; hauling.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 text-[#e95623]">
+                  SHE Module
+                </span>
+                <span className="text-xs font-semibold text-slate-400">
+                  PT Batara Dharma Persada
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                Hazard Report (Pelaporan Bahaya)
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Identifikasi kondisi/tindakan tidak aman, near miss, dan pemantauan tindakan koreksi di area tambang.
+              </p>
+            </div>
           </div>
 
-          {/* Action Toolbar */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Site Switcher */}
-            <div className="inline-flex p-1 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15">
-              {(
-                [
-                  { key: "MuaraPahu", label: "Muara Pahu" },
-                  { key: "Senyiur", label: "Senyiur" },
-                  { key: "ALL", label: "Semua Site" },
-                ] as const
-              ).map((s) => (
+            <div className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
+              {(["MuaraPahu", "Senyiur", "ALL"] as const).map((st) => (
                 <button
-                  key={s.key}
+                  key={st}
                   type="button"
-                  onClick={() => setSelectedSite(s.key)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                    selectedSite === s.key
-                      ? "bg-[#e95623] text-white shadow-md"
-                      : "text-slate-200 hover:bg-white/10"
+                  onClick={() => setSelectedSite(st)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    selectedSite === st
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  {s.label}
+                  {st === "ALL" ? "Semua Site" : st === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}
                 </button>
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={loadHazards}
-              disabled={loading}
-              className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 transition-all cursor-pointer"
-              title="Refresh Data"
-            >
-              <RefreshCw size={15} className={loading ? "animate-spin text-[#e95623]" : ""} />
-            </button>
-
+            {/* Excel Export */}
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all cursor-pointer"
-              title="Download format Spreadsheet Excel"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 text-xs font-bold transition-colors cursor-pointer"
+              title="Download format Excel Spreadsheet"
             >
               <FileSpreadsheet size={15} />
               <span className="hidden sm:inline">Export Excel</span>
             </button>
 
+            {/* PDF Export */}
             <button
               type="button"
               onClick={() => setIsPdfModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold bg-white/10 hover:bg-white/20 text-white border border-white/15 shadow-md transition-all cursor-pointer"
-              title="Export PDF / Cetak Dokumen HIRA"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              title="Cetak & Export PDF Formal"
             >
               <FileDown size={15} />
-              <span className="hidden sm:inline">Export PDF</span>
+              <span>Export PDF</span>
             </button>
 
+            {/* Add New Report Button */}
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black bg-[#e95623] hover:bg-[#d84818] text-white shadow-lg transition-all cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md shadow-[#e95623]/30 transition-all cursor-pointer hover:scale-[1.02]"
             >
               <Plus size={16} />
-              <span>+ Laporkan Bahaya</span>
+              <span>Input Hazard Baru</span>
             </button>
           </div>
         </div>
@@ -381,72 +451,61 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       {/* ---------------------------------------------------------
           Summary KPI Cards
       ---------------------------------------------------------- */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold text-slate-500 uppercase">
-            Total Laporan
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {/* Total */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
+          <span className="text-[10px] font-bold uppercase text-slate-400">Total Hazard</span>
+          <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-slate-900">{stats.total}</span>
-            <span className="text-xs font-semibold text-slate-400">Temuan</span>
+            <span className="text-xs font-semibold text-slate-400">Kasus</span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1">Hazard terdata</span>
+          <span className="text-[10px] text-slate-400 mt-1">Site {selectedSite}</span>
         </div>
 
-        <div className="bg-white border border-rose-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between bg-rose-50/20">
-          <span className="text-[11px] font-bold text-rose-700 uppercase flex items-center gap-1">
-            <AlertCircle size={12} />
-            Open (Belum Ditangani)
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
+        {/* Open */}
+        <div className="bg-white rounded-2xl border border-rose-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-rose-50/40 to-transparent">
+          <span className="text-[10px] font-bold uppercase text-rose-600">Open (Belum Selesai)</span>
+          <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-rose-700">{stats.open}</span>
             <span className="text-xs font-semibold text-rose-500">Laporan</span>
           </div>
-          <span className="text-[10px] text-rose-600 mt-1 font-semibold">Perlu Tindakan Cepat</span>
+          <span className="text-[10px] text-rose-500 mt-1">Perlu Tindakan</span>
         </div>
 
-        <div className="bg-white border border-amber-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between bg-amber-50/20">
-          <span className="text-[11px] font-bold text-amber-700 uppercase flex items-center gap-1">
-            <Clock3 size={12} />
-            In Progress (Proses)
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
+        {/* In Progress */}
+        <div className="bg-white rounded-2xl border border-amber-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-amber-50/40 to-transparent">
+          <span className="text-[10px] font-bold uppercase text-amber-600">In Progress</span>
+          <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-amber-700">{stats.inProgress}</span>
             <span className="text-xs font-semibold text-amber-500">Laporan</span>
           </div>
-          <span className="text-[10px] text-amber-600 mt-1 font-semibold">Sedang Perbaikan</span>
+          <span className="text-[10px] text-amber-500 mt-1">Sedang Dikerjakan</span>
         </div>
 
-        <div className="bg-white border border-emerald-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between bg-emerald-50/20">
-          <span className="text-[11px] font-bold text-emerald-700 uppercase flex items-center gap-1">
-            <CheckCircle2 size={12} />
-            Closed (Selesai)
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
+        {/* Closed */}
+        <div className="bg-white rounded-2xl border border-emerald-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-emerald-50/40 to-transparent">
+          <span className="text-[10px] font-bold uppercase text-emerald-600">Closed (Selesai)</span>
+          <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-emerald-700">{stats.closed}</span>
-            <span className="text-xs font-semibold text-emerald-500">({stats.resolutionRate}%)</span>
+            <span className="text-xs font-semibold text-emerald-500">Laporan</span>
           </div>
-          <span className="text-[10px] text-emerald-600 mt-1 font-semibold">Terselesaikan</span>
+          <span className="text-[10px] text-emerald-600 font-bold mt-1">{stats.resolutionRate}% Tingkat Selesai</span>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1">
-            <AlertTriangle size={12} className="text-red-500" />
-            Risiko Kritis &amp; High
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-black text-red-600">{stats.critical}</span>
-            <span className="text-xs font-semibold text-slate-400">Unit/Area</span>
+        {/* Critical & High */}
+        <div className="bg-white rounded-2xl border border-orange-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-orange-50/40 to-transparent">
+          <span className="text-[10px] font-bold uppercase text-orange-600">Risiko Tinggi / Kritis</span>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className="text-2xl font-black text-orange-700">{stats.critical}</span>
+            <span className="text-xs font-semibold text-orange-500">Kasus</span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1">Prioritas Utama</span>
+          <span className="text-[10px] text-orange-500 mt-1">Prioritas Utama</span>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1">
-            <Sparkles size={12} className="text-indigo-500" />
-            Insiden Near Miss
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
+        {/* Near Miss */}
+        <div className="bg-white rounded-2xl border border-indigo-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-indigo-50/40 to-transparent">
+          <span className="text-[10px] font-bold uppercase text-indigo-600">Near Miss</span>
+          <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-indigo-700">{stats.nearMiss}</span>
             <span className="text-xs font-semibold text-slate-400">Kejadian</span>
           </div>
@@ -506,47 +565,57 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               ))}
             </div>
 
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden"
+            >
+              <option value="ALL">Semua Kategori</option>
+              <option value="Unsafe Condition">Unsafe Condition</option>
+              <option value="Unsafe Action">Unsafe Action</option>
+              <option value="Environmental">Environmental</option>
+              <option value="Near Miss">Near Miss</option>
+              <option value="Health & Hygiene">Health & Hygiene</option>
+            </select>
+
             {/* Risk Filter */}
-            <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
-              <span className="text-[11px] font-bold text-slate-400 mr-1">Risiko:</span>
-              {[
-                { id: "ALL", label: "Semua" },
-                { id: "Critical", label: "Critical" },
-                { id: "High", label: "High" },
-                { id: "Medium", label: "Medium" },
-                { id: "Low", label: "Low" },
-              ].map((rk) => (
-                <button
-                  key={rk.id}
-                  type="button"
-                  onClick={() => setRiskFilter(rk.id)}
-                  className={`px-2 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                    riskFilter === rk.id
-                      ? "bg-[#e95623] text-white shadow-2xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {rk.label}
-                </button>
-              ))}
-            </div>
+            <select
+              value={riskFilter}
+              onChange={(e) => setRiskFilter(e.target.value)}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden"
+            >
+              <option value="ALL">Semua Risiko</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={loadHazards}
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              title="Refresh Data"
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            </button>
           </div>
         </div>
 
-        {/* Results summary bar */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 px-1">
+        {/* Counter Results */}
+        <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100 pt-2.5">
           <span>
-            Menampilkan <strong className="text-slate-800">{filteredHazards.length}</strong> dari{" "}
-            <strong>{hazards.length}</strong> laporan bahaya
+            Menampilkan <strong className="text-slate-700">{filteredHazards.length}</strong> dari {hazards.length} laporan
           </span>
-          {(searchQuery || statusFilter !== "ALL" || riskFilter !== "ALL" || categoryFilter !== "ALL") && (
+          {(statusFilter !== "ALL" || categoryFilter !== "ALL" || riskFilter !== "ALL" || searchQuery) && (
             <button
               type="button"
               onClick={() => {
-                setSearchQuery("");
                 setStatusFilter("ALL");
-                setRiskFilter("ALL");
                 setCategoryFilter("ALL");
+                setRiskFilter("ALL");
+                setSearchQuery("");
               }}
               className="text-[11px] font-bold text-[#e95623] hover:underline cursor-pointer"
             >
@@ -556,7 +625,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         </div>
 
         {/* ---------------------------------------------------------
-            Main Data Table
+            Main Data Table with Photo Thumbnails
         ---------------------------------------------------------- */}
         <div className="overflow-x-auto rounded-2xl border border-slate-200">
           <table className="w-full text-left text-xs text-slate-600">
@@ -567,9 +636,10 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 <th className="py-3 px-3 w-28">Tgl &amp; Waktu</th>
                 <th className="py-3 px-3 w-36">Lokasi / Area</th>
                 <th className="py-3 px-3 w-28">Kategori</th>
-                <th className="py-3 px-3 w-24 text-center">Risiko</th>
+                <th className="py-3 px-3 w-20 text-center">Risiko</th>
                 <th className="py-3 px-3 min-w-56">Judul Temuan &amp; Deskripsi</th>
-                <th className="py-3 px-3 min-w-48">Tindakan Koreksi</th>
+                <th className="py-3 px-3 min-w-44">Tindakan Koreksi</th>
+                <th className="py-3 px-3 w-28 text-center">Foto Bukti</th>
                 <th className="py-3 px-3 w-28">PIC &amp; Due Date</th>
                 <th className="py-3 px-3 w-24 text-center">Status</th>
                 <th className="py-3 px-3 w-20 text-right">Aksi</th>
@@ -579,7 +649,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filteredHazards.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-12 text-center text-slate-400">
+                  <td colSpan={12} className="py-12 text-center text-slate-400">
                     <ShieldAlert size={36} className="mx-auto text-slate-300 mb-2" />
                     <p className="font-semibold">Tidak ada data hazard report yang sesuai filter.</p>
                   </td>
@@ -679,6 +749,63 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                       <td className="py-3 px-3 text-slate-700 text-[11px] leading-relaxed">
                         <span className="block">{item.correctiveAction}</span>
                       </td>
+
+                      {/* Foto Bukti Column (Cloudinary) */}
+                      <td className="py-3 px-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {item.photoUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLightboxUrl(item.photoUrl || null);
+                                setLightboxTitle(`Bukti Temuan • ${item.reportNumber}`);
+                              }}
+                              className="relative group block w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-[#e95623] transition-all cursor-pointer shadow-2xs"
+                              title="Klik untuk melihat Foto Temuan"
+                            >
+                              <img
+                                src={getCloudinaryThumbnail(item.photoUrl, 80, 80)}
+                                alt="Foto Temuan"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                                <ZoomIn size={12} />
+                              </div>
+                            </button>
+                          ) : (
+                            <span
+                              className="w-10 h-10 rounded-lg border border-dashed border-slate-200 flex items-center justify-center text-slate-300"
+                              title="Belum ada foto temuan"
+                            >
+                              <ImageIcon size={14} />
+                            </span>
+                          )}
+
+                          {item.evidenceUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLightboxUrl(item.evidenceUrl || null);
+                                setLightboxTitle(`Bukti Perbaikan • ${item.reportNumber}`);
+                              }}
+                              className="relative group block w-10 h-10 rounded-lg overflow-hidden border border-emerald-300 hover:ring-2 hover:ring-emerald-500 transition-all cursor-pointer shadow-2xs"
+                              title="Klik untuk melihat Foto Bukti Perbaikan"
+                            >
+                              <img
+                                src={getCloudinaryThumbnail(item.evidenceUrl, 80, 80)}
+                                alt="Foto Selesai"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                loading="lazy"
+                              />
+                              <span className="absolute bottom-0 right-0 bg-emerald-600 text-white p-0.5 rounded-tl">
+                                <CheckCircle2 size={8} />
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
                       <td className="py-3 px-3 text-[11px]">
                         <div className="font-extrabold text-slate-800">{item.picName}</div>
                         <div className="text-[10px] text-slate-400">{item.picDept}</div>
@@ -764,45 +891,50 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsFormModalOpen(false)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="flex-1 overflow-y-auto p-6 space-y-4">
+            <form onSubmit={handleSubmitForm} className="p-6 overflow-y-auto space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">JobSite</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Job Site <span className="text-rose-500">*</span>
+                  </label>
                   <select
                     value={formData.jobSite}
                     onChange={(e) => setFormData({ ...formData, jobSite: e.target.value as any })}
                     className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
                   >
-                    <option value="MuaraPahu">Site Muara Pahu</option>
-                    <option value="Senyiur">Site Senyiur</option>
+                    <option value="MuaraPahu">Muara Pahu</option>
+                    <option value="Senyiur">Senyiur</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Tanggal Temuan</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Tanggal Temuan <span className="text-rose-500">*</span>
+                  </label>
                   <input
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     required
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Waktu (Jam)</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Waktu (Jam:Menit)
+                  </label>
                   <input
                     type="time"
                     value={formData.time}
                     onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    required
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
                   />
                 </div>
               </div>
@@ -813,11 +945,11 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Hauling Road KM 14+200, Main Workshop Bay 2, Jetty Port"
+                  placeholder="e.g. Hauling Road KM 14+200, Workshop Bay 2, Jetty Hopper"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   required
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold"
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300"
                 />
               </div>
 
@@ -829,11 +961,11 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as HazardCategory })}
                     className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
                   >
-                    <option value="Unsafe Condition">Kondisi Tidak Aman (Unsafe Condition)</option>
-                    <option value="Unsafe Action">Tindakan Tidak Aman (Unsafe Action)</option>
-                    <option value="Environmental">Pencemaran Lingkungan (Environmental)</option>
-                    <option value="Near Miss">Kejadian Hampir Celaka (Near Miss)</option>
-                    <option value="Health & Hygiene">Kesehatan &amp; Higiene Kerja</option>
+                    <option value="Unsafe Condition">Unsafe Condition (Kondisi Tidak Aman)</option>
+                    <option value="Unsafe Action">Unsafe Action (Tindakan Tidak Aman)</option>
+                    <option value="Environmental">Environmental (Pencemaran/Lingkungan)</option>
+                    <option value="Near Miss">Near Miss (Hampir Celaka)</option>
+                    <option value="Health & Hygiene">Health & Hygiene (Kesehatan Kerja)</option>
                   </select>
                 </div>
 
@@ -846,7 +978,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   >
                     <option value="Critical">Critical (Kritis - Hentikan Operasi)</option>
                     <option value="High">High (Tinggi - Segera Tangani)</option>
-                    <option value="Medium">Medium (Sedang - Jadwalkan)</option>
+                    <option value="Medium">Medium (Sedang - Jadwalkan Perbaikan)</option>
                     <option value="Low">Low (Rendah - Pemantauan)</option>
                   </select>
                 </div>
@@ -918,6 +1050,206 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </div>
               </div>
 
+              {/* ---------------------------------------------------------
+                  Cloudinary Photo Upload Section
+              ---------------------------------------------------------- */}
+              <div className="pt-2 border-t border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Camera size={14} className="text-[#e95623]" />
+                      Dokumentasi Foto Bukti (Cloudinary)
+                    </span>
+                    <span className="text-[10px] text-slate-400 block">
+                      Tersimpan di Cloud: <code className="bg-orange-50 text-[#e95623] px-1 py-0.2 rounded font-bold">bdp-reportapp/hse-folder</code>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Foto Temuan (Before) */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-black uppercase text-slate-600 block">
+                        1. Foto Temuan (Before)
+                      </span>
+                      {formData.photoUrl && (
+                        <span className="text-[9.5px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                          <CheckCircle2 size={10} /> Cloudinary OK
+                        </span>
+                      )}
+                    </div>
+
+                    {formData.photoUrl ? (
+                      <div className="space-y-2">
+                        <div className="relative group rounded-xl overflow-hidden border border-slate-200 h-32 bg-slate-100 flex items-center justify-center">
+                          <img
+                            src={getCloudinaryThumbnail(formData.photoUrl, 400, 300)}
+                            alt="Bukti Temuan"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLightboxUrl(formData.photoUrl);
+                                setLightboxTitle("Pratinjau Foto Temuan");
+                              }}
+                              className="px-2 py-1 rounded bg-white text-slate-800 text-[10px] font-bold flex items-center gap-1 hover:bg-slate-100 cursor-pointer"
+                            >
+                              <ZoomIn size={11} /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, photoUrl: "", photoPublicId: "" })}
+                              className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1 hover:bg-rose-700 cursor-pointer"
+                            >
+                              <Trash2 size={11} /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => photoInputRef.current?.click()}
+                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1"
+                        >
+                          <Pencil size={10} /> Ganti Foto Temuan
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload(e, "photo")}
+                        />
+                        <button
+                          type="button"
+                          disabled={isUploadingPhoto}
+                          onClick={() => photoInputRef.current?.click()}
+                          className="w-full h-32 border-2 border-dashed border-slate-300 hover:border-[#e95623] rounded-xl flex flex-col items-center justify-center gap-1.5 bg-white hover:bg-orange-50/20 transition-all cursor-pointer disabled:opacity-60"
+                        >
+                          {isUploadingPhoto ? (
+                            <>
+                              <Loader2 size={24} className="text-[#e95623] animate-spin" />
+                              <span className="text-[11px] font-bold text-slate-600">
+                                Mengunggah ke Cloudinary...
+                              </span>
+                              <span className="text-[9px] text-slate-400">bdp-reportapp/hse-folder</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-8 h-8 rounded-full bg-orange-100 text-[#e95623] flex items-center justify-center">
+                                <Camera size={16} />
+                              </div>
+                              <span className="text-xs font-bold text-slate-700">
+                                Ambil / Upload Foto Temuan
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                JPG, PNG, atau WebP (Maks 10MB)
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Foto Bukti Perbaikan (After) */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-black uppercase text-slate-600 block">
+                        2. Foto Bukti Perbaikan (After)
+                      </span>
+                      {formData.evidenceUrl && (
+                        <span className="text-[9.5px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                          <CheckCircle2 size={10} /> Cloudinary OK
+                        </span>
+                      )}
+                    </div>
+
+                    {formData.evidenceUrl ? (
+                      <div className="space-y-2">
+                        <div className="relative group rounded-xl overflow-hidden border border-slate-200 h-32 bg-slate-100 flex items-center justify-center">
+                          <img
+                            src={getCloudinaryThumbnail(formData.evidenceUrl, 400, 300)}
+                            alt="Bukti Perbaikan"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLightboxUrl(formData.evidenceUrl);
+                                setLightboxTitle("Pratinjau Foto Perbaikan");
+                              }}
+                              className="px-2 py-1 rounded bg-white text-slate-800 text-[10px] font-bold flex items-center gap-1 hover:bg-slate-100 cursor-pointer"
+                            >
+                              <ZoomIn size={11} /> Lihat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, evidenceUrl: "", evidencePublicId: "" })}
+                              className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1 hover:bg-rose-700 cursor-pointer"
+                            >
+                              <Trash2 size={11} /> Hapus
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => evidenceInputRef.current?.click()}
+                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1"
+                        >
+                          <Pencil size={10} /> Ganti Foto Perbaikan
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          ref={evidenceInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload(e, "evidence")}
+                        />
+                        <button
+                          type="button"
+                          disabled={isUploadingEvidence}
+                          onClick={() => evidenceInputRef.current?.click()}
+                          className="w-full h-32 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center gap-1.5 bg-white hover:bg-emerald-50/20 transition-all cursor-pointer disabled:opacity-60"
+                        >
+                          {isUploadingEvidence ? (
+                            <>
+                              <Loader2 size={24} className="text-emerald-600 animate-spin" />
+                              <span className="text-[11px] font-bold text-slate-600">
+                                Mengunggah ke Cloudinary...
+                              </span>
+                              <span className="text-[9px] text-slate-400">bdp-reportapp/hse-folder</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                                <ShieldCheck size={16} />
+                              </div>
+                              <span className="text-xs font-bold text-slate-700">
+                                Upload Foto Bukti Perbaikan
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                Dilampirkan saat tindakan selesai
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pelapor & PIC */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
                   <span className="text-[11px] font-black uppercase text-slate-500 block">Identitas Pelapor</span>
@@ -979,9 +1311,19 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d84818] text-white shadow-md transition-all cursor-pointer"
+                  disabled={isUploadingPhoto || isUploadingEvidence}
+                  className="px-5 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d84818] text-white shadow-md transition-all cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
                 >
-                  {itemToEdit ? "Simpan Perubahan" : "Kirim Laporan Bahaya"}
+                  {isUploadingPhoto || isUploadingEvidence ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>Sedang Mengunggah...</span>
+                    </>
+                  ) : itemToEdit ? (
+                    "Simpan Perubahan"
+                  ) : (
+                    "Kirim Laporan Bahaya"
+                  )}
                 </button>
               </div>
             </form>
@@ -1044,6 +1386,94 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </p>
               </div>
 
+              {/* Foto Dokumentasi Section in Detail Modal */}
+              <div className="pt-2 border-t border-slate-200">
+                <span className="text-slate-500 block text-[10px] font-bold uppercase mb-2">
+                  Dokumentasi Foto Bukti (Cloudinary)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Foto Temuan */}
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-500 block mb-1.5">
+                      1. Foto Temuan (Before)
+                    </span>
+                    {detailItem.photoUrl ? (
+                      <div className="space-y-1.5">
+                        <div
+                          onClick={() => {
+                            setLightboxUrl(detailItem.photoUrl || null);
+                            setLightboxTitle(`Bukti Temuan • ${detailItem.reportNumber}`);
+                          }}
+                          className="relative group rounded-xl overflow-hidden border border-slate-200 h-36 bg-slate-900 flex items-center justify-center cursor-pointer"
+                        >
+                          <img
+                            src={getCloudinaryThumbnail(detailItem.photoUrl, 400, 300)}
+                            alt="Bukti Temuan"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <ZoomIn size={18} />
+                          </div>
+                        </div>
+                        <a
+                          href={detailItem.photoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-[#e95623] hover:underline font-bold flex items-center gap-1 justify-center py-0.5"
+                        >
+                          <ExternalLink size={10} /> Buka Foto Asli di Cloudinary
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="h-28 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
+                        <ImageIcon size={20} className="text-slate-300 mb-1" />
+                        <span className="text-[10px]">Tidak ada foto temuan</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Foto Perbaikan */}
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-500 block mb-1.5">
+                      2. Foto Bukti Perbaikan (After)
+                    </span>
+                    {detailItem.evidenceUrl ? (
+                      <div className="space-y-1.5">
+                        <div
+                          onClick={() => {
+                            setLightboxUrl(detailItem.evidenceUrl || null);
+                            setLightboxTitle(`Bukti Perbaikan • ${detailItem.reportNumber}`);
+                          }}
+                          className="relative group rounded-xl overflow-hidden border border-emerald-300 h-36 bg-slate-900 flex items-center justify-center cursor-pointer"
+                        >
+                          <img
+                            src={getCloudinaryThumbnail(detailItem.evidenceUrl, 400, 300)}
+                            alt="Bukti Perbaikan"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <ZoomIn size={18} />
+                          </div>
+                        </div>
+                        <a
+                          href={detailItem.evidenceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-emerald-700 hover:underline font-bold flex items-center gap-1 justify-center py-0.5"
+                        >
+                          <ExternalLink size={10} /> Buka Foto Asli di Cloudinary
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="h-28 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
+                        <ShieldCheck size={20} className="text-slate-300 mb-1" />
+                        <span className="text-[10px]">Belum ada foto penyelesaian</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Tindakan Langsung</span>
@@ -1086,6 +1516,57 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------
+          Lightbox Modal for Zoomed Photo
+      ---------------------------------------------------------- */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-slate-900 rounded-3xl overflow-hidden border border-slate-700 shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-3 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Camera size={14} className="text-[#e95623]" />
+                <span className="text-xs font-bold">{lightboxTitle || "Foto Bukti"}</span>
+                <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded font-mono">
+                  Cloudinary: bdp-reportapp/hse-folder
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={lightboxUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                  title="Buka gambar resolusi penuh di tab baru"
+                >
+                  <ExternalLink size={16} />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setLightboxUrl(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-2 flex items-center justify-center bg-black/60 overflow-auto">
+              <img
+                src={getCloudinaryFullPreview(lightboxUrl)}
+                alt="Foto Bukti Besar"
+                className="max-h-[75vh] max-w-full rounded-xl object-contain shadow-lg"
+              />
             </div>
           </div>
         </div>

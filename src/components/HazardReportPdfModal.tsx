@@ -569,6 +569,20 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
                             <span className="text-[10px] text-slate-600 leading-snug line-clamp-2 block">
                               {item.description}
                             </span>
+                            {(item.photoUrl || item.evidenceUrl) && (
+                              <div className="flex items-center gap-1 mt-1">
+                                {item.photoUrl && (
+                                  <span className="inline-block text-[8px] font-bold text-[#e95623] bg-orange-50 border border-orange-200 px-1 py-0.2 rounded">
+                                    Foto Temuan (Cloudinary)
+                                  </span>
+                                )}
+                                {item.evidenceUrl && (
+                                  <span className="inline-block text-[8px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded">
+                                    Foto Selesai (Cloudinary)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="py-2 px-3 border-r border-slate-200 text-[10px] text-slate-700 leading-snug">
                             {item.correctiveAction}

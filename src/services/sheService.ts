@@ -31,8 +31,10 @@ export interface HazardReportItem {
   dueDate: string;
   completionDate?: string;
   status: HazardStatus;
-  photoUrl?: string;
-  evidenceUrl?: string;
+  photoUrl?: string; // Cloudinary secure URL (Bukti Temuan)
+  photoPublicId?: string;
+  evidenceUrl?: string; // Cloudinary secure URL (Bukti Penyelesaian)
+  evidencePublicId?: string;
   createdAt: string;
   updatedAt: string;
 }
