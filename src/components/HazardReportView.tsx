@@ -827,7 +827,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       {/* ---------------------------------------------------------
           Summary KPI Cards (Exact Google Form Metrics)
       ---------------------------------------------------------- */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Hazard */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase text-slate-400">Total Hazard</span>
@@ -878,16 +878,6 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             <span className="text-xs font-semibold text-purple-500">Temuan</span>
           </div>
           <span className="text-[10px] text-purple-500 mt-1">Perilaku / Prosedur</span>
-        </div>
-
-        {/* Foto Dokumentasi */}
-        <div className="bg-white rounded-2xl border border-sky-200/80 shadow-2xs p-4 flex flex-col justify-between bg-linear-to-br from-sky-50/40 to-transparent">
-          <span className="text-[10px] font-bold uppercase text-sky-600">Foto Dokumentasi</span>
-          <div className="flex items-baseline justify-between mt-2">
-            <span className="text-2xl font-black text-sky-700">{stats.withPhoto}</span>
-            <span className="text-xs font-semibold text-slate-400">Bukti</span>
-          </div>
-          <span className="text-[10px] text-sky-600 mt-1">Cloudinary Terhubung</span>
         </div>
       </div>
 
