@@ -157,18 +157,6 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
             >
               <RefreshCw size={15} className={loading ? "animate-spin text-[#e95623]" : ""} />
             </button>
-
-            {onNavigateToHazardReport && (
-              <button
-                type="button"
-                onClick={onNavigateToHazardReport}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black bg-[#e95623] hover:bg-[#d84818] text-white shadow-lg transition-all cursor-pointer active:scale-98"
-              >
-                <ShieldAlert size={15} />
-                <span>Buka Hazard Report</span>
-                <ArrowRight size={13} />
-              </button>
-            )}
           </div>
         </div>
       </div>
