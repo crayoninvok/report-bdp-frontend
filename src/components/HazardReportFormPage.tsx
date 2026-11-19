@@ -54,7 +54,7 @@ interface HazardReportFormPageProps {
 // ----------------------------------------------------------------------
 // Exact Google Form Options & Choices
 // ----------------------------------------------------------------------
-const DEPARTEMEN_OPTIONS = [
+export const DEPARTEMEN_OPTIONS = [
   "PLANT",
   "PRODUKSI",
   "HRGA",
@@ -64,7 +64,7 @@ const DEPARTEMEN_OPTIONS = [
   "MANAGEMENT",
 ] as const;
 
-const LOKASI_OPTIONS = [
+export const LOKASI_OPTIONS = [
   "OFFICE",
   "WORKSHOP",
   "TOOL ROOM",
@@ -84,7 +84,7 @@ const LOKASI_OPTIONS = [
   "KONSTRUKSI",
 ] as const;
 
-const PENANGGUNG_JAWAB_OPTIONS = [
+export const PENANGGUNG_JAWAB_OPTIONS = [
   "PLANT",
   "PRODUKSI",
   "LOGISTIK",
@@ -96,7 +96,7 @@ const PENANGGUNG_JAWAB_OPTIONS = [
   "KONTRAKTOR HAULING",
 ] as const;
 
-const JABATAN_OPTIONS = [
+export const JABATAN_OPTIONS = [
   "SITE MANAGEMENT",
   "SUPERINTENDENT",
   "SR. SUPERVISOR",
@@ -105,7 +105,7 @@ const JABATAN_OPTIONS = [
 ] as const;
 
 // 26 Exact KTA Items from Google Form
-const KTA_ITEMS = [
+export const KTA_ITEMS = [
   "Sistem Pelindung atau Peralatan Pengaman tidak memadai - KTA",
   "Sistem pelindung atau Peralatan Pengaman dalam kondisi rusak - KTA",
   "APD tidak memadai - KTA",
@@ -135,7 +135,7 @@ const KTA_ITEMS = [
 ];
 
 // Standard TTA Items for Mining
-const TTA_ITEMS = [
+export const TTA_ITEMS = [
   "Mengoperasikan peralatan tanpa otorisasi / SIMPER - TTA",
   "Mengoperasikan peralatan dengan kecepatan melebihi batas (overspeed) - TTA",
   "Tidak menggunakan APD wajib standar - TTA",

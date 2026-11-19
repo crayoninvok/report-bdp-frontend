@@ -54,6 +54,12 @@ import {
 } from "../services/cloudinaryService";
 import { HazardReportPdfModal } from "./HazardReportPdfModal";
 import { useNotification } from "../context/NotificationContext";
+import {
+  KTA_ITEMS,
+  TTA_ITEMS,
+  DEPARTEMEN_OPTIONS,
+  JABATAN_OPTIONS,
+} from "./HazardReportFormPage";
 
 // Predefined Choices from BDP Hazard Report Google Form
 const LOKASI_OPTIONS = [
@@ -136,6 +142,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const evidenceInputRef = useRef<HTMLInputElement>(null);
 
   // Form State (Exact Google Form Fields & Compatibility)
+  const [isCustomIdentifikasi, setIsCustomIdentifikasi] = useState(false);
+  const [customIdentifikasiText, setCustomIdentifikasiText] = useState("");
   const [formData, setFormData] = useState({
     jenisPelaporan: "KTA" as "KTA" | "TTA",
     namaPelapor: user?.namaLengkap || user?.username || "",
@@ -297,6 +305,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
 
   // Open Form for Create
   const handleOpenCreateModal = () => {
+    setIsCustomIdentifikasi(false);
+    setCustomIdentifikasiText("");
     setItemToEdit(null);
     setFormData({
       jenisPelaporan: "KTA",
@@ -307,7 +317,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       jabatanPelapor: "WORKER",
       lokasiBahaya: "WORKSHOP",
       penanggungJawabArea: "PLANT",
-      identifikasiBahaya: "",
+      identifikasiBahaya: KTA_ITEMS[0],
       rincianBahaya: "",
       tindakanPerbaikan: "",
       statusGForm: "OPEN",
@@ -321,7 +331,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       location: "WORKSHOP",
       category: "Unsafe Condition",
       riskLevel: "Medium",
-      title: "",
+      title: KTA_ITEMS[0],
       description: "",
       immediateAction: "",
       correctiveAction: "",
@@ -343,8 +353,21 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const handleOpenEditModal = (item: HazardReportItem) => {
     setItemToEdit(item);
     const isClose = item.statusGForm === "CLOSE" || item.status === "Closed";
+    const currentJenis = item.jenisPelaporan || (item.category === "Unsafe Action" ? "TTA" : "KTA");
+    const currentList = currentJenis === "KTA" ? KTA_ITEMS : TTA_ITEMS;
+    const rawIdent = item.identifikasiBahaya || item.title || "";
+    const inList = currentList.includes(rawIdent as any);
+
+    if (!inList && rawIdent) {
+      setIsCustomIdentifikasi(true);
+      setCustomIdentifikasiText(rawIdent);
+    } else {
+      setIsCustomIdentifikasi(false);
+      setCustomIdentifikasiText("");
+    }
+
     setFormData({
-      jenisPelaporan: item.jenisPelaporan || (item.category === "Unsafe Action" ? "TTA" : "KTA"),
+      jenisPelaporan: currentJenis,
       namaPelapor: item.namaPelapor || item.reporterName || "",
       nrpPelapor: item.nrpPelapor || "",
       tanggalPelaporan: item.tanggalPelaporan || item.date || new Date().toISOString().slice(0, 10),
@@ -352,7 +375,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       jabatanPelapor: item.jabatanPelapor || "WORKER",
       lokasiBahaya: item.lokasiBahaya || item.location || "WORKSHOP",
       penanggungJawabArea: item.penanggungJawabArea || item.picDept || item.picName || "PLANT",
-      identifikasiBahaya: item.identifikasiBahaya || item.title || "",
+      identifikasiBahaya: rawIdent,
       rincianBahaya: item.rincianBahaya || item.description || "",
       tindakanPerbaikan: item.tindakanPerbaikan || item.correctiveAction || "",
       statusGForm: isClose ? "CLOSE" : "OPEN",
@@ -439,9 +462,9 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   // Submit Create or Edit
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ident = formData.identifikasiBahaya.trim() || formData.title.trim();
+    const ident = (isCustomIdentifikasi ? customIdentifikasiText : formData.identifikasiBahaya).trim() || formData.title.trim();
     if (!ident) {
-      showError("Harap isi identifikasi bahaya.");
+      showError("Harap pilih atau tuliskan identifikasi bahaya.");
       return;
     }
 
@@ -1181,13 +1204,19 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   </label>
                   <select
                     value={formData.jenisPelaporan}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const nextJenis = e.target.value as "KTA" | "TTA";
+                      const nextList = nextJenis === "KTA" ? KTA_ITEMS : TTA_ITEMS;
+                      setIsCustomIdentifikasi(false);
+                      setCustomIdentifikasiText("");
                       setFormData({
                         ...formData,
-                        jenisPelaporan: e.target.value as "KTA" | "TTA",
-                        category: e.target.value === "KTA" ? "Unsafe Condition" : "Unsafe Action",
-                      })
-                    }
+                        jenisPelaporan: nextJenis,
+                        category: nextJenis === "KTA" ? "Unsafe Condition" : "Unsafe Action",
+                        identifikasiBahaya: nextList[0],
+                        title: nextList[0],
+                      });
+                    }}
                     className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   >
                     <option value="KTA">KTA (Kondisi Tidak Aman)</option>
@@ -1239,21 +1268,73 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </div>
               </div>
 
-              {/* Identifikasi Bahaya */}
+              {/* Identifikasi Bahaya (Dropdown Choices based on KTA / TTA) */}
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Identifikasi Bahaya <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Deskripsi ringkas identifikasi bahaya..."
-                  value={formData.identifikasiBahaya || formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, identifikasiBahaya: e.target.value, title: e.target.value })
-                  }
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700">
+                    Identifikasi Bahaya ({formData.jenisPelaporan}) <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    {formData.jenisPelaporan === "KTA" ? "26 Pilihan KTA (Google Form)" : "16 Pilihan TTA"}
+                  </span>
+                </div>
+                <select
+                  value={isCustomIdentifikasi ? "Yang lain" : formData.identifikasiBahaya}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "Yang lain") {
+                      setIsCustomIdentifikasi(true);
+                      const fallback = customIdentifikasiText.trim();
+                      setFormData({
+                        ...formData,
+                        identifikasiBahaya: fallback,
+                        title: fallback,
+                      });
+                    } else {
+                      setIsCustomIdentifikasi(false);
+                      setFormData({
+                        ...formData,
+                        identifikasiBahaya: val,
+                        title: val,
+                      });
+                    }
+                  }}
                   required
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-                />
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 cursor-pointer"
+                >
+                  <option value="" disabled>-- Pilih Identifikasi Bahaya --</option>
+                  {(formData.jenisPelaporan === "KTA" ? KTA_ITEMS : TTA_ITEMS).map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                  <option value="Yang lain">Yang lain (Tulis Manual / Kustom)...</option>
+                </select>
+
+                {/* Input Teks Tambahan Jika Memilih 'Yang lain' */}
+                {isCustomIdentifikasi && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      placeholder="Tuliskan temuan identifikasi bahaya lainnya..."
+                      value={customIdentifikasiText}
+                      onChange={(e) => {
+                        const txt = e.target.value;
+                        setCustomIdentifikasiText(txt);
+                        setFormData({
+                          ...formData,
+                          identifikasiBahaya: txt,
+                          title: txt,
+                        });
+                      }}
+                      required
+                      className="w-full text-xs px-3 py-2 rounded-xl border border-orange-300 font-semibold bg-orange-50/40 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">
+                      *Tuliskan identifikasi bahaya spesifik jika tidak tersedia pada pilihan standar di atas.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Rincian Bahaya */}
@@ -1537,8 +1618,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Departemen</label>
-                    <input
-                      type="text"
+                    <select
                       value={formData.departemenPelapor}
                       onChange={(e) =>
                         setFormData({
@@ -1547,17 +1627,28 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           reporterDept: e.target.value,
                         })
                       }
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
-                    />
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                    >
+                      {DEPARTEMEN_OPTIONS.map((dept) => (
+                        <option key={dept} value={dept}>
+                          {dept}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Jabatan Pelapor</label>
-                    <input
-                      type="text"
+                    <select
                       value={formData.jabatanPelapor}
                       onChange={(e) => setFormData({ ...formData, jabatanPelapor: e.target.value })}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
-                    />
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                    >
+                      {JABATAN_OPTIONS.map((jab) => (
+                        <option key={jab} value={jab}>
+                          {jab}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
