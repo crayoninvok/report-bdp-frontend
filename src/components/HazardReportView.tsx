@@ -462,13 +462,21 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       setCustomLokasiText("");
     }
 
+    const rawJabatan = (item.jabatanPelapor || "WORKER").toUpperCase();
+    const matchedJabatan = JABATAN_OPTIONS.find((j) => j === rawJabatan) || item.jabatanPelapor || "WORKER";
+    const rawDept = (item.departemenPelapor || item.reporterDept || "PLANT").toUpperCase();
+    const matchedDept = DEPARTEMEN_OPTIONS.find((d) => d === rawDept) || item.departemenPelapor || "PLANT";
+
+    setIsModalManpowerOpen(false);
+    setModalManpowerQuery("");
+
     setFormData({
       jenisPelaporan: currentJenis,
       namaPelapor: item.namaPelapor || item.reporterName || "",
       nrpPelapor: item.nrpPelapor || "",
       tanggalPelaporan: item.tanggalPelaporan || item.date || new Date().toISOString().slice(0, 10),
-      departemenPelapor: item.departemenPelapor || item.reporterDept || "PLANT",
-      jabatanPelapor: item.jabatanPelapor || "WORKER",
+      departemenPelapor: matchedDept,
+      jabatanPelapor: matchedJabatan,
       lokasiBahaya: item.lokasiBahaya || item.location || "WORKSHOP",
       penanggungJawabArea: item.penanggungJawabArea || item.picDept || item.picName || "PLANT",
       identifikasiBahaya: rawIdent,
@@ -575,6 +583,12 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       const legacyStatus: HazardStatus = isClose ? "Closed" : "Open";
       const payload: Partial<HazardReportItem> = {
         ...formData,
+        namaPelapor: (formData.namaPelapor || "").trim(),
+        reporterName: (formData.namaPelapor || "").trim(),
+        nrpPelapor: (formData.nrpPelapor || "").trim(),
+        departemenPelapor: formData.departemenPelapor,
+        reporterDept: formData.departemenPelapor,
+        jabatanPelapor: formData.jabatanPelapor,
         identifikasiBahaya: ident,
         title: ident,
         lokasiBahaya: finalLokasi,
@@ -1534,6 +1548,15 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Foto Temuan (Before) */}
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    {/* Always rendered hidden file input so Ganti Foto always works */}
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, "photo")}
+                    />
+
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-black uppercase text-slate-600 block">
                         1. Dokumentasi Sebelum (Foto Temuan)
@@ -1582,21 +1605,24 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                         </div>
                         <button
                           type="button"
+                          disabled={isUploadingPhoto}
                           onClick={() => photoInputRef.current?.click()}
-                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer"
+                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer disabled:opacity-60"
                         >
-                          <Pencil size={10} /> Ganti Foto Temuan
+                          {isUploadingPhoto ? (
+                            <>
+                              <Loader2 size={12} className="text-[#e95623] animate-spin" />
+                              <span>Mengunggah foto baru...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Pencil size={10} /> Ganti Foto Temuan
+                            </>
+                          )}
                         </button>
                       </div>
                     ) : (
                       <div>
-                        <input
-                          ref={photoInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileUpload(e, "photo")}
-                        />
                         <button
                           type="button"
                           disabled={isUploadingPhoto}
@@ -1631,6 +1657,15 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
 
                   {/* Foto Bukti Perbaikan (After) */}
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    {/* Always rendered hidden file input so Ganti Foto always works */}
+                    <input
+                      ref={evidenceInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, "evidence")}
+                    />
+
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-black uppercase text-slate-600 block">
                         2. Dokumentasi Sesudah (Foto Selesai)
@@ -1679,21 +1714,24 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                         </div>
                         <button
                           type="button"
+                          disabled={isUploadingEvidence}
                           onClick={() => evidenceInputRef.current?.click()}
-                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer"
+                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer disabled:opacity-60"
                         >
-                          <Pencil size={10} /> Ganti Foto Perbaikan
+                          {isUploadingEvidence ? (
+                            <>
+                              <Loader2 size={12} className="text-emerald-600 animate-spin" />
+                              <span>Mengunggah foto baru...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Pencil size={10} /> Ganti Foto Perbaikan
+                            </>
+                          )}
                         </button>
                       </div>
                     ) : (
                       <div>
-                        <input
-                          ref={evidenceInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileUpload(e, "evidence")}
-                        />
                         <button
                           type="button"
                           disabled={isUploadingEvidence}
@@ -1761,7 +1799,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           setIsModalManpowerOpen(true);
                         }}
                         autoComplete="off"
-                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                        className="w-full text-xs px-2.5 pr-8 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
                       />
                       {formData.namaPelapor && (
                         <button
@@ -1867,6 +1905,9 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           {dept}
                         </option>
                       ))}
+                      {!DEPARTEMEN_OPTIONS.includes(formData.departemenPelapor as any) && formData.departemenPelapor && (
+                        <option value={formData.departemenPelapor}>{formData.departemenPelapor}</option>
+                      )}
                     </select>
                   </div>
                   <div>
@@ -1881,6 +1922,9 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           {jab}
                         </option>
                       ))}
+                      {!JABATAN_OPTIONS.includes(formData.jabatanPelapor as any) && formData.jabatanPelapor && (
+                        <option value={formData.jabatanPelapor}>{formData.jabatanPelapor}</option>
+                      )}
                     </select>
                   </div>
                 </div>
