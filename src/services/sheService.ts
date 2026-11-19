@@ -69,6 +69,8 @@ export interface SheDashboardData {
   openHazards: number;
   inProgressHazards: number;
   closedHazards: number;
+  ktaCount: number;
+  ttaCount: number;
   nearMissCount: number;
   resolutionRate: number;
   monthlyTrends: Array<{
@@ -509,32 +511,57 @@ export const sheService = {
       if (typeof window === "undefined") return DEFAULT_HAZARDS;
       const raw = localStorage.getItem(STORAGE_KEY);
       let list: HazardReportItem[] = raw ? JSON.parse(raw) : DEFAULT_HAZARDS;
-      if (!raw) {
+      if (!raw || !Array.isArray(list) || list.length === 0) {
+        list = DEFAULT_HAZARDS;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_HAZARDS));
       } else {
         // Ensure all Google Form fields exist on every item
-        list = list.map((h) => ({
-          ...h,
-          jenisPelaporan: h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA"),
-          lokasiBahaya: h.lokasiBahaya || h.location || "WORKSHOP",
-          identifikasiBahaya: h.identifikasiBahaya || h.title || "Kondisi area kerja tidak memadai - KTA",
-          rincianBahaya: h.rincianBahaya || h.description || "",
-          departemenPelapor: h.departemenPelapor || h.reporterDept || "PLANT",
-          penanggungJawabArea: h.penanggungJawabArea || h.picDept || h.picName || "PLANT",
-          statusGForm: h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN"),
-          project: h.project || (h.jobSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU"),
-          tindakanPerbaikan: h.tindakanPerbaikan || h.correctiveAction || "",
-        }));
+        list = list.map((h) => {
+          const normProj = (h.project || "").replace(/[\s_-]+/g, "").toUpperCase();
+          const normJob = (h.jobSite || "").replace(/[\s_-]+/g, "").toUpperCase();
+          const isSenyiur =
+            normProj.includes("SENYIUR") ||
+            normJob.includes("SENYIUR") ||
+            normProj === "SY" ||
+            normJob === "SY";
+          const resolvedJobSite: "MuaraPahu" | "Senyiur" = isSenyiur ? "Senyiur" : "MuaraPahu";
+          const resolvedProject: "SENYIUR" | "MUARA PAHU" = isSenyiur ? "SENYIUR" : "MUARA PAHU";
+
+          return {
+            ...h,
+            jobSite: h.jobSite || resolvedJobSite,
+            project: h.project || resolvedProject,
+            jenisPelaporan: h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA"),
+            lokasiBahaya: h.lokasiBahaya || h.location || "WORKSHOP",
+            identifikasiBahaya:
+              h.identifikasiBahaya || h.title || "Kondisi area kerja tidak memadai - KTA",
+            rincianBahaya: h.rincianBahaya || h.description || "",
+            departemenPelapor: h.departemenPelapor || h.reporterDept || "PLANT",
+            penanggungJawabArea: h.penanggungJawabArea || h.picDept || h.picName || "PLANT",
+            statusGForm: h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN"),
+            status:
+              (h.statusGForm === "CLOSE" || h.status === "Closed") ? "Closed" : (h.status || "Open"),
+            tindakanPerbaikan: h.tindakanPerbaikan || h.correctiveAction || "",
+          };
+        });
       }
       if (site && site !== "ALL") {
+        const normTarget = site.replace(/[\s_-]+/g, "").toUpperCase();
         list = list.filter((h) => {
-          const s =
-            h.project === "SENYIUR"
-              ? "Senyiur"
-              : h.project === "MUARA PAHU"
-              ? "MuaraPahu"
-              : h.jobSite;
-          return s === site;
+          const normProj = (h.project || "").replace(/[\s_-]+/g, "").toUpperCase();
+          const normJob = (h.jobSite || "").replace(/[\s_-]+/g, "").toUpperCase();
+          if (normTarget.includes("MUARA") || normTarget.includes("PAHU") || normTarget === "MP") {
+            return (
+              normProj.includes("MUARA") ||
+              normProj.includes("PAHU") ||
+              normJob.includes("MUARA") ||
+              normJob.includes("PAHU")
+            );
+          }
+          if (normTarget.includes("SENYIUR") || normTarget === "SY") {
+            return normProj.includes("SENYIUR") || normJob.includes("SENYIUR");
+          }
+          return normProj === normTarget || normJob === normTarget;
         });
       }
       return list;
@@ -606,9 +633,19 @@ export const sheService = {
     const hazards = await sheService.getHazards(site);
 
     const totalHazards = hazards.length;
-    const openHazards = hazards.filter((h) => h.status === "Open").length;
+    const openHazards = hazards.filter(
+      (h) => (h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN")) === "OPEN"
+    ).length;
+    const closedHazards = hazards.filter(
+      (h) => (h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN")) === "CLOSE"
+    ).length;
     const inProgressHazards = hazards.filter((h) => h.status === "In Progress").length;
-    const closedHazards = hazards.filter((h) => h.status === "Closed").length;
+    const ktaCount = hazards.filter(
+      (h) => (h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA")) === "KTA"
+    ).length;
+    const ttaCount = hazards.filter(
+      (h) => (h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA")) === "TTA"
+    ).length;
     const nearMissCount = hazards.filter((h) => h.category === "Near Miss").length;
     const resolutionRate =
       totalHazards > 0 ? Math.round((closedHazards / totalHazards) * 100) : 100;
@@ -620,20 +657,32 @@ export const sheService = {
       { month: "Agu 26", hazards: 16, resolved: 16, inspections: 9 },
       { month: "Sep 26", hazards: 22, resolved: 20, inspections: 12 },
       { month: "Okt 26", hazards: 19, resolved: 18, inspections: 11 },
-      { month: "Nov 26", hazards: totalHazards, resolved: closedHazards, inspections: 14 },
+      { month: "Nov 26", hazards: totalHazards > 0 ? totalHazards : 6, resolved: closedHazards > 0 ? closedHazards : 4, inspections: 14 },
     ];
 
     // Category distribution
     const categoryCounts: Record<string, number> = {};
     for (const h of hazards) {
-      categoryCounts[h.category] = (categoryCounts[h.category] || 0) + 1;
+      let cat = "Kondisi Tidak Aman (KTA)";
+      if (h.jenisPelaporan === "TTA" || h.category === "Unsafe Action") {
+        cat = "Tindakan Tidak Aman (TTA)";
+      } else if (h.category === "Environmental") {
+        cat = "Lingkungan (Environmental)";
+      } else if (h.category === "Near Miss") {
+        cat = "Hampir Celaka (Near Miss)";
+      } else if (h.jenisPelaporan === "KTA" || h.category === "Unsafe Condition") {
+        cat = "Kondisi Tidak Aman (KTA)";
+      } else if (h.category) {
+        cat = h.category;
+      }
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     }
 
     const categoryColors: Record<string, string> = {
-      "Unsafe Condition": "#e95623",
-      "Unsafe Action": "#f59e0b",
-      Environmental: "#10b981",
-      "Near Miss": "#ef4444",
+      "Kondisi Tidak Aman (KTA)": "#e95623",
+      "Tindakan Tidak Aman (TTA)": "#f59e0b",
+      "Lingkungan (Environmental)": "#10b981",
+      "Hampir Celaka (Near Miss)": "#ef4444",
       "Health & Hygiene": "#6366f1",
     };
 
@@ -645,10 +694,12 @@ export const sheService = {
 
     // Risk distribution
     const riskCounts: Record<string, number> = {
-      Critical: hazards.filter((h) => h.riskLevel === "Critical").length,
-      High: hazards.filter((h) => h.riskLevel === "High").length,
-      Medium: hazards.filter((h) => h.riskLevel === "Medium").length,
-      Low: hazards.filter((h) => h.riskLevel === "Low").length,
+      Critical: hazards.filter((h) => (h.riskLevel || "").toLowerCase() === "critical").length,
+      High: hazards.filter((h) => (h.riskLevel || "").toLowerCase() === "high").length,
+      Medium: hazards.filter(
+        (h) => (h.riskLevel || "").toLowerCase() === "medium" || !h.riskLevel
+      ).length,
+      Low: hazards.filter((h) => (h.riskLevel || "").toLowerCase() === "low").length,
     };
 
     const riskColors: Record<string, string> = {
@@ -667,7 +718,8 @@ export const sheService = {
     // Location distribution top 5
     const locMap: Record<string, number> = {};
     for (const h of hazards) {
-      const locPrefix = h.location.split(" KM ")[0] || h.location;
+      const loc = h.lokasiBahaya || h.location || "WORKSHOP";
+      const locPrefix = loc.split(" KM ")[0] || loc;
       locMap[locPrefix] = (locMap[locPrefix] || 0) + 1;
     }
     const locationDistribution = Object.entries(locMap)
@@ -689,6 +741,8 @@ export const sheService = {
       openHazards,
       inProgressHazards,
       closedHazards,
+      ktaCount,
+      ttaCount,
       nearMissCount,
       resolutionRate,
       monthlyTrends,
