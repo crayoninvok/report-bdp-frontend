@@ -55,6 +55,39 @@ import {
 import { HazardReportPdfModal } from "./HazardReportPdfModal";
 import { useNotification } from "../context/NotificationContext";
 
+// Predefined Choices from BDP Hazard Report Google Form
+const LOKASI_OPTIONS = [
+  "OFFICE",
+  "WORKSHOP",
+  "TOOL ROOM",
+  "WAREHOUSE",
+  "RUMAH GENSET",
+  "WASHING PAD",
+  "TPS LB3",
+  "OIL TRAP",
+  "FUEL STATION",
+  "FUEL STORAGE",
+  "MESS",
+  "KANTIN",
+  "WTP",
+  "CHR",
+  "COAL PAD",
+  "JETTY",
+  "KONSTRUKSI",
+] as const;
+
+const PJ_OPTIONS = [
+  "PLANT",
+  "PRODUKSI",
+  "LOGISTIK",
+  "INFRAS",
+  "HRGA",
+  "HSE",
+  "ARCO",
+  "BAYAN & KCB",
+  "KONTRAKTOR HAULING",
+] as const;
+
 interface HazardReportViewProps {
   user: any;
   onNavigateToDashboard?: () => void;
@@ -74,11 +107,12 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
     user?.jobSite === "Senyiur" ? "Senyiur" : "MuaraPahu"
   );
 
-  // Filters
+  // Filters aligned with Google Form
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
-  const [riskFilter, setRiskFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL"); // "ALL" | "OPEN" | "CLOSE"
+  const [jenisFilter, setJenisFilter] = useState<string>("ALL"); // "ALL" | "KTA" | "TTA"
+  const [lokasiFilter, setLokasiFilter] = useState<string>("ALL");
+  const [pjFilter, setPjFilter] = useState<string>("ALL");
 
   // Modals
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -101,12 +135,29 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const evidenceInputRef = useRef<HTMLInputElement>(null);
 
-  // Form State
+  // Form State (Exact Google Form Fields & Compatibility)
   const [formData, setFormData] = useState({
-    jobSite: "MuaraPahu" as "MuaraPahu" | "Senyiur",
+    jenisPelaporan: "KTA" as "KTA" | "TTA",
+    namaPelapor: user?.namaLengkap || user?.username || "",
+    nrpPelapor: user?.nik || "",
+    tanggalPelaporan: new Date().toISOString().slice(0, 10),
+    departemenPelapor: "PLANT",
+    jabatanPelapor: "WORKER",
+    lokasiBahaya: "WORKSHOP",
+    penanggungJawabArea: "PLANT",
+    identifikasiBahaya: "",
+    rincianBahaya: "",
+    tindakanPerbaikan: "",
+    statusGForm: "OPEN" as "OPEN" | "CLOSE",
+    project: (user?.jobSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU") as "MUARA PAHU" | "SENYIUR",
+    dokumentasiSebelum: "",
+    dokumentasiSesudah: "",
+
+    // Compatibility
+    jobSite: (user?.jobSite === "Senyiur" ? "Senyiur" : "MuaraPahu") as "MuaraPahu" | "Senyiur",
     date: new Date().toISOString().slice(0, 10),
     time: "08:30",
-    location: "",
+    location: "WORKSHOP",
     category: "Unsafe Condition" as HazardCategory,
     riskLevel: "Medium" as HazardRiskLevel,
     title: "",
@@ -114,9 +165,9 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
     immediateAction: "",
     correctiveAction: "",
     reporterName: user?.namaLengkap || user?.username || "Safety Patrol",
-    reporterDept: "Operations",
-    picName: "",
-    picDept: "Maintenance",
+    reporterDept: "PLANT",
+    picName: "PLANT",
+    picDept: "PLANT",
     dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
     status: "Open" as HazardStatus,
     photoUrl: "",
@@ -186,46 +237,88 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
     }
   };
 
-  // Filtered List
+  // Filtered List (Exact Google Form Fields)
   const filteredHazards = useMemo(() => {
     return hazards.filter((h) => {
-      if (statusFilter !== "ALL" && h.status !== statusFilter) return false;
-      if (categoryFilter !== "ALL" && h.category !== categoryFilter) return false;
-      if (riskFilter !== "ALL" && h.riskLevel !== riskFilter) return false;
+      // Status Filter: "ALL" | "OPEN" | "CLOSE"
+      const statusG = (h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN")).toUpperCase();
+      if (statusFilter !== "ALL" && statusG !== statusFilter.toUpperCase()) return false;
+
+      // Jenis Pelaporan Filter: "ALL" | "KTA" | "TTA"
+      const jenis = (h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA")).toUpperCase();
+      if (jenisFilter !== "ALL" && jenis !== jenisFilter.toUpperCase()) return false;
+
+      // Lokasi Bahaya Filter
+      const lokasi = (h.lokasiBahaya || h.location || "").toUpperCase();
+      if (lokasiFilter !== "ALL" && lokasi !== lokasiFilter.toUpperCase()) return false;
+
+      // Penanggung Jawab Area Filter
+      const pj = (h.penanggungJawabArea || h.picDept || h.picName || "").toUpperCase();
+      if (pjFilter !== "ALL" && pj !== pjFilter.toUpperCase()) return false;
+
+      // Fulltext Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const mTitle = h.title.toLowerCase().includes(q);
-        const mNum = h.reportNumber.toLowerCase().includes(q);
-        const mLoc = h.location.toLowerCase().includes(q);
-        const mRep = h.reporterName.toLowerCase().includes(q);
-        const mPic = h.picName.toLowerCase().includes(q);
-        const mDesc = h.description.toLowerCase().includes(q);
-        if (!mTitle && !mNum && !mLoc && !mRep && !mPic && !mDesc) return false;
+        const mNum = (h.reportNumber || "").toLowerCase().includes(q);
+        const mNama = (h.namaPelapor || h.reporterName || "").toLowerCase().includes(q);
+        const mNrp = (h.nrpPelapor || "").toLowerCase().includes(q);
+        const mIdent = (h.identifikasiBahaya || h.title || "").toLowerCase().includes(q);
+        const mRincian = (h.rincianBahaya || h.description || "").toLowerCase().includes(q);
+        const mLok = (h.lokasiBahaya || h.location || "").toLowerCase().includes(q);
+        const mPj = (h.penanggungJawabArea || h.picDept || h.picName || "").toLowerCase().includes(q);
+        const mTind = (h.tindakanPerbaikan || h.correctiveAction || "").toLowerCase().includes(q);
+        if (!mNum && !mNama && !mNrp && !mIdent && !mRincian && !mLok && !mPj && !mTind) return false;
       }
       return true;
     });
-  }, [hazards, statusFilter, categoryFilter, riskFilter, searchQuery]);
+  }, [hazards, statusFilter, jenisFilter, lokasiFilter, pjFilter, searchQuery]);
 
-  // Statistics
+  // Statistics aligned with Google Form
   const stats = useMemo(() => {
     const total = hazards.length;
-    const open = hazards.filter((h) => h.status === "Open").length;
-    const inProgress = hazards.filter((h) => h.status === "In Progress").length;
-    const closed = hazards.filter((h) => h.status === "Closed").length;
-    const critical = hazards.filter((h) => h.riskLevel === "Critical" || h.riskLevel === "High").length;
-    const nearMiss = hazards.filter((h) => h.category === "Near Miss").length;
+    const open = hazards.filter(
+      (h) => (h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN")) === "OPEN"
+    ).length;
+    const closed = hazards.filter(
+      (h) => (h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN")) === "CLOSE"
+    ).length;
+    const kta = hazards.filter(
+      (h) => (h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA")) === "KTA"
+    ).length;
+    const tta = hazards.filter(
+      (h) => (h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA")) === "TTA"
+    ).length;
+    const withPhoto = hazards.filter(
+      (h) => Boolean(h.dokumentasiSebelum || h.photoUrl || h.dokumentasiSesudah || h.evidenceUrl)
+    ).length;
     const resolutionRate = total > 0 ? Math.round((closed / total) * 100) : 100;
-    return { total, open, inProgress, closed, critical, nearMiss, resolutionRate };
+    return { total, open, closed, kta, tta, withPhoto, resolutionRate };
   }, [hazards]);
 
   // Open Form for Create
   const handleOpenCreateModal = () => {
     setItemToEdit(null);
     setFormData({
-      jobSite: selectedSite === "ALL" ? "MuaraPahu" : selectedSite,
+      jenisPelaporan: "KTA",
+      namaPelapor: user?.namaLengkap || user?.username || "",
+      nrpPelapor: user?.nik || "",
+      tanggalPelaporan: new Date().toISOString().slice(0, 10),
+      departemenPelapor: "PLANT",
+      jabatanPelapor: "WORKER",
+      lokasiBahaya: "WORKSHOP",
+      penanggungJawabArea: "PLANT",
+      identifikasiBahaya: "",
+      rincianBahaya: "",
+      tindakanPerbaikan: "",
+      statusGForm: "OPEN",
+      project: (selectedSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU") as "MUARA PAHU" | "SENYIUR",
+      dokumentasiSebelum: "",
+      dokumentasiSesudah: "",
+
+      jobSite: (selectedSite === "Senyiur" ? "Senyiur" : "MuaraPahu") as "MuaraPahu" | "Senyiur",
       date: new Date().toISOString().slice(0, 10),
       time: new Date().toTimeString().slice(0, 5),
-      location: "",
+      location: "WORKSHOP",
       category: "Unsafe Condition",
       riskLevel: "Medium",
       title: "",
@@ -233,9 +326,9 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       immediateAction: "",
       correctiveAction: "",
       reporterName: user?.namaLengkap || user?.username || "Safety Patrol",
-      reporterDept: "Operations",
-      picName: "",
-      picDept: "Maintenance",
+      reporterDept: "PLANT",
+      picName: "PLANT",
+      picDept: "PLANT",
       dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
       status: "Open",
       photoUrl: "",
@@ -249,26 +342,43 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   // Open Form for Edit
   const handleOpenEditModal = (item: HazardReportItem) => {
     setItemToEdit(item);
+    const isClose = item.statusGForm === "CLOSE" || item.status === "Closed";
     setFormData({
+      jenisPelaporan: item.jenisPelaporan || (item.category === "Unsafe Action" ? "TTA" : "KTA"),
+      namaPelapor: item.namaPelapor || item.reporterName || "",
+      nrpPelapor: item.nrpPelapor || "",
+      tanggalPelaporan: item.tanggalPelaporan || item.date || new Date().toISOString().slice(0, 10),
+      departemenPelapor: item.departemenPelapor || item.reporterDept || "PLANT",
+      jabatanPelapor: item.jabatanPelapor || "WORKER",
+      lokasiBahaya: item.lokasiBahaya || item.location || "WORKSHOP",
+      penanggungJawabArea: item.penanggungJawabArea || item.picDept || item.picName || "PLANT",
+      identifikasiBahaya: item.identifikasiBahaya || item.title || "",
+      rincianBahaya: item.rincianBahaya || item.description || "",
+      tindakanPerbaikan: item.tindakanPerbaikan || item.correctiveAction || "",
+      statusGForm: isClose ? "CLOSE" : "OPEN",
+      project: (item.project || (item.jobSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU")) as "MUARA PAHU" | "SENYIUR",
+      dokumentasiSebelum: item.dokumentasiSebelum || item.photoUrl || "",
+      dokumentasiSesudah: item.dokumentasiSesudah || item.evidenceUrl || "",
+
       jobSite: item.jobSite,
       date: item.date,
       time: item.time,
-      location: item.location,
+      location: item.lokasiBahaya || item.location,
       category: item.category,
       riskLevel: item.riskLevel,
-      title: item.title,
-      description: item.description,
+      title: item.identifikasiBahaya || item.title,
+      description: item.rincianBahaya || item.description,
       immediateAction: item.immediateAction,
-      correctiveAction: item.correctiveAction,
-      reporterName: item.reporterName,
-      reporterDept: item.reporterDept,
-      picName: item.picName,
-      picDept: item.picDept,
+      correctiveAction: item.tindakanPerbaikan || item.correctiveAction,
+      reporterName: item.namaPelapor || item.reporterName,
+      reporterDept: item.departemenPelapor || item.reporterDept,
+      picName: item.penanggungJawabArea || item.picName,
+      picDept: item.penanggungJawabArea || item.picDept,
       dueDate: item.dueDate,
       status: item.status,
-      photoUrl: item.photoUrl || "",
+      photoUrl: item.dokumentasiSebelum || item.photoUrl || "",
       photoPublicId: item.photoPublicId || "",
-      evidenceUrl: item.evidenceUrl || "",
+      evidenceUrl: item.dokumentasiSesudah || item.evidenceUrl || "",
       evidencePublicId: item.evidencePublicId || "",
     });
     setIsFormModalOpen(true);
@@ -301,6 +411,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             ...prev,
             photoUrl: res.secure_url,
             photoPublicId: res.public_id || "",
+            dokumentasiSebelum: res.secure_url,
           }));
           showSuccess("Foto bukti temuan berhasil disimpan ke Cloudinary (hse-folder).");
         } else {
@@ -308,6 +419,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             ...prev,
             evidenceUrl: res.secure_url,
             evidencePublicId: res.public_id || "",
+            dokumentasiSesudah: res.secure_url,
           }));
           showSuccess("Foto bukti penyelesaian berhasil disimpan ke Cloudinary (hse-folder).");
         }
@@ -327,17 +439,35 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   // Submit Create or Edit
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.location.trim()) {
-      showError("Harap isi judul temuan dan lokasi spesifik.");
+    const ident = formData.identifikasiBahaya.trim() || formData.title.trim();
+    if (!ident) {
+      showError("Harap isi identifikasi bahaya.");
       return;
     }
 
     try {
+      const isClose = formData.statusGForm === "CLOSE";
+      const legacyStatus: HazardStatus = isClose ? "Closed" : "Open";
+      const payload: Partial<HazardReportItem> = {
+        ...formData,
+        identifikasiBahaya: ident,
+        title: ident,
+        location: formData.lokasiBahaya,
+        description: formData.rincianBahaya || formData.description,
+        correctiveAction: formData.tindakanPerbaikan || formData.correctiveAction,
+        picName: formData.penanggungJawabArea,
+        picDept: formData.penanggungJawabArea,
+        status: legacyStatus,
+        photoUrl: formData.dokumentasiSebelum || formData.photoUrl,
+        evidenceUrl: formData.dokumentasiSesudah || formData.evidenceUrl,
+        completionDate: isClose ? new Date().toISOString().slice(0, 10) : undefined,
+      };
+
       if (itemToEdit) {
-        await sheService.updateHazard(itemToEdit.id, formData);
+        await sheService.updateHazard(itemToEdit.id, payload);
         showSuccess(`Hazard ${itemToEdit.reportNumber} berhasil diperbarui.`);
       } else {
-        const created = await sheService.createHazard(formData);
+        const created = await sheService.createHazard(payload as any);
         showSuccess(`Hazard Report ${created.reportNumber} berhasil dibuat!`);
       }
       setIsFormModalOpen(false);
@@ -347,12 +477,14 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
     }
   };
 
-  // Quick Status Toggle
-  const handleQuickStatusChange = async (item: HazardReportItem, nextStatus: HazardStatus) => {
+  // Quick Status Toggle (OPEN <-> CLOSE)
+  const handleQuickGFormStatusChange = async (item: HazardReportItem, nextStatus: "OPEN" | "CLOSE") => {
     try {
+      const legacyStatus: HazardStatus = nextStatus === "CLOSE" ? "Closed" : "Open";
       await sheService.updateHazard(item.id, {
-        status: nextStatus,
-        completionDate: nextStatus === "Closed" ? new Date().toISOString().slice(0, 10) : undefined,
+        statusGForm: nextStatus,
+        status: legacyStatus,
+        completionDate: nextStatus === "CLOSE" ? new Date().toISOString().slice(0, 10) : undefined,
       });
       showSuccess(`Status ${item.reportNumber} diubah ke ${nextStatus}`);
       loadHazards();
@@ -365,7 +497,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const handleDelete = (item: HazardReportItem) => {
     confirm({
       title: "Hapus Hazard Report?",
-      message: `Apakah Anda yakin ingin menghapus laporan ${item.reportNumber} (${item.title})? Tindakan ini tidak dapat dibatalkan.`,
+      message: `Apakah Anda yakin ingin menghapus laporan ${item.reportNumber} (${item.identifikasiBahaya || item.title})? Tindakan ini tidak dapat dibatalkan.`,
       confirmText: "Hapus Laporan",
       type: "danger",
       onConfirm: async () => {
@@ -380,7 +512,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
     });
   };
 
-  // Export Excel
+  // Export Excel (Google Form Format)
   const handleExportExcel = () => {
     if (filteredHazards.length === 0) {
       showError("Tidak ada data hazard untuk diekspor.");
@@ -389,26 +521,22 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
 
     const dataRows = filteredHazards.map((h, idx) => ({
       No: idx + 1,
-      "No. Hazard": h.reportNumber,
-      Jobsite: h.jobSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur",
-      Tanggal: h.date,
-      Waktu: h.time,
-      "Lokasi / Area": h.location,
-      Kategori: h.category,
-      "Tingkat Risiko": h.riskLevel,
-      "Judul Temuan": h.title,
-      "Deskripsi Bahaya": h.description,
-      "Tindakan Langsung": h.immediateAction,
-      "Tindakan Koreksi": h.correctiveAction,
-      Pelapor: h.reporterName,
-      "Dept Pelapor": h.reporterDept,
-      "PIC Penanggung Jawab": h.picName,
-      "Dept PIC": h.picDept,
-      "Target Selesai (Due Date)": h.dueDate,
-      "Tgl Selesai": h.completionDate || "-",
-      Status: h.status,
-      "Foto Bukti Temuan (Cloudinary)": h.photoUrl || "-",
-      "Foto Bukti Penyelesaian (Cloudinary)": h.evidenceUrl || "-",
+      "No. Laporan": h.reportNumber,
+      Project: h.project || (h.jobSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU"),
+      "Tanggal Pelaporan": h.tanggalPelaporan || h.date,
+      "Jenis Pelaporan": h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA"),
+      "Lokasi Bahaya": h.lokasiBahaya || h.location,
+      "Identifikasi Bahaya": h.identifikasiBahaya || h.title,
+      "Rincian Bahaya": h.rincianBahaya || h.description || "-",
+      "Nama Pelapor": h.namaPelapor || h.reporterName,
+      "NRP Pelapor": h.nrpPelapor || "-",
+      "Departemen Pelapor": h.departemenPelapor || h.reporterDept,
+      "Jabatan Pelapor": h.jabatanPelapor || "-",
+      "Penanggung Jawab Area": h.penanggungJawabArea || h.picDept || h.picName || "PLANT",
+      "Tindakan Perbaikan": h.tindakanPerbaikan || h.correctiveAction || "-",
+      Status: h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN"),
+      "Dokumentasi Sebelum (Foto Temuan)": h.dokumentasiSebelum || h.photoUrl || "-",
+      "Dokumentasi Sesudah (Foto Selesai)": h.dokumentasiSesudah || h.evidenceUrl || "-",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataRows);
@@ -418,7 +546,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       workbook,
       `BDP_Hazard_Report_${selectedSite}_${new Date().toISOString().slice(0, 10)}.xlsx`
     );
-    showSuccess("Laporan Hazard Report berhasil diekspor ke format Excel.");
+    showSuccess("Laporan Hazard Report berhasil diekspor ke Excel!");
   };
 
   return (
@@ -549,72 +677,74 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       </div>
 
       {/* ---------------------------------------------------------
-          Summary KPI Cards
+          Summary KPI Cards (Exact Google Form Metrics)
       ---------------------------------------------------------- */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        {/* Total */}
+        {/* Total Hazard */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase text-slate-400">Total Hazard</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-slate-900">{stats.total}</span>
-            <span className="text-xs font-semibold text-slate-400">Kasus</span>
+            <span className="text-xs font-semibold text-slate-400">Laporan</span>
           </div>
           <span className="text-[10px] text-slate-400 mt-1">Site {selectedSite}</span>
         </div>
 
-        {/* Open */}
+        {/* Status OPEN */}
         <div className="bg-white rounded-2xl border border-rose-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-rose-50/40 to-transparent">
           <span className="text-[10px] font-bold uppercase text-rose-600">Open (Belum Selesai)</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-rose-700">{stats.open}</span>
             <span className="text-xs font-semibold text-rose-500">Laporan</span>
           </div>
-          <span className="text-[10px] text-rose-500 mt-1">Perlu Tindakan</span>
+          <span className="text-[10px] text-rose-500 mt-1">Perlu Tindakan Koreksi</span>
         </div>
 
-        {/* In Progress */}
-        <div className="bg-white rounded-2xl border border-amber-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-amber-50/40 to-transparent">
-          <span className="text-[10px] font-bold uppercase text-amber-600">In Progress</span>
-          <div className="flex items-baseline justify-between mt-2">
-            <span className="text-2xl font-black text-amber-700">{stats.inProgress}</span>
-            <span className="text-xs font-semibold text-amber-500">Laporan</span>
-          </div>
-          <span className="text-[10px] text-amber-500 mt-1">Sedang Dikerjakan</span>
-        </div>
-
-        {/* Closed */}
+        {/* Status CLOSE */}
         <div className="bg-white rounded-2xl border border-emerald-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-emerald-50/40 to-transparent">
-          <span className="text-[10px] font-bold uppercase text-emerald-600">Closed (Selesai)</span>
+          <span className="text-[10px] font-bold uppercase text-emerald-600">Close (Selesai)</span>
           <div className="flex items-baseline justify-between mt-2">
             <span className="text-2xl font-black text-emerald-700">{stats.closed}</span>
             <span className="text-xs font-semibold text-emerald-500">Laporan</span>
           </div>
-          <span className="text-[10px] text-emerald-600 font-bold mt-1">{stats.resolutionRate}% Tingkat Selesai</span>
+          <span className="text-[10px] text-emerald-600 font-bold mt-1">
+            {stats.resolutionRate}% Tingkat Selesai
+          </span>
         </div>
 
-        {/* Critical & High */}
+        {/* Kondisi Tidak Aman (KTA) */}
         <div className="bg-white rounded-2xl border border-orange-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-orange-50/40 to-transparent">
-          <span className="text-[10px] font-bold uppercase text-orange-600">Risiko Tinggi / Kritis</span>
+          <span className="text-[10px] font-bold uppercase text-orange-600">KTA (Kondisi Bahaya)</span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="text-2xl font-black text-orange-700">{stats.critical}</span>
-            <span className="text-xs font-semibold text-orange-500">Kasus</span>
+            <span className="text-2xl font-black text-orange-700">{stats.kta}</span>
+            <span className="text-xs font-semibold text-orange-500">Temuan</span>
           </div>
-          <span className="text-[10px] text-orange-500 mt-1">Prioritas Utama</span>
+          <span className="text-[10px] text-orange-500 mt-1">Fasilitas / Lingkungan</span>
         </div>
 
-        {/* Near Miss */}
-        <div className="bg-white rounded-2xl border border-indigo-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-indigo-50/40 to-transparent">
-          <span className="text-[10px] font-bold uppercase text-indigo-600">Near Miss</span>
+        {/* Tindakan Tidak Aman (TTA) */}
+        <div className="bg-white rounded-2xl border border-purple-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-purple-50/40 to-transparent">
+          <span className="text-[10px] font-bold uppercase text-purple-600">TTA (Tindakan Bahaya)</span>
           <div className="flex items-baseline justify-between mt-2">
-            <span className="text-2xl font-black text-indigo-700">{stats.nearMiss}</span>
-            <span className="text-xs font-semibold text-slate-400">Kejadian</span>
+            <span className="text-2xl font-black text-purple-700">{stats.tta}</span>
+            <span className="text-xs font-semibold text-purple-500">Temuan</span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1">Hampir Celaka</span>
+          <span className="text-[10px] text-purple-500 mt-1">Perilaku / Prosedur</span>
+        </div>
+
+        {/* Foto Dokumentasi */}
+        <div className="bg-white rounded-2xl border border-sky-200/80 shadow-2xs p-4 flex flex-col justify-between bg-gradient-to-br from-sky-50/40 to-transparent">
+          <span className="text-[10px] font-bold uppercase text-sky-600">Foto Dokumentasi</span>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className="text-2xl font-black text-sky-700">{stats.withPhoto}</span>
+            <span className="text-xs font-semibold text-slate-400">Bukti</span>
+          </div>
+          <span className="text-[10px] text-sky-600 mt-1">Cloudinary Terhubung</span>
         </div>
       </div>
 
       {/* ---------------------------------------------------------
-          Filter & Search Toolbar
+          Filter & Search Toolbar (Exact Form Fields)
       ---------------------------------------------------------- */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-4 sm:p-5 space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -622,7 +752,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari hazard (e.g. HZ-MP-001), lokasi, pelapor..."
+              placeholder="Cari hazard (e.g. HZ-MP-001), pelapor, NRP, rincian..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
@@ -646,9 +776,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               </span>
               {[
                 { id: "ALL", label: "Semua" },
-                { id: "Open", label: "Open" },
-                { id: "In Progress", label: "Progress" },
-                { id: "Closed", label: "Closed" },
+                { id: "OPEN", label: "OPEN" },
+                { id: "CLOSE", label: "CLOSE" },
               ].map((s) => (
                 <button
                   key={s.id}
@@ -665,37 +794,49 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
               ))}
             </div>
 
-            {/* Category Filter */}
+            {/* Jenis Pelaporan Filter */}
             <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden"
+              value={jenisFilter}
+              onChange={(e) => setJenisFilter(e.target.value)}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden cursor-pointer"
             >
-              <option value="ALL">Semua Kategori</option>
-              <option value="Unsafe Condition">Unsafe Condition</option>
-              <option value="Unsafe Action">Unsafe Action</option>
-              <option value="Environmental">Environmental</option>
-              <option value="Near Miss">Near Miss</option>
-              <option value="Health & Hygiene">Health & Hygiene</option>
+              <option value="ALL">Semua Jenis (KTA &amp; TTA)</option>
+              <option value="KTA">Kondisi Tidak Aman (KTA)</option>
+              <option value="TTA">Tindakan Tidak Aman (TTA)</option>
             </select>
 
-            {/* Risk Filter */}
+            {/* Lokasi Bahaya Filter */}
             <select
-              value={riskFilter}
-              onChange={(e) => setRiskFilter(e.target.value)}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden"
+              value={lokasiFilter}
+              onChange={(e) => setLokasiFilter(e.target.value)}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden cursor-pointer"
             >
-              <option value="ALL">Semua Risiko</option>
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
+              <option value="ALL">Semua Lokasi Bahaya</option>
+              {LOKASI_OPTIONS.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+
+            {/* Penanggung Jawab Area Filter */}
+            <select
+              value={pjFilter}
+              onChange={(e) => setPjFilter(e.target.value)}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-hidden cursor-pointer"
+            >
+              <option value="ALL">Semua Penanggung Jawab (PJ)</option>
+              {PJ_OPTIONS.map((pj) => (
+                <option key={pj} value={pj}>
+                  {pj}
+                </option>
+              ))}
             </select>
 
             <button
               type="button"
               onClick={loadHazards}
-              className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
               title="Refresh Data"
             >
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -708,13 +849,14 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
           <span>
             Menampilkan <strong className="text-slate-700">{filteredHazards.length}</strong> dari {hazards.length} laporan
           </span>
-          {(statusFilter !== "ALL" || categoryFilter !== "ALL" || riskFilter !== "ALL" || searchQuery) && (
+          {(statusFilter !== "ALL" || jenisFilter !== "ALL" || lokasiFilter !== "ALL" || pjFilter !== "ALL" || searchQuery) && (
             <button
               type="button"
               onClick={() => {
                 setStatusFilter("ALL");
-                setCategoryFilter("ALL");
-                setRiskFilter("ALL");
+                setJenisFilter("ALL");
+                setLokasiFilter("ALL");
+                setPjFilter("ALL");
                 setSearchQuery("");
               }}
               className="text-[11px] font-bold text-[#e95623] hover:underline cursor-pointer"
@@ -725,22 +867,22 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
         </div>
 
         {/* ---------------------------------------------------------
-            Main Data Table with Photo Thumbnails
+            Main Data Table (Exact Google Form Columns)
         ---------------------------------------------------------- */}
         <div className="overflow-x-auto rounded-2xl border border-slate-200">
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
               <tr>
                 <th className="py-3 px-3 w-10 text-center">No</th>
-                <th className="py-3 px-3 w-28">No. Hazard</th>
+                <th className="py-3 px-3 w-32">No. Hazard</th>
                 <th className="py-3 px-3 w-28">Tgl &amp; Waktu</th>
-                <th className="py-3 px-3 w-36">Lokasi / Area</th>
-                <th className="py-3 px-3 w-28">Kategori</th>
-                <th className="py-3 px-3 w-20 text-center">Risiko</th>
-                <th className="py-3 px-3 min-w-56">Judul Temuan &amp; Deskripsi</th>
-                <th className="py-3 px-3 min-w-44">Tindakan Koreksi</th>
+                <th className="py-3 px-3 w-24 text-center">Jenis</th>
+                <th className="py-3 px-3 w-32">Lokasi Bahaya</th>
+                <th className="py-3 px-3 min-w-64">Identifikasi &amp; Rincian Bahaya</th>
+                <th className="py-3 px-3 w-40">Pelapor</th>
+                <th className="py-3 px-3 w-32">Penanggung Jawab Area</th>
+                <th className="py-3 px-3 min-w-44">Tindakan Perbaikan</th>
                 <th className="py-3 px-3 w-28 text-center">Foto Bukti</th>
-                <th className="py-3 px-3 w-28">PIC &amp; Due Date</th>
                 <th className="py-3 px-3 w-24 text-center">Status</th>
                 <th className="py-3 px-3 w-20 text-right">Aksi</th>
               </tr>
@@ -756,178 +898,153 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </tr>
               ) : (
                 filteredHazards.map((item, idx) => {
-                  let riskBadge = (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-100 text-slate-700">
-                      {item.riskLevel}
-                    </span>
-                  );
-                  if (item.riskLevel === "Critical") {
-                    riskBadge = (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">
-                        Critical
-                      </span>
-                    );
-                  } else if (item.riskLevel === "High") {
-                    riskBadge = (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-800 border border-orange-300">
-                        High
-                      </span>
-                    );
-                  } else if (item.riskLevel === "Medium") {
-                    riskBadge = (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
-                        Medium
-                      </span>
-                    );
-                  } else if (item.riskLevel === "Low") {
-                    riskBadge = (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        Low
-                      </span>
-                    );
-                  }
-
-                  let statusBadge = (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700">
-                      {item.status}
-                    </span>
-                  );
-                  if (item.status === "Closed") {
-                    statusBadge = (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        Closed
-                      </span>
-                    );
-                  } else if (item.status === "In Progress") {
-                    statusBadge = (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
-                        In Progress
-                      </span>
-                    );
-                  } else if (item.status === "Open") {
-                    statusBadge = (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300">
-                        Open
-                      </span>
-                    );
-                  }
+                  const isKta = (item.jenisPelaporan || (item.category === "Unsafe Action" ? "TTA" : "KTA")) === "KTA";
+                  const isClose = item.statusGForm === "CLOSE" || item.status === "Closed";
 
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors align-top">
                       <td className="py-3 px-3 text-center font-bold text-slate-400">{idx + 1}</td>
                       <td className="py-3 px-3">
                         <span className="font-black text-slate-900 block">{item.reportNumber}</span>
-                        <span className="text-[10px] font-semibold text-slate-400">
-                          {item.jobSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}
+                        <span className="text-[10px] font-semibold text-slate-400 block">
+                          Project: {item.project || (item.jobSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU")}
                         </span>
                       </td>
                       <td className="py-3 px-3 whitespace-nowrap text-slate-700 text-[11px]">
-                        <div>{item.date}</div>
-                        <div className="text-[10px] text-slate-400">{item.time} WIB</div>
+                        <div className="font-semibold">{item.tanggalPelaporan || item.date}</div>
+                        <div className="text-[10px] text-slate-400">{item.time || "08:00"} WIB</div>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        {isKta ? (
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-orange-100 text-[#e95623] border border-orange-200">
+                            KTA
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 border border-purple-200">
+                            TTA
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-3 font-semibold text-slate-800">
                         <div className="flex items-start gap-1">
                           <MapPin size={12} className="text-[#e95623] shrink-0 mt-0.5" />
-                          <span>{item.location}</span>
+                          <span className="text-xs font-bold text-slate-900">{item.lokasiBahaya || item.location}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-slate-600 text-[11px] font-medium">
-                        {item.category}
-                      </td>
-                      <td className="py-3 px-3 text-center">{riskBadge}</td>
                       <td className="py-3 px-3">
-                        <span className="font-extrabold text-slate-900 block leading-snug mb-0.5">
-                          {item.title}
+                        <span className="font-extrabold text-slate-900 block leading-snug mb-1 text-xs">
+                          {item.identifikasiBahaya || item.title}
                         </span>
-                        <span className="text-slate-500 text-[11px] line-clamp-2 leading-relaxed">
-                          {item.description}
+                        {(item.rincianBahaya || item.description) && (
+                          <p className="text-slate-500 text-[11px] line-clamp-2 leading-relaxed">
+                            {item.rincianBahaya || item.description}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="font-bold text-slate-900 block text-xs">
+                          {item.namaPelapor || item.reporterName}
                         </span>
-                        <div className="text-[10px] text-slate-400 mt-1">
-                          Pelapor: <strong className="text-slate-600">{item.reporterName}</strong> ({item.reporterDept})
-                        </div>
+                        {item.nrpPelapor && (
+                          <span className="text-[10px] font-mono text-slate-400 block">
+                            NRP: {item.nrpPelapor}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-medium text-slate-500 block">
+                          {item.departemenPelapor || item.reporterDept} &bull; {item.jabatanPelapor || "Worker"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 font-extrabold text-[11px]">
+                          <Building2 size={11} className="text-slate-500" />
+                          <span>{item.penanggungJawabArea || item.picDept || item.picName || "PLANT"}</span>
+                        </span>
                       </td>
                       <td className="py-3 px-3 text-slate-700 text-[11px] leading-relaxed">
-                        <span className="block">{item.correctiveAction}</span>
+                        <span className="line-clamp-3">{item.tindakanPerbaikan || item.correctiveAction || "-"}</span>
                       </td>
 
-                      {/* Foto Bukti Column (Cloudinary) */}
+                      {/* Foto Bukti Column (Cloudinary Pre & Post) */}
                       <td className="py-3 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          {item.photoUrl ? (
+                          {/* Foto Sebelum */}
+                          {(item.dokumentasiSebelum || item.photoUrl) ? (
                             <button
                               type="button"
                               onClick={() => {
-                                setLightboxUrl(item.photoUrl || null);
-                                setLightboxTitle(`Bukti Temuan • ${item.reportNumber}`);
+                                setLightboxUrl(item.dokumentasiSebelum || item.photoUrl || null);
+                                setLightboxTitle(`Foto Sebelum (Temuan) • ${item.reportNumber}`);
                               }}
-                              className="relative group block w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-[#e95623] transition-all cursor-pointer shadow-2xs"
-                              title="Klik untuk melihat Foto Temuan"
+                              className="relative group block w-10 h-10 rounded-xl overflow-hidden border border-slate-200 hover:ring-2 hover:ring-[#e95623] transition-all cursor-pointer shadow-2xs"
+                              title="Lihat Foto Sebelum (Temuan)"
                             >
                               <img
-                                src={getCloudinaryThumbnail(item.photoUrl, 80, 80)}
-                                alt="Foto Temuan"
+                                src={getCloudinaryThumbnail(item.dokumentasiSebelum || item.photoUrl || "", 80, 80)}
+                                alt="Sebelum"
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
                                 loading="lazy"
                               />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
-                                <ZoomIn size={12} />
-                              </div>
+                              <span className="absolute bottom-0 left-0 bg-slate-900/80 text-white text-[7px] font-black px-1 rounded-tr">
+                                PRE
+                              </span>
                             </button>
                           ) : (
                             <span
-                              className="w-10 h-10 rounded-lg border border-dashed border-slate-200 flex items-center justify-center text-slate-300"
+                              className="w-10 h-10 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-slate-300 text-[8px] font-bold"
                               title="Belum ada foto temuan"
                             >
-                              <ImageIcon size={14} />
+                              No Foto
                             </span>
                           )}
 
-                          {item.evidenceUrl && (
+                          {/* Foto Sesudah */}
+                          {(item.dokumentasiSesudah || item.evidenceUrl) && (
                             <button
                               type="button"
                               onClick={() => {
-                                setLightboxUrl(item.evidenceUrl || null);
-                                setLightboxTitle(`Bukti Perbaikan • ${item.reportNumber}`);
+                                setLightboxUrl(item.dokumentasiSesudah || item.evidenceUrl || null);
+                                setLightboxTitle(`Foto Sesudah (Perbaikan) • ${item.reportNumber}`);
                               }}
-                              className="relative group block w-10 h-10 rounded-lg overflow-hidden border border-emerald-300 hover:ring-2 hover:ring-emerald-500 transition-all cursor-pointer shadow-2xs"
-                              title="Klik untuk melihat Foto Bukti Perbaikan"
+                              className="relative group block w-10 h-10 rounded-xl overflow-hidden border border-emerald-300 hover:ring-2 hover:ring-emerald-500 transition-all cursor-pointer shadow-2xs"
+                              title="Lihat Foto Sesudah (Penyelesaian)"
                             >
                               <img
-                                src={getCloudinaryThumbnail(item.evidenceUrl, 80, 80)}
-                                alt="Foto Selesai"
+                                src={getCloudinaryThumbnail(item.dokumentasiSesudah || item.evidenceUrl || "", 80, 80)}
+                                alt="Sesudah"
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
                                 loading="lazy"
                               />
-                              <span className="absolute bottom-0 right-0 bg-emerald-600 text-white p-0.5 rounded-tl">
-                                <CheckCircle2 size={8} />
+                              <span className="absolute bottom-0 right-0 bg-emerald-600 text-white text-[7px] font-black px-1 rounded-tl">
+                                POST
                               </span>
                             </button>
                           )}
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 text-[11px]">
-                        <div className="font-extrabold text-slate-800">{item.picName}</div>
-                        <div className="text-[10px] text-slate-400">{item.picDept}</div>
-                        <div className="text-[10px] font-bold text-orange-700 mt-1">
-                          Due: {item.dueDate}
-                        </div>
-                      </td>
+                      {/* Status OPEN / CLOSE */}
                       <td className="py-3 px-3 text-center">
                         <div className="space-y-1">
-                          {statusBadge}
-                          {/* Quick Toggle Select */}
+                          {isClose ? (
+                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              CLOSE
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300">
+                              OPEN
+                            </span>
+                          )}
                           <select
-                            value={item.status}
-                            onChange={(e) => handleQuickStatusChange(item, e.target.value as HazardStatus)}
-                            className="block w-full text-[10px] py-0.5 px-1 bg-white border border-slate-200 rounded text-slate-700 focus:outline-hidden cursor-pointer"
+                            value={isClose ? "CLOSE" : "OPEN"}
+                            onChange={(e) => handleQuickGFormStatusChange(item, e.target.value as "OPEN" | "CLOSE")}
+                            className="block w-full text-[10px] font-bold py-0.5 px-1 bg-white border border-slate-200 rounded text-slate-700 focus:outline-hidden cursor-pointer"
                           >
-                            <option value="Open">Open</option>
-                            <option value="In Progress">Progress</option>
-                            <option value="Closed">Closed</option>
+                            <option value="OPEN">OPEN</option>
+                            <option value="CLOSE">CLOSE</option>
                           </select>
                         </div>
                       </td>
+
                       <td className="py-3 px-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <button
@@ -936,7 +1053,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                               setDetailItem(item);
                               setIsDetailModalOpen(true);
                             }}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                             title="Lihat Detail Lengkap"
                           >
                             <Eye size={14} />
@@ -944,7 +1061,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(item)}
-                            className="p-1.5 rounded-lg text-sky-600 hover:text-sky-800 hover:bg-sky-50 transition-colors"
+                            className="p-1.5 rounded-lg text-sky-600 hover:text-sky-800 hover:bg-sky-50 transition-colors cursor-pointer"
                             title="Edit Laporan"
                           >
                             <Pencil size={14} />
@@ -952,7 +1069,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDelete(item)}
-                            className="p-1.5 rounded-lg text-rose-600 hover:text-rose-800 hover:bg-rose-50 transition-colors"
+                            className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
                             title="Hapus Laporan"
                           >
                             <Trash2 size={14} />
@@ -998,156 +1115,181 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             </div>
 
             <form onSubmit={handleSubmitForm} className="p-6 overflow-y-auto space-y-4">
+              {/* Project & Tanggal */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Job Site <span className="text-rose-500">*</span>
+                    Project Site <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    value={formData.jobSite}
-                    onChange={(e) => setFormData({ ...formData, jobSite: e.target.value as any })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
+                    value={formData.project}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        project: e.target.value as any,
+                        jobSite: e.target.value === "SENYIUR" ? "Senyiur" : "MuaraPahu",
+                      })
+                    }
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   >
-                    <option value="MuaraPahu">Muara Pahu</option>
-                    <option value="Senyiur">Senyiur</option>
+                    <option value="MUARA PAHU">MUARA PAHU</option>
+                    <option value="SENYIUR">SENYIUR</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Tanggal Temuan <span className="text-rose-500">*</span>
+                    Tanggal Pelaporan <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    value={formData.tanggalPelaporan}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tanggalPelaporan: e.target.value, date: e.target.value })
+                    }
                     required
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Waktu (Jam:Menit)
+                    Status Laporan <span className="text-rose-500">*</span>
                   </label>
-                  <input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white"
-                  />
+                  <select
+                    value={formData.statusGForm}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        statusGForm: e.target.value as "OPEN" | "CLOSE",
+                        status: e.target.value === "CLOSE" ? "Closed" : "Open",
+                      })
+                    }
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  >
+                    <option value="OPEN">OPEN (Belum Selesai)</option>
+                    <option value="CLOSE">CLOSE (Selesai)</option>
+                  </select>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Lokasi / Area Spesifik <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Hauling Road KM 14+200, Workshop Bay 2, Jetty Hopper"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  required
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300"
-                />
-              </div>
-
+              {/* Jenis & Lokasi & PJ */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Kategori Bahaya</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Jenis Pelaporan Bahaya <span className="text-rose-500">*</span>
+                  </label>
                   <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as HazardCategory })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
+                    value={formData.jenisPelaporan}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        jenisPelaporan: e.target.value as "KTA" | "TTA",
+                        category: e.target.value === "KTA" ? "Unsafe Condition" : "Unsafe Action",
+                      })
+                    }
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   >
-                    <option value="Unsafe Condition">Unsafe Condition (Kondisi Tidak Aman)</option>
-                    <option value="Unsafe Action">Unsafe Action (Tindakan Tidak Aman)</option>
-                    <option value="Environmental">Environmental (Pencemaran/Lingkungan)</option>
-                    <option value="Near Miss">Near Miss (Hampir Celaka)</option>
-                    <option value="Health & Hygiene">Health & Hygiene (Kesehatan Kerja)</option>
+                    <option value="KTA">KTA (Kondisi Tidak Aman)</option>
+                    <option value="TTA">TTA (Tindakan Tidak Aman)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Tingkat Risiko</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Lokasi Bahaya <span className="text-rose-500">*</span>
+                  </label>
                   <select
-                    value={formData.riskLevel}
-                    onChange={(e) => setFormData({ ...formData, riskLevel: e.target.value as HazardRiskLevel })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
+                    value={formData.lokasiBahaya}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lokasiBahaya: e.target.value, location: e.target.value })
+                    }
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   >
-                    <option value="Critical">Critical (Kritis - Hentikan Operasi)</option>
-                    <option value="High">High (Tinggi - Segera Tangani)</option>
-                    <option value="Medium">Medium (Sedang - Jadwalkan Perbaikan)</option>
-                    <option value="Low">Low (Rendah - Pemantauan)</option>
+                    {LOKASI_OPTIONS.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Status Penanganan</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Penanggung Jawab Area (PJ) <span className="text-rose-500">*</span>
+                  </label>
                   <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as HazardStatus })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
+                    value={formData.penanggungJawabArea}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        penanggungJawabArea: e.target.value,
+                        picName: e.target.value,
+                        picDept: e.target.value,
+                      })
+                    }
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   >
-                    <option value="Open">Open (Belum Ditangani)</option>
-                    <option value="In Progress">In Progress (Sedang Ditangani)</option>
-                    <option value="Closed">Closed (Tindakan Selesai)</option>
+                    {PJ_OPTIONS.map((pj) => (
+                      <option key={pj} value={pj}>
+                        {pj}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
+              {/* Identifikasi Bahaya */}
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Judul Singkat Temuan Bahaya <span className="text-rose-500">*</span>
+                  Identifikasi Bahaya <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Permukaan jalan hauling berlubang sedalam 20 cm"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Deskripsi ringkas identifikasi bahaya..."
+                  value={formData.identifikasiBahaya || formData.title}
+                  onChange={(e) =>
+                    setFormData({ ...formData, identifikasiBahaya: e.target.value, title: e.target.value })
+                  }
                   required
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold"
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 font-bold focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
 
+              {/* Rincian Bahaya */}
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Deskripsi Detail &amp; Potensi Bahaya</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Rincian Identifikasi Bahaya
+                </label>
                 <textarea
                   rows={3}
-                  placeholder="Jelaskan secara rinci kondisi atau tindakan yang ditemukan serta potensi dampak bahaya bila tidak segera ditangani..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full text-xs p-3 rounded-xl border border-slate-300 leading-relaxed font-medium"
+                  placeholder="Jelaskan secara rinci kondisi atau tindakan yang ditemukan serta potensi dampaknya..."
+                  value={formData.rincianBahaya || formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rincianBahaya: e.target.value, description: e.target.value })
+                  }
+                  className="w-full text-xs p-3 rounded-xl border border-slate-300 leading-relaxed font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Tindakan Langsung Dilakukan (Immediate Action)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Pasang rambu cone pembatas, hentikan aktivitas sementara"
-                    value={formData.immediateAction}
-                    onChange={(e) => setFormData({ ...formData, immediateAction: e.target.value })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Rencana Tindakan Koreksi (Corrective Action)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Grading & penimbunan batu agregat oleh tim sipil"
-                    value={formData.correctiveAction}
-                    onChange={(e) => setFormData({ ...formData, correctiveAction: e.target.value })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300"
-                  />
-                </div>
+              {/* Tindakan Perbaikan */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Tindakan Perbaikan Yang Diperlukan
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Rekomendasi perbaikan atau tindakan koreksi yang harus dilakukan..."
+                  value={formData.tindakanPerbaikan || formData.correctiveAction}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      tindakanPerbaikan: e.target.value,
+                      correctiveAction: e.target.value,
+                    })
+                  }
+                  className="w-full text-xs p-3 rounded-xl border border-slate-300 leading-relaxed font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                />
               </div>
 
               {/* ---------------------------------------------------------
@@ -1171,20 +1313,20 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-black uppercase text-slate-600 block">
-                        1. Foto Temuan (Before)
+                        1. Dokumentasi Sebelum (Foto Temuan)
                       </span>
-                      {formData.photoUrl && (
+                      {(formData.dokumentasiSebelum || formData.photoUrl) && (
                         <span className="text-[9.5px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
                           <CheckCircle2 size={10} /> Cloudinary OK
                         </span>
                       )}
                     </div>
 
-                    {formData.photoUrl ? (
+                    {(formData.dokumentasiSebelum || formData.photoUrl) ? (
                       <div className="space-y-2">
                         <div className="relative group rounded-xl overflow-hidden border border-slate-200 h-32 bg-slate-100 flex items-center justify-center">
                           <img
-                            src={getCloudinaryThumbnail(formData.photoUrl, 400, 300)}
+                            src={getCloudinaryThumbnail(formData.dokumentasiSebelum || formData.photoUrl, 400, 300)}
                             alt="Bukti Temuan"
                             className="w-full h-full object-cover"
                           />
@@ -1192,7 +1334,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                             <button
                               type="button"
                               onClick={() => {
-                                setLightboxUrl(formData.photoUrl);
+                                setLightboxUrl(formData.dokumentasiSebelum || formData.photoUrl);
                                 setLightboxTitle("Pratinjau Foto Temuan");
                               }}
                               className="px-2 py-1 rounded bg-white text-slate-800 text-[10px] font-bold flex items-center gap-1 hover:bg-slate-100 cursor-pointer"
@@ -1201,7 +1343,14 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                             </button>
                             <button
                               type="button"
-                              onClick={() => setFormData({ ...formData, photoUrl: "", photoPublicId: "" })}
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  dokumentasiSebelum: "",
+                                  photoUrl: "",
+                                  photoPublicId: "",
+                                })
+                              }
                               className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1 hover:bg-rose-700 cursor-pointer"
                             >
                               <Trash2 size={11} /> Hapus
@@ -1211,7 +1360,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                         <button
                           type="button"
                           onClick={() => photoInputRef.current?.click()}
-                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1"
+                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <Pencil size={10} /> Ganti Foto Temuan
                         </button>
@@ -1261,20 +1410,20 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-black uppercase text-slate-600 block">
-                        2. Foto Bukti Perbaikan (After)
+                        2. Dokumentasi Sesudah (Foto Selesai)
                       </span>
-                      {formData.evidenceUrl && (
+                      {(formData.dokumentasiSesudah || formData.evidenceUrl) && (
                         <span className="text-[9.5px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
                           <CheckCircle2 size={10} /> Cloudinary OK
                         </span>
                       )}
                     </div>
 
-                    {formData.evidenceUrl ? (
+                    {(formData.dokumentasiSesudah || formData.evidenceUrl) ? (
                       <div className="space-y-2">
                         <div className="relative group rounded-xl overflow-hidden border border-slate-200 h-32 bg-slate-100 flex items-center justify-center">
                           <img
-                            src={getCloudinaryThumbnail(formData.evidenceUrl, 400, 300)}
+                            src={getCloudinaryThumbnail(formData.dokumentasiSesudah || formData.evidenceUrl, 400, 300)}
                             alt="Bukti Perbaikan"
                             className="w-full h-full object-cover"
                           />
@@ -1282,7 +1431,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                             <button
                               type="button"
                               onClick={() => {
-                                setLightboxUrl(formData.evidenceUrl);
+                                setLightboxUrl(formData.dokumentasiSesudah || formData.evidenceUrl);
                                 setLightboxTitle("Pratinjau Foto Perbaikan");
                               }}
                               className="px-2 py-1 rounded bg-white text-slate-800 text-[10px] font-bold flex items-center gap-1 hover:bg-slate-100 cursor-pointer"
@@ -1291,7 +1440,14 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                             </button>
                             <button
                               type="button"
-                              onClick={() => setFormData({ ...formData, evidenceUrl: "", evidencePublicId: "" })}
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  dokumentasiSesudah: "",
+                                  evidenceUrl: "",
+                                  evidencePublicId: "",
+                                })
+                              }
                               className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1 hover:bg-rose-700 cursor-pointer"
                             >
                               <Trash2 size={11} /> Hapus
@@ -1301,7 +1457,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                         <button
                           type="button"
                           onClick={() => evidenceInputRef.current?.click()}
-                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1"
+                          className="w-full py-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <Pencil size={10} /> Ganti Foto Perbaikan
                         </button>
@@ -1349,54 +1505,59 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </div>
               </div>
 
-              {/* Pelapor & PIC */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                  <span className="text-[11px] font-black uppercase text-slate-500 block">Identitas Pelapor</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Nama Pelapor</label>
-                      <input
-                        type="text"
-                        value={formData.reporterName}
-                        onChange={(e) => setFormData({ ...formData, reporterName: e.target.value })}
-                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Departemen</label>
-                      <input
-                        type="text"
-                        value={formData.reporterDept}
-                        onChange={(e) => setFormData({ ...formData, reporterDept: e.target.value })}
-                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
-                      />
-                    </div>
+              {/* Identitas Pelapor (Exact GForm Fields) */}
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <span className="text-[11px] font-black uppercase text-slate-600 block">
+                  Identitas Pelapor
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Nama Pelapor</label>
+                    <input
+                      type="text"
+                      value={formData.namaPelapor}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          namaPelapor: e.target.value,
+                          reporterName: e.target.value,
+                        })
+                      }
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
+                    />
                   </div>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                  <span className="text-[11px] font-black uppercase text-slate-500 block">Penanggung Jawab (PIC)</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2">
-                      <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Nama PIC</label>
-                      <input
-                        type="text"
-                        placeholder="Nama penanggung jawab"
-                        value={formData.picName}
-                        onChange={(e) => setFormData({ ...formData, picName: e.target.value })}
-                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Due Date</label>
-                      <input
-                        type="date"
-                        value={formData.dueDate}
-                        onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                        className="w-full text-xs px-2 py-1.5 rounded-lg border border-slate-300 bg-white"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-0.5">NRP Pelapor</label>
+                    <input
+                      type="text"
+                      value={formData.nrpPelapor}
+                      onChange={(e) => setFormData({ ...formData, nrpPelapor: e.target.value })}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Departemen</label>
+                    <input
+                      type="text"
+                      value={formData.departemenPelapor}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          departemenPelapor: e.target.value,
+                          reporterDept: e.target.value,
+                        })
+                      }
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Jabatan Pelapor</label>
+                    <input
+                      type="text"
+                      value={formData.jabatanPelapor}
+                      onChange={(e) => setFormData({ ...formData, jabatanPelapor: e.target.value })}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
+                    />
                   </div>
                 </div>
               </div>
@@ -1405,7 +1566,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFormModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
@@ -1432,7 +1593,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       )}
 
       {/* ---------------------------------------------------------
-          Modal: Detail View
+          Modal: Detail View (Exact Google Form Fields)
       ---------------------------------------------------------- */}
       {isDetailModalOpen && detailItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
@@ -1440,7 +1601,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-black uppercase text-[#e95623] block tracking-wider">
-                  Detail Hazard Report &bull; {detailItem.jobSite === "MuaraPahu" ? "Muara Pahu" : "Senyiur"}
+                  Detail Hazard Report &bull; Project: {detailItem.project || detailItem.jobSite}
                 </span>
                 <h3 className="text-base font-extrabold text-white mt-0.5">{detailItem.reportNumber}</h3>
               </div>
@@ -1454,35 +1615,76 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             </div>
 
             <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+              {/* Status & Jenis */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                <div>
-                  <span className="text-slate-500 block text-[10px] font-bold">Waktu Temuan:</span>
-                  <strong className="text-slate-800">
-                    {detailItem.date} ({detailItem.time} WIB)
-                  </strong>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-3 py-1 rounded-full text-[11px] font-black ${
+                      (detailItem.jenisPelaporan || (detailItem.category === "Unsafe Action" ? "TTA" : "KTA")) === "KTA"
+                        ? "bg-orange-100 text-[#e95623] border border-orange-200"
+                        : "bg-purple-100 text-purple-800 border border-purple-200"
+                    }`}
+                  >
+                    Jenis: {detailItem.jenisPelaporan || (detailItem.category === "Unsafe Action" ? "TTA" : "KTA")}
+                  </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-[11px] font-black ${
+                      detailItem.statusGForm === "CLOSE" || detailItem.status === "Closed"
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                        : "bg-rose-100 text-rose-800 border border-rose-300"
+                    }`}
+                  >
+                    Status: {detailItem.statusGForm || (detailItem.status === "Closed" ? "CLOSE" : "OPEN")}
+                  </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 block text-[10px] font-bold">Tingkat Risiko:</span>
-                  <span className="font-black text-rose-700">{detailItem.riskLevel}</span>
+                  <span className="text-slate-500 block text-[10px] font-bold">Tanggal Pelaporan:</span>
+                  <strong className="text-slate-800">
+                    {detailItem.tanggalPelaporan || detailItem.date} ({detailItem.time || "08:00"} WIB)
+                  </strong>
                 </div>
               </div>
 
-              <div>
-                <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Lokasi</span>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800">
-                  {detailItem.location}
+              {/* Lokasi & PJ */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Lokasi Bahaya</span>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <MapPin size={13} className="text-[#e95623]" />
+                    <span>{detailItem.lokasiBahaya || detailItem.location}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Penanggung Jawab Area</span>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <Building2 size={13} className="text-slate-500" />
+                    <span>{detailItem.penanggungJawabArea || detailItem.picDept || detailItem.picName || "PLANT"}</span>
+                  </div>
                 </div>
               </div>
 
+              {/* Identifikasi Bahaya */}
               <div>
-                <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Subjek / Judul</span>
-                <div className="text-sm font-extrabold text-slate-900">{detailItem.title}</div>
+                <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Identifikasi Bahaya</span>
+                <div className="text-sm font-extrabold text-slate-900 bg-orange-50/40 p-3 rounded-xl border border-orange-200/60">
+                  {detailItem.identifikasiBahaya || detailItem.title}
+                </div>
               </div>
 
+              {/* Rincian Identifikasi Bahaya */}
               <div>
-                <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Deskripsi Bahaya</span>
+                <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Rincian Bahaya</span>
                 <p className="text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200 font-medium">
-                  {detailItem.description}
+                  {detailItem.rincianBahaya || detailItem.description || "-"}
+                </p>
+              </div>
+
+              {/* Tindakan Perbaikan Yang Diperlukan */}
+              <div>
+                <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Tindakan Perbaikan Yang Diperlukan</span>
+                <p className="text-slate-700 leading-relaxed bg-emerald-50/40 p-3 rounded-xl border border-emerald-200 font-medium">
+                  {detailItem.tindakanPerbaikan || detailItem.correctiveAction || "-"}
                 </p>
               </div>
 
@@ -1495,19 +1697,19 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   {/* Foto Temuan */}
                   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200">
                     <span className="text-[10px] font-bold text-slate-500 block mb-1.5">
-                      1. Foto Temuan (Before)
+                      1. Dokumentasi Sebelum (Foto Temuan)
                     </span>
-                    {detailItem.photoUrl ? (
+                    {(detailItem.dokumentasiSebelum || detailItem.photoUrl) ? (
                       <div className="space-y-1.5">
                         <div
                           onClick={() => {
-                            setLightboxUrl(detailItem.photoUrl || null);
-                            setLightboxTitle(`Bukti Temuan • ${detailItem.reportNumber}`);
+                            setLightboxUrl(detailItem.dokumentasiSebelum || detailItem.photoUrl || null);
+                            setLightboxTitle(`Foto Sebelum • ${detailItem.reportNumber}`);
                           }}
                           className="relative group rounded-xl overflow-hidden border border-slate-200 h-36 bg-slate-900 flex items-center justify-center cursor-pointer"
                         >
                           <img
-                            src={getCloudinaryThumbnail(detailItem.photoUrl, 400, 300)}
+                            src={getCloudinaryThumbnail(detailItem.dokumentasiSebelum || detailItem.photoUrl || "", 400, 300)}
                             alt="Bukti Temuan"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
@@ -1516,7 +1718,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           </div>
                         </div>
                         <a
-                          href={detailItem.photoUrl}
+                          href={detailItem.dokumentasiSebelum || detailItem.photoUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[10px] text-[#e95623] hover:underline font-bold flex items-center gap-1 justify-center py-0.5"
@@ -1535,19 +1737,19 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   {/* Foto Perbaikan */}
                   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200">
                     <span className="text-[10px] font-bold text-slate-500 block mb-1.5">
-                      2. Foto Bukti Perbaikan (After)
+                      2. Dokumentasi Sesudah (Foto Selesai)
                     </span>
-                    {detailItem.evidenceUrl ? (
+                    {(detailItem.dokumentasiSesudah || detailItem.evidenceUrl) ? (
                       <div className="space-y-1.5">
                         <div
                           onClick={() => {
-                            setLightboxUrl(detailItem.evidenceUrl || null);
-                            setLightboxTitle(`Bukti Perbaikan • ${detailItem.reportNumber}`);
+                            setLightboxUrl(detailItem.dokumentasiSesudah || detailItem.evidenceUrl || null);
+                            setLightboxTitle(`Foto Sesudah • ${detailItem.reportNumber}`);
                           }}
                           className="relative group rounded-xl overflow-hidden border border-emerald-300 h-36 bg-slate-900 flex items-center justify-center cursor-pointer"
                         >
                           <img
-                            src={getCloudinaryThumbnail(detailItem.evidenceUrl, 400, 300)}
+                            src={getCloudinaryThumbnail(detailItem.dokumentasiSesudah || detailItem.evidenceUrl || "", 400, 300)}
                             alt="Bukti Perbaikan"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
@@ -1556,7 +1758,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                           </div>
                         </div>
                         <a
-                          href={detailItem.evidenceUrl}
+                          href={detailItem.dokumentasiSesudah || detailItem.evidenceUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[10px] text-emerald-700 hover:underline font-bold flex items-center gap-1 justify-center py-0.5"
@@ -1574,40 +1776,28 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Tindakan Langsung</span>
-                  <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200 text-amber-900 font-medium">
-                    {detailItem.immediateAction || "-"}
-                  </div>
+              {/* Identitas Pelapor */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-slate-500 block text-[10px] font-bold uppercase">Pelapor Bahaya</span>
+                <div className="font-black text-slate-900 text-xs">
+                  {detailItem.namaPelapor || detailItem.reporterName}
+                  {detailItem.nrpPelapor && (
+                    <span className="text-slate-500 font-mono font-medium ml-1.5">
+                      (NRP: {detailItem.nrpPelapor})
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <span className="text-slate-500 block text-[10px] font-bold uppercase mb-1">Tindakan Koreksi</span>
-                  <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200 text-emerald-900 font-medium">
-                    {detailItem.correctiveAction || "-"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
-                <div>
-                  <span className="text-slate-500 block text-[10px] font-bold uppercase">Pelapor</span>
-                  <div className="font-black text-slate-900">{detailItem.reporterName}</div>
-                  <div className="text-[10px] text-slate-400">{detailItem.reporterDept}</div>
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-[10px] font-bold uppercase">Penanggung Jawab (PIC)</span>
-                  <div className="font-black text-slate-900">{detailItem.picName || "-"}</div>
-                  <div className="text-[10px] text-slate-400">
-                    {detailItem.picDept} &bull; Target: {detailItem.dueDate}
-                  </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  Departemen: <strong className="text-slate-700">{detailItem.departemenPelapor || detailItem.reporterDept}</strong> &bull; Jabatan: <strong className="text-slate-700">{detailItem.jabatanPelapor || "-"}</strong>
                 </div>
               </div>
             </div>
 
             <div className="px-6 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
               <span className="text-[11px] font-bold text-slate-500">
-                Status: <strong className="text-slate-800">{detailItem.status}</strong>
+                Status: <strong className={detailItem.statusGForm === "CLOSE" || detailItem.status === "Closed" ? "text-emerald-700" : "text-rose-700"}>
+                  {detailItem.statusGForm || (detailItem.status === "Closed" ? "CLOSE" : "OPEN")}
+                </strong>
               </span>
               <button
                 type="button"

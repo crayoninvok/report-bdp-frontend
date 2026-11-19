@@ -87,7 +87,7 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
   dateRangeText,
 }) => {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [riskFilter, setRiskFilter] = useState<string>("ALL");
+  const [jenisFilter, setJenisFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState("");
@@ -100,28 +100,33 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
 
   const filteredItems = useMemo(() => {
     return hazards.filter((h) => {
-      if (statusFilter !== "ALL" && h.status !== statusFilter) return false;
-      if (riskFilter !== "ALL" && h.riskLevel !== riskFilter) return false;
+      const statusG = (h.statusGForm || (h.status === "Closed" ? "CLOSE" : "OPEN")).toUpperCase();
+      if (statusFilter !== "ALL" && statusG !== statusFilter.toUpperCase()) return false;
+
+      const jenis = (h.jenisPelaporan || (h.category === "Unsafe Action" ? "TTA" : "KTA")).toUpperCase();
+      if (jenisFilter !== "ALL" && jenis !== jenisFilter.toUpperCase()) return false;
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const mTitle = h.title.toLowerCase().includes(q);
-        const mLoc = h.location.toLowerCase().includes(q);
-        const mRep = h.reporterName.toLowerCase().includes(q);
-        const mPic = h.picName.toLowerCase().includes(q);
-        if (!mTitle && !mLoc && !mRep && !mPic) return false;
+        const mTitle = (h.identifikasiBahaya || h.title || "").toLowerCase().includes(q);
+        const mLoc = (h.lokasiBahaya || h.location || "").toLowerCase().includes(q);
+        const mRep = (h.namaPelapor || h.reporterName || "").toLowerCase().includes(q);
+        const mPj = (h.penanggungJawabArea || h.picName || "").toLowerCase().includes(q);
+        const mNrp = (h.nrpPelapor || "").toLowerCase().includes(q);
+        if (!mTitle && !mLoc && !mRep && !mPj && !mNrp) return false;
       }
       return true;
     });
-  }, [hazards, statusFilter, riskFilter, searchQuery]);
+  }, [hazards, statusFilter, jenisFilter, searchQuery]);
 
   const stats = useMemo(() => {
     const total = filteredItems.length;
-    const closed = filteredItems.filter((i) => i.status === "Closed").length;
-    const inProgress = filteredItems.filter((i) => i.status === "In Progress").length;
-    const open = filteredItems.filter((i) => i.status === "Open").length;
-    const critical = filteredItems.filter((i) => i.riskLevel === "Critical").length;
+    const closed = filteredItems.filter((i) => i.statusGForm === "CLOSE" || i.status === "Closed").length;
+    const open = total - closed;
+    const kta = filteredItems.filter((i) => (i.jenisPelaporan || (i.category === "Unsafe Action" ? "TTA" : "KTA")) === "KTA").length;
+    const tta = filteredItems.filter((i) => (i.jenisPelaporan || (i.category === "Unsafe Action" ? "TTA" : "KTA")) === "TTA").length;
     const resolutionRate = total > 0 ? Math.round((closed / total) * 100) : 100;
-    return { total, closed, inProgress, open, critical, resolutionRate };
+    return { total, closed, open, kta, tta, resolutionRate };
   }, [filteredItems]);
 
   const siteLabel =
@@ -293,37 +298,45 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
             {/* Status Filter */}
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-slate-500">Status:</span>
-              {(["ALL", "Open", "In Progress", "Closed"] as const).map((st) => (
+              {[
+                { id: "ALL", label: "Semua" },
+                { id: "OPEN", label: "OPEN" },
+                { id: "CLOSE", label: "CLOSE" },
+              ].map((st) => (
                 <button
-                  key={st}
+                  key={st.id}
                   type="button"
-                  onClick={() => setStatusFilter(st)}
+                  onClick={() => setStatusFilter(st.id)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    statusFilter === st
+                    statusFilter === st.id
                       ? "bg-slate-900 text-white shadow-xs"
                       : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
                   }`}
                 >
-                  {st === "ALL" ? "Semua Status" : st}
+                  {st.label}
                 </button>
               ))}
             </div>
 
-            {/* Risk Filter */}
+            {/* Jenis Pelaporan Filter */}
             <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
-              <span className="font-bold text-slate-500">Risiko:</span>
-              {(["ALL", "Critical", "High", "Medium", "Low"] as const).map((rk) => (
+              <span className="font-bold text-slate-500">Jenis:</span>
+              {[
+                { id: "ALL", label: "Semua" },
+                { id: "KTA", label: "KTA" },
+                { id: "TTA", label: "TTA" },
+              ].map((jn) => (
                 <button
-                  key={rk}
+                  key={jn.id}
                   type="button"
-                  onClick={() => setRiskFilter(rk)}
+                  onClick={() => setJenisFilter(jn.id)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    riskFilter === rk
+                    jenisFilter === jn.id
                       ? "bg-[#e95623] text-white shadow-xs"
                       : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
                   }`}
                 >
-                  {rk === "ALL" ? "Semua Risiko" : rk}
+                  {jn.label}
                 </button>
               ))}
             </div>
@@ -414,7 +427,7 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
               <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/70 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-bold text-emerald-700 uppercase block">
-                    Terselesaikan (Closed)
+                    Status CLOSE (Selesai)
                   </span>
                   <span className="text-xl font-black text-emerald-800">
                     {stats.closed}{" "}
@@ -426,23 +439,10 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
                 <CheckCircle2 size={22} className="text-emerald-500" />
               </div>
 
-              <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/70 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-amber-700 uppercase block">
-                    Dalam Proses (Progress)
-                  </span>
-                  <span className="text-xl font-black text-amber-800">
-                    {stats.inProgress}{" "}
-                    <span className="text-xs font-semibold text-amber-600">Laporan</span>
-                  </span>
-                </div>
-                <ShieldCheck size={22} className="text-amber-500" />
-              </div>
-
               <div className="p-3 rounded-xl border border-rose-200 bg-rose-50/70 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-bold text-rose-700 uppercase block">
-                    Belum Ditangani (Open)
+                    Status OPEN (Belum Selesai)
                   </span>
                   <span className="text-xl font-black text-rose-800">
                     {stats.open}{" "}
@@ -450,6 +450,18 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
                   </span>
                 </div>
                 <AlertTriangle size={22} className="text-rose-500" />
+              </div>
+
+              <div className="p-3 rounded-xl border border-orange-200 bg-orange-50/70 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-orange-700 uppercase block">
+                    Klasifikasi Bahaya
+                  </span>
+                  <span className="text-sm font-black text-slate-900 block mt-0.5">
+                    <span className="text-orange-700">{stats.kta} KTA</span> • <span className="text-purple-700">{stats.tta} TTA</span>
+                  </span>
+                </div>
+                <ShieldCheck size={22} className="text-orange-500" />
               </div>
             </div>
 
@@ -459,15 +471,15 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
                 <thead className="bg-slate-900 text-white font-bold uppercase text-[9.5px] tracking-wider">
                   <tr>
                     <th className="py-2.5 px-2 text-center w-8 border-r border-slate-700">No</th>
-                    <th className="py-2.5 px-2.5 w-24 border-r border-slate-700">No. Hazard</th>
+                    <th className="py-2.5 px-2.5 w-26 border-r border-slate-700">No. Hazard</th>
                     <th className="py-2.5 px-2.5 w-20 border-r border-slate-700">Tanggal</th>
-                    <th className="py-2.5 px-2.5 w-32 border-r border-slate-700">Lokasi / Area</th>
-                    <th className="py-2.5 px-2.5 w-24 border-r border-slate-700">Kategori</th>
-                    <th className="py-2.5 px-2 text-center w-18 border-r border-slate-700">Risiko</th>
-                    <th className="py-2.5 px-3 border-r border-slate-700 min-w-48">Deskripsi &amp; Bahaya</th>
-                    <th className="py-2.5 px-3 border-r border-slate-700 min-w-44">Tindakan Perbaikan</th>
-                    <th className="py-2.5 px-2.5 w-24 border-r border-slate-700">PIC &amp; Due Date</th>
-                    <th className="py-2.5 px-2 text-center w-20">Status</th>
+                    <th className="py-2.5 px-2 text-center w-14 border-r border-slate-700">Jenis</th>
+                    <th className="py-2.5 px-2.5 w-26 border-r border-slate-700">Lokasi Bahaya</th>
+                    <th className="py-2.5 px-2.5 w-24 border-r border-slate-700">PJ Area</th>
+                    <th className="py-2.5 px-3 border-r border-slate-700 min-w-44">Identifikasi &amp; Rincian Bahaya</th>
+                    <th className="py-2.5 px-3 border-r border-slate-700 min-w-40">Tindakan Perbaikan</th>
+                    <th className="py-2.5 px-2.5 w-28 border-r border-slate-700">Pelapor</th>
+                    <th className="py-2.5 px-2 text-center w-16">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -480,62 +492,8 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
                   ) : (
                     filteredItems.map((item, idx) => {
                       const isEven = idx % 2 === 1;
-
-                      let riskBadge = (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-700">
-                          {item.riskLevel}
-                        </span>
-                      );
-                      if (item.riskLevel === "Critical") {
-                        riskBadge = (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-100 text-red-800 border border-red-300">
-                            Critical
-                          </span>
-                        );
-                      } else if (item.riskLevel === "High") {
-                        riskBadge = (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-orange-100 text-orange-800 border border-orange-300">
-                            High
-                          </span>
-                        );
-                      } else if (item.riskLevel === "Medium") {
-                        riskBadge = (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-300">
-                            Medium
-                          </span>
-                        );
-                      } else if (item.riskLevel === "Low") {
-                        riskBadge = (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            Low
-                          </span>
-                        );
-                      }
-
-                      let statusBadge = (
-                        <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-slate-100 text-slate-700">
-                          {item.status}
-                        </span>
-                      );
-                      if (item.status === "Closed") {
-                        statusBadge = (
-                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            Closed
-                          </span>
-                        );
-                      } else if (item.status === "In Progress") {
-                        statusBadge = (
-                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-amber-100 text-amber-800 border border-amber-300">
-                            In Progress
-                          </span>
-                        );
-                      } else if (item.status === "Open") {
-                        statusBadge = (
-                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-rose-100 text-rose-800 border border-rose-300">
-                            Open
-                          </span>
-                        );
-                      }
+                      const isKta = (item.jenisPelaporan || (item.category === "Unsafe Action" ? "TTA" : "KTA")) === "KTA";
+                      const isClose = item.statusGForm === "CLOSE" || item.status === "Closed";
 
                       return (
                         <tr
@@ -547,52 +505,76 @@ export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
                             {idx + 1}
                           </td>
                           <td className="py-2 px-2.5 font-black text-slate-800 border-r border-slate-200 whitespace-nowrap">
-                            {item.reportNumber}
+                            <div>{item.reportNumber}</div>
+                            <div className="text-[9px] font-semibold text-slate-400">
+                              {item.project || (item.jobSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU")}
+                            </div>
                           </td>
                           <td className="py-2 px-2.5 text-slate-600 border-r border-slate-200 whitespace-nowrap text-[10px]">
-                            <div>{item.date}</div>
-                            <div className="text-slate-400 font-semibold">{item.time} WIB</div>
-                          </td>
-                          <td className="py-2 px-2.5 font-semibold text-slate-800 border-r border-slate-200">
-                            {item.location}
-                          </td>
-                          <td className="py-2 px-2.5 text-slate-600 border-r border-slate-200 text-[10px]">
-                            {item.category}
+                            <div>{item.tanggalPelaporan || item.date}</div>
+                            <div className="text-slate-400 font-semibold">{item.time || "08:00"} WIB</div>
                           </td>
                           <td className="py-2 px-2 text-center border-r border-slate-200">
-                            {riskBadge}
+                            {isKta ? (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-orange-100 text-[#e95623] border border-orange-200">
+                                KTA
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-200">
+                                TTA
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 px-2.5 font-bold text-slate-800 border-r border-slate-200 text-[10px]">
+                            {item.lokasiBahaya || item.location}
+                          </td>
+                          <td className="py-2 px-2.5 text-slate-700 font-semibold border-r border-slate-200 text-[10px]">
+                            {item.penanggungJawabArea || item.picDept || item.picName || "PLANT"}
                           </td>
                           <td className="py-2 px-3 border-r border-slate-200">
                             <span className="font-bold text-slate-900 block leading-tight mb-0.5">
-                              {item.title}
+                              {item.identifikasiBahaya || item.title}
                             </span>
-                            <span className="text-[10px] text-slate-600 leading-snug line-clamp-2 block">
-                              {item.description}
-                            </span>
-                            {(item.photoUrl || item.evidenceUrl) && (
+                            {(item.rincianBahaya || item.description) && (
+                              <span className="text-[10px] text-slate-600 leading-snug line-clamp-2 block">
+                                {item.rincianBahaya || item.description}
+                              </span>
+                            )}
+                            {(item.dokumentasiSebelum || item.photoUrl || item.dokumentasiSesudah || item.evidenceUrl) && (
                               <div className="flex items-center gap-1 mt-1">
-                                {item.photoUrl && (
+                                {(item.dokumentasiSebelum || item.photoUrl) && (
                                   <span className="inline-block text-[8px] font-bold text-[#e95623] bg-orange-50 border border-orange-200 px-1 py-0.2 rounded">
-                                    Foto Temuan (Cloudinary)
+                                    Foto Temuan
                                   </span>
                                 )}
-                                {item.evidenceUrl && (
+                                {(item.dokumentasiSesudah || item.evidenceUrl) && (
                                   <span className="inline-block text-[8px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded">
-                                    Foto Selesai (Cloudinary)
+                                    Foto Selesai
                                   </span>
                                 )}
                               </div>
                             )}
                           </td>
                           <td className="py-2 px-3 border-r border-slate-200 text-[10px] text-slate-700 leading-snug">
-                            {item.correctiveAction}
+                            {item.tindakanPerbaikan || item.correctiveAction || "-"}
                           </td>
                           <td className="py-2 px-2.5 border-r border-slate-200 text-[10px]">
-                            <div className="font-bold text-slate-800">{item.picName}</div>
-                            <div className="text-slate-400">Target: {item.dueDate}</div>
+                            <div className="font-bold text-slate-800">{item.namaPelapor || item.reporterName}</div>
+                            {item.nrpPelapor && (
+                              <div className="text-[9px] font-mono text-slate-400">NRP: {item.nrpPelapor}</div>
+                            )}
+                            <div className="text-[9px] text-slate-500">{item.departemenPelapor || item.reporterDept}</div>
                           </td>
                           <td className="py-2 px-2 text-center">
-                            {statusBadge}
+                            {isClose ? (
+                              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                CLOSE
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-rose-100 text-rose-800 border border-rose-300">
+                                OPEN
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );
