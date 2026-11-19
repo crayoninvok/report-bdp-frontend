@@ -130,7 +130,7 @@ export const HazardReportPublicPageClient: React.FC = () => {
   // FORM OPEN STATE (Public Standalone Form)
   // -------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-slate-100/70 py-8 px-4">
+    <div className="min-h-screen bg-slate-100/70 py-4 sm:py-8 px-2.5 sm:px-5 md:px-6">
       <div className="max-w-4xl mx-auto">
         <HazardReportFormPage
           user={{
