@@ -309,5 +309,107 @@ export const manpowerService = {
 
     return res.json();
   },
+
+  /**
+   * Fetch all active manpower for Muara Pahu & Senyiur with localStorage caching
+   */
+  async getSiteActiveManpower(): Promise<MasterManpowerItem[]> {
+    const CACHE_KEY = "bdp_active_site_manpower_cache";
+    try {
+      const res = await this.getList({
+        statusKeaktifan: "Exist",
+        limit: 1000,
+        sortBy: "fullName",
+        sortOrder: "asc",
+      });
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        const filtered = res.data.filter((m) => {
+          const branch = (m.branchName || "").toLowerCase();
+          return branch.includes("muara pahu") || branch.includes("senyiur");
+        });
+        if (typeof window !== "undefined" && filtered.length > 0) {
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(filtered));
+          } catch {}
+        }
+        return filtered;
+      }
+    } catch (err) {
+      console.warn("Gagal mengambil master manpower aktif dari API, mencoba cache lokal:", err);
+    }
+
+    // Fallback to cache if available
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+
+    return [];
+  },
 };
+
+/**
+ * Map organization/department from Master Manpower to standard BDP Hazard Report Departments
+ */
+export function mapOrganizationToDept(org?: string | null): string {
+  if (!org) return "PLANT";
+  const upper = org.trim().toUpperCase();
+  if (upper.includes("PLANT") || upper.includes("MAINTENANCE") || upper.includes("WORKSHOP")) return "PLANT";
+  if (upper.includes("PROD") || upper.includes("OPER") || upper.includes("HAULING") || upper.includes("PIT")) return "PRODUKSI";
+  if (upper.includes("HR") || upper.includes("GA") || upper.includes("HUMAN") || upper.includes("GENERAL")) return "HRGA";
+  if (upper.includes("HSE") || upper.includes("SAFETY") || upper.includes("K3") || upper.includes("ENV")) return "HSE";
+  if (upper.includes("LOGIS") || upper.includes("WAREHOUSE") || upper.includes("SUPPLY") || upper.includes("FUEL")) return "LOGISTIK";
+  if (upper.includes("INFRA") || upper.includes("CIVIL") || upper.includes("ROAD")) return "INFRAS";
+  if (upper.includes("MANAGE") || upper.includes("DIR") || upper.includes("HEAD") || upper.includes("SITE M")) return "MANAGEMENT";
+  return "PLANT";
+}
+
+/**
+ * Map job position from Master Manpower to standard BDP Hazard Report Jabatan
+ */
+export function mapJobPositionToJabatan(pos?: string | null): string {
+  if (!pos) return "WORKER";
+  const upper = pos.trim().toUpperCase();
+  if (
+    upper.includes("PROJECT MANAGER") ||
+    upper.includes("SITE MANAGER") ||
+    upper.includes("KTT") ||
+    upper.includes("MANAGEMENT") ||
+    upper.includes("DEPT HEAD") ||
+    upper.includes("HEAD") ||
+    upper.includes("MANAGER")
+  ) {
+    return "SITE MANAGEMENT";
+  }
+  if (upper.includes("SUPERINTENDENT") || upper.includes("SI ") || upper.includes("SUPERINTEND")) {
+    return "SUPERINTENDENT";
+  }
+  if (
+    upper.includes("SR. SPV") ||
+    upper.includes("SENIOR SPV") ||
+    upper.includes("SR SPV") ||
+    upper.includes("SR. SUPERVISOR") ||
+    upper.includes("SENIOR SUPERVISOR")
+  ) {
+    return "SR. SUPERVISOR";
+  }
+  if (
+    upper.includes("SPV") ||
+    upper.includes("SUPERVISOR") ||
+    upper.includes("FOREMAN") ||
+    upper.includes("PENGAWAS") ||
+    upper.includes("LEADER") ||
+    upper.includes("GROUP LEADER")
+  ) {
+    return "JR. SUPERVISOR";
+  }
+  return "WORKER";
+}
 

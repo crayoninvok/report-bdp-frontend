@@ -43,6 +43,12 @@ import {
   getCloudinaryFullPreview,
 } from "../services/cloudinaryService";
 import { useNotification } from "../context/NotificationContext";
+import {
+  manpowerService,
+  MasterManpowerItem,
+  mapOrganizationToDept,
+  mapJobPositionToJabatan,
+} from "../services/manpowerService";
 
 interface HazardReportFormPageProps {
   user?: any;
@@ -217,6 +223,77 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   // Submission Flow
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedReportNumber, setSubmittedReportNumber] = useState<string | null>(null);
+
+  // Master Manpower Auto-complete (Muara Pahu & Senyiur Exist)
+  const [manpowerList, setManpowerList] = useState<MasterManpowerItem[]>([]);
+  const [loadingManpower, setLoadingManpower] = useState<boolean>(false);
+  const [isManpowerDropdownOpen, setIsManpowerDropdownOpen] = useState<boolean>(false);
+  const [manpowerSearchQuery, setManpowerSearchQuery] = useState<string>("");
+  const manpowerDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchManpower = async () => {
+      try {
+        setLoadingManpower(true);
+        const data = await manpowerService.getSiteActiveManpower();
+        if (!isCancelled && data.length > 0) {
+          setManpowerList(data);
+        }
+      } catch (err) {
+        console.warn("Gagal mengambil data master manpower:", err);
+      } finally {
+        if (!isCancelled) setLoadingManpower(false);
+      }
+    };
+    fetchManpower();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        manpowerDropdownRef.current &&
+        !manpowerDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsManpowerDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Filtered Manpower (Muara Pahu & Senyiur exist - not restricted by project)
+  const filteredManpower = useMemo(() => {
+    if (!manpowerSearchQuery.trim()) {
+      return manpowerList.slice(0, 30);
+    }
+    const q = manpowerSearchQuery.toLowerCase();
+    return manpowerList.filter((m) => {
+      const matchName = m.fullName.toLowerCase().includes(q);
+      const matchNrp = (m.employeeId || "").toLowerCase().includes(q);
+      const matchDept = (m.organization || "").toLowerCase().includes(q);
+      const matchPos = (m.jobPosition || "").toLowerCase().includes(q);
+      return matchName || matchNrp || matchDept || matchPos;
+    });
+  }, [manpowerList, manpowerSearchQuery]);
+
+  const handleSelectManpower = (m: MasterManpowerItem) => {
+    setNamaPelapor(m.fullName);
+    setNrpPelapor(m.employeeId || m.nik || "");
+    const mappedDept = mapOrganizationToDept(m.organization);
+    setDepartemenPelapor(mappedDept);
+    const mappedJabatan = mapJobPositionToJabatan(m.jobPosition);
+    setJabatanPelapor(mappedJabatan);
+    setIsManpowerDropdownOpen(false);
+    setManpowerSearchQuery("");
+    showSuccess(`Data ${m.fullName} dipilih. NRP (${m.employeeId}) & Departemen (${mappedDept}) terisi otomatis.`);
+  };
 
   // Filtered Identifikasi Items
   const currentItems = jenisPelaporan === "KTA" ? KTA_ITEMS : TTA_ITEMS;
@@ -621,22 +698,133 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            {/* NAMA PELAPOR* */}
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
-                NAMA PELAPOR <span className="text-rose-500">*</span>
-              </label>
+            {/* NAMA PELAPOR* with Master Manpower Autocomplete */}
+            <div className="relative" ref={manpowerDropdownRef}>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700">
+                  NAMA PELAPOR <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-[10px] font-semibold text-slate-400">
+                  {loadingManpower ? "Memuat manpower..." : `${manpowerList.length} Manpower (MP & SY)`}
+                </span>
+              </div>
               <div className="relative">
                 <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Nama lengkap pelapor"
+                  placeholder="Ketik nama atau NRP pelapor..."
                   value={namaPelapor}
-                  onChange={(e) => setNamaPelapor(e.target.value)}
+                  onFocus={() => {
+                    setManpowerSearchQuery(namaPelapor);
+                    setIsManpowerDropdownOpen(true);
+                  }}
+                  onChange={(e) => {
+                    setNamaPelapor(e.target.value);
+                    setManpowerSearchQuery(e.target.value);
+                    setIsManpowerDropdownOpen(true);
+                  }}
                   required
-                  className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  autoComplete="off"
+                  className="w-full text-xs pl-9 pr-8 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40 bg-white"
                 />
+                {namaPelapor && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNamaPelapor("");
+                      setNrpPelapor("");
+                      setManpowerSearchQuery("");
+                      setIsManpowerDropdownOpen(true);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    title="Hapus / Cari Ulang"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
+
+              {/* Autocomplete Dropdown List */}
+              {isManpowerDropdownOpen && (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                    <span className="flex items-center gap-1.5">
+                      <Search size={12} className="text-[#e95623]" />
+                      Master Manpower Aktif ({filteredManpower.length} hasil)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsManpowerDropdownOpen(false)}
+                      className="text-slate-400 hover:text-slate-600 text-[10px] font-bold cursor-pointer"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                    {filteredManpower.length === 0 ? (
+                      <div className="p-4 text-center text-slate-400 text-xs">
+                        <p className="font-semibold">Tidak ditemukan di Master Manpower.</p>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Anda tetap dapat menggunakan nama manual ini.
+                        </p>
+                      </div>
+                    ) : (
+                      filteredManpower.map((m) => {
+                        const isMp = (m.branchName || "").toLowerCase().includes("muara pahu");
+                        return (
+                          <div
+                            key={m.id || m.employeeId}
+                            onClick={() => handleSelectManpower(m)}
+                            className="p-2.5 hover:bg-orange-50/70 transition-colors cursor-pointer group text-left"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-black text-slate-900 group-hover:text-[#e95623] transition-colors">
+                                {m.fullName}
+                              </span>
+                              <span
+                                className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-md border shrink-0 ${
+                                  isMp
+                                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                }`}
+                              >
+                                {m.branchName || "Jobsite"}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-[11px] text-slate-500">
+                              <span className="font-mono font-bold text-slate-700">
+                                NRP: {m.employeeId || "-"}
+                              </span>
+                              <span>&bull;</span>
+                              <span className="font-semibold text-slate-600">
+                                Dept: {m.organization || "-"}
+                              </span>
+                              <span>&bull;</span>
+                              <span className="text-slate-400 truncate max-w-44">
+                                {m.jobPosition || "-"}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {namaPelapor && (
+                    <div className="p-2 border-t border-slate-100 bg-slate-50">
+                      <button
+                        type="button"
+                        onClick={() => setIsManpowerDropdownOpen(false)}
+                        className="w-full text-left px-2 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 transition-colors cursor-pointer flex items-center justify-between"
+                      >
+                        <span>Gunakan nama manual: "{namaPelapor}"</span>
+                        <ChevronRight size={12} className="text-slate-400" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* NRP PELAPOR* */}

@@ -60,6 +60,12 @@ import {
   DEPARTEMEN_OPTIONS,
   JABATAN_OPTIONS,
 } from "./HazardReportFormPage";
+import {
+  manpowerService,
+  MasterManpowerItem,
+  mapOrganizationToDept,
+  mapJobPositionToJabatan,
+} from "../services/manpowerService";
 
 // Predefined Choices from BDP Hazard Report Google Form
 const LOKASI_OPTIONS = [
@@ -140,6 +146,82 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const evidenceInputRef = useRef<HTMLInputElement>(null);
+
+  // Master Manpower Auto-complete (Muara Pahu & Senyiur Exist)
+  const [manpowerList, setManpowerList] = useState<MasterManpowerItem[]>([]);
+  const [loadingManpower, setLoadingManpower] = useState<boolean>(false);
+  const [isModalManpowerOpen, setIsModalManpowerOpen] = useState<boolean>(false);
+  const [modalManpowerQuery, setModalManpowerQuery] = useState<string>("");
+  const modalManpowerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchManpower = async () => {
+      try {
+        setLoadingManpower(true);
+        const data = await manpowerService.getSiteActiveManpower();
+        if (!isCancelled && data.length > 0) {
+          setManpowerList(data);
+        }
+      } catch (err) {
+        console.warn("Gagal memuat master manpower:", err);
+      } finally {
+        if (!isCancelled) setLoadingManpower(false);
+      }
+    };
+    fetchManpower();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  // Click outside to close modal manpower dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        modalManpowerRef.current &&
+        !modalManpowerRef.current.contains(e.target as Node)
+      ) {
+        setIsModalManpowerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Filtered Manpower for modal
+  const filteredModalManpower = useMemo(() => {
+    if (!modalManpowerQuery.trim()) {
+      return manpowerList.slice(0, 30);
+    }
+    const q = modalManpowerQuery.toLowerCase();
+    return manpowerList.filter((m) => {
+      const matchName = m.fullName.toLowerCase().includes(q);
+      const matchNrp = (m.employeeId || "").toLowerCase().includes(q);
+      const matchDept = (m.organization || "").toLowerCase().includes(q);
+      const matchPos = (m.jobPosition || "").toLowerCase().includes(q);
+      return matchName || matchNrp || matchDept || matchPos;
+    });
+  }, [manpowerList, modalManpowerQuery]);
+
+  const handleSelectModalManpower = (m: MasterManpowerItem) => {
+    const mappedDept = mapOrganizationToDept(m.organization);
+    const mappedJabatan = mapJobPositionToJabatan(m.jobPosition);
+    setFormData((prev) => ({
+      ...prev,
+      namaPelapor: m.fullName,
+      reporterName: m.fullName,
+      nrpPelapor: m.employeeId || m.nik || "",
+      departemenPelapor: mappedDept,
+      reporterDept: mappedDept,
+      jabatanPelapor: mappedJabatan,
+    }));
+    setIsModalManpowerOpen(false);
+    setModalManpowerQuery("");
+    showSuccess(`Data ${m.fullName} dipilih. NRP (${m.employeeId}) & Departemen (${mappedDept}) terisi otomatis.`);
+  };
 
   // Form State (Exact Google Form Fields & Compatibility)
   const [isCustomIdentifikasi, setIsCustomIdentifikasi] = useState(false);
@@ -1592,20 +1674,111 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   Identitas Pelapor
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Nama Pelapor</label>
-                    <input
-                      type="text"
-                      value={formData.namaPelapor}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          namaPelapor: e.target.value,
-                          reporterName: e.target.value,
-                        })
-                      }
-                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
-                    />
+                  <div className="relative" ref={modalManpowerRef}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[10px] font-bold text-slate-500">Nama Pelapor</label>
+                      <span className="text-[9px] text-slate-400">
+                        {loadingManpower ? "..." : `${manpowerList.length} MP/SY`}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Ketik cari nama..."
+                        value={formData.namaPelapor}
+                        onFocus={() => {
+                          setModalManpowerQuery(formData.namaPelapor);
+                          setIsModalManpowerOpen(true);
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((prev) => ({
+                            ...prev,
+                            namaPelapor: val,
+                            reporterName: val,
+                          }));
+                          setModalManpowerQuery(val);
+                          setIsModalManpowerOpen(true);
+                        }}
+                        autoComplete="off"
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-bold"
+                      />
+                      {formData.namaPelapor && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              namaPelapor: "",
+                              reporterName: "",
+                              nrpPelapor: "",
+                            }));
+                            setModalManpowerQuery("");
+                            setIsModalManpowerOpen(true);
+                          }}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Dropdown suggestions */}
+                    {isModalManpowerOpen && (
+                      <div className="absolute z-50 left-0 -right-24 top-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                        <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <Search size={11} className="text-[#e95623]" />
+                            Master Manpower ({filteredModalManpower.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsModalManpowerOpen(false)}
+                            className="text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                          >
+                            Tutup
+                          </button>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
+                          {filteredModalManpower.length === 0 ? (
+                            <div className="p-3 text-center text-slate-400 text-[11px]">
+                              Tidak ditemukan. Tekan tutup untuk simpan nama manual.
+                            </div>
+                          ) : (
+                            filteredModalManpower.map((m) => {
+                              const isMp = (m.branchName || "").toLowerCase().includes("muara pahu");
+                              return (
+                                <div
+                                  key={m.id || m.employeeId}
+                                  onClick={() => handleSelectModalManpower(m)}
+                                  className="p-2 hover:bg-orange-50/70 transition-colors cursor-pointer text-left group"
+                                >
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[11px] font-black text-slate-900 group-hover:text-[#e95623]">
+                                      {m.fullName}
+                                    </span>
+                                    <span
+                                      className={`text-[8.5px] font-black px-1 py-0.2 rounded border ${
+                                        isMp
+                                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      }`}
+                                    >
+                                      {m.branchName || "Site"}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                    <span className="font-mono font-bold text-slate-700">NRP: {m.employeeId}</span>
+                                    <span>&bull;</span>
+                                    <span>Dept: {m.organization}</span>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-slate-500 block mb-0.5">NRP Pelapor</label>
