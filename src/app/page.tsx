@@ -36,6 +36,8 @@ import { ProfitCenterView } from "../components/ProfitCenterView";
 import { MasterManpowerView } from "../components/MasterManpowerView";
 import { HRDashboardView } from "../components/HRDashboardView";
 import { ATRDashboardView } from "../components/ATRDashboardView";
+import { SheDashboardView } from "../components/SheDashboardView";
+import { HazardReportView } from "../components/HazardReportView";
 
 import {
   Menu,
@@ -342,6 +344,10 @@ export default function Home() {
                       ? "Human Resource & Development • ATR Dashboard"
                       : activeMenu === "master-manpower"
                       ? "Human Resource & Development • Master Manpower Data"
+                      : activeMenu === "she-dashboard"
+                      ? "Safety Health & Environment • Dashboard"
+                      : activeMenu === "hazard-report"
+                      ? "Safety Health & Environment • Hazard Report"
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
@@ -657,6 +663,16 @@ export default function Home() {
             />
           ) : activeMenu === "master-manpower" ? (
             <MasterManpowerView user={currentUser} />
+          ) : activeMenu === "she-dashboard" ? (
+            <SheDashboardView
+              user={currentUser}
+              onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
+            />
+          ) : activeMenu === "hazard-report" ? (
+            <HazardReportView
+              user={currentUser}
+              onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
+            />
           ) : (
             <DashboardView
               user={currentUser}

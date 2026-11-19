@@ -19,6 +19,7 @@ import {
   Wrench,
   ClipboardCheck,
   ShieldCheck,
+  ShieldAlert,
   Disc,
   BarChart3,
   Scale,
@@ -187,6 +188,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "master-manpower",
           label: "Master Manpower Data",
           icon: Users,
+        },
+      ],
+    },
+    {
+      title: "Safety Health & Environment",
+      items: [
+        {
+          id: "she-dashboard",
+          label: "Dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          id: "hazard-report",
+          label: "Hazard Report",
+          icon: ShieldAlert,
         },
       ],
     },

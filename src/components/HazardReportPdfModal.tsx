@@ -1,0 +1,703 @@
+"use client";
+
+import React, { useState, useRef, useMemo } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas-pro";
+import {
+  X,
+  FileDown,
+  Printer,
+  Building2,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldCheck,
+  Calendar,
+  Layers,
+  Search,
+} from "lucide-react";
+import { HazardReportItem } from "../services/sheService";
+import {
+  ApprovedStamp,
+  formatIndoFullDate,
+} from "./DailyPlanApprovalModal";
+
+export interface HazardPdfSigner {
+  roleTitle: string;
+  position: string;
+  department: string;
+  name: string;
+  date: string;
+  isApproved: boolean;
+}
+
+export interface HazardPdfApprovalData {
+  documentLocation: string;
+  documentDate: string;
+  safetyOfficer: HazardPdfSigner;
+  sheSupervisor: HazardPdfSigner;
+  projectManager: HazardPdfSigner;
+}
+
+function getDefaultApprovalData(site: string): HazardPdfApprovalData {
+  const today = new Date().toISOString().slice(0, 10);
+  const location = site === "MuaraPahu" ? "Muara Pahu" : "Senyiur";
+  return {
+    documentLocation: location,
+    documentDate: today,
+    safetyOfficer: {
+      roleTitle: "Dibuat Oleh :",
+      position: "Safety Officer",
+      department: "Safety, Health & Environment",
+      name: "Safety Officer",
+      date: today,
+      isApproved: true,
+    },
+    sheSupervisor: {
+      roleTitle: "Diperiksa Oleh :",
+      position: "SHE Supervisor / Coordinator",
+      department: "Safety, Health & Environment",
+      name: "SHE Supervisor",
+      date: today,
+      isApproved: true,
+    },
+    projectManager: {
+      roleTitle: "Disetujui Oleh :",
+      position: "Project Manager / KTT",
+      department: "Operational Site",
+      name: "Project Manager",
+      date: today,
+      isApproved: true,
+    },
+  };
+}
+
+export interface HazardReportPdfModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  hazards: HazardReportItem[];
+  selectedSite: "MuaraPahu" | "Senyiur" | "ALL";
+  dateRangeText?: string;
+}
+
+export const HazardReportPdfModal: React.FC<HazardReportPdfModalProps> = ({
+  isOpen,
+  onClose,
+  hazards,
+  selectedSite,
+  dateRangeText,
+}) => {
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [riskFilter, setRiskFilter] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState("");
+
+  const printAreaRef = useRef<HTMLDivElement>(null);
+
+  const approvalData = useMemo(() => {
+    return getDefaultApprovalData(selectedSite === "ALL" ? "MuaraPahu" : selectedSite);
+  }, [selectedSite]);
+
+  const filteredItems = useMemo(() => {
+    return hazards.filter((h) => {
+      if (statusFilter !== "ALL" && h.status !== statusFilter) return false;
+      if (riskFilter !== "ALL" && h.riskLevel !== riskFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const mTitle = h.title.toLowerCase().includes(q);
+        const mLoc = h.location.toLowerCase().includes(q);
+        const mRep = h.reporterName.toLowerCase().includes(q);
+        const mPic = h.picName.toLowerCase().includes(q);
+        if (!mTitle && !mLoc && !mRep && !mPic) return false;
+      }
+      return true;
+    });
+  }, [hazards, statusFilter, riskFilter, searchQuery]);
+
+  const stats = useMemo(() => {
+    const total = filteredItems.length;
+    const closed = filteredItems.filter((i) => i.status === "Closed").length;
+    const inProgress = filteredItems.filter((i) => i.status === "In Progress").length;
+    const open = filteredItems.filter((i) => i.status === "Open").length;
+    const critical = filteredItems.filter((i) => i.riskLevel === "Critical").length;
+    const resolutionRate = total > 0 ? Math.round((closed / total) * 100) : 100;
+    return { total, closed, inProgress, open, critical, resolutionRate };
+  }, [filteredItems]);
+
+  const siteLabel =
+    selectedSite === "ALL"
+      ? "Semua Site (Muara Pahu & Senyiur)"
+      : selectedSite === "MuaraPahu"
+      ? "Site Muara Pahu"
+      : "Site Senyiur";
+
+  const printTimestamp = useMemo(() => {
+    const d = new Date();
+    return `${d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })} pukul ${d.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })} WIB`;
+  }, []);
+
+  if (!isOpen) return null;
+
+  const handleExportPdf = async () => {
+    if (!printAreaRef.current) return;
+    try {
+      setIsExporting(true);
+      setExportProgress("Menyiapkan dokumen Hazard Report...");
+
+      const el = printAreaRef.current;
+      setExportProgress("Merender layout dokumen...");
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: 1200,
+      });
+
+      setExportProgress("Menyusun halaman PDF A4 Landscape...");
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = 297;
+      const pdfHeight = 210;
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      if (imgHeight <= pdfHeight) {
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, imgHeight, undefined, "FAST");
+      } else {
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+          position = position - pdfHeight;
+          pdf.addPage("a4", "landscape");
+          pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
+          heightLeft -= pdfHeight;
+        }
+      }
+
+      pdf.save(`SHE_Hazard_Report_${selectedSite}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err: any) {
+      console.error("Gagal mengekspor PDF:", err);
+      alert("Terjadi kesalahan saat mengekspor PDF: " + (err?.message || err));
+    } finally {
+      setIsExporting(false);
+      setExportProgress("");
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white">
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #hazard-report-printable,
+          #hazard-report-printable * {
+            visibility: visible;
+          }
+          #hazard-report-printable {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 8mm;
+            background: white !important;
+          }
+          @page {
+            size: A4 landscape;
+            margin: 6mm;
+          }
+        }
+      `}</style>
+
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-7xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 print:border-none print:shadow-none print:max-h-none print:w-full">
+        {/* Modal Top Bar */}
+        <div className="px-6 py-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-400/40 flex items-center justify-center text-[#e95623]">
+              <Printer size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#e95623] text-white">
+                  {selectedSite}
+                </span>
+                <span className="text-xs text-slate-400 font-semibold">
+                  SHE • Safety, Health &amp; Environment
+                </span>
+              </div>
+              <h2 className="text-base font-extrabold text-white tracking-tight">
+                Export PDF &amp; Cetak Laporan Temuan Bahaya (Hazard Report)
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={isExporting}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Printer size={14} />
+              <span>Cetak (Print)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={isExporting || filteredItems.length === 0}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d84818] text-white shadow-md transition-all cursor-pointer disabled:opacity-50"
+            >
+              <FileDown size={14} />
+              <span>{isExporting ? exportProgress || "Memproses..." : "Download PDF"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer ml-1"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Controls Bar */}
+        <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0 print:hidden">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Status Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-slate-500">Status:</span>
+              {(["ALL", "Open", "In Progress", "Closed"] as const).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setStatusFilter(st)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    statusFilter === st
+                      ? "bg-slate-900 text-white shadow-xs"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {st === "ALL" ? "Semua Status" : st}
+                </button>
+              ))}
+            </div>
+
+            {/* Risk Filter */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+              <span className="font-bold text-slate-500">Risiko:</span>
+              {(["ALL", "Critical", "High", "Medium", "Low"] as const).map((rk) => (
+                <button
+                  key={rk}
+                  type="button"
+                  onClick={() => setRiskFilter(rk)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    riskFilter === rk
+                      ? "bg-[#e95623] text-white shadow-xs"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {rk === "ALL" ? "Semua Risiko" : rk}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative w-64">
+            <Search
+              size={13}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Cari hazard / lokasi / pelapor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-7 py-1 text-xs bg-white rounded-lg border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#e95623]"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Printable Viewport */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/70 print:p-0 print:bg-white">
+          <div
+            id="hazard-report-printable"
+            ref={printAreaRef}
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 mx-auto text-slate-800 print:border-none print:shadow-none print:p-0 print:rounded-none"
+            style={{ maxWidth: "1120px" }}
+          >
+            {/* Header Document */}
+            <div className="flex items-start justify-between pb-4 border-b-2 border-slate-900 gap-4">
+              <div className="flex items-center gap-3.5">
+                <img
+                  src="/coa-logo-bdp.png"
+                  alt="PT Batara Dharma Persada"
+                  className="h-12 w-12 object-contain"
+                />
+                <div>
+                  <h1 className="text-base font-black tracking-wider text-slate-900 uppercase">
+                    PT BATARA DHARMA PERSADA
+                  </h1>
+                  <span className="text-[11px] font-extrabold text-[#e95623] tracking-wide block uppercase">
+                    SAFETY, HEALTH &amp; ENVIRONMENT (SHE) DEPARTMENT
+                  </span>
+                  <span className="text-xs font-bold text-slate-600 block mt-0.5">
+                    LAPORAN IDENTIFIKASI BAHAYA &amp; TINDAKAN PENGENDALIAN (HAZARD REPORT)
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-right text-[11px] font-semibold text-slate-600 shrink-0">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 text-white font-extrabold text-xs mb-1.5">
+                  <Building2 size={12} />
+                  <span>{siteLabel.toUpperCase()}</span>
+                </div>
+                <div>
+                  <strong>Periode / Tanggal:</strong> {dateRangeText || new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+                </div>
+                <div>
+                  <strong>Waktu Cetak:</strong> {printTimestamp}
+                </div>
+              </div>
+            </div>
+
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-4 gap-3 my-4">
+              <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">
+                    Total Temuan Bahaya
+                  </span>
+                  <span className="text-xl font-black text-slate-900">
+                    {stats.total}{" "}
+                    <span className="text-xs font-semibold text-slate-500">Laporan</span>
+                  </span>
+                </div>
+                <Layers size={22} className="text-slate-400" />
+              </div>
+
+              <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/70 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase block">
+                    Terselesaikan (Closed)
+                  </span>
+                  <span className="text-xl font-black text-emerald-800">
+                    {stats.closed}{" "}
+                    <span className="text-xs font-semibold text-emerald-600">
+                      ({stats.resolutionRate}%)
+                    </span>
+                  </span>
+                </div>
+                <CheckCircle2 size={22} className="text-emerald-500" />
+              </div>
+
+              <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/70 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-amber-700 uppercase block">
+                    Dalam Proses (Progress)
+                  </span>
+                  <span className="text-xl font-black text-amber-800">
+                    {stats.inProgress}{" "}
+                    <span className="text-xs font-semibold text-amber-600">Laporan</span>
+                  </span>
+                </div>
+                <ShieldCheck size={22} className="text-amber-500" />
+              </div>
+
+              <div className="p-3 rounded-xl border border-rose-200 bg-rose-50/70 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-rose-700 uppercase block">
+                    Belum Ditangani (Open)
+                  </span>
+                  <span className="text-xl font-black text-rose-800">
+                    {stats.open}{" "}
+                    <span className="text-xs font-semibold text-rose-600">Laporan</span>
+                  </span>
+                </div>
+                <AlertTriangle size={22} className="text-rose-500" />
+              </div>
+            </div>
+
+            {/* Main Table */}
+            <div className="rounded-xl border border-slate-300 overflow-hidden mb-5">
+              <table className="w-full text-left text-[11px] border-collapse">
+                <thead className="bg-slate-900 text-white font-bold uppercase text-[9.5px] tracking-wider">
+                  <tr>
+                    <th className="py-2.5 px-2 text-center w-8 border-r border-slate-700">No</th>
+                    <th className="py-2.5 px-2.5 w-24 border-r border-slate-700">No. Hazard</th>
+                    <th className="py-2.5 px-2.5 w-20 border-r border-slate-700">Tanggal</th>
+                    <th className="py-2.5 px-2.5 w-32 border-r border-slate-700">Lokasi / Area</th>
+                    <th className="py-2.5 px-2.5 w-24 border-r border-slate-700">Kategori</th>
+                    <th className="py-2.5 px-2 text-center w-18 border-r border-slate-700">Risiko</th>
+                    <th className="py-2.5 px-3 border-r border-slate-700 min-w-48">Deskripsi &amp; Bahaya</th>
+                    <th className="py-2.5 px-3 border-r border-slate-700 min-w-44">Tindakan Perbaikan</th>
+                    <th className="py-2.5 px-2.5 w-24 border-r border-slate-700">PIC &amp; Due Date</th>
+                    <th className="py-2.5 px-2 text-center w-20">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="py-8 text-center text-slate-400 italic">
+                        Tidak ada laporan bahaya pada kriteria ini.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredItems.map((item, idx) => {
+                      const isEven = idx % 2 === 1;
+
+                      let riskBadge = (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-100 text-slate-700">
+                          {item.riskLevel}
+                        </span>
+                      );
+                      if (item.riskLevel === "Critical") {
+                        riskBadge = (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-100 text-red-800 border border-red-300">
+                            Critical
+                          </span>
+                        );
+                      } else if (item.riskLevel === "High") {
+                        riskBadge = (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-orange-100 text-orange-800 border border-orange-300">
+                            High
+                          </span>
+                        );
+                      } else if (item.riskLevel === "Medium") {
+                        riskBadge = (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                            Medium
+                          </span>
+                        );
+                      } else if (item.riskLevel === "Low") {
+                        riskBadge = (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Low
+                          </span>
+                        );
+                      }
+
+                      let statusBadge = (
+                        <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-slate-100 text-slate-700">
+                          {item.status}
+                        </span>
+                      );
+                      if (item.status === "Closed") {
+                        statusBadge = (
+                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Closed
+                          </span>
+                        );
+                      } else if (item.status === "In Progress") {
+                        statusBadge = (
+                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                            In Progress
+                          </span>
+                        );
+                      } else if (item.status === "Open") {
+                        statusBadge = (
+                          <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-rose-100 text-rose-800 border border-rose-300">
+                            Open
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className={isEven ? "bg-slate-50/70" : "bg-white"}
+                          style={{ pageBreakInside: "avoid" }}
+                        >
+                          <td className="py-2 px-2 text-center font-bold text-slate-500 border-r border-slate-200">
+                            {idx + 1}
+                          </td>
+                          <td className="py-2 px-2.5 font-black text-slate-800 border-r border-slate-200 whitespace-nowrap">
+                            {item.reportNumber}
+                          </td>
+                          <td className="py-2 px-2.5 text-slate-600 border-r border-slate-200 whitespace-nowrap text-[10px]">
+                            <div>{item.date}</div>
+                            <div className="text-slate-400 font-semibold">{item.time} WIB</div>
+                          </td>
+                          <td className="py-2 px-2.5 font-semibold text-slate-800 border-r border-slate-200">
+                            {item.location}
+                          </td>
+                          <td className="py-2 px-2.5 text-slate-600 border-r border-slate-200 text-[10px]">
+                            {item.category}
+                          </td>
+                          <td className="py-2 px-2 text-center border-r border-slate-200">
+                            {riskBadge}
+                          </td>
+                          <td className="py-2 px-3 border-r border-slate-200">
+                            <span className="font-bold text-slate-900 block leading-tight mb-0.5">
+                              {item.title}
+                            </span>
+                            <span className="text-[10px] text-slate-600 leading-snug line-clamp-2 block">
+                              {item.description}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 border-r border-slate-200 text-[10px] text-slate-700 leading-snug">
+                            {item.correctiveAction}
+                          </td>
+                          <td className="py-2 px-2.5 border-r border-slate-200 text-[10px]">
+                            <div className="font-bold text-slate-800">{item.picName}</div>
+                            <div className="text-slate-400">Target: {item.dueDate}</div>
+                          </td>
+                          <td className="py-2 px-2 text-center">
+                            {statusBadge}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Document Approval Footer */}
+            <div
+              className="pt-4 border-t-2 border-slate-800"
+              style={{ pageBreakInside: "avoid" }}
+            >
+              <div className="flex items-center justify-between mb-3 text-[11px] text-slate-600 font-semibold">
+                <span>
+                  Lokasi Pengesahan:{" "}
+                  <strong className="text-slate-900">
+                    {approvalData.documentLocation}
+                  </strong>
+                </span>
+                <span>
+                  Tanggal Dokumen:{" "}
+                  <strong className="text-slate-900">
+                    {formatIndoFullDate(approvalData.documentDate)}
+                  </strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {/* Signer 1 */}
+                <div className="border border-slate-300 rounded-xl p-3 bg-white flex flex-col justify-between min-h-36 text-center">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
+                      {approvalData.safetyOfficer.roleTitle}
+                    </span>
+                    <span className="text-xs font-black text-slate-800 block mt-0.5">
+                      {approvalData.safetyOfficer.position}
+                    </span>
+                    <span className="text-[9.5px] text-slate-400 block">
+                      {approvalData.safetyOfficer.department}
+                    </span>
+                  </div>
+                  <div className="my-2 flex items-center justify-center">
+                    <ApprovedStamp dateStr={approvalData.safetyOfficer.date} isCompact />
+                  </div>
+                  <div className="pt-2 border-t border-slate-200">
+                    <span className="text-xs font-black text-slate-900 block underline">
+                      {approvalData.safetyOfficer.name}
+                    </span>
+                    <span className="text-[9.5px] text-slate-500 font-semibold">
+                      Tgl: {approvalData.safetyOfficer.date}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Signer 2 */}
+                <div className="border border-slate-300 rounded-xl p-3 bg-white flex flex-col justify-between min-h-36 text-center">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
+                      {approvalData.sheSupervisor.roleTitle}
+                    </span>
+                    <span className="text-xs font-black text-slate-800 block mt-0.5">
+                      {approvalData.sheSupervisor.position}
+                    </span>
+                    <span className="text-[9.5px] text-slate-400 block">
+                      {approvalData.sheSupervisor.department}
+                    </span>
+                  </div>
+                  <div className="my-2 flex items-center justify-center">
+                    <ApprovedStamp dateStr={approvalData.sheSupervisor.date} isCompact />
+                  </div>
+                  <div className="pt-2 border-t border-slate-200">
+                    <span className="text-xs font-black text-slate-900 block underline">
+                      {approvalData.sheSupervisor.name}
+                    </span>
+                    <span className="text-[9.5px] text-slate-500 font-semibold">
+                      Tgl: {approvalData.sheSupervisor.date}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Signer 3 */}
+                <div className="border border-slate-300 rounded-xl p-3 bg-white flex flex-col justify-between min-h-36 text-center">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
+                      {approvalData.projectManager.roleTitle}
+                    </span>
+                    <span className="text-xs font-black text-slate-800 block mt-0.5">
+                      {approvalData.projectManager.position}
+                    </span>
+                    <span className="text-[9.5px] text-slate-400 block">
+                      {approvalData.projectManager.department}
+                    </span>
+                  </div>
+                  <div className="my-2 flex items-center justify-center">
+                    <ApprovedStamp dateStr={approvalData.projectManager.date} isCompact />
+                  </div>
+                  <div className="pt-2 border-t border-slate-200">
+                    <span className="text-xs font-black text-slate-900 block underline">
+                      {approvalData.projectManager.name}
+                    </span>
+                    <span className="text-[9.5px] text-slate-500 font-semibold">
+                      Tgl: {approvalData.projectManager.date}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-2 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-400 font-medium">
+                <span>
+                  Dokumen K3L internal operasional armada PT Batara Dharma Persada.
+                </span>
+                <span>Format Dokumen: BDP-SHE-HIRA-REP-A4L</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
