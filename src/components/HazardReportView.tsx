@@ -38,6 +38,10 @@ import {
   Check,
   Lock,
   Unlock,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
@@ -100,6 +104,19 @@ const PJ_OPTIONS = [
   "KONTRAKTOR HAULING",
 ] as const;
 
+function getPaginationItems(current: number, total: number): (number | string)[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, "...", total];
+  }
+  if (current >= total - 3) {
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
+
 interface HazardReportViewProps {
   user: any;
   onNavigateToDashboard?: () => void;
@@ -125,6 +142,10 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   const [jenisFilter, setJenisFilter] = useState<string>("ALL"); // "ALL" | "KTA" | "TTA"
   const [lokasiFilter, setLokasiFilter] = useState<string>("ALL");
   const [pjFilter, setPjFilter] = useState<string>("ALL");
+
+  // Pagination (default 15 rows)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
 
   // Modals
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -364,6 +385,21 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       return true;
     });
   }, [hazards, statusFilter, jenisFilter, lokasiFilter, pjFilter, searchQuery]);
+
+  // Pagination Calculations
+  const totalRecords = filteredHazards.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const effectiveCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedHazards = useMemo(() => {
+    const start = (effectiveCurrentPage - 1) * pageSize;
+    return filteredHazards.slice(start, start + pageSize);
+  }, [filteredHazards, effectiveCurrentPage, pageSize]);
+
+  // Reset pagination to page 1 whenever any filter, search query, site or pageSize changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, jenisFilter, lokasiFilter, pjFilter, selectedSite, pageSize]);
 
   // Statistics aligned with Google Form
   const stats = useMemo(() => {
@@ -987,26 +1023,64 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
           </div>
         </div>
 
-        {/* Counter Results */}
-        <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100 pt-2.5">
-          <span>
-            Menampilkan <strong className="text-slate-700">{filteredHazards.length}</strong> dari {hazards.length} laporan
-          </span>
-          {(statusFilter !== "ALL" || jenisFilter !== "ALL" || lokasiFilter !== "ALL" || pjFilter !== "ALL" || searchQuery) && (
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter("ALL");
-                setJenisFilter("ALL");
-                setLokasiFilter("ALL");
-                setPjFilter("ALL");
-                setSearchQuery("");
+        {/* Counter Results & Page Size Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2.5">
+          <div className="flex items-center gap-2">
+            <span>
+              Menampilkan{" "}
+              <strong className="text-slate-800 font-mono">
+                {totalRecords === 0
+                  ? 0
+                  : `${(effectiveCurrentPage - 1) * pageSize + 1} - ${Math.min(
+                      effectiveCurrentPage * pageSize,
+                      totalRecords
+                    )}`}
+              </strong>{" "}
+              dari{" "}
+              <strong className="text-slate-800 font-mono">
+                {totalRecords.toLocaleString("id-ID")}
+              </strong>{" "}
+              laporan{" "}
+              {totalRecords !== hazards.length && (
+                <span className="text-slate-400">
+                  (difilter dari {hazards.length.toLocaleString("id-ID")})
+                </span>
+              )}
+            </span>
+            {(statusFilter !== "ALL" || jenisFilter !== "ALL" || lokasiFilter !== "ALL" || pjFilter !== "ALL" || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("ALL");
+                  setJenisFilter("ALL");
+                  setLokasiFilter("ALL");
+                  setPjFilter("ALL");
+                  setSearchQuery("");
+                }}
+                className="text-[11px] font-bold text-[#e95623] hover:underline cursor-pointer ml-1"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-slate-400">Baris per halaman:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
               }}
-              className="text-[11px] font-bold text-[#e95623] hover:underline cursor-pointer"
+              className="px-2 py-0.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer shadow-2xs"
             >
-              Reset Filter
-            </button>
-          )}
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+            </select>
+          </div>
         </div>
 
         {/* ---------------------------------------------------------
@@ -1032,7 +1106,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {filteredHazards.length === 0 ? (
+              {paginatedHazards.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="py-12 text-center text-slate-400">
                     <ShieldAlert size={36} className="mx-auto text-slate-300 mb-2" />
@@ -1040,13 +1114,14 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredHazards.map((item, idx) => {
+                paginatedHazards.map((item, idx) => {
                   const isKta = (item.jenisPelaporan || (item.category === "Unsafe Action" ? "TTA" : "KTA")) === "KTA";
                   const isClose = item.statusGForm === "CLOSE" || item.status === "Closed";
+                  const rowNumber = (effectiveCurrentPage - 1) * pageSize + idx + 1;
 
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors align-top">
-                      <td className="py-3 px-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                      <td className="py-3 px-3 text-center font-bold text-slate-400">{rowNumber}</td>
                       <td className="py-3 px-3">
                         <span className="font-black text-slate-900 block">{item.reportNumber}</span>
                         <span className="text-[10px] font-semibold text-slate-400 block">
@@ -1226,6 +1301,129 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Toolbar */}
+        {totalPages > 1 && (
+          <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-slate-50/70 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-600 mt-2">
+            <div className="flex items-center gap-3">
+              <span>
+                Halaman <strong className="text-slate-900 font-bold">{effectiveCurrentPage}</strong> dari{" "}
+                <strong className="text-slate-900 font-bold">{totalPages}</strong>{" "}
+                <span className="text-slate-400">({totalRecords.toLocaleString("id-ID")} total laporan)</span>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* First Page */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={effectiveCurrentPage === 1}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors cursor-pointer"
+                title="Halaman Pertama"
+              >
+                <ChevronsLeft size={15} />
+              </button>
+
+              {/* Previous Page */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={effectiveCurrentPage === 1}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft size={14} />
+                <span className="hidden sm:inline">Sebelumnya</span>
+              </button>
+
+              {/* Numeric Page Buttons with Smart Ellipsis */}
+              <div className="flex items-center gap-1">
+                {getPaginationItems(effectiveCurrentPage, totalPages).map((p, i) => {
+                  if (p === "...") {
+                    return (
+                      <span
+                        key={`dots-${i}`}
+                        className="w-8 h-8 flex items-center justify-center text-slate-400 text-xs font-bold"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+                  const pageNum = Number(p);
+                  const isActive = pageNum === effectiveCurrentPage;
+
+                  return (
+                    <button
+                      key={`page-${pageNum}`}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
+                        isActive
+                          ? "bg-[#e95623] text-white shadow-xs font-black"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Next Page */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={effectiveCurrentPage === totalPages}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Halaman Selanjutnya"
+              >
+                <span className="hidden sm:inline">Selanjutnya</span>
+                <ChevronRight size={14} />
+              </button>
+
+              {/* Last Page */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={effectiveCurrentPage === totalPages}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors cursor-pointer"
+                title="Halaman Terakhir"
+              >
+                <ChevronsRight size={15} />
+              </button>
+
+              {/* Quick Jump Input */}
+              {totalPages > 5 && (
+                <div className="hidden lg:flex items-center gap-1 pl-2 border-l border-slate-200 ml-1 text-slate-400">
+                  <span>Ke:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    defaultValue={effectiveCurrentPage}
+                    key={effectiveCurrentPage}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = Number((e.target as HTMLInputElement).value);
+                        if (val >= 1 && val <= totalPages) {
+                          setCurrentPage(val);
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const val = Number(e.target.value);
+                      if (val >= 1 && val <= totalPages && val !== effectiveCurrentPage) {
+                        setCurrentPage(val);
+                      }
+                    }}
+                    className="w-12 px-1.5 py-1 text-center bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-800 focus:outline-hidden focus:border-[#e95623]"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ---------------------------------------------------------

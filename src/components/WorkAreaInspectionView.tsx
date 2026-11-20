@@ -34,6 +34,9 @@ import {
   Unlock,
   Droplets,
   Camera,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import {
   workAreaInspectionService,
@@ -52,6 +55,19 @@ import {
 } from "../services/workAreaInspectionService";
 import { manpowerService, MasterManpowerItem } from "../services/manpowerService";
 import { useNotification } from "../context/NotificationContext";
+
+function getPaginationItems(current: number, total: number): (number | string)[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, "...", total];
+  }
+  if (current >= total - 3) {
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
 
 interface WorkAreaInspectionViewProps {
   user: User;
@@ -90,6 +106,10 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
   const [locationFilter, setLocationFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [activeTab, setActiveTab] = useState<"table" | "oil_trap_standards">("table");
+
+  // Pagination (default 15 rows)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -297,6 +317,20 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
       return true;
     });
   }, [inspections, locationFilter, statusFilter, searchQuery]);
+
+  // Pagination Calculations
+  const totalRecords = filteredInspections.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const effectiveCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedInspections = useMemo(() => {
+    const start = (effectiveCurrentPage - 1) * pageSize;
+    return filteredInspections.slice(start, start + pageSize);
+  }, [filteredInspections, effectiveCurrentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, locationFilter, statusFilter, selectedSite, pageSize]);
 
   // Export CSV
   const handleExportCSV = () => {
@@ -802,10 +836,10 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    filteredInspections.map((item, idx) => (
+                    paginatedInspections.map((item, idx) => (
                       <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="py-3.5 px-4 text-center font-bold text-slate-400">
-                          {idx + 1}
+                          {(effectiveCurrentPage - 1) * pageSize + idx + 1}
                         </td>
                         <td className="py-3.5 px-4">
                           <span className="font-black text-slate-900 block font-mono">
@@ -925,6 +959,123 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Toolbar */}
+            {totalPages > 1 && (
+              <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-slate-50/70 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+                <div className="flex items-center gap-3">
+                  <span>
+                    Menampilkan{" "}
+                    <strong className="text-slate-900 font-bold">
+                      {totalRecords === 0
+                        ? 0
+                        : `${(effectiveCurrentPage - 1) * pageSize + 1} - ${Math.min(
+                            effectiveCurrentPage * pageSize,
+                            totalRecords
+                          )}`}
+                    </strong>{" "}
+                    dari{" "}
+                    <strong className="text-slate-900 font-bold">
+                      {totalRecords.toLocaleString("id-ID")}
+                    </strong>{" "}
+                    inspeksi
+                  </span>
+
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <span className="text-slate-400">Baris:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-2 py-0.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
+                    >
+                      <option value={15}>15</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={effectiveCurrentPage === 1}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors cursor-pointer"
+                    title="Halaman Pertama"
+                  >
+                    <ChevronsLeft size={15} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={effectiveCurrentPage === 1}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Halaman Sebelumnya"
+                  >
+                    <ChevronLeft size={14} />
+                    <span className="hidden sm:inline">Sebelumnya</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {getPaginationItems(effectiveCurrentPage, totalPages).map((p, i) => {
+                      if (p === "...") {
+                        return (
+                          <span
+                            key={`dots-${i}`}
+                            className="w-8 h-8 flex items-center justify-center text-slate-400 text-xs font-bold"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+                      const pageNum = Number(p);
+                      const isActive = pageNum === effectiveCurrentPage;
+
+                      return (
+                        <button
+                          key={`page-${pageNum}`}
+                          type="button"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-8 h-8 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
+                            isActive
+                              ? "bg-[#e95623] text-white shadow-xs font-black"
+                              : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={effectiveCurrentPage === totalPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Halaman Selanjutnya"
+                  >
+                    <span className="hidden sm:inline">Selanjutnya</span>
+                    <ChevronRight size={14} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={effectiveCurrentPage === totalPages}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors cursor-pointer"
+                    title="Halaman Terakhir"
+                  >
+                    <ChevronsRight size={15} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
