@@ -1417,7 +1417,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                         setCurrentPage(val);
                       }
                     }}
-                    className="w-12 px-1.5 py-1 text-center bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-800 focus:outline-hidden focus:border-[#e95623]"
+                    className="w-12 px-1.5 py-1 text-center bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
                   />
                 </div>
               )}
