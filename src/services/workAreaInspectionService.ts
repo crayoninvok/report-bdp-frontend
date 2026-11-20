@@ -1,5 +1,8 @@
 "use client";
 
+import { API_BASE_URL } from "./apiConfig";
+import seedData from "../data/workAreaInspectionsSeed.json";
+
 export const GOOGLE_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSe1y_q2HFcRICNWmtt_ur5RGz10NDR4V8KVghzhu_83SNvHKg/viewform";
 
@@ -104,7 +107,7 @@ export interface WorkAreaSummaryStats {
   resolutionRate: number;
 }
 
-const STORAGE_KEY = "bdp_work_area_inspections_v2";
+const STORAGE_KEY = "bdp_work_area_inspections_v3";
 const FORM_SETTINGS_KEY = "bdp_work_area_form_settings_v1";
 
 const DEFAULT_FORM_SETTINGS: WorkAreaFormSettings = {
@@ -115,183 +118,7 @@ const DEFAULT_FORM_SETTINGS: WorkAreaFormSettings = {
   updatedAt: new Date().toISOString(),
 };
 
-const DEFAULT_INSPECTIONS: WorkAreaInspectionItem[] = [
-  {
-    id: "ins-001",
-    inspectionNumber: "INS-MP-2026-0048",
-    namaKaryawan: "Ahmad Rizky Pratama",
-    nikKaryawan: "BDP-2024-089",
-    tanggalInspeksi: "2026-11-19",
-    lokasiInspeksi: "OIL TRAP",
-    shift: "SHIFT 1",
-    project: "MUARA PAHU",
-    lokasiOilTrap: "Oil Trap Workshop Utama Muara Pahu",
-    oilTrapAnswers: [
-      { itemQuestion: "Saluran masuk (inlet) lancar/tidak tersumbat", answer: "AMAN" },
-      { itemQuestion: "Terdiri dari 3 kompartement/trap", answer: "AMAN" },
-      { itemQuestion: "Dinding dan lantai bangunan tidak bocor", answer: "AMAN" },
-      { itemQuestion: "Saluran antar kompartemen dilengkapi pipa elbow dan berfungsi dengan baik", answer: "AMAN" },
-      { itemQuestion: "Terdapat lapisan minyak dan oli yang terperangkap", answer: "AMAN" },
-      { itemQuestion: "Kondisi air buangan (outlet) kualitas baik", answer: "AMAN" },
-      { itemQuestion: "Ada endapan lumpur dalam masing-masing trap", answer: "TIDAK AMAN", customAnswer: "Endapan lumpur trap 1 tebal butuh dikuras" },
-      { itemQuestion: "Tidak terdapat sampah/benda asing di dalam oil trap", answer: "AMAN" },
-      { itemQuestion: "Oil trap dilengkapi penutup", answer: "AMAN" },
-      { itemQuestion: "Penutup oil trap dilengkapi kuping untuk pegangan", answer: "AMAN" },
-      { itemQuestion: "Oil trap dilakukan perawatan secara berkala", answer: "AMAN" },
-    ],
-    jobSite: "MuaraPahu",
-    areaName: "Oil Trap Workshop Utama MP",
-    time: "09:30",
-    complianceScore: 91,
-    status: "Need Follow Up",
-    findingsCount: 1,
-    findingsDescription: "Endapan lumpur trap 1 tebal, perlu jadwal pengurasan sedimentasi.",
-    correctiveAction: "Pembersihan dan pengurasan lumpur oleh tim maintenance workshop.",
-    pic: "Foreman Workshop Bay 1",
-    targetCompletionDate: "2026-11-21",
-    createdAt: "2026-11-19T09:45:00Z",
-  },
-  {
-    id: "ins-002",
-    inspectionNumber: "INS-MP-2026-0047",
-    namaKaryawan: "Budi Santoso",
-    nikKaryawan: "BDP-2023-014",
-    tanggalInspeksi: "2026-11-18",
-    lokasiInspeksi: "WASHING PAD",
-    shift: "SHIFT 1",
-    project: "MUARA PAHU",
-    jobSite: "MuaraPahu",
-    areaName: "Washing Pad Unit Hauling MP",
-    time: "14:15",
-    complianceScore: 95,
-    status: "Compliant",
-    findingsCount: 0,
-    findingsDescription: "Saluran drainase pencucian lancar dan pompa steam beroperasi normal.",
-    correctiveAction: "Pertahankan kebersihan berkala pasca mencuci unit batubara.",
-    pic: "Washing Pad Attendant",
-    targetCompletionDate: "2026-11-18",
-    createdAt: "2026-11-18T14:40:00Z",
-  },
-  {
-    id: "ins-003",
-    inspectionNumber: "INS-SN-2026-0022",
-    namaKaryawan: "Dedy Wijaya",
-    nikKaryawan: "BDP-2024-045",
-    tanggalInspeksi: "2026-11-17",
-    lokasiInspeksi: "OIL TRAP",
-    shift: "SHIFT 1",
-    project: "SENYIUR",
-    lokasiOilTrap: "Oil Trap Fuel Station Senyiur",
-    oilTrapAnswers: [
-      { itemQuestion: "Saluran masuk (inlet) lancar/tidak tersumbat", answer: "AMAN" },
-      { itemQuestion: "Terdiri dari 3 kompartement/trap", answer: "AMAN" },
-      { itemQuestion: "Dinding dan lantai bangunan tidak bocor", answer: "AMAN" },
-      { itemQuestion: "Saluran antar kompartemen dilengkapi pipa elbow dan berfungsi dengan baik", answer: "AMAN" },
-      { itemQuestion: "Terdapat lapisan minyak dan oli yang terperangkap", answer: "AMAN" },
-      { itemQuestion: "Kondisi air buangan (outlet) kualitas baik", answer: "AMAN" },
-      { itemQuestion: "Ada endapan lumpur dalam masing-masing trap", answer: "AMAN" },
-      { itemQuestion: "Tidak terdapat sampah/benda asing di dalam oil trap", answer: "AMAN" },
-      { itemQuestion: "Oil trap dilengkapi penutup", answer: "AMAN" },
-      { itemQuestion: "Penutup oil trap dilengkapi kuping untuk pegangan", answer: "AMAN" },
-      { itemQuestion: "Oil trap dilakukan perawatan secara berkala", answer: "AMAN" },
-    ],
-    jobSite: "Senyiur",
-    areaName: "Oil Trap Fuel Station Senyiur",
-    time: "10:00",
-    complianceScore: 100,
-    status: "Compliant",
-    findingsCount: 0,
-    findingsDescription: "Seluruh kompartemen dalam kondisi prima, siku pipa elbow bersih dan outlet jernih.",
-    correctiveAction: "Lanjutkan inspeksi berkala per minggu.",
-    pic: "Fuel Station Supervisor",
-    targetCompletionDate: "2026-11-17",
-    createdAt: "2026-11-17T10:30:00Z",
-  },
-  {
-    id: "ins-004",
-    inspectionNumber: "INS-MP-2026-0046",
-    namaKaryawan: "Hendra Gunawan",
-    nikKaryawan: "BDP-2023-098",
-    tanggalInspeksi: "2026-11-16",
-    lokasiInspeksi: "TPS LB3",
-    shift: "SHIFT 2",
-    project: "MUARA PAHU",
-    jobSite: "MuaraPahu",
-    areaName: "TPS Limbah B3 Muara Pahu",
-    time: "16:20",
-    complianceScore: 92,
-    status: "Compliant",
-    findingsCount: 1,
-    findingsDescription: "Label simbol B3 pada drum oli bekas nomor 4 agak pudar akibat percikan.",
-    correctiveAction: "Pemasangan kembali stiker simbol limbah B3 baru yang tahan cuaca.",
-    pic: "Petugas TPS LB3",
-    targetCompletionDate: "2026-11-17",
-    createdAt: "2026-11-16T16:50:00Z",
-  },
-  {
-    id: "ins-005",
-    inspectionNumber: "INS-SN-2026-0021",
-    namaKaryawan: "Dedy Wijaya",
-    nikKaryawan: "BDP-2024-045",
-    tanggalInspeksi: "2026-11-15",
-    lokasiInspeksi: "FUEL STATION & FUEL STORAGE",
-    shift: "SHIFT 1",
-    project: "SENYIUR",
-    jobSite: "Senyiur",
-    areaName: "Fuel Station & Tangki Solar Senyiur",
-    time: "08:45",
-    complianceScore: 96,
-    status: "Compliant",
-    findingsCount: 0,
-    findingsDescription: "Grounding rod, APAR Foam 50kg, dan saluran tanggul ceceran dalam kondisi baik.",
-    correctiveAction: "Pertahankan checklist harian BBM.",
-    pic: "Fuel Station Officer",
-    targetCompletionDate: "2026-11-15",
-    createdAt: "2026-11-15T09:15:00Z",
-  },
-  {
-    id: "ins-006",
-    inspectionNumber: "INS-MP-2026-0045",
-    namaKaryawan: "Ahmad Rizky Pratama",
-    nikKaryawan: "BDP-2024-089",
-    tanggalInspeksi: "2026-11-14",
-    lokasiInspeksi: "MESS & CAMP",
-    shift: "SHIFT 2",
-    project: "MUARA PAHU",
-    jobSite: "MuaraPahu",
-    areaName: "Mess Karyawan Blok B MP",
-    time: "20:30",
-    complianceScore: 98,
-    status: "Compliant",
-    findingsCount: 0,
-    findingsDescription: "Penerangan koridor dan drainase air limbah domestik mengalir lancar.",
-    correctiveAction: "Pertahankan jadwal kebersihan 5R mingguan.",
-    pic: "Camp Officer",
-    targetCompletionDate: "2026-11-14",
-    createdAt: "2026-11-14T21:00:00Z",
-  },
-  {
-    id: "ins-007",
-    inspectionNumber: "INS-MP-2026-0044",
-    namaKaryawan: "Ahmad Rizky Pratama",
-    nikKaryawan: "BDP-2024-089",
-    tanggalInspeksi: "2026-11-13",
-    lokasiInspeksi: "COAL PAD",
-    shift: "SHIFT 1",
-    project: "MUARA PAHU",
-    jobSite: "MuaraPahu",
-    areaName: "Coal Pad & ROM Stockpile MP",
-    time: "11:00",
-    complianceScore: 88,
-    status: "Need Follow Up",
-    findingsCount: 1,
-    findingsDescription: "Timbunan batubara dekat jalur loader perlu perapihan kemiringan lereng aman.",
-    correctiveAction: "Dozing dan penataan slope timbunan oleh dozer produksi.",
-    pic: "Foreman Coal Pad",
-    targetCompletionDate: "2026-11-14",
-    createdAt: "2026-11-13T11:30:00Z",
-  },
-];
+const DEFAULT_INSPECTIONS: WorkAreaInspectionItem[] = (seedData as unknown as WorkAreaInspectionItem[]) || [];
 
 export const workAreaInspectionService = {
   getFormSettings: (): WorkAreaFormSettings => {
@@ -320,12 +147,43 @@ export const workAreaInspectionService = {
   },
 
   getAll: async (site?: "MuaraPahu" | "Senyiur" | "ALL"): Promise<WorkAreaInspectionItem[]> => {
+    // 1. Try to fetch from Backend API
+    try {
+      const q = new URLSearchParams();
+      if (site && site !== "ALL") q.append("site", site);
+      q.append("limit", "5000");
+
+      const res = await fetch(`${API_BASE_URL}/she/inspections?${q.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+            } catch {
+              // Ignore localStorage quota errors if large
+            }
+          }
+          return json.data;
+        }
+      }
+    } catch {
+      // Backend unavailable or network error, proceed to fallback
+    }
+
+    // 2. Fallback to localStorage or Seed Data
     if (typeof window === "undefined") return DEFAULT_INSPECTIONS;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       let list: WorkAreaInspectionItem[] = stored ? JSON.parse(stored) : DEFAULT_INSPECTIONS;
       if (!stored) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_INSPECTIONS));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_INSPECTIONS));
+        } catch {}
       }
       if (site && site !== "ALL") {
         list = list.filter((item) => item.jobSite === site);
@@ -344,6 +202,29 @@ export const workAreaInspectionService = {
   create: async (
     data: Omit<WorkAreaInspectionItem, "id" | "inspectionNumber" | "createdAt">
   ): Promise<WorkAreaInspectionItem> => {
+    // 1. Try Backend API
+    try {
+      const res = await fetch(`${API_BASE_URL}/she/inspections`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const all = await workAreaInspectionService.getAll("ALL");
+          const updated = [json.data, ...all.filter((i) => i.id !== json.data.id)];
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            } catch {}
+          }
+          return json.data;
+        }
+      }
+    } catch {}
+
+    // 2. Fallback Local Create
     const all = await workAreaInspectionService.getAll("ALL");
     const count = all.length + 1;
     const prefix = data.project === "SENYIUR" ? "INS-SN" : "INS-MP";
@@ -359,7 +240,9 @@ export const workAreaInspectionService = {
 
     const updated = [newItem, ...all];
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch {}
     }
     return newItem;
   },
@@ -368,6 +251,32 @@ export const workAreaInspectionService = {
     id: string,
     data: Partial<WorkAreaInspectionItem>
   ): Promise<WorkAreaInspectionItem> => {
+    // 1. Try Backend API
+    try {
+      const res = await fetch(`${API_BASE_URL}/she/inspections/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const all = await workAreaInspectionService.getAll("ALL");
+          const idx = all.findIndex((i) => i.id === id);
+          if (idx !== -1) {
+            all[idx] = { ...all[idx], ...json.data };
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+              } catch {}
+            }
+          }
+          return json.data;
+        }
+      }
+    } catch {}
+
+    // 2. Fallback Local Update
     const all = await workAreaInspectionService.getAll("ALL");
     const idx = all.findIndex((i) => i.id === id);
     if (idx === -1) throw new Error("Inspeksi tidak ditemukan.");
@@ -375,16 +284,29 @@ export const workAreaInspectionService = {
     const updatedItem = { ...all[idx], ...data };
     all[idx] = updatedItem;
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+      } catch {}
     }
     return updatedItem;
   },
 
   delete: async (id: string): Promise<boolean> => {
+    // 1. Try Backend API
+    try {
+      await fetch(`${API_BASE_URL}/she/inspections/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch {}
+
+    // 2. Update Local Cache
     const all = await workAreaInspectionService.getAll("ALL");
     const filtered = all.filter((i) => i.id !== id);
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      } catch {}
     }
     return true;
   },
