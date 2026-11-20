@@ -6,65 +6,18 @@ import {
   ShieldCheck,
   AlertTriangle,
   CheckCircle2,
-  TrendingUp,
   HardHat,
   FileText,
   RefreshCw,
   ArrowRight,
   AlertCircle,
-  Layers,
 } from "lucide-react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
 import {
   sheService,
   SheDashboardData,
   HazardReportItem,
 } from "../services/sheService";
 import { useNotification } from "../context/NotificationContext";
-
-// Safe Error Boundary to prevent chart measuring/resizing crashes from breaking the page
-class ChartErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: any) {
-    console.error("SHE Chart render error caught safely:", error);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        this.props.fallback || (
-          <div className="h-full w-full flex items-center justify-center p-4 text-xs text-slate-400">
-            Grafik tidak dapat dimuat saat ini.
-          </div>
-        )
-      );
-    }
-    return this.props.children;
-  }
-}
 
 interface SheDashboardViewProps {
   user: any;
@@ -77,17 +30,12 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
 }) => {
   const { showError } = useNotification();
 
-  const [isMounted, setIsMounted] = useState(false);
   const [selectedSite, setSelectedSite] = useState<"MuaraPahu" | "Senyiur" | "ALL">(
     user?.jobSite === "Senyiur" ? "Senyiur" : "MuaraPahu"
   );
   const [data, setData] = useState<SheDashboardData | null>(null);
   const [recentHazards, setRecentHazards] = useState<HazardReportItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -315,137 +263,6 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
             <span className="text-[10px] font-bold text-emerald-700 mt-1">
               {data?.resolutionRate ?? 100}% Tingkat Penyelesaian
             </span>
-          </div>
-        </div>
-
-        {/* Hazard Charts: Tren Bulanan & Distribusi Kategori */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0">
-          {/* Left: Monthly Trend Chart */}
-          <div className="lg:col-span-8 min-w-0 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 min-w-0">
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <TrendingUp size={16} className="text-[#e95623]" />
-                  <span>Tren Bulanan: Temuan Bahaya vs Tindakan Selesai</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Monitoring laju pelaporan hazard dan kecepatan tindak lanjut koreksi operasional
-                </p>
-              </div>
-              <span className="text-xs font-bold text-slate-400">{siteLabel}</span>
-            </div>
-
-            <div className="h-72 w-full pt-2 min-w-0">
-              {!isMounted || loading || !data?.monthlyTrends || data.monthlyTrends.length === 0 ? (
-                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-                  <RefreshCw size={20} className="animate-spin text-[#e95623] mr-2" />
-                  <span>Memuat grafik tren bulanan...</span>
-                </div>
-              ) : (
-                <ChartErrorBoundary>
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
-                    <BarChart
-                      data={data.monthlyTrends}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#64748b" }} />
-                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#1e293b",
-                          color: "#fff",
-                          borderRadius: "12px",
-                          border: "none",
-                          fontSize: "12px",
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-                      <Bar
-                        dataKey="hazards"
-                        name="Temuan Bahaya"
-                        fill="#e95623"
-                        radius={[6, 6, 0, 0]}
-                        isAnimationActive={false}
-                      />
-                      <Bar
-                        dataKey="resolved"
-                        name="Tindakan Selesai"
-                        fill="#10b981"
-                        radius={[6, 6, 0, 0]}
-                        isAnimationActive={false}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartErrorBoundary>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Category Distribution Donut Chart */}
-          <div className="lg:col-span-4 min-w-0 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4">
-            <div className="pb-2 border-b border-slate-100 min-w-0">
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <Layers size={16} className="text-[#e95623]" />
-                <span>Distribusi Kategori Bahaya</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Komposisi jenis temuan K3L</p>
-            </div>
-
-            <div className="h-56 w-full relative min-w-0">
-              {!isMounted || loading ? (
-                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-                  <RefreshCw size={20} className="animate-spin text-[#e95623] mr-2" />
-                  <span>Memuat data kategori...</span>
-                </div>
-              ) : !data?.categoryDistribution || data.categoryDistribution.length === 0 ? (
-                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-                  <span>Belum ada data kategori</span>
-                </div>
-              ) : (
-                <ChartErrorBoundary>
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
-                    <PieChart>
-                      <Pie
-                        data={data.categoryDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={4}
-                        dataKey="value"
-                        isAnimationActive={false}
-                      >
-                        {data.categoryDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#1e293b",
-                          color: "#fff",
-                          borderRadius: "10px",
-                          border: "none",
-                          fontSize: "11px",
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartErrorBoundary>
-              )}
-            </div>
-
-            <div className="space-y-1.5 pt-1 border-t border-slate-100">
-              {(data?.categoryDistribution || []).map((cat) => (
-                <div key={cat.name} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <span className="text-slate-600 font-medium">{cat.name}</span>
-                  </div>
-                  <span className="font-extrabold text-slate-800">{cat.value} laporan</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
