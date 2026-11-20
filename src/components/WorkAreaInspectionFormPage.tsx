@@ -435,12 +435,12 @@ export const WorkAreaInspectionFormPage: React.FC<WorkAreaInspectionFormPageProp
               </div>
 
               {isManpowerDropdownOpen && filteredManpower.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 max-h-56 overflow-y-auto text-xs">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 max-h-56 overflow-y-auto text-xs p-1">
                   {filteredManpower.map((m) => (
                     <div
                       key={m.id || m.employeeId}
                       onClick={() => handleSelectManpower(m)}
-                      className="p-2.5 hover:bg-orange-50/70 transition-colors cursor-pointer text-left border-b border-slate-100 last:border-b-0"
+                      className="p-2.5 hover:bg-orange-50/70 rounded-xl transition-colors cursor-pointer text-left"
                     >
                       <span className="font-bold text-slate-900 block">{m.fullName}</span>
                       <span className="text-[10px] text-slate-400">
