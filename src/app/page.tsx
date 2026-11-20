@@ -39,6 +39,7 @@ import { ATRDashboardView } from "../components/ATRDashboardView";
 import { SheDashboardView } from "../components/SheDashboardView";
 import { HazardReportView } from "../components/HazardReportView";
 import { HazardReportFormPage } from "../components/HazardReportFormPage";
+import { WorkAreaInspectionView } from "../components/WorkAreaInspectionView";
 
 import {
   Menu,
@@ -351,6 +352,8 @@ export default function Home() {
                       ? "Safety Health & Environment • Form Input Hazard Report"
                       : activeMenu === "hazard-report"
                       ? "Safety Health & Environment • Hazard Report"
+                      : activeMenu === "work-area-inspection"
+                      ? "Safety Health & Environment • Inspeksi Area Kerja"
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
@@ -670,6 +673,7 @@ export default function Home() {
             <SheDashboardView
               user={currentUser}
               onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
+              onNavigateToInspection={() => setActiveMenu("work-area-inspection")}
             />
           ) : activeMenu === "hazard-report-form" ? (
             <HazardReportFormPage
@@ -682,6 +686,12 @@ export default function Home() {
               user={currentUser}
               onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
               onNavigateToForm={() => setActiveMenu("hazard-report-form")}
+            />
+          ) : activeMenu === "work-area-inspection" ? (
+            <WorkAreaInspectionView
+              user={currentUser}
+              onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
+              onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
             />
           ) : (
             <DashboardView

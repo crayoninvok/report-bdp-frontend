@@ -14,6 +14,7 @@ import {
   User,
   Calendar,
   Building2,
+  ClipboardList,
 } from "lucide-react";
 import {
   sheService,
@@ -25,11 +26,13 @@ import { useNotification } from "../context/NotificationContext";
 interface SheDashboardViewProps {
   user: any;
   onNavigateToHazardReport?: () => void;
+  onNavigateToInspection?: () => void;
 }
 
 export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
   user,
   onNavigateToHazardReport,
+  onNavigateToInspection,
 }) => {
   const { showError } = useNotification();
 
@@ -141,6 +144,18 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
                 <FileText size={14} className="text-white" />
                 <span>Buka Hazard Report</span>
                 <ArrowRight size={13} />
+              </button>
+            )}
+
+            {onNavigateToInspection && (
+              <button
+                type="button"
+                onClick={onNavigateToInspection}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+                title="Buka Inspeksi Area Kerja"
+              >
+                <ClipboardList size={14} className="text-orange-400" />
+                <span>Inspeksi Area Kerja</span>
               </button>
             )}
 
