@@ -866,8 +866,54 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       </div>
 
       {/* ---------------------------------------------------------
-          Summary KPI Cards (Exact Google Form Metrics)
+          Loading State on Page Open
       ---------------------------------------------------------- */}
+      {loading && hazards.length === 0 ? (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Skeleton KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 space-y-3"
+              >
+                <div className="h-3 w-20 bg-slate-100 rounded-md animate-pulse" />
+                <div className="h-7 w-24 bg-slate-200/80 rounded-md animate-pulse" />
+                <div className="h-2.5 w-16 bg-slate-100 rounded-md animate-pulse" />
+              </div>
+            ))}
+          </div>
+
+          {/* Skeleton Table Card with Central Spinner */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-12 sm:p-16 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-200/80 flex items-center justify-center text-[#e95623] shadow-xs">
+                <ShieldAlert size={32} className="animate-pulse" />
+              </div>
+              <div className="absolute -top-1.5 -right-1.5">
+                <Loader2 size={24} className="text-[#e95623] animate-spin" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-extrabold text-slate-900">
+                Memuat Data Hazard Report...
+              </h3>
+              <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
+                Sedang mengambil seluruh laporan temuan bahaya K3L (KTA &amp; TTA) dari database sistem.
+              </p>
+            </div>
+
+            <div className="w-full max-w-xs h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+              <div className="h-full bg-[#e95623] rounded-full animate-pulse w-3/4 mx-auto" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ---------------------------------------------------------
+              Summary KPI Cards (Exact Google Form Metrics)
+          ---------------------------------------------------------- */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Hazard */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
@@ -1106,7 +1152,17 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {paginatedHazards.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={12} className="py-16 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2.5">
+                      <Loader2 size={28} className="text-[#e95623] animate-spin mx-auto" />
+                      <p className="font-bold text-xs text-slate-700">Memuat data hazard report...</p>
+                      <p className="text-[11px] text-slate-400">Sinkronisasi data laporan keselamatan kerja...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedHazards.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="py-12 text-center text-slate-400">
                     <ShieldAlert size={36} className="mx-auto text-slate-300 mb-2" />
@@ -1425,6 +1481,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* ---------------------------------------------------------
           Modal: Input / Edit Hazard Report
