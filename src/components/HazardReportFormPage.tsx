@@ -379,6 +379,14 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
       showError("Harap pilih Tanggal Pelaporan.");
       return;
     }
+    if (!dokumentasiSebelum || !dokumentasiSebelum.trim()) {
+      showError("Dokumentasi Sebelum (Foto Temuan) wajib diisi / diunggah.");
+      const photoSection = document.getElementById("section-dokumentasi-sebelum");
+      if (photoSection) {
+        photoSection.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
 
     const finalLokasi =
       lokasiBahaya === "Lainnya"
@@ -1269,11 +1277,14 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
                 6
               </div>
               <div>
-                <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wide">
-                  DOKUMENTASI FOTO BUKTI (CLOUDINARY)
-                </h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                    DOKUMENTASI FOTO BUKTI (CLOUDINARY)
+                  </h3>
+                  <span className="text-rose-500 font-black text-sm">*</span>
+                </div>
                 <p className="text-[10px] sm:text-[11px] text-slate-400 leading-tight">
-                  Foto bukti temuan kondisi sebelum perbaikan &amp; sesudah tindakan penanganan.
+                  Foto bukti temuan kondisi sebelum perbaikan (<span className="text-rose-600 font-semibold">wajib</span>) &amp; sesudah tindakan penanganan.
                 </p>
               </div>
             </div>
@@ -1285,14 +1296,28 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* DOKUMENTASI SEBELUM */}
-            <div className="p-3 sm:p-4 bg-slate-50/70 rounded-xl sm:rounded-2xl border border-slate-200 space-y-2.5">
+            <div
+              id="section-dokumentasi-sebelum"
+              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border space-y-2.5 transition-all ${
+                !dokumentasiSebelum
+                  ? "bg-rose-50/30 border-rose-200/80"
+                  : "bg-slate-50/70 border-slate-200"
+              }`}
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800">
-                  DOKUMENTASI SEBELUM (BEFORE)
-                </span>
-                {dokumentasiSebelum && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-800">
+                    DOKUMENTASI SEBELUM (BEFORE)
+                  </span>
+                  <span className="text-rose-500 font-black text-sm">*</span>
+                </div>
+                {dokumentasiSebelum ? (
                   <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <CheckCircle2 size={10} /> Cloudinary OK
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                    Wajib Diisi *
                   </span>
                 )}
               </div>

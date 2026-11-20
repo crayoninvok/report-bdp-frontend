@@ -578,6 +578,11 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
       return;
     }
 
+    if (!itemToEdit && !(formData.dokumentasiSebelum || formData.photoUrl)) {
+      showError("Dokumentasi Sebelum (Foto Temuan) wajib diisi / diunggah.");
+      return;
+    }
+
     try {
       const isClose = formData.statusGForm === "CLOSE";
       const legacyStatus: HazardStatus = isClose ? "Closed" : "Open";
@@ -1556,8 +1561,8 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
                     />
 
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-black uppercase text-slate-600 block">
-                        1. Dokumentasi Sebelum (Foto Temuan)
+                      <span className="text-[11px] font-black uppercase text-slate-600 flex items-center gap-1">
+                        1. Dokumentasi Sebelum (Foto Temuan) <span className="text-rose-500 font-bold">*</span>
                       </span>
                       {(formData.dokumentasiSebelum || formData.photoUrl) && (
                         <span className="text-[9.5px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
