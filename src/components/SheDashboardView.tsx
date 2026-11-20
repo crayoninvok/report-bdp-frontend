@@ -354,7 +354,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
             </div>
 
             <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-1">
-              <span className="font-extrabold block text-amber-950 flex items-center gap-1.5">
+              <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
                 <ShieldCheck size={14} className="text-amber-700" />
                 Prinsip Stop Work Authority (SWA)
               </span>
