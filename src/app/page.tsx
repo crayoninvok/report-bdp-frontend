@@ -40,6 +40,7 @@ import { SheDashboardView } from "../components/SheDashboardView";
 import { HazardReportView } from "../components/HazardReportView";
 import { HazardReportFormPage } from "../components/HazardReportFormPage";
 import { WorkAreaInspectionView } from "../components/WorkAreaInspectionView";
+import { WorkAreaInspectionFormPage } from "../components/WorkAreaInspectionFormPage";
 
 import {
   Menu,
@@ -329,7 +330,8 @@ export default function Home() {
                       : activeMenu === "preventive-maintenance"
                       ? "Plant & Maintenance • Periodic Service"
                       : activeMenu === "daily-pa-report"
-                      ? "Plant & Maintenance • Daily PA Report"
+                      ? "Plant & Maintenance • Daily PA Report"
+
                       : activeMenu === "daily-breakdown-report"
                       ? "Plant & Maintenance • Daily Breakdown Report"
                       : activeMenu === "historical-component"
@@ -352,6 +354,8 @@ export default function Home() {
                       ? "Safety Health & Environment • Form Input Hazard Report"
                       : activeMenu === "hazard-report"
                       ? "Safety Health & Environment • Hazard Report"
+                      : activeMenu === "work-area-inspection-form"
+                      ? "Safety Health & Environment • Form Input Inspeksi Area Kerja"
                       : activeMenu === "work-area-inspection"
                       ? "Safety Health & Environment • Inspeksi Area Kerja"
                       : "Dashboard Cost"}
@@ -687,11 +691,18 @@ export default function Home() {
               onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
               onNavigateToForm={() => setActiveMenu("hazard-report-form")}
             />
+          ) : activeMenu === "work-area-inspection-form" ? (
+            <WorkAreaInspectionFormPage
+              user={currentUser}
+              onNavigateToList={() => setActiveMenu("work-area-inspection")}
+              onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
+            />
           ) : activeMenu === "work-area-inspection" ? (
             <WorkAreaInspectionView
               user={currentUser}
               onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
               onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
+              onNavigateToForm={() => setActiveMenu("work-area-inspection-form")}
             />
           ) : (
             <DashboardView

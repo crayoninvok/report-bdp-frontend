@@ -28,28 +28,46 @@ import {
   ChevronDown,
   ArrowRight,
   ShieldAlert,
+  ExternalLink,
+  Copy,
+  Lock,
+  Unlock,
+  Droplets,
+  Camera,
 } from "lucide-react";
 import {
   workAreaInspectionService,
   WorkAreaInspectionItem,
-  InspectionAreaCategory,
-  InspectionStatus,
   WorkAreaSummaryStats,
-  DEFAULT_CHECKLIST_TEMPLATES,
-  InspectionChecklistItem,
+  WorkAreaFormSettings,
+  GOOGLE_FORM_URL,
+  LOKASI_INSPEKSI_OPTIONS,
+  SHIFT_OPTIONS,
+  PROJECT_OPTIONS,
+  OIL_TRAP_CHECKLIST_ITEMS,
+  LokasiInspeksiType,
+  ShiftType,
+  ProjectType,
+  OilTrapChecklistAnswer,
 } from "../services/workAreaInspectionService";
+import { manpowerService, MasterManpowerItem } from "../services/manpowerService";
+import { useNotification } from "../context/NotificationContext";
 
 interface WorkAreaInspectionViewProps {
   user: User;
   onNavigateToDashboard?: () => void;
   onNavigateToHazardReport?: () => void;
+  onNavigateToForm?: () => void;
 }
 
 export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
   user,
   onNavigateToDashboard,
   onNavigateToHazardReport,
+  onNavigateToForm,
 }) => {
+  const { showSuccess, showError } = useNotification();
+
   const [selectedSite, setSelectedSite] = useState<"MuaraPahu" | "Senyiur" | "ALL">(
     user.jobSite === "Senyiur"
       ? "Senyiur"
@@ -61,31 +79,53 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
   const [stats, setStats] = useState<WorkAreaSummaryStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Link & Public Form Settings
+  const [formSettings, setFormSettings] = useState<WorkAreaFormSettings>(() =>
+    workAreaInspectionService.getFormSettings()
+  );
+  const [isCopiedGoogleLink, setIsCopiedGoogleLink] = useState(false);
+  const [isCopiedWebLink, setIsCopiedWebLink] = useState(false);
+
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [locationFilter, setLocationFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [activeTab, setActiveTab] = useState<"table" | "checklist_standards">("table");
+  const [activeTab, setActiveTab] = useState<"table" | "oil_trap_standards">("table");
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<WorkAreaInspectionItem | null>(null);
 
-  // Create Form State
-  const [newSite, setNewSite] = useState<"MuaraPahu" | "Senyiur">(
-    user.jobSite === "Senyiur" ? "Senyiur" : "MuaraPahu"
+  // Quick Modal Form State
+  const [modalNama, setModalNama] = useState(user.name || "");
+  const [modalNik, setModalNik] = useState("");
+  const [modalTanggal, setModalTanggal] = useState(
+    new Date().toISOString().split("T")[0]
   );
-  const [newAreaName, setNewAreaName] = useState("");
-  const [newAreaCategory, setNewAreaCategory] = useState<InspectionAreaCategory>("Workshop");
-  const [newAuditorName, setNewAuditorName] = useState(user.name || "");
-  const [newAuditorNrp, setNewAuditorNrp] = useState("");
-  const [newAuditorRole, setNewAuditorRole] = useState("SHE Inspector");
-  const [newShift, setNewShift] = useState<"Siang" | "Malam">("Siang");
-  const [newFindings, setNewFindings] = useState("");
-  const [newCorrectiveAction, setNewCorrectiveAction] = useState("");
-  const [newPic, setNewPic] = useState("");
-  const [newTargetDate, setNewTargetDate] = useState("");
-  const [formChecklists, setFormChecklists] = useState<InspectionChecklistItem[]>([]);
+  const [modalLokasi, setModalLokasi] = useState<LokasiInspeksiType>("OIL TRAP");
+  const [modalShift, setModalShift] = useState<ShiftType>("SHIFT 1");
+  const [modalProject, setModalProject] = useState<ProjectType>(
+    user.jobSite === "Senyiur" ? "SENYIUR" : "MUARA PAHU"
+  );
+  const [modalLokasiOilTrap, setModalLokasiOilTrap] = useState("");
+  const [modalOilTrapAnswers, setModalOilTrapAnswers] = useState<Record<string, { answer: "AMAN" | "TIDAK AMAN" | "Yang lain"; customAnswer: string }>>(
+    () => {
+      const initial: Record<string, { answer: "AMAN" | "TIDAK AMAN" | "Yang lain"; customAnswer: string }> = {};
+      OIL_TRAP_CHECKLIST_ITEMS.forEach((q) => {
+        initial[q] = { answer: "AMAN", customAnswer: "" };
+      });
+      return initial;
+    }
+  );
+  const [modalCatatan, setModalCatatan] = useState("");
+  const [modalTindakan, setModalTindakan] = useState("");
+  const [modalPic, setModalPic] = useState("");
+  const [modalTargetDate, setModalTargetDate] = useState("");
+
+  // Manpower autocomplete for modal
+  const [manpowerList, setManpowerList] = useState<MasterManpowerItem[]>([]);
+  const [isManpowerDropdownOpen, setIsManpowerDropdownOpen] = useState(false);
+  const [manpowerSearch, setManpowerSearch] = useState("");
 
   // Load Data
   const loadData = useCallback(async () => {
@@ -97,6 +137,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
       ]);
       setInspections(list);
       setStats(summary);
+      setFormSettings(workAreaInspectionService.getFormSettings());
     } catch (err) {
       console.error("Gagal memuat data inspeksi area:", err);
     } finally {
@@ -106,93 +147,135 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
 
   useEffect(() => {
     loadData();
+
+    // Fetch manpower for modal
+    manpowerService.getSiteActiveManpower().then((res) => {
+      if (res && res.length > 0) setManpowerList(res);
+    });
   }, [loadData]);
 
-  // Initialize form checklists on modal open
-  const handleOpenCreateModal = () => {
-    setFormChecklists(
-      DEFAULT_CHECKLIST_TEMPLATES.map((tmpl, idx) => ({
-        id: `chk-${idx}`,
-        category: tmpl.category,
-        itemDescription: tmpl.itemDescription,
-        isCompliant: true,
-        notes: "",
-      }))
-    );
-    setNewAreaName("");
-    setNewFindings("");
-    setNewCorrectiveAction("");
-    setNewPic("");
-    setNewTargetDate("");
-    setIsCreateModalOpen(true);
+  // Copy Google Form Link
+  const handleCopyGoogleLink = async () => {
+    try {
+      await navigator.clipboard.writeText(formSettings.googleFormUrl || GOOGLE_FORM_URL);
+      setIsCopiedGoogleLink(true);
+      showSuccess("Tautan Google Form Inspeksi Area Kerja disalin ke clipboard!");
+      setTimeout(() => setIsCopiedGoogleLink(false), 2500);
+    } catch {
+      alert("Gagal menyalin tautan.");
+    }
   };
 
-  const handleToggleChecklist = (id: string) => {
-    setFormChecklists((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, isCompliant: !item.isCompliant } : item
-      )
-    );
+  // Copy Internal Web Form Link
+  const handleCopyWebLink = async () => {
+    try {
+      const url = `${window.location.origin}/work-area-inspection/form`;
+      await navigator.clipboard.writeText(url);
+      setIsCopiedWebLink(true);
+      showSuccess("Tautan Web Form (/work-area-inspection/form) disalin ke clipboard!");
+      setTimeout(() => setIsCopiedWebLink(false), 2500);
+    } catch {
+      alert("Gagal menyalin tautan.");
+    }
   };
 
-  const handleUpdateChecklistNote = (id: string, note: string) => {
-    setFormChecklists((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, notes: note } : item))
-    );
+  // Toggle Form Status (Buka / Tutup)
+  const handleToggleFormStatus = () => {
+    const nextStatus = !formSettings.isOpen;
+    const updated = workAreaInspectionService.updateFormSettings({ isOpen: nextStatus });
+    setFormSettings(updated);
+    if (nextStatus) {
+      showSuccess("Status Formulir: DIBUKA (Pekerja dapat mengisi form)");
+    } else {
+      showError("Status Formulir: DITUTUP SEMENTARA");
+    }
   };
 
-  // Calculate live score in modal
-  const formScore = useMemo(() => {
-    if (formChecklists.length === 0) return 100;
-    const compliant = formChecklists.filter((c) => c.isCompliant).length;
-    return Math.round((compliant / formChecklists.length) * 100);
-  }, [formChecklists]);
+  // Open Form Page
+  const handleOpenFormInNewTab = () => {
+    if (onNavigateToForm) {
+      onNavigateToForm();
+    } else {
+      window.open("/work-area-inspection/form", "_blank");
+    }
+  };
 
-  const handleSaveInspection = async (e: React.FormEvent) => {
+  // Quick Modal Submit
+  const handleSaveModalInspection = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAreaName.trim()) {
-      alert("Mohon masukkan nama area yang diinspeksi.");
+    if (!modalNama.trim() || !modalNik.trim()) {
+      alert("Nama Karyawan dan NIK Karyawan wajib diisi.");
       return;
     }
 
-    const nonCompliantItems = formChecklists.filter((c) => !c.isCompliant);
-    const findingsCount = nonCompliantItems.length;
-    const status: InspectionStatus =
+    const isOilTrap = modalLokasi === "OIL TRAP";
+    let findingsCount = 0;
+    let complianceScore = 100;
+    let findingsDesc = "";
+    let formattedAnswers: OilTrapChecklistAnswer[] | undefined = undefined;
+
+    if (isOilTrap) {
+      formattedAnswers = OIL_TRAP_CHECKLIST_ITEMS.map((q) => {
+        const item = modalOilTrapAnswers[q] || { answer: "AMAN", customAnswer: "" };
+        if (item.answer === "TIDAK AMAN") {
+          findingsCount++;
+          findingsDesc += `${q}: TIDAK AMAN${item.customAnswer ? ` (${item.customAnswer})` : ""}; `;
+        }
+        return {
+          itemQuestion: q,
+          answer: item.answer,
+          customAnswer: item.customAnswer || undefined,
+        };
+      });
+      const totalQ = OIL_TRAP_CHECKLIST_ITEMS.length;
+      complianceScore = Math.round(((totalQ - findingsCount) / totalQ) * 100);
+    } else {
+      if (modalCatatan.trim()) {
+        findingsCount = 1;
+        complianceScore = 80;
+        findingsDesc = modalCatatan.trim();
+      }
+    }
+
+    const status =
       findingsCount === 0
         ? "Compliant"
-        : formScore < 80
+        : complianceScore < 80
         ? "Critical"
         : "Need Follow Up";
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
     const timeStr = now.toTimeString().substring(0, 5);
 
     try {
       await workAreaInspectionService.create({
-        date: dateStr,
+        namaKaryawan: modalNama.trim(),
+        nikKaryawan: modalNik.trim(),
+        tanggalInspeksi: modalTanggal,
+        lokasiInspeksi: modalLokasi,
+        shift: modalShift,
+        project: modalProject,
+        lokasiOilTrap: isOilTrap ? modalLokasiOilTrap.trim() : undefined,
+        oilTrapAnswers: formattedAnswers,
+        jobSite: modalProject === "SENYIUR" ? "Senyiur" : "MuaraPahu",
+        areaName: isOilTrap
+          ? modalLokasiOilTrap.trim() || `Oil Trap ${modalProject}`
+          : `${modalLokasi} ${modalProject}`,
         time: timeStr,
-        jobSite: newSite,
-        areaName: newAreaName.trim(),
-        areaCategory: newAreaCategory,
-        auditorName: newAuditorName.trim() || user.name || "Auditor SHE",
-        auditorNrp: newAuditorNrp.trim(),
-        auditorRole: newAuditorRole.trim(),
-        shift: newShift,
-        complianceScore: formScore,
+        complianceScore,
         status,
         findingsCount,
-        findingsDescription: newFindings.trim() || undefined,
-        correctiveAction: newCorrectiveAction.trim() || undefined,
-        pic: newPic.trim() || undefined,
-        targetCompletionDate: newTargetDate || undefined,
-        checklists: formChecklists,
+        findingsDescription: findingsDesc.trim() || undefined,
+        correctiveAction: modalTindakan.trim() || undefined,
+        pic: modalPic.trim() || undefined,
+        targetCompletionDate: modalTargetDate || undefined,
       });
 
       setIsCreateModalOpen(false);
       loadData();
+      showSuccess("Inspeksi Area Kerja berhasil disimpan!");
     } catch (err: any) {
-      alert(`Gagal menyimpan inspeksi: ${err.message}`);
+      alert(`Gagal menyimpan: ${err.message}`);
     }
   };
 
@@ -209,7 +292,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
   // Filtered Inspections
   const filteredInspections = useMemo(() => {
     return inspections.filter((item) => {
-      if (categoryFilter !== "ALL" && item.areaCategory !== categoryFilter) {
+      if (locationFilter !== "ALL" && item.lokasiInspeksi !== locationFilter) {
         return false;
       }
       if (statusFilter !== "ALL" && item.status !== statusFilter) {
@@ -219,15 +302,16 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
         const q = searchQuery.toLowerCase();
         const matchNumber = item.inspectionNumber.toLowerCase().includes(q);
         const matchArea = item.areaName.toLowerCase().includes(q);
-        const matchAuditor = item.auditorName.toLowerCase().includes(q);
+        const matchAuditor = item.namaKaryawan.toLowerCase().includes(q);
+        const matchNik = (item.nikKaryawan || "").toLowerCase().includes(q);
         const matchFindings = (item.findingsDescription || "").toLowerCase().includes(q);
-        if (!matchNumber && !matchArea && !matchAuditor && !matchFindings) {
+        if (!matchNumber && !matchArea && !matchAuditor && !matchNik && !matchFindings) {
           return false;
         }
       }
       return true;
     });
-  }, [inspections, categoryFilter, statusFilter, searchQuery]);
+  }, [inspections, locationFilter, statusFilter, searchQuery]);
 
   // Export CSV
   const handleExportCSV = () => {
@@ -240,13 +324,12 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
       "No Inspeksi",
       "Tanggal",
       "Jam",
-      "Site",
-      "Area Kerja",
-      "Kategori Area",
-      "Auditor",
-      "NRP Auditor",
-      "Peran Auditor",
       "Shift",
+      "Project",
+      "Lokasi Inspeksi",
+      "Rincian Area / Oil Trap",
+      "Nama Karyawan",
+      "NIK Karyawan",
       "Skor Kepatuhan (%)",
       "Status",
       "Jumlah Temuan",
@@ -258,15 +341,14 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
 
     const rows = filteredInspections.map((i) => [
       `"${i.inspectionNumber}"`,
-      `"${i.date}"`,
+      `"${i.tanggalInspeksi}"`,
       `"${i.time}"`,
-      `"${i.jobSite}"`,
-      `"${i.areaName}"`,
-      `"${i.areaCategory}"`,
-      `"${i.auditorName}"`,
-      `"${i.auditorNrp || "-"}"`,
-      `"${i.auditorRole}"`,
       `"${i.shift}"`,
+      `"${i.project}"`,
+      `"${i.lokasiInspeksi}"`,
+      `"${i.lokasiOilTrap || i.areaName}"`,
+      `"${i.namaKaryawan}"`,
+      `"${i.nikKaryawan || "-"}"`,
       i.complianceScore,
       `"${i.status}"`,
       i.findingsCount,
@@ -286,16 +368,6 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
     link.click();
     document.body.removeChild(link);
   };
-
-  const areaCategories: InspectionAreaCategory[] = [
-    "Workshop",
-    "Hauling Road",
-    "Coal Pad",
-    "Port / Jetty",
-    "Fuel Station",
-    "Mess & Camp",
-    "Office",
-  ];
 
   return (
     <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 min-w-0 animate-in fade-in duration-300 font-sans">
@@ -348,7 +420,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
 
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                 <ShieldCheck size={11} />
-                Standar K3L Operasional • 5R
+                Standar K3L Operasional • Oil Trap &amp; 5R
               </span>
             </div>
 
@@ -357,20 +429,73 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <span>Inspeksi Keselamatan Area Kerja (Work Area Inspection)</span>
             </h1>
             <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
-              Monitoring berkala standar K3L, kebersihan &amp; 5R, fasilitas tanggap darurat, serta kondisi infrastruktur operasional PT Batara Dharma Persada.
+              Monitoring berkala standar K3L, kebersihan 5R, fasilitas tanggap darurat, penampungan limbah, serta kompartemen oil trap PT Batara Dharma Persada.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Input Inspeksi Button */}
             <button
               type="button"
-              onClick={handleOpenCreateModal}
+              onClick={handleOpenFormInNewTab}
               className="px-3.5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-98"
-              title="Catat Formulir Inspeksi Area Kerja Baru"
+              title="Buka Formulir Input Inspeksi Area Kerja"
             >
               <Plus size={15} className="text-white" />
-              <span>Catat Inspeksi Baru</span>
+              <span>Input Inspeksi</span>
             </button>
+
+            {/* Direct Link to Google Form */}
+            <a
+              href={formSettings.googleFormUrl || GOOGLE_FORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Buka link resmi Google Form di tab baru"
+            >
+              <span>Link Google Form</span>
+              <ExternalLink size={13} className="text-orange-400" />
+            </a>
+
+            {/* Link Control: Open/Close Toggle & Salin Link */}
+            <div className="inline-flex items-center gap-1 p-0.5 bg-white/10 rounded-xl border border-white/15">
+              <button
+                type="button"
+                onClick={handleToggleFormStatus}
+                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  formSettings.isOpen
+                    ? "bg-emerald-500 text-white shadow-2xs"
+                    : "bg-rose-500 text-white shadow-2xs"
+                }`}
+                title={
+                  formSettings.isOpen
+                    ? "Status: BUKA. Klik untuk MENUTUP formulir."
+                    : "Status: DITUTUP. Klik untuk MEMBUKA formulir."
+                }
+              >
+                {formSettings.isOpen ? <Unlock size={11} /> : <Lock size={11} />}
+                <span>{formSettings.isOpen ? "Buka" : "Ditutup"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyGoogleLink}
+                className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1"
+                title="Salin tautan Google Form ke clipboard"
+              >
+                {isCopiedGoogleLink ? (
+                  <>
+                    <Check size={11} className="text-emerald-400" />
+                    <span className="text-emerald-400 font-black">Tersalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={11} />
+                    <span>Salin Link</span>
+                  </>
+                )}
+              </button>
+            </div>
 
             <button
               type="button"
@@ -379,14 +504,14 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               title="Export Rekap CSV"
             >
               <FileSpreadsheet size={14} />
-              <span className="hidden sm:inline">Export Excel</span>
+              <span className="hidden sm:inline">Excel</span>
             </button>
 
             <button
               type="button"
               onClick={loadData}
               disabled={loading}
-              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Segarkan Data"
             >
               <RefreshCw size={14} className={loading ? "animate-spin text-orange-400" : ""} />
@@ -414,10 +539,10 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <span className="text-2xl font-black font-mono tracking-tight text-slate-900">
                 {stats?.totalInspections || 0}
               </span>
-              <span className="text-[11px] font-bold text-slate-400 ml-1">Sesi</span>
+              <span className="text-[11px] font-bold text-slate-400 ml-1">Laporan</span>
             </div>
             <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-              Inspeksi area kerja terdata
+              Inspeksi area &amp; oil trap
             </p>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
@@ -443,7 +568,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <span className="text-[11px] font-bold text-emerald-500 ml-1">Rata-rata</span>
             </div>
             <p className="text-[10px] font-bold text-emerald-700 mt-0.5 truncate">
-              Kepatuhan standar 5R &amp; K3L
+              Kepatuhan standar K3L &amp; 5R
             </p>
           </div>
           <div className="w-full bg-emerald-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
@@ -472,7 +597,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <span className="text-[11px] font-bold text-blue-400 ml-1">Area Aman</span>
             </div>
             <p className="text-[10px] font-bold text-blue-700 mt-0.5 truncate">
-              Bebas temuan mayor
+              Bebas temuan bahaya
             </p>
           </div>
           <div className="w-full bg-blue-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
@@ -507,7 +632,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <span className="text-[11px] font-bold text-amber-400 ml-1">Temuan</span>
             </div>
             <p className="text-[10px] font-bold text-amber-800 mt-0.5 truncate">
-              Memerlukan tindakan korektif
+              Memerlukan tindakan perbaikan
             </p>
           </div>
           <div className="w-full bg-amber-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
@@ -542,7 +667,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <span className="text-[11px] font-bold text-orange-400 ml-1">Terselesaikan</span>
             </div>
             <p className="text-[10px] font-bold text-orange-700 mt-0.5 truncate">
-              Laju follow-up pengawas
+              Resolusi tindak lanjut pengawas
             </p>
           </div>
           <div className="w-full bg-orange-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
@@ -568,32 +693,34 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Daftar Rekap Inspeksi ({filteredInspections.length})
+            Daftar Rekap Hasil Inspeksi ({filteredInspections.length})
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("checklist_standards")}
+            onClick={() => setActiveTab("oil_trap_standards")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "checklist_standards"
+              activeTab === "oil_trap_standards"
                 ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Panduan &amp; Standar K3L Area
+            Standar Pemeriksaan Oil Trap (11 Item)
           </button>
         </div>
 
-        {onNavigateToHazardReport && (
-          <button
-            type="button"
-            onClick={onNavigateToHazardReport}
-            className="text-xs font-bold text-[#e95623] hover:text-[#c44114] flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-orange-50 transition-colors self-start sm:self-auto cursor-pointer"
-          >
-            <ShieldAlert size={14} />
-            <span>Lihat Hazard Report Terkait</span>
-            <ChevronRight size={13} />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onNavigateToHazardReport && (
+            <button
+              type="button"
+              onClick={onNavigateToHazardReport}
+              className="text-xs font-bold text-[#e95623] hover:text-[#c44114] flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-orange-50 transition-colors self-start sm:self-auto cursor-pointer"
+            >
+              <ShieldAlert size={14} />
+              <span>Lihat Hazard Report Terkait</span>
+              <ChevronRight size={13} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ---------------------------------------------------------
@@ -607,7 +734,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Cari nomor inspeksi, nama area kerja, auditor, atau rincian temuan..."
+                placeholder="Cari no inspeksi, lokasi area kerja, nama karyawan, NIK, atau rincian temuan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
@@ -624,19 +751,19 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* Category Filter */}
+              {/* Location Filter (17 choices from Google Form) */}
               <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs">
                 <Filter size={13} className="text-slate-400" />
                 <span className="text-slate-500 font-semibold text-[11px]">Area:</span>
                 <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer"
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer max-w-36 truncate"
                 >
-                  <option value="ALL">Semua Kategori</option>
-                  {areaCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                  <option value="ALL">Semua 17 Lokasi</option>
+                  {LOKASI_INSPEKSI_OPTIONS.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
                     </option>
                   ))}
                 </select>
@@ -667,8 +794,8 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                   <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
                     <th className="py-3.5 px-4 w-12 text-center">No</th>
                     <th className="py-3.5 px-4">Dokumen &amp; Waktu</th>
-                    <th className="py-3.5 px-4">Site &amp; Area Kerja</th>
-                    <th className="py-3.5 px-4">Auditor / Pengawas</th>
+                    <th className="py-3.5 px-4">Project &amp; Lokasi Inspeksi</th>
+                    <th className="py-3.5 px-4">Karyawan / NIK</th>
                     <th className="py-3.5 px-4 text-center">Skor Kepatuhan</th>
                     <th className="py-3.5 px-4">Temuan &amp; Tindakan</th>
                     <th className="py-3.5 px-4 text-center">Status</th>
@@ -680,7 +807,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-slate-400">
                         <RefreshCw size={24} className="animate-spin mx-auto text-[#e95623] mb-2" />
-                        <span className="font-semibold">Memuat rekap inspeksi area kerja...</span>
+                        <span className="font-semibold">Memuat data rekap inspeksi area...</span>
                       </td>
                     </tr>
                   ) : filteredInspections.length === 0 ? (
@@ -689,7 +816,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                         <ClipboardList size={36} className="mx-auto text-slate-300 mb-2" />
                         <p className="font-bold text-slate-700">Tidak ada data inspeksi yang sesuai filter.</p>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          Ubah kata kunci pencarian atau klik tombol &quot;Catat Inspeksi Baru&quot;.
+                          Ubah kata kunci pencarian atau klik tombol &quot;Input Inspeksi&quot;.
                         </p>
                       </td>
                     </tr>
@@ -705,30 +832,32 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                           </span>
                           <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
                             <Calendar size={11} className="text-slate-400" />
-                            {item.date} • {item.time} ({item.shift})
+                            {item.tanggalInspeksi} • {item.time} ({item.shift})
                           </span>
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="font-bold text-slate-900 block">{item.areaName}</span>
+                          <span className="font-bold text-slate-900 block">
+                            {item.lokasiOilTrap || item.areaName}
+                          </span>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span
                               className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
-                                item.jobSite === "Senyiur"
+                                item.project === "SENYIUR"
                                   ? "bg-amber-100 text-amber-800"
                                   : "bg-emerald-100 text-emerald-800"
                               }`}
                             >
-                              {item.jobSite === "Senyiur" ? "Senyiur" : "Muara Pahu"}
+                              {item.project}
                             </span>
-                            <span className="text-[10.5px] text-slate-400 font-medium">
-                              {item.areaCategory}
+                            <span className="text-[10.5px] text-slate-400 font-bold">
+                              {item.lokasiInspeksi}
                             </span>
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="font-bold text-slate-800 block">{item.auditorName}</span>
-                          <span className="text-[10px] text-slate-400 block">
-                            {item.auditorRole} {item.auditorNrp ? `• ${item.auditorNrp}` : ""}
+                          <span className="font-bold text-slate-800 block">{item.namaKaryawan}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">
+                            NIK: {item.nikKaryawan || "-"}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-center">
@@ -745,8 +874,11 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                               {item.complianceScore}%
                             </span>
                             <span className="text-[9.5px] text-slate-400 mt-0.5">
-                              {item.checklists.filter((c) => c.isCompliant).length}/
-                              {item.checklists.length} Aspek
+                              {item.oilTrapAnswers
+                                ? `${item.oilTrapAnswers.filter((a) => a.answer === "AMAN").length}/${item.oilTrapAnswers.length} Aspek`
+                                : item.findingsCount === 0
+                                ? "Kondisi Aman"
+                                : "Ada Temuan"}
                             </span>
                           </div>
                         </td>
@@ -765,7 +897,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                           ) : (
                             <span className="text-emerald-600 font-semibold flex items-center gap-1">
                               <CheckCircle2 size={13} />
-                              Area Bersih &amp; Sesuai Standar
+                              Semua Item Sesuai &amp; Aman
                             </span>
                           )}
                         </td>
@@ -792,7 +924,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                               type="button"
                               onClick={() => setSelectedInspection(item)}
                               className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-                              title="Lihat Detail Checklist"
+                              title="Lihat Detail Checklist & Dokumentasi"
                             >
                               <Eye size={15} />
                             </button>
@@ -816,10 +948,10 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
         </div>
       ) : (
         /* ---------------------------------------------------------
-            4. Main Content Tab 2: Standards & Checklist Guidance
+            4. Main Content Tab 2: Standar Pemeriksaan Oil Trap
         ---------------------------------------------------------- */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {DEFAULT_CHECKLIST_TEMPLATES.map((tmpl, idx) => (
+          {OIL_TRAP_CHECKLIST_ITEMS.map((itemQ, idx) => (
             <div
               key={idx}
               className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between hover:border-orange-200 transition-all"
@@ -827,18 +959,18 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-orange-100 text-[#e95623]">
-                    {tmpl.category}
+                    Oil Trap Standard
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">Pilar #{idx + 1}</span>
+                  <span className="text-[10px] font-mono font-bold text-slate-400">#{idx + 1}</span>
                 </div>
                 <p className="text-xs font-bold text-slate-800 leading-relaxed">
-                  {tmpl.itemDescription}
+                  {itemQ}
                 </p>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
-                <span>Standar K3L PT BDP</span>
+                <span>Pilihan: AMAN / TIDAK AMAN</span>
                 <span className="text-emerald-600 font-bold flex items-center gap-0.5">
-                  <Check size={11} /> Wajib Diperiksa
+                  <Check size={11} /> Standar Google Form K3L
                 </span>
               </div>
             </div>
@@ -847,271 +979,7 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
       )}
 
       {/* ---------------------------------------------------------
-          5. Modal: Catat Inspeksi Area Kerja Baru
-      ---------------------------------------------------------- */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-3xl my-6 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95">
-            {/* Modal Header */}
-            <div className="bg-slate-900 text-white p-5 flex items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-[#e95623] text-white">
-                  <ClipboardList size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-black">Formulir Inspeksi Area Kerja</h3>
-                  <p className="text-xs text-slate-300">
-                    Pemeriksaan rutin kepatuhan K3L, 5R, dan fasilitas keselamatan
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body Form */}
-            <form onSubmit={handleSaveInspection} className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5 text-xs">
-              {/* Site, Area Name & Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Job Site <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={newSite}
-                    onChange={(e) => setNewSite(e.target.value as any)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                  >
-                    <option value="MuaraPahu">Site Muara Pahu</option>
-                    <option value="Senyiur">Site Senyiur</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Kategori Area <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={newAreaCategory}
-                    onChange={(e) => setNewAreaCategory(e.target.value as any)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                  >
-                    {areaCategories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Nama / Lokasi Spesifik Area <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Contoh: Workshop Bay 2, Hauling KM 14"
-                    value={newAreaName}
-                    onChange={(e) => setNewAreaName(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                  />
-                </div>
-              </div>
-
-              {/* Auditor Info & Shift */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Nama Auditor / Pengawas <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nama lengkap auditor"
-                    value={newAuditorName}
-                    onChange={(e) => setNewAuditorName(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    NRP Auditor
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nomor Registrasi Pegawai"
-                    value={newAuditorNrp}
-                    onChange={(e) => setNewAuditorNrp(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Shift Kerja
-                  </label>
-                  <select
-                    value={newShift}
-                    onChange={(e) => setNewShift(e.target.value as any)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                  >
-                    <option value="Siang">Shift Siang (Day)</option>
-                    <option value="Malam">Shift Malam (Night)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Interactive Checklist Section */}
-              <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/60 space-y-3">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
-                  <div>
-                    <h4 className="font-extrabold text-slate-800 text-xs">
-                      Pemeriksaan Aspek K3L &amp; Housekeeping (Checklist)
-                    </h4>
-                    <p className="text-[10.5px] text-slate-400">
-                      Klik tombol status untuk menandai Sesuai (Aman) atau Tidak Sesuai (Temuan)
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 shadow-2xs">
-                    <span className="text-[10px] font-extrabold text-slate-500">Skor:</span>
-                    <span
-                      className={`text-sm font-black font-mono ${
-                        formScore >= 90
-                          ? "text-emerald-600"
-                          : formScore >= 80
-                          ? "text-amber-600"
-                          : "text-rose-600"
-                      }`}
-                    >
-                      {formScore}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                  {formChecklists.map((chk) => (
-                    <div
-                      key={chk.id}
-                      className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-                        chk.isCompliant
-                          ? "bg-white border-slate-200"
-                          : "bg-rose-50/70 border-rose-200"
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="px-1.5 py-0.2 rounded-sm text-[8.5px] font-black uppercase tracking-wider bg-slate-100 text-slate-600">
-                            {chk.category}
-                          </span>
-                        </div>
-                        <p className="text-[11.5px] font-semibold text-slate-800">
-                          {chk.itemDescription}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleChecklist(chk.id)}
-                          className={`px-3 py-1 rounded-lg text-[10.5px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                            chk.isCompliant
-                              ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                              : "bg-rose-600 text-white hover:bg-rose-700"
-                          }`}
-                        >
-                          {chk.isCompliant ? (
-                            <>
-                              <Check size={12} />
-                              <span>Sesuai</span>
-                            </>
-                          ) : (
-                            <>
-                              <X size={12} />
-                              <span>Temuan</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Findings & Action Section */}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                    Uraian Temuan / Ketidaksesuaian (Bila ada)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Tuliskan detail temuan kondisi/tindakan tidak aman yang ditemukan selama inspeksi..."
-                    value={newFindings}
-                    onChange={(e) => setNewFindings(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                      Rencana Tindakan Korektif / Rekomendasi
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Pembersihan tumpahan dan perbaikan bund wall"
-                      value={newCorrectiveAction}
-                      onChange={(e) => setNewCorrectiveAction(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
-                      PIC Perbaikan &amp; Target
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="PIC: Foreman / Supervisor"
-                      value={newPic}
-                      onChange={(e) => setNewPic(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#e95623]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white font-black shadow-md transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <Check size={14} />
-                  <span>Simpan Laporan Inspeksi</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ---------------------------------------------------------
-          6. Modal: Detail Checklist Hasil Inspeksi
+          5. Modal: Detail Checklist Hasil Inspeksi
       ---------------------------------------------------------- */}
       {selectedInspection && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -1121,10 +989,12 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                 <span className="text-[10px] font-mono text-orange-400 font-black">
                   {selectedInspection.inspectionNumber}
                 </span>
-                <h3 className="text-base font-black text-white">{selectedInspection.areaName}</h3>
+                <h3 className="text-base font-black text-white">
+                  {selectedInspection.lokasiOilTrap || selectedInspection.areaName}
+                </h3>
                 <p className="text-xs text-slate-300">
-                  {selectedInspection.date} • {selectedInspection.time} ({selectedInspection.shift}) • Site{" "}
-                  {selectedInspection.jobSite === "Senyiur" ? "Senyiur" : "Muara Pahu"}
+                  {selectedInspection.tanggalInspeksi} • {selectedInspection.time} ({selectedInspection.shift}) • Project{" "}
+                  {selectedInspection.project} • Lokasi: {selectedInspection.lokasiInspeksi}
                 </p>
               </div>
               <button
@@ -1152,53 +1022,70 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[11px] font-bold text-slate-500 block">Auditor</span>
+                  <span className="text-[11px] font-bold text-slate-500 block">Karyawan / Auditor</span>
                   <span className="font-bold text-slate-800 block">
-                    {selectedInspection.auditorName}
+                    {selectedInspection.namaKaryawan}
                   </span>
-                  <span className="text-[10px] text-slate-400">{selectedInspection.auditorRole}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    NIK: {selectedInspection.nikKaryawan || "-"}
+                  </span>
                 </div>
               </div>
 
-              {/* Checklist list */}
-              <div>
-                <h4 className="font-extrabold text-slate-800 text-xs mb-2">
-                  Hasil Rincian Pemeriksaan Checklist
-                </h4>
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                  {selectedInspection.checklists.map((c, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs ${
-                        c.isCompliant
-                          ? "bg-emerald-50/50 border-emerald-100"
-                          : "bg-rose-50/70 border-rose-200"
-                      }`}
-                    >
-                      <div>
-                        <span className="text-[9px] font-bold uppercase text-slate-400 block">
-                          {c.category}
-                        </span>
-                        <span className="font-semibold text-slate-800">{c.itemDescription}</span>
-                        {c.notes && (
-                          <span className="text-[10px] text-rose-600 block mt-0.5">
-                            Catatan: {c.notes}
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase shrink-0 ${
-                          c.isCompliant
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-rose-100 text-rose-800"
+              {/* Oil Trap Questions breakdown if available */}
+              {selectedInspection.oilTrapAnswers && selectedInspection.oilTrapAnswers.length > 0 && (
+                <div>
+                  <h4 className="font-extrabold text-slate-800 text-xs mb-2">
+                    Hasil Pemeriksaan Oil Trap (11 Item)
+                  </h4>
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    {selectedInspection.oilTrapAnswers.map((ans, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs ${
+                          ans.answer === "AMAN"
+                            ? "bg-emerald-50/50 border-emerald-100"
+                            : "bg-rose-50/70 border-rose-200"
                         }`}
                       >
-                        {c.isCompliant ? "Sesuai" : "Temuan"}
-                      </span>
-                    </div>
-                  ))}
+                        <div>
+                          <span className="font-semibold text-slate-800">{ans.itemQuestion}</span>
+                          {ans.customAnswer && (
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              Keterangan: {ans.customAnswer}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase shrink-0 ${
+                            ans.answer === "AMAN"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-rose-100 text-rose-800"
+                          }`}
+                        >
+                          {ans.answer}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Documentation photo if uploaded */}
+              {selectedInspection.dokumentasiInspeksi && (
+                <div>
+                  <h4 className="font-extrabold text-slate-800 text-xs mb-2">
+                    Dokumentasi Foto Inspeksi
+                  </h4>
+                  <div className="rounded-2xl overflow-hidden border border-slate-200 max-w-sm">
+                    <img
+                      src={selectedInspection.dokumentasiInspeksi}
+                      alt="Dokumentasi Inspeksi"
+                      className="w-full h-44 object-cover"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Findings & Action Plan */}
               {selectedInspection.findingsDescription && (
