@@ -83,7 +83,6 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
   const [formSettings, setFormSettings] = useState<WorkAreaFormSettings>(() =>
     workAreaInspectionService.getFormSettings()
   );
-  const [isCopiedGoogleLink, setIsCopiedGoogleLink] = useState(false);
   const [isCopiedWebLink, setIsCopiedWebLink] = useState(false);
 
   // Search & Filters
@@ -153,18 +152,6 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
       if (res && res.length > 0) setManpowerList(res);
     });
   }, [loadData]);
-
-  // Copy Google Form Link
-  const handleCopyGoogleLink = async () => {
-    try {
-      await navigator.clipboard.writeText(formSettings.googleFormUrl || GOOGLE_FORM_URL);
-      setIsCopiedGoogleLink(true);
-      showSuccess("Tautan Google Form Inspeksi Area Kerja disalin ke clipboard!");
-      setTimeout(() => setIsCopiedGoogleLink(false), 2500);
-    } catch {
-      alert("Gagal menyalin tautan.");
-    }
-  };
 
   // Copy Internal Web Form Link
   const handleCopyWebLink = async () => {
@@ -489,18 +476,6 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               <Plus size={16} />
               <span>Input Inspeksi</span>
               <ExternalLink size={13} className="opacity-80" />
-            </a>
-
-            {/* Direct Google Form Button */}
-            <a
-              href={formSettings.googleFormUrl || GOOGLE_FORM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all cursor-pointer"
-              title="Buka tautan resmi Google Form di tab baru"
-            >
-              <span>Google Form</span>
-              <ExternalLink size={13} className="text-orange-400" />
             </a>
 
             <button

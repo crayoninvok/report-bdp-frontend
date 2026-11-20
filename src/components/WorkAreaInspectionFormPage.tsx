@@ -325,15 +325,6 @@ export const WorkAreaInspectionFormPage: React.FC<WorkAreaInspectionFormPageProp
                 Lihat Rekapitulasi Tabel
               </button>
             )}
-            <a
-              href={GOOGLE_FORM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-            >
-              <span>Buka Google Form Asli</span>
-              <ExternalLink size={13} />
-            </a>
           </div>
         </div>
       </div>
@@ -370,17 +361,6 @@ export const WorkAreaInspectionFormPage: React.FC<WorkAreaInspectionFormPageProp
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <a
-              href={GOOGLE_FORM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all shadow-2xs"
-              title="Buka langsung tautan resmi Google Form"
-            >
-              <span>Link Google Form</span>
-              <ExternalLink size={13} className="text-[#e95623]" />
-            </a>
-
             {onNavigateToList && (
               <button
                 type="button"
