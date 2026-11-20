@@ -32,6 +32,7 @@ import {
   Droplets,
   X,
   ClipboardList,
+  Eye,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -209,6 +210,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "work-area-inspection",
           label: "Inspeksi Area Kerja",
           icon: ClipboardList,
+        },
+        {
+          id: "she-observation",
+          label: "Observasi",
+          icon: Eye,
         },
       ],
     },

@@ -41,6 +41,7 @@ import { HazardReportView } from "../components/HazardReportView";
 import { HazardReportFormPage } from "../components/HazardReportFormPage";
 import { WorkAreaInspectionView } from "../components/WorkAreaInspectionView";
 import { WorkAreaInspectionFormPage } from "../components/WorkAreaInspectionFormPage";
+import { SheObservationView } from "../components/SheObservationView";
 
 import {
   Menu,
@@ -357,6 +358,8 @@ export default function Home() {
                       ? "Safety Health & Environment • Form Input Inspeksi Area Kerja"
                       : activeMenu === "work-area-inspection"
                       ? "Safety Health & Environment • Inspeksi Area Kerja"
+                      : activeMenu === "she-observation"
+                      ? "Safety Health & Environment • Observasi"
                       : "Dashboard Cost"}
                   </span>
                   {activeMenu.startsWith("coal-") && (
@@ -704,6 +707,11 @@ export default function Home() {
               onNavigateToForm={() => {
                 window.location.href = "/work-area-inspection/form";
               }}
+            />
+          ) : activeMenu === "she-observation" ? (
+            <SheObservationView
+              user={currentUser}
+              onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
             />
           ) : (
             <DashboardView
