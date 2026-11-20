@@ -698,7 +698,7 @@ export const HazardReportView: React.FC<HazardReportViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 min-w-0 animate-in fade-in duration-300">
       {/* ---------------------------------------------------------
           Top Corporate Header & Site Selector
       ---------------------------------------------------------- */}

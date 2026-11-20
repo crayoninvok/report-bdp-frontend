@@ -557,7 +557,7 @@ export const HazardReportFormPage: React.FC<HazardReportFormPageProps> = ({
   // MAIN CUSTOM DESIGN (Batara Dharma Persada Design System)
   // --------------------------------------------------------------------
   return (
-    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 pb-24 sm:pb-20">
+    <div className="p-3 sm:p-5 lg:p-6 max-w-4xl mx-auto space-y-4 sm:space-y-6 pb-24 sm:pb-20 animate-in fade-in duration-300">
       {/* ---------------------------------------------------------
           Top Corporate Header & Navigation
       ---------------------------------------------------------- */}

@@ -67,11 +67,11 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
   const closedPct = data?.resolutionRate ?? Math.round(((data?.closedHazards ?? 0) / totalHazards) * 100);
 
   return (
-    <div className="space-y-4 pb-8 min-w-0">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 min-w-0 animate-in fade-in duration-300">
       {/* ---------------------------------------------------------
           1. Corporate Header Banner (Aligned with Periodic Inspection & Cost)
       ---------------------------------------------------------- */}
-      <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 shadow-md p-4 sm:p-5 min-w-0">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 shadow-xl p-5 sm:p-6 md:p-7 min-w-0">
         <div className="absolute -right-16 -top-16 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute right-32 -bottom-16 w-60 h-60 bg-[#e95623]/10 rounded-full blur-3xl pointer-events-none" />
 
