@@ -48,6 +48,8 @@ export interface HazardReportItem {
   immediateAction: string;
   correctiveAction: string;
   reporterName: string;
+  reporterNrp?: string;
+  reporterJobTitle?: string;
   reporterDept: string;
   picName: string;
   picDept: string;
