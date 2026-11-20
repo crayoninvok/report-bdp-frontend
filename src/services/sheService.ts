@@ -1,5 +1,7 @@
 "use client";
 
+import { API_BASE_URL } from "./apiConfig";
+
 export type HazardCategory =
   | "Unsafe Condition"
   | "Unsafe Action"
@@ -507,6 +509,35 @@ export const sheService = {
     return next;
   },
   getHazards: async (site?: "MuaraPahu" | "Senyiur" | "ALL"): Promise<HazardReportItem[]> => {
+    // 1. Try to fetch from Backend API (PostgreSQL database)
+    try {
+      const q = new URLSearchParams();
+      if (site) q.append("site", site);
+      q.append("limit", "2000");
+
+      const res = await fetch(`${API_BASE_URL}/she/hazards?${q.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+            } catch {
+              // Ignore local storage quota limits
+            }
+          }
+          return json.data;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("SHE Backend API unreachable, falling back to local cache:", apiErr);
+    }
+
+    // 2. Fallback to LocalStorage or Default Seed Data
     try {
       if (typeof window === "undefined") return DEFAULT_HAZARDS;
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -523,7 +554,9 @@ export const sheService = {
       const missingDefaults = DEFAULT_HAZARDS.filter((d) => !existingIds.has(d.id));
       if (missingDefaults.length > 0) {
         list = [...list, ...missingDefaults];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        } catch {}
       }
 
       // Ensure all Google Form fields exist on every item and normalize site
@@ -577,11 +610,37 @@ export const sheService = {
   createHazard: async (
     data: Omit<HazardReportItem, "id" | "reportNumber" | "createdAt" | "updatedAt">
   ): Promise<HazardReportItem> => {
+    // 1. Try to post to Backend API
+    try {
+      const res = await fetch(`${API_BASE_URL}/she/hazards`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const newItem = json.data;
+          if (typeof window !== "undefined") {
+            try {
+              const raw = localStorage.getItem(STORAGE_KEY);
+              const list: HazardReportItem[] = raw ? JSON.parse(raw) : [];
+              localStorage.setItem(STORAGE_KEY, JSON.stringify([newItem, ...list]));
+            } catch {}
+          }
+          return newItem;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("Failed to create hazard on backend API, saving locally:", apiErr);
+    }
+
+    // 2. Fallback to local storage
     const list = await sheService.getHazards("ALL");
     const sitePrefix = data.jobSite === "MuaraPahu" ? "MP" : "SY";
     const year = new Date().getFullYear();
     const count = list.filter((i) => i.jobSite === data.jobSite).length + 1;
-    const reportNumber = `HZ-${sitePrefix}-${year}-${String(count).padStart(3, "0")}`;
+    const reportNumber = `HZ-${sitePrefix}-${year}-${String(count).padStart(4, "0")}`;
     const now = new Date().toISOString();
 
     const newItem: HazardReportItem = {
@@ -594,7 +653,9 @@ export const sheService = {
 
     const updated = [newItem, ...list];
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch {}
     }
     return newItem;
   },
@@ -603,6 +664,36 @@ export const sheService = {
     id: string,
     updates: Partial<HazardReportItem>
   ): Promise<HazardReportItem> => {
+    // 1. Try to update on Backend API
+    try {
+      const res = await fetch(`${API_BASE_URL}/she/hazards/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const updatedItem = json.data;
+          if (typeof window !== "undefined") {
+            try {
+              const raw = localStorage.getItem(STORAGE_KEY);
+              const list: HazardReportItem[] = raw ? JSON.parse(raw) : [];
+              const idx = list.findIndex((h) => h.id === id);
+              if (idx !== -1) {
+                list[idx] = { ...list[idx], ...updatedItem };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+              }
+            } catch {}
+          }
+          return updatedItem;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("Failed to update hazard on backend API, saving locally:", apiErr);
+    }
+
+    // 2. Fallback to local storage
     const list = await sheService.getHazards("ALL");
     const idx = list.findIndex((h) => h.id === id);
     if (idx === -1) {
@@ -617,16 +708,31 @@ export const sheService = {
 
     list[idx] = updatedItem;
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch {}
     }
     return updatedItem;
   },
 
   deleteHazard: async (id: string): Promise<boolean> => {
+    // 1. Try to delete on Backend API
+    try {
+      await fetch(`${API_BASE_URL}/she/hazards/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (apiErr) {
+      console.warn("Failed to delete hazard on backend API:", apiErr);
+    }
+
+    // 2. Fallback to local storage
     const list = await sheService.getHazards("ALL");
     const filtered = list.filter((h) => h.id !== id);
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      } catch {}
     }
     return true;
   },
@@ -634,6 +740,27 @@ export const sheService = {
   getDashboardData: async (
     site: "MuaraPahu" | "Senyiur" | "ALL" = "ALL"
   ): Promise<SheDashboardData> => {
+    // 1. Try to fetch from Backend API (PostgreSQL live aggregated data)
+    try {
+      const q = new URLSearchParams();
+      if (site) q.append("site", site);
+
+      const res = await fetch(`${API_BASE_URL}/she/dashboard?${q.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("SHE Dashboard API unreachable, calculating locally:", apiErr);
+    }
+
+    // 2. Fallback to local calculation
     const hazards = await sheService.getHazards(site);
 
     const totalHazards = hazards.length;
@@ -656,8 +783,6 @@ export const sheService = {
 
     // Monthly trends calculation
     const monthlyTrends = [
-      { month: "Jun 26", hazards: 14, resolved: 14, inspections: 8 },
-      { month: "Jul 26", hazards: 18, resolved: 17, inspections: 10 },
       { month: "Agu 26", hazards: 16, resolved: 16, inspections: 9 },
       { month: "Sep 26", hazards: 22, resolved: 20, inspections: 12 },
       { month: "Okt 26", hazards: 19, resolved: 18, inspections: 11 },
@@ -667,15 +792,13 @@ export const sheService = {
     // Category distribution
     const categoryCounts: Record<string, number> = {};
     for (const h of hazards) {
-      let cat = "Kondisi Tidak Aman (KTA)";
+      let cat = "Unsafe Condition";
       if (h.jenisPelaporan === "TTA" || h.category === "Unsafe Action") {
-        cat = "Tindakan Tidak Aman (TTA)";
+        cat = "Unsafe Action";
       } else if (h.category === "Environmental") {
-        cat = "Lingkungan (Environmental)";
+        cat = "Environmental";
       } else if (h.category === "Near Miss") {
-        cat = "Hampir Celaka (Near Miss)";
-      } else if (h.jenisPelaporan === "KTA" || h.category === "Unsafe Condition") {
-        cat = "Kondisi Tidak Aman (KTA)";
+        cat = "Near Miss";
       } else if (h.category) {
         cat = h.category;
       }
@@ -683,10 +806,10 @@ export const sheService = {
     }
 
     const categoryColors: Record<string, string> = {
-      "Kondisi Tidak Aman (KTA)": "#e95623",
-      "Tindakan Tidak Aman (TTA)": "#f59e0b",
-      "Lingkungan (Environmental)": "#10b981",
-      "Hampir Celaka (Near Miss)": "#ef4444",
+      "Unsafe Condition": "#e95623",
+      "Unsafe Action": "#f59e0b",
+      "Environmental": "#10b981",
+      "Near Miss": "#ef4444",
       "Health & Hygiene": "#6366f1",
     };
 
@@ -698,9 +821,8 @@ export const sheService = {
 
     if (categoryDistribution.length === 0) {
       categoryDistribution = [
-        { name: "Kondisi Tidak Aman (KTA)", value: 4, color: "#e95623" },
-        { name: "Tindakan Tidak Aman (TTA)", value: 2, color: "#f59e0b" },
-        { name: "Lingkungan (Environmental)", value: 2, color: "#10b981" },
+        { name: "Unsafe Condition", value: ktaCount || 4, color: "#e95623" },
+        { name: "Unsafe Action", value: ttaCount || 2, color: "#f59e0b" },
       ];
     }
 
@@ -713,12 +835,6 @@ export const sheService = {
       ).length,
       Low: hazards.filter((h) => (h.riskLevel || "").toLowerCase() === "low").length,
     };
-
-    if (hazards.length === 0) {
-      riskCounts.High = 2;
-      riskCounts.Medium = 3;
-      riskCounts.Low = 1;
-    }
 
     const riskColors: Record<string, string> = {
       Critical: "#dc2626",
