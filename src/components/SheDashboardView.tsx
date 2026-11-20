@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -15,13 +15,118 @@ import {
   Calendar,
   Building2,
   ClipboardList,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Layers,
+  Sparkles,
+  SlidersHorizontal,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Line,
+  Bar,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import {
   sheService,
   SheDashboardData,
   HazardReportItem,
+  SheMonthlyTrendItem,
+  SheWeeklyTrendItem,
 } from "../services/sheService";
 import { useNotification } from "../context/NotificationContext";
+
+// =========================================================================
+// LINEAR REGRESSION TRENDLINE HELPER (y = mx + b)
+// =========================================================================
+interface TrendlineAnalysis {
+  slope: number;
+  intercept: number;
+  startVal: number;
+  endVal: number;
+  percentChange: number;
+  direction: "up" | "down" | "flat";
+  avgVal: number;
+  maxVal: number;
+  dataWithTrend: any[];
+}
+
+function computeLinearTrendline(
+  dataList: any[],
+  yKey: string,
+  trendKeyName: string = "trendline"
+): TrendlineAnalysis {
+  const n = dataList.length;
+  if (n === 0) {
+    return {
+      slope: 0,
+      intercept: 0,
+      startVal: 0,
+      endVal: 0,
+      percentChange: 0,
+      direction: "flat",
+      avgVal: 0,
+      maxVal: 0,
+      dataWithTrend: [],
+    };
+  }
+
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+  let maxVal = 0;
+
+  for (let i = 0; i < n; i++) {
+    const x = i;
+    const y = Number(dataList[i][yKey]) || 0;
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumX2 += x * x;
+    if (y > maxVal) maxVal = y;
+  }
+
+  const avgVal = Math.round((sumY / n) * 10) / 10;
+  const denominator = n * sumX2 - sumX * sumX;
+  const slope = n < 2 || denominator === 0 ? 0 : (n * sumXY - sumX * sumY) / denominator;
+  const intercept = n < 2 ? sumY / (n || 1) : (sumY - slope * sumX) / n;
+
+  const startVal = Math.round(intercept);
+  const endVal = Math.round(slope * (n - 1) + intercept);
+  const percentChange =
+    startVal !== 0 ? Math.round(((endVal - startVal) / Math.abs(startVal)) * 1000) / 10 : 0;
+  const direction = percentChange > 0.5 ? "up" : percentChange < -0.5 ? "down" : "flat";
+
+  const dataWithTrend = dataList.map((d, i) => {
+    const trendVal = Math.max(0, Math.round(slope * i + intercept));
+    return {
+      ...d,
+      [trendKeyName]: trendVal,
+    };
+  });
+
+  return {
+    slope,
+    intercept,
+    startVal,
+    endVal,
+    percentChange,
+    direction,
+    avgVal,
+    maxVal,
+    dataWithTrend,
+  };
+}
 
 interface SheDashboardViewProps {
   user: any;
@@ -42,6 +147,11 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
   const [data, setData] = useState<SheDashboardData | null>(null);
   const [recentHazards, setRecentHazards] = useState<HazardReportItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Interactive Chart Controls State
+  const [chartTab, setChartTab] = useState<"all" | "hazard" | "inspection">("all");
+  const [timeGranularity, setTimeGranularity] = useState<"monthly" | "weekly">("monthly");
+  const [showTrendline, setShowTrendline] = useState<boolean>(true);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -68,6 +178,208 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
   const ttaPct = Math.round(((data?.ttaCount ?? 0) / totalHazards) * 100);
   const openPct = Math.round(((data?.openHazards ?? 0) / totalHazards) * 100);
   const closedPct = data?.resolutionRate ?? Math.round(((data?.closedHazards ?? 0) / totalHazards) * 100);
+
+  // -------------------------------------------------------------------------
+  // CHART DATA NORMALIZATION & TRENDLINE COMPUTATION
+  // -------------------------------------------------------------------------
+  const normalizedChartData = useMemo(() => {
+    if (timeGranularity === "weekly") {
+      const src = data?.weeklyTrends && data.weeklyTrends.length > 0 ? data.weeklyTrends : [];
+      return src.map((w) => ({
+        key: w.label || `Minggu ${w.week.replace("W", "")}`,
+        shortKey: w.week,
+        hazards: w.hazards || 0,
+        resolved: w.resolved || 0,
+        open: w.open || Math.max(0, (w.hazards || 0) - (w.resolved || 0)),
+        kta: w.kta || 0,
+        tta: w.tta || 0,
+        inspections: w.inspections || 0,
+        inspectionsCompliant: w.compliant ?? (w as any).inspectionsCompliant ?? 0,
+        inspectionsNeedFollowUp: w.needFollowUp ?? (w as any).inspectionsNeedFollowUp ?? 0,
+        inspectionsShift1: w.inspectionsShift1 || 0,
+        inspectionsShift2: w.inspectionsShift2 || 0,
+      }));
+    }
+
+    const src = data?.monthlyTrends && data.monthlyTrends.length > 0 ? data.monthlyTrends : [];
+    return src.map((m) => ({
+      key: m.month,
+      shortKey: m.month.split(" ")[0] || m.month,
+      hazards: m.hazards || 0,
+      resolved: m.resolved || 0,
+      open: m.open || Math.max(0, (m.hazards || 0) - (m.resolved || 0)),
+      kta: m.kta || 0,
+      tta: m.tta || 0,
+      inspections: m.inspections || 0,
+      inspectionsCompliant: m.inspectionsCompliant ?? (m as any).compliant ?? 0,
+      inspectionsNeedFollowUp: m.inspectionsNeedFollowUp ?? (m as any).needFollowUp ?? 0,
+      inspectionsShift1: m.inspectionsShift1 || 0,
+      inspectionsShift2: m.inspectionsShift2 || 0,
+    }));
+  }, [timeGranularity, data]);
+
+  const hazardTrendAnalysis = useMemo(() => {
+    return computeLinearTrendline(normalizedChartData, "hazards", "hazardTrend");
+  }, [normalizedChartData]);
+
+  const inspectionTrendAnalysis = useMemo(() => {
+    return computeLinearTrendline(normalizedChartData, "inspections", "inspectionTrend");
+  }, [normalizedChartData]);
+
+  const chartData = useMemo(() => {
+    return normalizedChartData.map((d, i) => ({
+      ...d,
+      hazardTrend: hazardTrendAnalysis.dataWithTrend[i]?.hazardTrend ?? d.hazards,
+      inspectionTrend: inspectionTrendAnalysis.dataWithTrend[i]?.inspectionTrend ?? d.inspections,
+    }));
+  }, [normalizedChartData, hazardTrendAnalysis, inspectionTrendAnalysis]);
+
+  // Custom Tooltips for Recharts
+  const CustomHazardTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const pData = payload[0]?.payload || {};
+    const total = pData.hazards || 0;
+    const kta = pData.kta || 0;
+    const tta = pData.tta || 0;
+    const resolved = pData.resolved || 0;
+    const open = pData.open || 0;
+    const trend = pData.hazardTrend;
+
+    return (
+      <div className="bg-slate-900/95 backdrop-blur-md text-white rounded-xl p-3 border border-slate-700 shadow-2xl text-xs space-y-2 min-w-[220px] z-50">
+        <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
+          <span className="font-bold text-slate-300 flex items-center gap-1.5">
+            <Calendar size={12} className="text-[#e95623]" />
+            {pData.key || label}
+          </span>
+          <span className="font-mono font-black text-amber-400 text-[11px]">
+            {total} Laporan
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-[#e95623]" />
+              Kondisi Tdk Aman (KTA):
+            </span>
+            <span className="font-mono font-bold text-slate-100">
+              {kta} ({total > 0 ? Math.round((kta / total) * 100) : 0}%)
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-[#f59e0b]" />
+              Tindakan Tdk Aman (TTA):
+            </span>
+            <span className="font-mono font-bold text-slate-100">
+              {tta} ({total > 0 ? Math.round((tta / total) * 100) : 0}%)
+            </span>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <CheckCircle2 size={11} />
+              Selesai Ditangani:
+            </span>
+            <span className="font-mono font-bold text-emerald-400">{resolved}</span>
+          </div>
+          {open > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-rose-400">
+                <AlertCircle size={11} />
+                Open (Belum Selesai):
+              </span>
+              <span className="font-mono font-bold text-rose-400">{open}</span>
+            </div>
+          )}
+        </div>
+
+        {showTrendline && trend !== undefined && (
+          <div className="pt-1.5 border-t border-dashed border-rose-500/40 flex items-center justify-between text-[11px] text-rose-300">
+            <span className="flex items-center gap-1">
+              <TrendingUp size={11} className="text-rose-400" />
+              Nilai Garis Tren:
+            </span>
+            <span className="font-mono font-black text-white">{trend} Lap</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const CustomInspectionTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const pData = payload[0]?.payload || {};
+    const total = pData.inspections || 0;
+    const shift1 = pData.inspectionsShift1 || 0;
+    const shift2 = pData.inspectionsShift2 || 0;
+    const compliant = pData.inspectionsCompliant || 0;
+    const needFollowUp = pData.inspectionsNeedFollowUp || 0;
+    const trend = pData.inspectionTrend;
+
+    return (
+      <div className="bg-slate-900/95 backdrop-blur-md text-white rounded-xl p-3 border border-slate-700 shadow-2xl text-xs space-y-2 min-w-[220px] z-50">
+        <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
+          <span className="font-bold text-slate-300 flex items-center gap-1.5">
+            <ClipboardList size={12} className="text-sky-400" />
+            {pData.key || label}
+          </span>
+          <span className="font-mono font-black text-sky-400 text-[11px]">
+            {total} Inspeksi
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-[#0284c7]" />
+              Shift 1 (Siang):
+            </span>
+            <span className="font-mono font-bold text-slate-100">
+              {shift1} ({total > 0 ? Math.round((shift1 / total) * 100) : 0}%)
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-[#8b5cf6]" />
+              Shift 2 (Malam):
+            </span>
+            <span className="font-mono font-bold text-slate-100">
+              {shift2} ({total > 0 ? Math.round((shift2 / total) * 100) : 0}%)
+            </span>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <CheckCircle2 size={11} />
+              Sesuai Standar:
+            </span>
+            <span className="font-mono font-bold text-emerald-400">
+              {compliant} ({total > 0 ? Math.round((compliant / total) * 100) : 100}%)
+            </span>
+          </div>
+          {needFollowUp > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-amber-400">
+                <AlertCircle size={11} />
+                Perlu Tindak Lanjut:
+              </span>
+              <span className="font-mono font-bold text-amber-400">{needFollowUp}</span>
+            </div>
+          )}
+        </div>
+
+        {showTrendline && trend !== undefined && (
+          <div className="pt-1.5 border-t border-dashed border-amber-500/40 flex items-center justify-between text-[11px] text-amber-300">
+            <span className="flex items-center gap-1">
+              <TrendingUp size={11} className="text-amber-400" />
+              Nilai Garis Tren:
+            </span>
+            <span className="font-mono font-black text-white">{trend} Insp</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1920px] mx-auto space-y-6 min-w-0 animate-in fade-in duration-300">
@@ -309,7 +621,407 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
       </div>
 
       {/* ---------------------------------------------------------
-          3. Main Content: Matriks Risiko, Top Area & Temuan Terkini
+          3. Analytics & Trendlines: Hazard Report & Inspeksi Area Kerja
+      ---------------------------------------------------------- */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-4 min-w-0">
+        {/* Header Toolbar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-orange-50 text-[#e95623]">
+                <Activity size={18} />
+              </div>
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+                Grafik Analisis Tren K3L &amp; Inspeksi Area Kerja
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">
+                Garis Tren Regresi (y = mx + b)
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Visualisasi tren berkala temuan Hazard Report vs Inspeksi Area Kerja beserta proyeksi arah garis tren operasional.
+            </p>
+          </div>
+
+          {/* Interactive Toolbar Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* View Tab Selector */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setChartTab("all")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartTab === "all"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Semua Grafik
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartTab("hazard")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartTab === "hazard"
+                    ? "bg-[#e95623] text-white shadow-xs"
+                    : "text-slate-600 hover:text-[#e95623]"
+                }`}
+              >
+                Hazard Report
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartTab("inspection")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartTab === "inspection"
+                    ? "bg-sky-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-sky-600"
+                }`}
+              >
+                Inspeksi Area Kerja
+              </button>
+            </div>
+
+            {/* Granularity Toggle: Bulanan vs Mingguan */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setTimeGranularity("monthly")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  timeGranularity === "monthly"
+                    ? "bg-slate-800 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Bulanan
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeGranularity("weekly")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  timeGranularity === "weekly"
+                    ? "bg-slate-800 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Mingguan
+              </button>
+            </div>
+
+            {/* Trendline Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowTrendline(!showTrendline)}
+              className={`px-3 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border ${
+                showTrendline
+                  ? "bg-amber-50 text-amber-900 border-amber-300 shadow-2xs"
+                  : "bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-700"
+              }`}
+              title="Aktifkan atau sembunyikan garis tren regresi"
+            >
+              <TrendingUp
+                size={13}
+                className={showTrendline ? "text-amber-600" : "text-slate-400"}
+              />
+              <span>Garis Tren {showTrendline ? "Aktif" : "Nonaktif"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Charts Grid */}
+        <div
+          className={`grid gap-4 ${
+            chartTab === "all" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+          }`}
+        >
+          {/* CHART 1: HAZARD REPORT */}
+          {(chartTab === "all" || chartTab === "hazard") && (
+            <div className="p-4 rounded-xl border border-slate-200/90 bg-gradient-to-b from-white to-orange-50/20 space-y-3 flex flex-col justify-between">
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-orange-100 text-[#e95623]">
+                      <AlertTriangle size={15} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                        Tren Pelaporan Hazard (KTA &amp; TTA)
+                      </h3>
+                      <p className="text-[10.5px] text-slate-500">
+                        Volume temuan bahaya vs status penyelesaian
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Trendline Badge */}
+                  {showTrendline && (
+                    <div
+                      className={`px-2.5 py-1 rounded-full text-[10.5px] font-black border flex items-center gap-1 ${
+                        hazardTrendAnalysis.direction === "down"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : hazardTrendAnalysis.direction === "up"
+                          ? "bg-rose-50 text-rose-700 border-rose-200"
+                          : "bg-slate-100 text-slate-700 border-slate-200"
+                      }`}
+                    >
+                      {hazardTrendAnalysis.direction === "down" ? (
+                        <>
+                          <TrendingDown size={13} className="text-emerald-600" />
+                          <span>Tren Turun {Math.abs(hazardTrendAnalysis.percentChange)}% (Positif K3L)</span>
+                        </>
+                      ) : hazardTrendAnalysis.direction === "up" ? (
+                        <>
+                          <TrendingUp size={13} className="text-rose-600" />
+                          <span>Tren Naik +{hazardTrendAnalysis.percentChange}%</span>
+                        </>
+                      ) : (
+                        <span>Tren Stabil (0%)</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Chart Canvas */}
+                <div className={`w-full mt-3 ${chartTab === "hazard" ? "h-80 sm:h-96" : "h-72"}`}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={chartData}
+                      margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="shortKey"
+                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        tickLine={false}
+                        axisLine={{ stroke: "#e2e8f0" }}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip content={<CustomHazardTooltip />} />
+                      <Legend
+                        wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }}
+                        iconType="circle"
+                      />
+                      <Bar
+                        dataKey="kta"
+                        name="Kondisi Tdk Aman (KTA)"
+                        fill="#e95623"
+                        stackId="hazardStack"
+                        radius={[0, 0, 0, 0]}
+                        maxBarSize={36}
+                      />
+                      <Bar
+                        dataKey="tta"
+                        name="Tindakan Tdk Aman (TTA)"
+                        fill="#f59e0b"
+                        stackId="hazardStack"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={36}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="resolved"
+                        name="Closed / Selesai"
+                        stroke="#10b981"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#10b981" }}
+                      />
+                      {showTrendline && (
+                        <Line
+                          type="linear"
+                          dataKey="hazardTrend"
+                          name="Garis Tren Regresi"
+                          stroke="#dc2626"
+                          strokeWidth={2.5}
+                          strokeDasharray="6 4"
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Bottom Metrics Pill */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-[10.5px]">
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Rata-rata / Periode</span>
+                  <span className="font-mono font-black text-slate-800 text-xs">
+                    {hazardTrendAnalysis.avgVal.toLocaleString("id-ID")} Lap
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Puncak Tertinggi</span>
+                  <span className="font-mono font-black text-amber-600 text-xs">
+                    {hazardTrendAnalysis.maxVal.toLocaleString("id-ID")} Lap
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Penyelesaian</span>
+                  <span className="font-mono font-black text-emerald-600 text-xs">
+                    {closedPct}% Selesai
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Slope Garis Tren</span>
+                  <span className="font-mono font-black text-slate-700 text-xs">
+                    m = {hazardTrendAnalysis.slope.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CHART 2: INSPEKSI AREA KERJA */}
+          {(chartTab === "all" || chartTab === "inspection") && (
+            <div className="p-4 rounded-xl border border-slate-200/90 bg-gradient-to-b from-white to-sky-50/20 space-y-3 flex flex-col justify-between">
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-sky-100 text-sky-700">
+                      <ClipboardList size={15} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                        Tren Inspeksi Area Kerja
+                      </h3>
+                      <p className="text-[10.5px] text-slate-500">
+                        Aktivitas shift &amp; tingkat kepatuhan standar area
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Trendline Badge */}
+                  {showTrendline && (
+                    <div
+                      className={`px-2.5 py-1 rounded-full text-[10.5px] font-black border flex items-center gap-1 ${
+                        inspectionTrendAnalysis.direction === "up"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : inspectionTrendAnalysis.direction === "down"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-slate-100 text-slate-700 border-slate-200"
+                      }`}
+                    >
+                      {inspectionTrendAnalysis.direction === "up" ? (
+                        <>
+                          <TrendingUp size={13} className="text-emerald-600" />
+                          <span>Tren Meningkat +{inspectionTrendAnalysis.percentChange}%</span>
+                        </>
+                      ) : inspectionTrendAnalysis.direction === "down" ? (
+                        <>
+                          <TrendingDown size={13} className="text-amber-600" />
+                          <span>Tren Menurun {Math.abs(inspectionTrendAnalysis.percentChange)}%</span>
+                        </>
+                      ) : (
+                        <span>Tren Stabil (0%)</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Chart Canvas */}
+                <div className={`w-full mt-3 ${chartTab === "inspection" ? "h-80 sm:h-96" : "h-72"}`}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={chartData}
+                      margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="shortKey"
+                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        tickLine={false}
+                        axisLine={{ stroke: "#e2e8f0" }}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip content={<CustomInspectionTooltip />} />
+                      <Legend
+                        wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }}
+                        iconType="circle"
+                      />
+                      <Bar
+                        dataKey="inspectionsShift1"
+                        name="Shift 1 (Siang)"
+                        fill="#0284c7"
+                        stackId="inspStack"
+                        radius={[0, 0, 0, 0]}
+                        maxBarSize={36}
+                      />
+                      <Bar
+                        dataKey="inspectionsShift2"
+                        name="Shift 2 (Malam)"
+                        fill="#8b5cf6"
+                        stackId="inspStack"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={36}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="inspectionsCompliant"
+                        name="Sesuai (Compliant)"
+                        stroke="#10b981"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#10b981" }}
+                      />
+                      {showTrendline && (
+                        <Line
+                          type="linear"
+                          dataKey="inspectionTrend"
+                          name="Garis Tren Regresi"
+                          stroke="#f59e0b"
+                          strokeWidth={2.5}
+                          strokeDasharray="6 4"
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Bottom Metrics Pill */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-[10.5px]">
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Rata-rata / Periode</span>
+                  <span className="font-mono font-black text-slate-800 text-xs">
+                    {inspectionTrendAnalysis.avgVal.toLocaleString("id-ID")} Insp
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Puncak Tertinggi</span>
+                  <span className="font-mono font-black text-sky-600 text-xs">
+                    {inspectionTrendAnalysis.maxVal.toLocaleString("id-ID")} Insp
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Kepatuhan Rata-rata</span>
+                  <span className="font-mono font-black text-emerald-600 text-xs">
+                    {data?.inspectionsSummary?.avgScoreInspections ?? 98.4}% Sesuai
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-100">
+                  <span className="text-slate-400 block font-medium">Slope Garis Tren</span>
+                  <span className="font-mono font-black text-slate-700 text-xs">
+                    m = {inspectionTrendAnalysis.slope.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------------
+          4. Main Content: Matriks Risiko, Top Area & Temuan Terkini
       ---------------------------------------------------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-w-0 items-start">
         {/* Left Column (lg:col-span-5): Matriks Risiko + Top Lokasi */}

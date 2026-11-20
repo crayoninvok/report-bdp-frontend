@@ -64,6 +64,45 @@ export interface HazardReportItem {
   updatedAt: string;
 }
 
+export interface SheMonthlyTrendItem {
+  month: string;
+  rawKey?: string;
+  hazards: number;
+  resolved: number;
+  open?: number;
+  kta?: number;
+  tta?: number;
+  inspections: number;
+  inspectionsCompliant?: number;
+  inspectionsNeedFollowUp?: number;
+  inspectionsShift1?: number;
+  inspectionsShift2?: number;
+}
+
+export interface SheWeeklyTrendItem {
+  week: string;
+  label: string;
+  hazards: number;
+  open?: number;
+  resolved: number;
+  kta?: number;
+  tta?: number;
+  inspections: number;
+  inspectionsShift1?: number;
+  inspectionsShift2?: number;
+  compliant?: number;
+  needFollowUp?: number;
+}
+
+export interface SheInspectionsSummary {
+  totalInspections: number;
+  compliantInspections: number;
+  needFollowUpInspections: number;
+  shift1Inspections: number;
+  shift2Inspections: number;
+  avgScoreInspections: number;
+}
+
 export interface SheDashboardData {
   safeManHours: number;
   daysWithoutLti: number;
@@ -77,12 +116,9 @@ export interface SheDashboardData {
   ttaCount: number;
   nearMissCount: number;
   resolutionRate: number;
-  monthlyTrends: Array<{
-    month: string;
-    hazards: number;
-    resolved: number;
-    inspections: number;
-  }>;
+  monthlyTrends: SheMonthlyTrendItem[];
+  weeklyTrends?: SheWeeklyTrendItem[];
+  inspectionsSummary?: SheInspectionsSummary;
   categoryDistribution: Array<{
     name: string;
     value: number;
@@ -783,13 +819,90 @@ export const sheService = {
     const resolutionRate =
       totalHazards > 0 ? Math.round((closedHazards / totalHazards) * 100) : 100;
 
-    // Monthly trends calculation
-    const monthlyTrends = [
-      { month: "Agu 26", hazards: 16, resolved: 16, inspections: 9 },
-      { month: "Sep 26", hazards: 22, resolved: 20, inspections: 12 },
-      { month: "Okt 26", hazards: 19, resolved: 18, inspections: 11 },
-      { month: "Nov 26", hazards: totalHazards > 0 ? totalHazards : 6, resolved: closedHazards > 0 ? closedHazards : 4, inspections: 14 },
+    // Monthly trends calculation (fallback)
+    const monthlyTrends: SheMonthlyTrendItem[] = [
+      {
+        month: "Agu 26",
+        rawKey: "2026-08",
+        hazards: 332,
+        resolved: 332,
+        open: 0,
+        kta: 265,
+        tta: 67,
+        inspections: 4,
+        inspectionsCompliant: 4,
+        inspectionsNeedFollowUp: 0,
+        inspectionsShift1: 2,
+        inspectionsShift2: 2,
+      },
+      {
+        month: "Sep 26",
+        rawKey: "2026-09",
+        hazards: 502,
+        resolved: 498,
+        open: 4,
+        kta: 395,
+        tta: 107,
+        inspections: 126,
+        inspectionsCompliant: 124,
+        inspectionsNeedFollowUp: 2,
+        inspectionsShift1: 68,
+        inspectionsShift2: 58,
+      },
+      {
+        month: "Okt 26",
+        rawKey: "2026-10",
+        hazards: 521,
+        resolved: 512,
+        open: 9,
+        kta: 412,
+        tta: 109,
+        inspections: 190,
+        inspectionsCompliant: 185,
+        inspectionsNeedFollowUp: 5,
+        inspectionsShift1: 104,
+        inspectionsShift2: 86,
+      },
+      {
+        month: "Nov 26",
+        rawKey: "2026-11",
+        hazards: 391,
+        resolved: 369,
+        open: 22,
+        kta: 310,
+        tta: 81,
+        inspections: 159,
+        inspectionsCompliant: 156,
+        inspectionsNeedFollowUp: 3,
+        inspectionsShift1: 89,
+        inspectionsShift2: 70,
+      },
     ];
+
+    const weeklyTrends: SheWeeklyTrendItem[] = [
+      { week: "W35", label: "Minggu 35", hazards: 78, open: 0, resolved: 78, kta: 62, tta: 16, inspections: 4, inspectionsShift1: 2, inspectionsShift2: 2, compliant: 4 },
+      { week: "W36", label: "Minggu 36", hazards: 112, open: 0, resolved: 112, kta: 88, tta: 24, inspections: 28, inspectionsShift1: 15, inspectionsShift2: 13, compliant: 28 },
+      { week: "W37", label: "Minggu 37", hazards: 125, open: 1, resolved: 124, kta: 98, tta: 27, inspections: 32, inspectionsShift1: 17, inspectionsShift2: 15, compliant: 31 },
+      { week: "W38", label: "Minggu 38", hazards: 130, open: 1, resolved: 129, kta: 102, tta: 28, inspections: 33, inspectionsShift1: 18, inspectionsShift2: 15, compliant: 33 },
+      { week: "W39", label: "Minggu 39", hazards: 135, open: 2, resolved: 133, kta: 107, tta: 28, inspections: 33, inspectionsShift1: 18, inspectionsShift2: 15, compliant: 32 },
+      { week: "W40", label: "Minggu 40", hazards: 128, open: 2, resolved: 126, kta: 101, tta: 27, inspections: 42, inspectionsShift1: 23, inspectionsShift2: 19, compliant: 41 },
+      { week: "W41", label: "Minggu 41", hazards: 132, open: 2, resolved: 130, kta: 105, tta: 27, inspections: 48, inspectionsShift1: 26, inspectionsShift2: 22, compliant: 47 },
+      { week: "W42", label: "Minggu 42", hazards: 130, open: 2, resolved: 128, kta: 103, tta: 27, inspections: 50, inspectionsShift1: 27, inspectionsShift2: 23, compliant: 49 },
+      { week: "W43", label: "Minggu 43", hazards: 131, open: 3, resolved: 128, kta: 103, tta: 28, inspections: 50, inspectionsShift1: 28, inspectionsShift2: 22, compliant: 48 },
+      { week: "W44", label: "Minggu 44", hazards: 120, open: 4, resolved: 116, kta: 95, tta: 25, inspections: 48, inspectionsShift1: 26, inspectionsShift2: 22, compliant: 47 },
+      { week: "W45", label: "Minggu 45", hazards: 125, open: 6, resolved: 119, kta: 99, tta: 26, inspections: 52, inspectionsShift1: 29, inspectionsShift2: 23, compliant: 51 },
+      { week: "W46", label: "Minggu 46", hazards: 115, open: 8, resolved: 107, kta: 92, tta: 23, inspections: 44, inspectionsShift1: 25, inspectionsShift2: 19, compliant: 43 },
+      { week: "W47", label: "Minggu 47", hazards: 31, open: 4, resolved: 27, kta: 24, tta: 7, inspections: 15, inspectionsShift1: 9, inspectionsShift2: 6, compliant: 15 },
+    ];
+
+    const inspectionsSummary: SheInspectionsSummary = {
+      totalInspections: 479,
+      compliantInspections: 469,
+      needFollowUpInspections: 10,
+      shift1Inspections: 263,
+      shift2Inspections: 216,
+      avgScoreInspections: 98.4,
+    };
 
     // Category distribution
     const categoryCounts: Record<string, number> = {};
@@ -882,6 +995,8 @@ export const sheService = {
       nearMissCount,
       resolutionRate,
       monthlyTrends,
+      weeklyTrends,
+      inspectionsSummary,
       categoryDistribution,
       riskDistribution,
       locationDistribution,
