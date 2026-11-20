@@ -434,68 +434,71 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* Input Inspeksi Button */}
-            <button
-              type="button"
-              onClick={handleOpenFormInNewTab}
-              className="px-3.5 py-2 rounded-xl bg-[#e95623] hover:bg-[#d44818] text-white text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-98"
-              title="Buka Formulir Input Inspeksi Area Kerja"
-            >
-              <Plus size={15} className="text-white" />
-              <span>Input Inspeksi</span>
-            </button>
-
-            {/* Direct Link to Google Form */}
-            <a
-              href={formSettings.googleFormUrl || GOOGLE_FORM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Buka link resmi Google Form di tab baru"
-            >
-              <span>Link Google Form</span>
-              <ExternalLink size={13} className="text-orange-400" />
-            </a>
-
-            {/* Link Control: Open/Close Toggle & Salin Link */}
-            <div className="inline-flex items-center gap-1 p-0.5 bg-white/10 rounded-xl border border-white/15">
+            {/* Kontrol Link Publik (Buka / Tutup & Salin Link Publik) */}
+            <div className="inline-flex items-center gap-1.5 p-1 bg-white/10 rounded-2xl border border-white/15">
+              {/* Status Badge & Toggle Button */}
               <button
                 type="button"
                 onClick={handleToggleFormStatus}
-                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   formSettings.isOpen
-                    ? "bg-emerald-500 text-white shadow-2xs"
-                    : "bg-rose-500 text-white shadow-2xs"
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs"
+                    : "bg-rose-500 hover:bg-rose-600 text-white shadow-xs"
                 }`}
                 title={
                   formSettings.isOpen
-                    ? "Status: BUKA. Klik untuk MENUTUP formulir."
-                    : "Status: DITUTUP. Klik untuk MEMBUKA formulir."
+                    ? "Status: BUKA (Siapapun dapat mengisi form). Klik untuk MENUTUP formulir."
+                    : "Status: DITUTUP (Pengisian dinonaktifkan). Klik untuk MEMBUKA formulir."
                 }
               >
-                {formSettings.isOpen ? <Unlock size={11} /> : <Lock size={11} />}
-                <span>{formSettings.isOpen ? "Buka" : "Ditutup"}</span>
+                {formSettings.isOpen ? <Unlock size={13} /> : <Lock size={13} />}
+                <span>{formSettings.isOpen ? "Link: Buka" : "Link: Ditutup"}</span>
               </button>
 
+              {/* Salin Link Publik Button */}
               <button
                 type="button"
-                onClick={handleCopyGoogleLink}
-                className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1"
-                title="Salin tautan Google Form ke clipboard"
+                onClick={handleCopyWebLink}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                title="Salin tautan formulir publik (/work-area-inspection/form) ke clipboard"
               >
-                {isCopiedGoogleLink ? (
+                {isCopiedWebLink ? (
                   <>
-                    <Check size={11} className="text-emerald-400" />
-                    <span className="text-emerald-400 font-black">Tersalin!</span>
+                    <Check size={14} className="text-emerald-400" />
+                    <span className="text-emerald-400 font-bold">Tersalin!</span>
                   </>
                 ) : (
                   <>
-                    <Copy size={11} />
+                    <Copy size={13} />
                     <span>Salin Link</span>
                   </>
                 )}
               </button>
             </div>
+
+            {/* Main Button: Input Inspeksi Area (Buka Tab Baru /work-area-inspection/form) */}
+            <button
+              type="button"
+              onClick={handleOpenFormInNewTab}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md shadow-[#e95623]/30 transition-all cursor-pointer hover:scale-[1.02]"
+              title="Buka Formulir Inspeksi Area Kerja di Tab Baru (/work-area-inspection/form)"
+            >
+              <Plus size={16} />
+              <span>Input Inspeksi</span>
+              <ExternalLink size={13} className="opacity-80" />
+            </button>
+
+            {/* Direct Google Form Button */}
+            <a
+              href={formSettings.googleFormUrl || GOOGLE_FORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all cursor-pointer"
+              title="Buka tautan resmi Google Form di tab baru"
+            >
+              <span>Google Form</span>
+              <ExternalLink size={13} className="text-orange-400" />
+            </a>
 
             <button
               type="button"

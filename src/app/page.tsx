@@ -330,8 +330,7 @@ export default function Home() {
                       : activeMenu === "preventive-maintenance"
                       ? "Plant & Maintenance • Periodic Service"
                       : activeMenu === "daily-pa-report"
-                      ? "Plant & Maintenance • Daily PA Report"
-
+                      ? "Plant & Maintenance • Daily PA Report"
                       : activeMenu === "daily-breakdown-report"
                       ? "Plant & Maintenance • Daily Breakdown Report"
                       : activeMenu === "historical-component"
