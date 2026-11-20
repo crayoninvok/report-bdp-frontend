@@ -191,12 +191,10 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
     }
   };
 
-  // Open Form Page
+  // Open / Redirect to Form Page (/work-area-inspection/form)
   const handleOpenFormInNewTab = () => {
-    if (onNavigateToForm) {
-      onNavigateToForm();
-    } else {
-      window.open("/work-area-inspection/form", "_blank");
+    if (typeof window !== "undefined") {
+      window.location.href = "/work-area-inspection/form";
     }
   };
 
@@ -476,17 +474,22 @@ export const WorkAreaInspectionView: React.FC<WorkAreaInspectionViewProps> = ({
               </button>
             </div>
 
-            {/* Main Button: Input Inspeksi Area (Buka Tab Baru /work-area-inspection/form) */}
-            <button
-              type="button"
-              onClick={handleOpenFormInNewTab}
+            {/* Main Button: Input Inspeksi (Redirect ke /work-area-inspection/form) */}
+            <a
+              href="/work-area-inspection/form"
+              onClick={(e) => {
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                  e.preventDefault();
+                  window.location.href = "/work-area-inspection/form";
+                }
+              }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#e95623] hover:bg-[#d84818] text-white text-xs font-black shadow-md shadow-[#e95623]/30 transition-all cursor-pointer hover:scale-[1.02]"
-              title="Buka Formulir Inspeksi Area Kerja di Tab Baru (/work-area-inspection/form)"
+              title="Buka Formulir Inspeksi Area Kerja (/work-area-inspection/form)"
             >
               <Plus size={16} />
               <span>Input Inspeksi</span>
               <ExternalLink size={13} className="opacity-80" />
-            </button>
+            </a>
 
             {/* Direct Google Form Button */}
             <a

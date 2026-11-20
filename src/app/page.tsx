@@ -701,7 +701,9 @@ export default function Home() {
               user={currentUser}
               onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
               onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
-              onNavigateToForm={() => setActiveMenu("work-area-inspection-form")}
+              onNavigateToForm={() => {
+                window.location.href = "/work-area-inspection/form";
+              }}
             />
           ) : (
             <DashboardView
