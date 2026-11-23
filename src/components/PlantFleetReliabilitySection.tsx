@@ -1188,12 +1188,9 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                     : "border-slate-200/90 shadow-2xs hover:shadow-md hover:border-slate-300"
                 }`}
               >
-                {/* Header inside card: Badge + Title + Circular Gauge */}
+                {/* Header inside card: Title + Unit Count + Circular Gauge */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
-                    <span className="inline-block text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/70">
-                      {cat.badge}
-                    </span>
                     <h3 className="text-sm font-black text-slate-900 group-hover:text-[#e95623] transition-colors leading-tight">
                       {cat.title}
                     </h3>
@@ -1443,7 +1440,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                 >
                   {DEFAULT_CATEGORIES.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.badge} - {c.title}
+                      {c.title}
                     </option>
                   ))}
                 </select>
