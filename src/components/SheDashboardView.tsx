@@ -246,7 +246,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
     const trend = pData.hazardTrend;
 
     return (
-      <div className="bg-slate-900/95 backdrop-blur-md text-white rounded-xl p-3 border border-slate-700 shadow-2xl text-xs space-y-2 min-w-[220px] z-50">
+      <div className="bg-slate-900/95 backdrop-blur-md text-white rounded-xl p-3 border border-slate-700 shadow-2xl text-xs space-y-2 min-w-55 z-50">
         <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
           <span className="font-bold text-slate-300 flex items-center gap-1.5">
             <Calendar size={12} className="text-[#e95623]" />
@@ -318,7 +318,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
     const trend = pData.inspectionTrend;
 
     return (
-      <div className="bg-slate-900/95 backdrop-blur-md text-white rounded-xl p-3 border border-slate-700 shadow-2xl text-xs space-y-2 min-w-[220px] z-50">
+      <div className="bg-slate-900/95 backdrop-blur-md text-white rounded-xl p-3 border border-slate-700 shadow-2xl text-xs space-y-2 min-w-55 z-50">
         <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
           <span className="font-bold text-slate-300 flex items-center gap-1.5">
             <ClipboardList size={12} className="text-sky-400" />
@@ -736,7 +736,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
         >
           {/* CHART 1: HAZARD REPORT */}
           {(chartTab === "all" || chartTab === "hazard") && (
-            <div className="p-4 rounded-xl border border-slate-200/90 bg-gradient-to-b from-white to-orange-50/20 space-y-3 flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-slate-200/90 bg-linear-to-b from-white to-orange-50/20 space-y-3 flex flex-col justify-between">
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
@@ -878,7 +878,7 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
 
           {/* CHART 2: INSPEKSI AREA KERJA */}
           {(chartTab === "all" || chartTab === "inspection") && (
-            <div className="p-4 rounded-xl border border-slate-200/90 bg-gradient-to-b from-white to-sky-50/20 space-y-3 flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-slate-200/90 bg-linear-to-b from-white to-sky-50/20 space-y-3 flex flex-col justify-between">
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
