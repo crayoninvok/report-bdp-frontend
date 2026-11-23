@@ -823,8 +823,8 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                 </div>
 
                 {/* Bottom 3-Column Performance Stats */}
-                <div className="grid grid-cols-3 divide-x divide-slate-200 bg-slate-50/90 rounded-xl p-1.5 border border-slate-100 text-center">
-                  <div className="px-1">
+                <div className="grid grid-cols-3 bg-slate-50/90 rounded-xl p-1.5 border border-slate-200/70 text-center">
+                  <div className="px-1 border-r border-slate-200">
                     <div className="text-[9px] font-black uppercase tracking-wider text-slate-400">
                       MTBF
                     </div>
@@ -832,7 +832,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                       {cat.mtbf}
                     </div>
                   </div>
-                  <div className="px-1">
+                  <div className="px-1 border-r border-slate-200">
                     <div className="text-[9px] font-black uppercase tracking-wider text-slate-400">
                       MTTR
                     </div>
@@ -904,14 +904,14 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
               ))}
             </div>
 
-            <div className="relative min-w-[160px]">
+            <div className="relative min-w-40">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Cari unit / lokasi..."
                 value={chessboardSearch}
                 onChange={(e) => setChessboardSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
               />
             </div>
           </div>
@@ -971,7 +971,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                   </div>
 
                   <div className="pt-1.5 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
-                    <span className="truncate max-w-[90px]" title={u.location}>
+                    <span className="truncate max-w-22.5" title={u.location}>
                       {u.location}
                     </span>
                     <span className="font-bold text-slate-700">
@@ -1081,7 +1081,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                     placeholder="https://example.com/unit-image.png"
                     value={imageUrlInput}
                     onChange={(e) => setImageUrlInput(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
                   />
                   <button
                     type="button"
