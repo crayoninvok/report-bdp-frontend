@@ -911,7 +911,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                 placeholder="Cari unit / lokasi..."
                 value={chessboardSearch}
                 onChange={(e) => setChessboardSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
               />
             </div>
           </div>
@@ -1081,7 +1081,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                     placeholder="https://example.com/unit-image.png"
                     value={imageUrlInput}
                     onChange={(e) => setImageUrlInput(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
                   />
                   <button
                     type="button"
