@@ -90,7 +90,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
   defaultTimeframe = "week",
   defaultCategory = "total",
   defaultStartWeek = "W41",
-  defaultEndWeek = "W44",
+  defaultEndWeek = "W46",
   user,
   dynamicData,
 }) => {
@@ -112,7 +112,7 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     const weeklyMua = dynamicData?.MuaraPahu?.weekly?.length ? dynamicData.MuaraPahu.weekly : RAW_WEEKLY_MUARAPAHU;
     const fallbackList = [
       "W29", "W30", "W31", "W32", "W33", "W34", "W35",
-      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43", "W44"
+      "W36", "W37", "W38", "W39", "W40", "W41", "W42", "W43", "W44", "W45", "W46"
     ];
     const set = new Set<string>(fallbackList);
     weeklySen.forEach((it) => set.add(it.label));
@@ -135,8 +135,8 @@ export const CostReportPdfExportModal: React.FC<CostReportPdfExportModalProps> =
     return Array.from(set);
   }, [dynamicData]);
 
-  const latestWeek = availableWeeks[availableWeeks.length - 1] || "W42";
-  const latestMonth = availableMonths[availableMonths.length - 1] || "Oct";
+  const latestWeek = availableWeeks[availableWeeks.length - 1] || "W46";
+  const latestMonth = availableMonths[availableMonths.length - 1] || "Nov";
 
   // Range filters for Weeks
   const [startWeek, setStartWeek] = useState<string>(defaultStartWeek);
