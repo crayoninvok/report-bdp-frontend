@@ -479,6 +479,51 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
     return DEFAULT_CATEGORIES.find((c) => c.id === selectedCategoryId) || null;
   }, [selectedCategoryId]);
 
+  // Real Fleet Reliability metrics from database via PlantDashboardData
+  const rel = data?.fleetReliability;
+
+  // Real category counts from MasterUnit if available
+  const categoriesWithRealCounts = useMemo(() => {
+    if (!rel?.categoryCounts || rel.categoryCounts.length === 0) {
+      return DEFAULT_CATEGORIES;
+    }
+
+    return DEFAULT_CATEGORIES.map((cat) => {
+      // Find matching items in categoryCounts
+      const matching = rel.categoryCounts?.filter((c) => {
+        const cLower = c.category.toLowerCase();
+        if (cat.id === "prime-mover" && cLower.includes("prime mover")) return true;
+        if (cat.id === "dump-truck" && cLower.includes("dump truck")) return true;
+        if (cat.id === "generator-set" && (cLower.includes("genset") || cLower.includes("generator"))) return true;
+        if (cat.id === "support-truck" && (cLower.includes("support") || cLower.includes("storing"))) return true;
+        if (cat.id === "air-compressor" && cLower.includes("compressor")) return true;
+        if (cat.id === "excavator" && cLower.includes("excavator")) return true;
+        if (cat.id === "fuel-truck" && cLower.includes("fuel truck")) return true;
+        if (cat.id === "water-truck" && cLower.includes("water truck")) return true;
+        if (cat.id === "dozer" && cLower.includes("dozer")) return true;
+        if (cat.id === "light-vehicle" && (cLower.includes("light vehicle") || cLower.includes("telehandler"))) return true;
+        return false;
+      }) || [];
+
+      if (matching.length === 0) return cat;
+
+      const rfuCount = matching
+        .filter((m) => m.status === "Active")
+        .reduce((sum, m) => sum + m.count, 0);
+      const totalUnits = matching.reduce((sum, m) => sum + m.count, 0);
+      const breakdownCount = Math.max(0, totalUnits - rfuCount);
+      const availabilityPct = totalUnits > 0 ? Math.round((rfuCount / totalUnits) * 100) : cat.availabilityPct;
+
+      return {
+        ...cat,
+        rfuCount,
+        breakdownCount,
+        totalUnits,
+        availabilityPct,
+      };
+    });
+  }, [rel?.categoryCounts]);
+
   return (
     <section className="space-y-6 animate-in fade-in duration-300">
       {/* =========================================================================
@@ -495,25 +540,35 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
               </span>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-              Target 85%
+              Target {rel?.pa?.targetPa != null ? `${rel.pa.targetPa}%` : "85%"}
             </span>
           </div>
 
           <div className="my-3 flex items-baseline justify-between">
             <div className="text-3xl font-black text-slate-900 tracking-tight">
-              80.57%
+              {rel?.pa?.paPercent != null ? `${rel.pa.paPercent}%` : "-"}
             </div>
-            <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 inline-flex items-center">
-              Needs Focus
-            </span>
+            {rel?.pa?.paPercent != null ? (
+              <span
+                className={`text-xs font-bold px-2 py-0.5 rounded-md border inline-flex items-center ${
+                  rel.pa.statusText === "Needs Focus" || rel.pa.paPercent < (rel.pa.targetPa ?? 85)
+                    ? "text-amber-700 bg-amber-50 border-amber-200/60"
+                    : "text-emerald-700 bg-emerald-50 border-emerald-200/60"
+                }`}
+              >
+                {rel.pa.statusText || (rel.pa.paPercent >= (rel.pa.targetPa ?? 85) ? "On Target" : "Needs Focus")}
+              </span>
+            ) : (
+              <span className="text-xs font-semibold text-slate-400">-</span>
+            )}
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
             <span className="font-semibold text-slate-400">
-              MOHH: 31,104h
+              MOHH: {rel?.pa?.mohhHours != null ? `${rel.pa.mohhHours.toLocaleString("id-ID")}h` : "-"}
             </span>
             <span className="font-bold text-rose-600">
-              BD: 6,042.3h
+              BD: {rel?.pa?.bdHours != null ? `${rel.pa.bdHours.toLocaleString("id-ID")}h` : "-"}
             </span>
           </div>
         </div>
@@ -528,13 +583,13 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
               </span>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200">
-              Target 88%
+              Target {rel?.ma?.targetMa != null ? `${rel.ma.targetMa}%` : "88%"}
             </span>
           </div>
 
           <div className="my-3 flex items-baseline justify-between">
             <div className="text-3xl font-black text-slate-900 tracking-tight">
-              46.38%
+              {rel?.ma?.maPercent != null ? `${rel.ma.maPercent}%` : "-"}
             </div>
             <span className="text-xs font-semibold text-slate-500">
               Operating Fleet
@@ -543,10 +598,10 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
             <span className="font-semibold text-slate-400">
-              Operating: 5,226.4h
+              Operating: {rel?.ma?.operatingHours != null ? `${rel.ma.operatingHours.toLocaleString("id-ID")}h` : "-"}
             </span>
             <span className="font-bold text-slate-600">
-              UA: 20.9%
+              UA: {rel?.ma?.uaPercent != null ? `${rel.ma.uaPercent}%` : "-"}
             </span>
           </div>
         </div>
@@ -561,17 +616,21 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
               </span>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              81.5% Ready
+              {rel?.fleetReadiness?.readinessPercent != null
+                ? `${rel.fleetReadiness.readinessPercent}% Ready`
+                : "-"}
             </span>
           </div>
 
           <div className="my-3 flex items-baseline gap-1.5">
             <span className="text-3xl font-black text-emerald-600 tracking-tight">
-              44 RFU
+              {rel?.fleetReadiness?.rfuUnits != null ? `${rel.fleetReadiness.rfuUnits} RFU` : "-"}
             </span>
-            <span className="text-xs font-bold text-slate-500">
-              / 54 Units
-            </span>
+            {rel?.fleetReadiness?.totalUnits != null && (
+              <span className="text-xs font-bold text-slate-500">
+                / {rel.fleetReadiness.totalUnits} Units
+              </span>
+            )}
           </div>
 
           <div className="pt-2 border-t border-slate-100 text-[11px] font-medium text-slate-400">
@@ -595,10 +654,13 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
 
           <div className="my-3 flex items-baseline justify-between">
             <div className="text-3xl font-black text-slate-900 tracking-tight">
-              12.9 <span className="text-sm font-semibold text-slate-500">Hrs</span>
+              {rel?.mtbs?.inWorkshopUnits != null ? `${rel.mtbs.inWorkshopUnits}` : "-"}
+              {rel?.mtbs?.inWorkshopUnits != null && (
+                <span className="text-sm font-semibold text-slate-500 ml-1">Jobs</span>
+              )}
             </div>
             <span className="text-xs font-semibold text-slate-500">
-              Target &gt; 20h
+              Target &gt; {rel?.mtbs?.targetHours ?? 20}h
             </span>
           </div>
 
@@ -623,10 +685,16 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
 
           <div className="my-3 flex items-baseline justify-between">
             <div className="text-3xl font-black text-slate-900 tracking-tight">
-              12.9 <span className="text-sm font-semibold text-slate-500">Hrs</span>
+              {rel?.mtbf?.valueHours != null ? (
+                <>
+                  {rel.mtbf.valueHours} <span className="text-sm font-semibold text-slate-500">Hrs</span>
+                </>
+              ) : (
+                "-"
+              )}
             </div>
             <span className="text-xs font-semibold text-slate-500">
-              Target &gt; 20h
+              Target &gt; {rel?.mtbf?.targetHours ?? 20}h
             </span>
           </div>
 
@@ -651,10 +719,16 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
 
           <div className="my-3 flex items-baseline justify-between">
             <div className="text-3xl font-black text-slate-900 tracking-tight">
-              8.6 <span className="text-sm font-semibold text-slate-500">Hrs</span>
+              {rel?.mttr?.valueHours != null ? (
+                <>
+                  {rel.mttr.valueHours} <span className="text-sm font-semibold text-slate-500">Hrs</span>
+                </>
+              ) : (
+                "-"
+              )}
             </div>
             <span className="text-xs font-semibold text-slate-500">
-              Target &lt; 4h
+              Target &lt; {rel?.mttr?.targetHours ?? 4}h
             </span>
           </div>
 
@@ -673,13 +747,13 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
               </span>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-              Target 10%
+              Target {rel?.redoPs?.targetPercent ?? 10}%
             </span>
           </div>
 
           <div className="my-3 flex items-baseline justify-between">
             <div className="text-3xl font-black text-slate-900 tracking-tight">
-              10
+              {rel?.redoPs?.openJobsCount != null ? rel.redoPs.openJobsCount : "-"}
             </div>
             <span className="text-xs font-semibold text-slate-500">
               Open Jobs
@@ -700,14 +774,36 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                 PM COMPLIANCE
               </span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-              Action Req.
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                rel?.pmCompliance?.compliancePercent != null && rel.pmCompliance.compliancePercent >= 90
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-rose-50 text-rose-700 border-rose-200"
+              }`}
+            >
+              {rel?.pmCompliance?.compliancePercent != null && rel.pmCompliance.compliancePercent >= 90
+                ? "On Track"
+                : "Action Req."}
             </span>
           </div>
 
           <div className="my-3 flex items-baseline justify-between">
-            <div className="text-3xl font-black text-rose-600 tracking-tight">
-              12 <span className="text-sm font-bold text-rose-600">%</span>
+            <div
+              className={`text-3xl font-black tracking-tight ${
+                rel?.pmCompliance?.compliancePercent != null
+                  ? rel.pmCompliance.compliancePercent >= 90
+                    ? "text-emerald-600"
+                    : "text-rose-600"
+                  : "text-slate-400"
+              }`}
+            >
+              {rel?.pmCompliance?.compliancePercent != null ? (
+                <>
+                  {rel.pmCompliance.compliancePercent} <span className="text-sm font-bold">%</span>
+                </>
+              ) : (
+                "-"
+              )}
             </div>
             <Link
               href="/?menu=preventive-maintenance"
@@ -767,7 +863,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
 
         {/* 10 Category Cards Grid (Responsive 2 to 5 columns) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-          {DEFAULT_CATEGORIES.map((cat) => {
+          {categoriesWithRealCounts.map((cat) => {
             const isSelected = selectedCategoryId === cat.id;
             const customImg = customImages[cat.id];
 

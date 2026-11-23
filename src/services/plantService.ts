@@ -1121,6 +1121,55 @@ export interface PlantDashboardPmSection {
   dailySeries: PlantDashboardPmDailyPoint[];
 }
 
+export interface PlantFleetReliabilityKpis {
+  pa: {
+    paPercent: number | null;
+    targetPa: number | null;
+    mohhHours: number | null;
+    bdHours: number | null;
+    statusText: string | null;
+    overallMtbf: number | null;
+  } | null;
+  ma: {
+    maPercent: number | null;
+    targetMa: number | null;
+    operatingHours: number | null;
+    uaPercent: number | null;
+  } | null;
+  fleetReadiness: {
+    rfuUnits: number;
+    totalUnits: number;
+    readinessPercent: number | null;
+  };
+  mtbs: {
+    inWorkshopUnits: number;
+    targetHours: number;
+  };
+  mtbf: {
+    valueHours: number | null;
+    targetHours: number;
+  };
+  mttr: {
+    valueHours: number | null;
+    closedCount: number;
+    targetHours: number;
+  };
+  redoPs: {
+    openJobsCount: number | null;
+    targetPercent: number;
+  };
+  pmCompliance: {
+    compliancePercent: number | null;
+    completedCount: number;
+    totalCount: number;
+  };
+  categoryCounts?: Array<{
+    category: string;
+    status: string;
+    count: number;
+  }>;
+}
+
 export interface PlantDashboardData {
   filters: {
     site: string;
@@ -1141,6 +1190,7 @@ export interface PlantDashboardData {
     primeMoverPopulation: number;
     totalUnitsCount: number;
   };
+  fleetReliability?: PlantFleetReliabilityKpis;
   glCost: {
     ytd: {
       totalCost: number;
