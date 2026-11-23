@@ -17,6 +17,7 @@ import {
   plantService,
 } from "../services/plantService";
 import { PlantDashboardGlSection } from "./PlantDashboardGlSection";
+import { PlantFleetReliabilitySection } from "./PlantFleetReliabilitySection";
 import { PlantDashboardPmSection } from "./PlantDashboardPmSection";
 
 interface PlantDashboardViewProps {
@@ -203,6 +204,7 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
       {data && (
         <div className={`space-y-8 transition-opacity ${loading ? "opacity-75" : "opacity-100"}`}>
           <PlantDashboardGlSection data={data} />
+          <PlantFleetReliabilitySection site={site} data={data} />
           <PlantDashboardPmSection
             pm={data.pm}
             pmPeriod={pmPeriod}
