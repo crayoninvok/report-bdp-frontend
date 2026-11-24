@@ -43,6 +43,7 @@ import {
   LOKASI_OBSERVASI_OPTIONS,
   PENANGGUNG_JAWAB_OPTIONS,
   PROJECT_OBSERVATION_OPTIONS,
+  OBSERVATION_SECTIONS,
   LokasiObservasiType,
   ProjectObservationType,
 } from "../services/sheObservationService";
@@ -859,42 +860,76 @@ export const SheObservationView: React.FC<SheObservationViewProps> = ({
               </div>
             </div>
 
-            {/* Reaksi Pekerja Badges */}
-            <div className="space-y-2">
-              <span className="text-xs font-black text-slate-800 block">Kriteria Pengamatan Reaksi Pekerja:</span>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-[10px] text-slate-400 block font-bold">Perubahan Posisi</span>
-                  <span
-                    className={`font-black ${
-                      selectedItem.perubahanPosisi.includes("BERISIKO") ? "text-rose-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {selectedItem.perubahanPosisi}
-                  </span>
-                </div>
-                <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-[10px] text-slate-400 block font-bold">Stop Work</span>
-                  <span
-                    className={`font-black ${
-                      selectedItem.penghentianPekerjaan.includes("BERISIKO") ? "text-rose-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {selectedItem.penghentianPekerjaan}
-                  </span>
-                </div>
-                <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-[10px] text-slate-400 block font-bold">Penggantian Tool</span>
-                  <span
-                    className={`font-black ${
-                      selectedItem.penggantianTool.includes("BERISIKO") ? "text-rose-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {selectedItem.penggantianTool}
-                  </span>
-                </div>
+            {/* 6 Kategori Evaluasi Observasi */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-800 block">Evaluasi 6 Kategori Pengamatan:</span>
+                <span className="text-[10px] text-slate-400 font-bold">29 Kriteria Standar Google Form</span>
+              </div>
+
+              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                {OBSERVATION_SECTIONS.map((sec) => (
+                  <div key={sec.id} className="p-3 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-1.5">
+                    <span className="text-[11px] font-black text-slate-800 block">{sec.title}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10.5px]">
+                      {sec.items.map((it) => {
+                        const rawVal =
+                          (selectedItem as any)[it.key] ||
+                          (selectedItem.rawAnswersJson && typeof selectedItem.rawAnswersJson === "object"
+                            ? (selectedItem.rawAnswersJson as any)[it.key]
+                            : undefined) ||
+                          "AMAN";
+                        const isRisky =
+                          String(rawVal).toUpperCase().includes("BERISIKO") ||
+                          String(rawVal).toUpperCase().includes("BERESIKO");
+                        return (
+                          <div
+                            key={it.key}
+                            className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-slate-100"
+                          >
+                            <span className="text-slate-600 truncate pr-1">{it.label}</span>
+                            <span
+                              className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                                isRisky ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+                              }`}
+                            >
+                              {rawVal}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Tindak Lanjut Observasi (Saran, Feedback, Kesepakatan) */}
+            {(selectedItem.saranObserver || selectedItem.feedbackObjek || selectedItem.kesepakatan) && (
+              <div className="space-y-2 text-xs">
+                <span className="text-xs font-black text-slate-800 block">Tindak Lanjut Observasi:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {selectedItem.saranObserver && (
+                    <div className="p-3 rounded-xl bg-purple-50/50 border border-purple-200/60 space-y-1">
+                      <span className="text-[10px] font-black text-purple-900 block uppercase">Saran Observer</span>
+                      <p className="text-slate-700 text-[11px] leading-relaxed">{selectedItem.saranObserver}</p>
+                    </div>
+                  )}
+                  {selectedItem.feedbackObjek && (
+                    <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/60 space-y-1">
+                      <span className="text-[10px] font-black text-blue-900 block uppercase">Feedback Objek</span>
+                      <p className="text-slate-700 text-[11px] leading-relaxed">{selectedItem.feedbackObjek}</p>
+                    </div>
+                  )}
+                  {selectedItem.kesepakatan && (
+                    <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/60 space-y-1">
+                      <span className="text-[10px] font-black text-emerald-900 block uppercase">Kesepakatan</span>
+                      <p className="text-slate-700 text-[11px] leading-relaxed">{selectedItem.kesepakatan}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Foto Evidence */}
             {selectedItem.dokumentasi && (

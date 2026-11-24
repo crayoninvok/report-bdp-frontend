@@ -45,8 +45,88 @@ export type PenanggungJawabType = (typeof PENANGGUNG_JAWAB_OPTIONS)[number] | "Y
 export const PROJECT_OBSERVATION_OPTIONS = ["SENYIUR", "MUARA PAHU"] as const;
 export type ProjectObservationType = (typeof PROJECT_OBSERVATION_OPTIONS)[number];
 
-export const REAKSI_PEKERJA_OPTIONS = ["AMAN", "BERISIKO", "Yang lain"] as const;
+export const REAKSI_PEKERJA_OPTIONS = ["AMAN", "BERESIKO", "Yang lain"] as const;
 export type ReaksiPekerjaOption = (typeof REAKSI_PEKERJA_OPTIONS)[number];
+
+export interface ObservationQuestionItem {
+  key: string;
+  label: string;
+  description?: string;
+}
+
+export interface ObservationCategorySection {
+  id: string;
+  title: string;
+  items: ObservationQuestionItem[];
+}
+
+export const OBSERVATION_SECTIONS: ObservationCategorySection[] = [
+  {
+    id: "reaksiPekerja",
+    title: "Reaksi Pekerja",
+    items: [
+      { key: "perubahanPosisi", label: "Perubahan Posisi" },
+      { key: "penghentianPekerjaan", label: "Penghentian Pekerjaan" },
+      { key: "penggantianTool", label: "Penggantian tool" },
+    ],
+  },
+  {
+    id: "posisiManusia",
+    title: "Posisi Manusia",
+    items: [
+      { key: "posisiMenabrak", label: "Menabrak" },
+      { key: "posisiTerjepit", label: "Terjepit" },
+      { key: "posisiTerhirup", label: "Terhirup" },
+      { key: "posisiTerseret", label: "Terseret" },
+      { key: "posisiTerkenaListrik", label: "Terkena Listrik" },
+      { key: "posisiTerjatuh", label: "Terjatuh" },
+      { key: "posisiTerpukul", label: "Terpukul" },
+    ],
+  },
+  {
+    id: "apd",
+    title: "Peralatan Pelindung Diri (APD)",
+    items: [
+      { key: "apdKepala", label: "Kepala" },
+      { key: "apdTelingaMata", label: "Telinga dan Mata" },
+      { key: "apdMukaPernafasan", label: "Muka dan Pernafasan" },
+      { key: "apdTanganLengan", label: "Tangan dan Lengan" },
+      { key: "apdKakiTungkai", label: "Kaki dan Tungkai" },
+    ],
+  },
+  {
+    id: "prosedur",
+    title: "Prosedur",
+    items: [
+      { key: "prosedurStandard", label: "Standard Memadai" },
+      { key: "prosedurPengawasan", label: "Pengawasan" },
+      { key: "prosedurIjinKerja", label: "Ijin Kerja" },
+      { key: "prosedurEmergency", label: "Ketentuan Emergency" },
+    ],
+  },
+  {
+    id: "perkakas",
+    title: "Perkakas Tangan dan Peralatan",
+    items: [
+      { key: "perkakasSesuai", label: "Sesuai dengan pekerjaan" },
+      { key: "perkakasBenar", label: "Digunakan dengan benar" },
+      { key: "perkakasAmanInspeksi", label: "Kondisi aman di inspeksi" },
+      { key: "perkakasPengaman", label: "Terdapat pengaman" },
+      { key: "perkakasSafetyDevice", label: "Terdapat safety device" },
+    ],
+  },
+  {
+    id: "kerapihan",
+    title: "Ketertiban / Kerapihan",
+    items: [
+      { key: "kerapihanRuangJalan", label: "Ruang dan Jalan untuk pekerja" },
+      { key: "kerapihanPenempatan", label: "Penempatan peralatan" },
+      { key: "kerapihanPenyimpanan", label: "Penyimpanan Barang" },
+      { key: "kerapihanHambatan", label: "Terdapat hambatan / gangguan" },
+      { key: "kerapihanPijakanLantai", label: "Pijakan dan lantai kerja" },
+    ],
+  },
+];
 
 export interface SheObservationItem {
   id: string;
@@ -61,15 +141,60 @@ export interface SheObservationItem {
   penanggungJawabArea?: string;
   project: ProjectObservationType | string;
   jobSite: "MuaraPahu" | "Senyiur";
-  perubahanPosisi: string; // AMAN / BERISIKO / Custom
-  penghentianPekerjaan: string; // AMAN / BERISIKO / Custom
-  penggantianTool: string; // AMAN / BERISIKO / Custom
+
+  // 1. Reaksi Pekerja
+  perubahanPosisi: string; // AMAN / BERESIKO / Custom
+  penghentianPekerjaan: string; // AMAN / BERESIKO / Custom
+  penggantianTool: string; // AMAN / BERESIKO / Custom
   reaksiPekerjaCustom?: string;
-  status: "AMAN" | "BERISIKO" | string;
-  statusGForm: "OPEN" | "CLOSE" | string;
+
+  // 2. Posisi Manusia
+  posisiMenabrak?: string;
+  posisiTerjepit?: string;
+  posisiTerhirup?: string;
+  posisiTerseret?: string;
+  posisiTerkenaListrik?: string;
+  posisiTerjatuh?: string;
+  posisiTerpukul?: string;
+
+  // 3. APD
+  apdKepala?: string;
+  apdTelingaMata?: string;
+  apdMukaPernafasan?: string;
+  apdTanganLengan?: string;
+  apdKakiTungkai?: string;
+
+  // 4. Prosedur
+  prosedurStandard?: string;
+  prosedurPengawasan?: string;
+  prosedurIjinKerja?: string;
+  prosedurEmergency?: string;
+
+  // 5. Perkakas Tangan dan Peralatan
+  perkakasSesuai?: string;
+  perkakasBenar?: string;
+  perkakasAmanInspeksi?: string;
+  perkakasPengaman?: string;
+  perkakasSafetyDevice?: string;
+
+  // 6. Ketertiban / Kerapihan
+  kerapihanRuangJalan?: string;
+  kerapihanPenempatan?: string;
+  kerapihanPenyimpanan?: string;
+  kerapihanHambatan?: string;
+  kerapihanPijakanLantai?: string;
+
+  // 7. Tindak Lanjut Observasi
+  saranObserver?: string;
+  feedbackObjek?: string;
+  kesepakatan?: string;
   catatanObservasi?: string;
   tindakanPerbaikan?: string;
   dokumentasi?: string; // photo URL or base64
+  rawAnswersJson?: string | Record<string, any>;
+
+  status: "AMAN" | "BERISIKO" | string;
+  statusGForm: "OPEN" | "CLOSE" | string;
   createdAt: string;
 }
 
@@ -207,11 +332,41 @@ export const sheObservationService = {
         penghentianPekerjaan: data.penghentianPekerjaan || "AMAN",
         penggantianTool: data.penggantianTool || "AMAN",
         reaksiPekerjaCustom: data.reaksiPekerjaCustom,
-        status: data.status || "AMAN",
-        statusGForm: data.statusGForm || "OPEN",
+        posisiMenabrak: data.posisiMenabrak || "AMAN",
+        posisiTerjepit: data.posisiTerjepit || "AMAN",
+        posisiTerhirup: data.posisiTerhirup || "AMAN",
+        posisiTerseret: data.posisiTerseret || "AMAN",
+        posisiTerkenaListrik: data.posisiTerkenaListrik || "AMAN",
+        posisiTerjatuh: data.posisiTerjatuh || "AMAN",
+        posisiTerpukul: data.posisiTerpukul || "AMAN",
+        apdKepala: data.apdKepala || "AMAN",
+        apdTelingaMata: data.apdTelingaMata || "AMAN",
+        apdMukaPernafasan: data.apdMukaPernafasan || "AMAN",
+        apdTanganLengan: data.apdTanganLengan || "AMAN",
+        apdKakiTungkai: data.apdKakiTungkai || "AMAN",
+        prosedurStandard: data.prosedurStandard || "AMAN",
+        prosedurPengawasan: data.prosedurPengawasan || "AMAN",
+        prosedurIjinKerja: data.prosedurIjinKerja || "AMAN",
+        prosedurEmergency: data.prosedurEmergency || "AMAN",
+        perkakasSesuai: data.perkakasSesuai || "AMAN",
+        perkakasBenar: data.perkakasBenar || "AMAN",
+        perkakasAmanInspeksi: data.perkakasAmanInspeksi || "AMAN",
+        perkakasPengaman: data.perkakasPengaman || "AMAN",
+        perkakasSafetyDevice: data.perkakasSafetyDevice || "AMAN",
+        kerapihanRuangJalan: data.kerapihanRuangJalan || "AMAN",
+        kerapihanPenempatan: data.kerapihanPenempatan || "AMAN",
+        kerapihanPenyimpanan: data.kerapihanPenyimpanan || "AMAN",
+        kerapihanHambatan: data.kerapihanHambatan || "AMAN",
+        kerapihanPijakanLantai: data.kerapihanPijakanLantai || "AMAN",
+        saranObserver: data.saranObserver,
+        feedbackObjek: data.feedbackObjek,
+        kesepakatan: data.kesepakatan,
         catatanObservasi: data.catatanObservasi,
         tindakanPerbaikan: data.tindakanPerbaikan,
         dokumentasi: data.dokumentasi,
+        rawAnswersJson: data.rawAnswersJson,
+        status: data.status || "AMAN",
+        statusGForm: data.statusGForm || "OPEN",
         createdAt: new Date().toISOString(),
       };
 
