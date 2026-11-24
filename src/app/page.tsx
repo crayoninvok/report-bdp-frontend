@@ -680,6 +680,7 @@ export default function Home() {
               user={currentUser}
               onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
               onNavigateToInspection={() => setActiveMenu("work-area-inspection")}
+              onNavigateToObservation={() => setActiveMenu("she-observation")}
             />
           ) : activeMenu === "hazard-report-form" ? (
             <HazardReportFormPage
@@ -712,6 +713,8 @@ export default function Home() {
             <SheObservationView
               user={currentUser}
               onNavigateToDashboard={() => setActiveMenu("she-dashboard")}
+              onNavigateToHazardReport={() => setActiveMenu("hazard-report")}
+              onNavigateToInspection={() => setActiveMenu("work-area-inspection")}
             />
           ) : (
             <DashboardView

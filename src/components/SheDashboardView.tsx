@@ -132,12 +132,14 @@ interface SheDashboardViewProps {
   user: any;
   onNavigateToHazardReport?: () => void;
   onNavigateToInspection?: () => void;
+  onNavigateToObservation?: () => void;
 }
 
 export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
   user,
   onNavigateToHazardReport,
   onNavigateToInspection,
+  onNavigateToObservation,
 }) => {
   const { showError } = useNotification();
 
@@ -468,6 +470,18 @@ export const SheDashboardView: React.FC<SheDashboardViewProps> = ({
               >
                 <ClipboardList size={14} className="text-orange-400" />
                 <span>Inspeksi Area Kerja</span>
+              </button>
+            )}
+
+            {onNavigateToObservation && (
+              <button
+                type="button"
+                onClick={onNavigateToObservation}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+                title="Buka Observasi Keselamatan"
+              >
+                <Eye size={14} className="text-orange-400" />
+                <span>Observasi Keselamatan</span>
               </button>
             )}
 

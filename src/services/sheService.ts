@@ -119,6 +119,12 @@ export interface SheDashboardData {
   monthlyTrends: SheMonthlyTrendItem[];
   weeklyTrends?: SheWeeklyTrendItem[];
   inspectionsSummary?: SheInspectionsSummary;
+  observationsSummary?: {
+    totalObservations: number;
+    safeObservations: number;
+    riskyObservations: number;
+    safeRatePct: number;
+  };
   categoryDistribution: Array<{
     name: string;
     value: number;
