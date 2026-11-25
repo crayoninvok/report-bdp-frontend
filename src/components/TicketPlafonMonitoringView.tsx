@@ -725,9 +725,6 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
             <div className="text-base font-black text-purple-900">
               48 / 65 / 90 Hari
             </div>
-            <div className="text-[11px] text-purple-700 mt-1 font-medium">
-              PM (48h) • DT/Mek/Adm (90h) • Lainnya (65h)
-            </div>
           </div>
         </div>
       </div>
