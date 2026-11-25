@@ -86,7 +86,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
 
   // Form states for Edit Plafon
-  const [editPlafonAmount, setEditPlafonAmount] = useState<number>(5500000);
+  const [editPlafonAmount, setEditPlafonAmount] = useState<number>(5000000);
   const [editPlafonNotes, setEditPlafonNotes] = useState<string>("");
   const [isSubmittingConfig, setIsSubmittingConfig] = useState<boolean>(false);
 
@@ -228,7 +228,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
     const dep = new Date(targetDateStr);
     if (isNaN(dep.getTime())) return "-";
     const reset = new Date(dep);
-    reset.setMonth(reset.getMonth() + 2);
+    reset.setDate(reset.getDate() + 65);
     return formatDate(reset.toISOString());
   }, [ticketForm.departureDate, ticketForm.returnDate, ticketForm.notes, ticketForm.dinasBookingType]);
 
@@ -386,7 +386,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       "Sisa Plafon (Rp)",
       "Persentase Terpakai (%)",
       "Tiket Terakhir",
-      "Jadwal Reset Otomatis (2 Bulan)",
+      "Jadwal Reset Otomatis (65 Hari)",
       "Sisa Hari Menuju Reset",
     ];
 
@@ -459,8 +459,8 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
             </h1>
             <p className="text-blue-100/80 text-sm mt-1 max-w-2xl leading-relaxed">
               Monitoring plafon tiket penerbangan karyawan Non-Lokal (Senyiur & Muara Pahu). Default plafon{" "}
-              <span className="font-semibold text-amber-300">Rp 5.500.000,00</span> per orang dengan siklus reset otomatis{" "}
-              <span className="font-semibold text-emerald-300">2 bulan</span> dari tanggal tiket keberangkatan.
+              <span className="font-semibold text-amber-300">Rp 5.000.000,00</span> per orang dengan siklus reset otomatis{" "}
+              <span className="font-semibold text-emerald-300">65 hari</span> dari tanggal tiket keberangkatan.
             </p>
           </div>
 
@@ -612,7 +612,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               {summary ? formatRupiah(summary.totalPlafonAllocated) : "-"}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">
-              Default: Rp 5.500.000 / org
+              Default: Rp 5.000.000 / org
             </div>
           </div>
         </div>
@@ -657,11 +657,11 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
           </div>
         </div>
 
-        {/* Card 5: Auto-Reset 2 Bulan */}
+        {/* Card 5: Auto-Reset 65 Hari */}
         <div className="bg-linear-to-br from-purple-50 to-indigo-50/50 rounded-2xl p-5 border border-purple-200/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
-              Siklus Reset 2 Bulan
+              Siklus Reset 65 Hari
             </span>
             <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
               <RotateCcw className="w-4 h-4" />
@@ -669,10 +669,10 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
           </div>
           <div className="mt-3">
             <div className="text-base font-black text-purple-900">
-              Otomatis 2 Bulan
+              Otomatis 65 Hari
             </div>
             <div className="text-[11px] text-purple-700 mt-1 font-medium">
-              Dari tanggal tiket keberangkatan
+              Dari tiket keberangkatan (2 Bulan)
             </div>
           </div>
         </div>
@@ -720,7 +720,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                 className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
                 <option value="ALL">Semua Status Plafon</option>
-                <option value="FULL">Plafon Utuh (Rp 5.500.000)</option>
+                <option value="FULL">Plafon Utuh (Rp 5.000.000)</option>
                 <option value="PARTIAL">Sebagian Terpakai</option>
                 <option value="EMPTY">Plafon Habis</option>
                 <option value="CYCLE_ACTIVE">Sedang Berjalan (Ada Tiket)</option>
@@ -775,7 +775,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   <th className="py-3 px-4 text-right">Terpakai</th>
                   <th className="py-3 px-4 text-right">Sisa Saldo</th>
                   <th className="py-3 px-4 text-center">Tiket Terakhir</th>
-                  <th className="py-3 px-4 text-center">Siklus Reset 2 Bulan</th>
+                  <th className="py-3 px-4 text-center">Siklus Reset (65 Hari)</th>
                   <th className="py-3 px-4 text-center">Aksi</th>
                 </tr>
               </thead>
@@ -1443,11 +1443,11 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 space-y-1.5 text-xs">
                 <div className="font-bold text-purple-900 flex items-center gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5 text-purple-700" />
-                  Siklus Reset Otomatis 2 Bulan:
+                  Siklus Reset Otomatis (65 Hari):
                 </div>
                 <div className="text-purple-800 text-[11px] leading-relaxed">
-                  Plafon akan otomatis direset kembali ke Rp 5.500.000 pada tanggal{" "}
-                  <span className="font-extrabold underline">{previewNextResetDate}</span> (2 bulan dari keberangkatan).
+                  Plafon akan otomatis direset kembali ke Rp {(selectedEmployee.plafonAmount || 5000000).toLocaleString("id-ID")} pada tanggal{" "}
+                  <span className="font-extrabold underline">{previewNextResetDate}</span> (65 hari dari tanggal tiket).
                 </div>
                 <div className="text-[11px] text-slate-600 pt-1 border-t border-purple-200/60 flex items-center justify-between">
                   <span>Estimasi Sisa Plafon Setelah Transaksi:</span>
@@ -1626,7 +1626,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   />
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
-                  Default standar: Rp 5.500.000,00
+                  Default standar: Rp 5.000.000,00
                 </div>
               </div>
 
