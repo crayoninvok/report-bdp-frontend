@@ -312,7 +312,7 @@ export const PlantParetoProblemSection: React.FC<
                 {topHoursItem && (
                   <div
                     onClick={() => setSelectedCompForDetail(topHoursItem.component)}
-                    className={`sm:col-span-5 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between min-h-[220px] shadow-sm cursor-pointer hover:brightness-105 transition-all ${
+                    className={`sm:col-span-5 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between min-h-55 shadow-sm cursor-pointer hover:brightness-105 transition-all ${
                       getComponentVisual(topHoursItem.component).bgClass
                     }`}
                   >
@@ -375,7 +375,7 @@ export const PlantParetoProblemSection: React.FC<
                       <div
                         key={item.component}
                         onClick={() => setSelectedCompForDetail(item.component)}
-                        className={`rounded-2xl p-3.5 flex flex-col justify-between min-h-[105px] shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
+                        className={`rounded-2xl p-3.5 flex flex-col justify-between min-h-26.25 shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-mono font-black opacity-85">
@@ -416,7 +416,7 @@ export const PlantParetoProblemSection: React.FC<
                     <div
                       key={item.component}
                       onClick={() => setSelectedCompForDetail(item.component)}
-                      className={`rounded-xl p-3 flex flex-col justify-between min-h-[85px] shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
+                      className={`rounded-xl p-3 flex flex-col justify-between min-h-21.25 shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono font-black opacity-85">
@@ -489,7 +489,7 @@ export const PlantParetoProblemSection: React.FC<
                 {topFreqItem && (
                   <div
                     onClick={() => setSelectedCompForDetail(topFreqItem.component)}
-                    className={`sm:col-span-5 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between min-h-[220px] shadow-sm cursor-pointer hover:brightness-105 transition-all ${
+                    className={`sm:col-span-5 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between min-h-55 shadow-sm cursor-pointer hover:brightness-105 transition-all ${
                       getComponentVisual(topFreqItem.component, true).bgClass
                     }`}
                   >
@@ -553,7 +553,7 @@ export const PlantParetoProblemSection: React.FC<
                       <div
                         key={item.component}
                         onClick={() => setSelectedCompForDetail(item.component)}
-                        className={`rounded-2xl p-3.5 flex flex-col justify-between min-h-[105px] shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
+                        className={`rounded-2xl p-3.5 flex flex-col justify-between min-h-26.25 shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-mono font-black opacity-85">
@@ -591,7 +591,7 @@ export const PlantParetoProblemSection: React.FC<
                     <div
                       key={item.component}
                       onClick={() => setSelectedCompForDetail(item.component)}
-                      className={`rounded-xl p-3 flex flex-col justify-between min-h-[85px] shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
+                      className={`rounded-xl p-3 flex flex-col justify-between min-h-21.25 shadow-2xs cursor-pointer hover:brightness-105 transition-all ${visual.bgClass}`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono font-black opacity-85">
