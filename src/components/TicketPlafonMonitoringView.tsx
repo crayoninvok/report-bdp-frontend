@@ -76,7 +76,8 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
     departureDate: new Date().toISOString().split("T")[0],
     returnDate: "",
     ticketCost: 1500000,
-    notes: "Cuti Rooster",
+    notes: "Cuti Rooster" as "Cuti Rooster" | "On Site" | "Perjalanan Dinas",
+    dinasBookingType: "BERANGKAT" as "BERANGKAT" | "PULANG" | "PP",
     additionalNotes: "",
   });
   const [isSubmittingTicket, setIsSubmittingTicket] = useState<boolean>(false);
@@ -217,13 +218,20 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
 
   // Calculate 2-month auto reset date preview
   const previewNextResetDate = useMemo(() => {
-    if (!ticketForm.departureDate) return "-";
-    const dep = new Date(ticketForm.departureDate);
+    const targetDateStr =
+      ticketForm.notes === "Perjalanan Dinas" &&
+      ticketForm.dinasBookingType === "PP" &&
+      ticketForm.returnDate
+        ? ticketForm.returnDate
+        : ticketForm.departureDate;
+
+    if (!targetDateStr) return "-";
+    const dep = new Date(targetDateStr);
     if (isNaN(dep.getTime())) return "-";
     const reset = new Date(dep);
     reset.setMonth(reset.getMonth() + 2);
     return formatDate(reset.toISOString());
-  }, [ticketForm.departureDate]);
+  }, [ticketForm.departureDate, ticketForm.returnDate, ticketForm.notes, ticketForm.dinasBookingType]);
 
   // Open Record Modal
   const handleOpenRecordModal = (emp: TicketPlafonItem) => {
@@ -236,6 +244,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       returnDate: "",
       ticketCost: 1500000,
       notes: "Cuti Rooster",
+      dinasBookingType: "BERANGKAT",
       additionalNotes: "",
     });
     setIsRecordModalOpen(true);
@@ -248,17 +257,35 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
 
     try {
       setIsSubmittingTicket(true);
-      const combinedNotes = ticketForm.additionalNotes.trim()
-        ? `${ticketForm.notes} (${ticketForm.additionalNotes.trim()})`
-        : ticketForm.notes;
+
+      const finalDepDate = ticketForm.departureDate;
+      const finalRetDate =
+        ticketForm.notes === "Perjalanan Dinas" && ticketForm.dinasBookingType === "PP"
+          ? ticketForm.returnDate || undefined
+          : undefined;
+
+      let combinedNotes: string = ticketForm.notes;
+      if (ticketForm.notes === "Perjalanan Dinas") {
+        const dinasLabel =
+          ticketForm.dinasBookingType === "BERANGKAT"
+            ? "Berangkat"
+            : ticketForm.dinasBookingType === "PULANG"
+            ? "Pulang"
+            : "PP (Pulang-Pergi)";
+        combinedNotes = `Perjalanan Dinas (${dinasLabel})`;
+      }
+
+      if (ticketForm.additionalNotes.trim()) {
+        combinedNotes += ` - ${ticketForm.additionalNotes.trim()}`;
+      }
 
       const res = await recordTicketUsage({
         employeeId: selectedEmployee.employeeId,
         ticketNumber: ticketForm.ticketNumber,
         destination: ticketForm.destination,
         airline: ticketForm.airline,
-        departureDate: ticketForm.departureDate,
-        returnDate: ticketForm.returnDate || undefined,
+        departureDate: finalDepDate,
+        returnDate: finalRetDate,
         ticketCost: Number(ticketForm.ticketCost),
         notes: combinedNotes,
       });
@@ -734,7 +761,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   <th className="py-3 px-4 text-right">Alokasi Plafon</th>
                   <th className="py-3 px-4 text-right">Terpakai</th>
                   <th className="py-3 px-4 text-right">Sisa Saldo</th>
-                  <th className="py-3 px-4 text-center">Keberangkatan Terakhir</th>
+                  <th className="py-3 px-4 text-center">Tiket Terakhir</th>
                   <th className="py-3 px-4 text-center">Siklus Reset 2 Bulan</th>
                   <th className="py-3 px-4 text-center">Aksi</th>
                 </tr>
@@ -1115,11 +1142,204 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
 
             {/* Form */}
             <form onSubmit={handleSubmitTicketRecord} className="p-5 space-y-4">
+              {/* 1. Keperluan / Kategori Tiket */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Keperluan / Kategori Tiket *
+                </label>
+                <select
+                  required
+                  value={ticketForm.notes}
+                  onChange={(e) => {
+                    const val = e.target.value as "Cuti Rooster" | "On Site" | "Perjalanan Dinas";
+                    setTicketForm({
+                      ...ticketForm,
+                      notes: val,
+                      destination:
+                        val === "On Site"
+                          ? "CGK - BPN"
+                          : val === "Cuti Rooster"
+                          ? "BPN - CGK"
+                          : ticketForm.destination,
+                    });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                >
+                  <option value="Cuti Rooster">Cuti Rooster (Tiket Pulang Cuti)</option>
+                  <option value="On Site">On Site (Tiket Keberangkatan ke Site)</option>
+                  <option value="Perjalanan Dinas">Perjalanan Dinas (Fleksibel Berangkat/Pulang/PP)</option>
+                </select>
+              </div>
+
+              {/* Sub-Pilihan Jika Perjalanan Dinas */}
+              {ticketForm.notes === "Perjalanan Dinas" && (
+                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-1.5">
+                  <label className="block text-[11px] font-bold text-blue-900">
+                    Pilihan Pemesanan Tiket Dinas:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTicketForm({ ...ticketForm, dinasBookingType: "BERANGKAT" })}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center ${
+                        ticketForm.dinasBookingType === "BERANGKAT"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "bg-white border border-blue-200 text-blue-800 hover:bg-blue-100"
+                      }`}
+                    >
+                      Berangkat Dulu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTicketForm({ ...ticketForm, dinasBookingType: "PULANG" })}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center ${
+                        ticketForm.dinasBookingType === "PULANG"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "bg-white border border-blue-200 text-blue-800 hover:bg-blue-100"
+                      }`}
+                    >
+                      Pesan Pulang
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTicketForm({ ...ticketForm, dinasBookingType: "PP" })}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center ${
+                        ticketForm.dinasBookingType === "PP"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "bg-white border border-blue-200 text-blue-800 hover:bg-blue-100"
+                      }`}
+                    >
+                      Berangkat & Pulang (PP)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Tanggal Input (Disesuaikan berdasarkan keperluan) */}
+              {ticketForm.notes === "On Site" ? (
+                /* On Site: Hanya 1 tanggal keberangkatan */
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Tanggal Tiket Keberangkatan (On Site) *
+                    </label>
+                    <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      1 Tanggal Saja
+                    </span>
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    value={ticketForm.departureDate}
+                    onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Tiket keberangkatan personel kembali bertugas ke jobsite.
+                  </p>
+                </div>
+              ) : ticketForm.notes === "Cuti Rooster" ? (
+                /* Cuti Rooster: Hanya 1 tanggal kepulangan */
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Tanggal Tiket Pulang (Cuti Rooster) *
+                    </label>
+                    <span className="text-[10px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                      1 Tanggal Saja
+                    </span>
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    value={ticketForm.departureDate}
+                    onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Tiket kepulangan personel dari jobsite ke domisili untuk jadwal cuti rooster.
+                  </p>
+                </div>
+              ) : ticketForm.dinasBookingType === "PP" ? (
+                /* Perjalanan Dinas PP: 2 Tanggal */
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Tanggal Keberangkatan Dinas *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={ticketForm.departureDate}
+                      onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Tanggal Kepulangan Dinas *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={ticketForm.returnDate}
+                      onChange={(e) => setTicketForm({ ...ticketForm, returnDate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              ) : ticketForm.dinasBookingType === "BERANGKAT" ? (
+                /* Perjalanan Dinas: Berangkat Dulu */
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Tanggal Keberangkatan Dinas *
+                    </label>
+                    <span className="text-[10px] text-purple-700 font-semibold bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                      Berangkat Dulu
+                    </span>
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    value={ticketForm.departureDate}
+                    onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Pemesanan tiket keberangkatan dinas terlebih dahulu. Tiket pulang dapat dipesan menyusul.
+                  </p>
+                </div>
+              ) : (
+                /* Perjalanan Dinas: Pesan Pulang */
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Tanggal Kepulangan Dinas *
+                    </label>
+                    <span className="text-[10px] text-purple-700 font-semibold bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                      Pesan Pulang
+                    </span>
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    value={ticketForm.departureDate}
+                    onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Pemesanan tiket kepulangan dari dinas setelah tiket keberangkatan sebelumnya.
+                  </p>
+                </div>
+              )}
+
+              {/* 3. Detail Tiket */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* No Tiket */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    No. Tiket / Booking Code
+                    No. Tiket / Booking Code *
                   </label>
                   <input
                     type="text"
@@ -1156,7 +1376,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               {/* Rute Destination */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Rute Penerbangan
+                  Rute Penerbangan *
                 </label>
                 <input
                   type="text"
@@ -1166,35 +1386,6 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   placeholder="Contoh: BPN - CGK (Balikpapan - Jakarta)"
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Tanggal Keberangkatan */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Tanggal Keberangkatan *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={ticketForm.departureDate}
-                    onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Tanggal Kepulangan (Opsional) */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Tanggal Pulang (Opsional)
-                  </label>
-                  <input
-                    type="date"
-                    value={ticketForm.returnDate}
-                    onChange={(e) => setTicketForm({ ...ticketForm, returnDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                </div>
               </div>
 
               {/* Biaya Tiket */}
@@ -1221,23 +1412,6 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                 </div>
               </div>
 
-              {/* Keperluan / Catatan Dropdown */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Keperluan / Catatan *
-                </label>
-                <select
-                  required
-                  value={ticketForm.notes}
-                  onChange={(e) => setTicketForm({ ...ticketForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
-                >
-                  <option value="Cuti Rooster">Cuti Rooster</option>
-                  <option value="On Site">On Site</option>
-                  <option value="Perjalanan Dinas">Perjalanan Dinas</option>
-                </select>
-              </div>
-
               {/* Keterangan Tambahan (Opsional) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
@@ -1247,7 +1421,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   type="text"
                   value={ticketForm.additionalNotes}
                   onChange={(e) => setTicketForm({ ...ticketForm, additionalNotes: e.target.value })}
-                  placeholder="Contoh: Roster Periode Nov 2026, Rapat HO, dsb"
+                  placeholder="Contoh: Roster Periode Nov 2026, Meeting Koordinasi HO, dsb"
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
