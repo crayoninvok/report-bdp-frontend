@@ -1526,8 +1526,9 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                 </div>
               ) : (
                 <div className="rounded-xl border border-slate-200 overflow-hidden">
-                  {historyList.map((item, idx) => (
-                    <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-slate-100 last:border-b-0">
+                  <div className="divide-y divide-slate-100">
+                    {historyList.map((item, idx) => (
+                      <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[11px]">
@@ -1568,6 +1569,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
             </div>
