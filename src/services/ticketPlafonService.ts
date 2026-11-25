@@ -198,3 +198,43 @@ export async function resetPlafonManual(
   }
   return res.json();
 }
+
+export async function updateTicketUsageHistory(
+  id: string,
+  payload: {
+    ticketNumber?: string;
+    destination?: string;
+    airline?: string;
+    departureDate?: string;
+    returnDate?: string;
+    ticketCost?: number;
+    notes?: string;
+    userEmail?: string;
+  }
+): Promise<{ success: boolean; message: string; data: any }> {
+  const res = await fetch(`${API_BASE_URL}/ticket-plafon/ticket/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Gagal mengubah tiket: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function deleteTicketUsageHistory(
+  id: string,
+  userEmail?: string
+): Promise<{ success: boolean; message: string; data: any }> {
+  const query = userEmail ? `?userEmail=${encodeURIComponent(userEmail)}` : "";
+  const res = await fetch(`${API_BASE_URL}/ticket-plafon/ticket/${encodeURIComponent(id)}${query}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Gagal menghapus tiket: ${res.statusText}`);
+  }
+  return res.json();
+}
