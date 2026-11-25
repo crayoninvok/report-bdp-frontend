@@ -33,6 +33,7 @@ import {
   X,
   ClipboardList,
   Eye,
+  Construction,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -150,6 +151,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "daily-breakdown-report",
           label: "Daily Breakdown Report",
           icon: AlertTriangle,
+        },
+        {
+          id: "mechanics-activity",
+          label: "Mechanics Activity",
+          icon: Construction,
+          badge: "Development",
         },
         {
           id: "historical-component",
@@ -417,7 +424,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {item.badge && (
                         <span
                           className={`text-[8px] font-extrabold uppercase tracking-tight px-1.5 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
-                            item.badge === "Under Development" || item.badge === "Maintenance"
+                            item.badge === "Under Development" ||
+                            item.badge === "Maintenance" ||
+                            item.badge === "Development"
                               ? "bg-amber-50 text-amber-700 border border-amber-200"
                               : "bg-batara-orange-50 text-[#e95623] border border-batara-orange-200"
                           }`}

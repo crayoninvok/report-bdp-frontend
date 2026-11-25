@@ -334,6 +334,8 @@ export default function Home() {
                       ? "Plant & Maintenance • Daily PA Report"
                       : activeMenu === "daily-breakdown-report"
                       ? "Plant & Maintenance • Daily Breakdown Report"
+                      : activeMenu === "mechanics-activity"
+                      ? "Plant & Maintenance • Mechanics Activity"
                       : activeMenu === "historical-component"
                       ? "Plant & Maintenance • Historical Component"
                       : activeMenu === "oil-analysis"
@@ -641,6 +643,13 @@ export default function Home() {
           ) : activeMenu === "daily-breakdown-report" ? (
             <DailyBreakdownReportView
               onNavigateToMasterUnit={() => setActiveMenu("master-unit")}
+            />
+          ) : activeMenu === "mechanics-activity" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Mechanics Activity"
+              moduleCategory="Plant & Maintenance"
+              onBackToDashboard={() => setActiveMenu("plant-dashboard")}
             />
           ) : activeMenu === "historical-component" ? (
             <HistoricalComponentView

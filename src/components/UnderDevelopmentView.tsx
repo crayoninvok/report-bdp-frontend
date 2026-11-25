@@ -44,7 +44,9 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
   const isPlantMaintenance =
     moduleCategory === "Plant & Maintenance" ||
     moduleName.toLowerCase().includes("plant") ||
-    moduleName.toLowerCase().includes("inspection");
+    moduleName.toLowerCase().includes("inspection") ||
+    moduleName.toLowerCase().includes("mechanic");
+  const isMechanicsActivity = moduleName.toLowerCase().includes("mechanic");
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -89,14 +91,37 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
               className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
             >
               <ArrowLeft size={14} />
-              <span>Kembali ke Dashboard Cost</span>
+              <span>
+                Kembali ke{" "}
+                {moduleCategory === "Plant & Maintenance"
+                  ? "Dashboard Plant"
+                  : "Dashboard Cost"}
+              </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Feature Preview Cards */}
-      {isHRD ? (
+      {/* Feature Preview Cards / Empty State */}
+      {isMechanicsActivity ? (
+        <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-xs">
+          <div className="h-16 w-16 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shadow-xs">
+            <Construction size={32} />
+          </div>
+          <div className="space-y-1.5 max-w-md">
+            <h3 className="text-base font-bold text-slate-800">
+              Modul Mechanics Activity Sedang Dikembangkan
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Area konten halaman ini dikosongkan sementara. Fitur pelaporan aktivitas harian mekanik, tracking jam kerja, dan rincian servis perbaikan armada akan diintegrasikan di sini.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+            <Clock size={13} className="text-[#e95623]" />
+            <span>Status: Under Development</span>
+          </div>
+        </div>
+      ) : isHRD ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-2.5">
             <div className="h-10 w-10 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold">
