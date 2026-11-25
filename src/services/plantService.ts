@@ -489,6 +489,44 @@ export const plantService = {
     return res.json();
   },
 
+  // 13b. Batch Update PM Daily Plans (Per-Day Targets)
+  batchUpsertPmDailyPlans: async (payload: {
+    plans: {
+      date: string;
+      targetUnits?: number;
+      leadMechanic?: string | null;
+      notes?: string;
+    }[];
+    jobSite?: string;
+  }): Promise<any> => {
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/plant/preventive-maintenance/plans/batch`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        }
+      );
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback to Promise.all
+    }
+    return Promise.all(
+      payload.plans.map((p) =>
+        plantService.upsertPmDailyPlan({
+          date: p.date,
+          targetUnits: p.targetUnits,
+          leadMechanic: p.leadMechanic,
+          notes: p.notes,
+          jobSite: payload.jobSite,
+        })
+      )
+    );
+  },
+
   // 14. Add/Schedule a unit for Periodic Service
   addPmItem: async (payload: {
     date: string;

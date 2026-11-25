@@ -777,11 +777,12 @@ export const PreventiveMaintenanceView: React.FC<
                   specificDayTarget: null,
                 })
               }
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-all cursor-pointer"
+              title="Atur target plan per hari atau target default global"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white/12 hover:bg-white/20 text-white border border-white/20 transition-all cursor-pointer shadow-2xs"
             >
               <Settings2 size={15} className="text-orange-300" />
               <span>
-                Target: {scheduleData?.defaultDailyTarget ?? 4} Unit/Hari
+                Target Plan ({scheduleData?.defaultDailyTarget ?? 4} Unit/Hari)
               </span>
             </button>
 
@@ -955,10 +956,23 @@ export const PreventiveMaintenanceView: React.FC<
         <div className="space-y-5">
           {/* 4 Executive KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+            <div
+              onClick={() =>
+                setTargetModalState({
+                  isOpen: true,
+                  specificDate: null,
+                  specificDayTarget: null,
+                })
+              }
+              className="bg-white border border-slate-200 hover:border-[#e95623]/60 rounded-2xl p-4 shadow-2xs cursor-pointer transition-all group"
+              title="Klik untuk melihat atau mengubah target plan per hari"
+            >
               <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
                 <span>Total Plan Minggu</span>
-                <Calendar size={16} className="text-slate-400" />
+                <span className="text-[10px] font-bold text-[#e95623] group-hover:underline inline-flex items-center gap-1">
+                  <Pencil size={11} />
+                  <span>Atur Per Hari</span>
+                </span>
               </div>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-2xl font-black text-slate-900 font-mono">
@@ -967,7 +981,7 @@ export const PreventiveMaintenanceView: React.FC<
                 <span className="text-xs font-semibold text-slate-500">Unit Servis</span>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
-                Default target: {scheduleData?.defaultDailyTarget ?? 4} unit / hari kerja
+                Default: {scheduleData?.defaultDailyTarget ?? 4} unit / hari • Klik untuk atur per hari
               </p>
             </div>
 
@@ -1090,24 +1104,41 @@ export const PreventiveMaintenanceView: React.FC<
                         </span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTargetModalState({
-                            isOpen: true,
-                            specificDate: day.date,
-                            specificDayTarget: day.targetUnits,
-                          })
-                        }
-                        title="Klik untuk ubah plan target hari ini"
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-black font-mono cursor-pointer border transition-all ${
-                          day.completedCount >= day.targetUnits && day.targetUnits > 0
-                            ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                            : "bg-white text-slate-700 border-slate-200 hover:border-[#e95623]"
-                        }`}
-                      >
-                        {day.completedCount}/{day.targetUnits}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {/* Target plan per hari button with pencil */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTargetModalState({
+                              isOpen: true,
+                              specificDate: day.date,
+                              specificDayTarget: day.targetUnits,
+                            })
+                          }
+                          title={`Target plan ${day.dayName}: ${day.targetUnits} Unit. Klik untuk ubah.`}
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer border transition-all ${
+                            day.hasCustomTarget ||
+                            day.targetUnits !== (scheduleData?.defaultDailyTarget ?? 4)
+                              ? "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 shadow-2xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-[#e95623]"
+                          }`}
+                        >
+                          <span>Plan: {day.targetUnits}</span>
+                          <Pencil size={9} className="opacity-70 text-[#e95623]" />
+                        </button>
+
+                        {/* Completed / Target progress badge */}
+                        <div
+                          title={`${day.completedCount} selesai dari target ${day.targetUnits} unit`}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-black font-mono border ${
+                            day.completedCount >= day.targetUnits && day.targetUnits > 0
+                              ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                              : "bg-slate-100 text-slate-600 border-slate-200"
+                          }`}
+                        >
+                          {day.completedCount}/{day.targetUnits}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Progress bar */}
@@ -1413,6 +1444,13 @@ export const PreventiveMaintenanceView: React.FC<
           onDeleteItem={(item) => setConfirmAction({ type: "delete", item })}
           onRefresh={refreshAll}
           isMutating={isMutating}
+          onEditTarget={(date, target) =>
+            setTargetModalState({
+              isOpen: true,
+              specificDate: date,
+              specificDayTarget: target,
+            })
+          }
         />
       )}
 
@@ -1848,6 +1886,7 @@ export const PreventiveMaintenanceView: React.FC<
         defaultDailyTarget={scheduleData?.defaultDailyTarget ?? 4}
         specificDate={targetModalState.specificDate}
         specificDayTarget={targetModalState.specificDayTarget}
+        days={scheduleData?.days || []}
         isSaving={isMutating}
         onClose={() =>
           setTargetModalState({
@@ -1898,6 +1937,32 @@ export const PreventiveMaintenanceView: React.FC<
             showToast(
               "error",
               getErrorMessage(err, "Gagal mengubah target harian")
+            );
+          } finally {
+            setIsMutating(false);
+          }
+        }}
+        onSaveMultipleDayTargets={async (targets) => {
+          try {
+            setIsMutating(true);
+            await plantService.batchUpsertPmDailyPlans({
+              plans: targets,
+              jobSite: selectedSite,
+            });
+            showToast(
+              "success",
+              `Target Periodic Service (${targets.length} hari) berhasil diperbarui.`
+            );
+            setTargetModalState({
+              isOpen: false,
+              specificDate: null,
+              specificDayTarget: null,
+            });
+            await refreshAll();
+          } catch (err) {
+            showToast(
+              "error",
+              getErrorMessage(err, "Gagal memperbarui target plan mingguan")
             );
           } finally {
             setIsMutating(false);

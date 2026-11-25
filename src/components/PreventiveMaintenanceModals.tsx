@@ -3,19 +3,28 @@
 import React, { useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Calendar,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Gauge,
   Layers,
+  Minus,
+  Pencil,
+  Plus,
+  RotateCcw,
   Search,
   Settings2,
+  SlidersHorizontal,
+  Sparkles,
   Trash2,
   Users,
   Wrench,
   X,
 } from "lucide-react";
 import {
+  DaySchedule,
   MasterUnit,
   PeriodicInspectionItem,
   PlantPersonnelItem,
@@ -1368,10 +1377,14 @@ interface PmTargetModalProps {
   defaultDailyTarget: number;
   specificDate: string | null;
   specificDayTarget: number | null;
+  days?: DaySchedule[];
   isSaving: boolean;
   onClose: () => void;
   onSaveGlobalTarget: (newTarget: number) => Promise<void>;
   onSaveDayTarget: (date: string, newTarget: number) => Promise<void>;
+  onSaveMultipleDayTargets?: (
+    targets: { date: string; targetUnits: number }[]
+  ) => Promise<void>;
 }
 
 /** Modal to configure global daily Periodic Service target or override a specific day's target. */
@@ -1380,93 +1393,547 @@ export const PmTargetModal: React.FC<PmTargetModalProps> = ({
   defaultDailyTarget,
   specificDate,
   specificDayTarget,
+  days = [],
   isSaving,
   onClose,
   onSaveGlobalTarget,
   onSaveDayTarget,
+  onSaveMultipleDayTargets,
 }) => {
-  const [val, setVal] = useState<string>("4");
+  // Modal mode: "single" (focused on one date), "weekly" (per-day table for all 7 days), or "global" (system default target)
+  const [activeTab, setActiveTab] = useState<"weekly" | "global" | "single">(
+    "weekly"
+  );
+  const [globalVal, setGlobalVal] = useState<string>("4");
+  const [singleVal, setSingleVal] = useState<number>(4);
+  const [dailyMap, setDailyMap] = useState<Record<string, number>>({});
 
+  // Initialize or reset state when opening modal
   React.useEffect(() => {
-    if (specificDate && specificDayTarget != null) {
-      setVal(String(specificDayTarget));
+    if (!isOpen) return;
+
+    const baseDefault =
+      defaultDailyTarget != null && !isNaN(defaultDailyTarget)
+        ? defaultDailyTarget
+        : 4;
+    setGlobalVal(String(baseDefault));
+
+    // Initialize per-day map from days array
+    const map: Record<string, number> = {};
+    days.forEach((d) => {
+      map[d.date] =
+        d.targetUnits !== undefined && !isNaN(d.targetUnits)
+          ? d.targetUnits
+          : baseDefault;
+    });
+    setDailyMap(map);
+
+    if (specificDate) {
+      setActiveTab("single");
+      const dayExisting =
+        specificDayTarget != null
+          ? specificDayTarget
+          : map[specificDate] ?? baseDefault;
+      setSingleVal(dayExisting);
     } else {
-      setVal(String(defaultDailyTarget != null ? defaultDailyTarget : 4));
+      setActiveTab("weekly");
     }
-  }, [isOpen, defaultDailyTarget, specificDate, specificDayTarget]);
+  }, [isOpen, defaultDailyTarget, specificDate, specificDayTarget, days]);
 
   if (!isOpen) return null;
 
+  const currentDayInfo = days.find((d) => d.date === specificDate);
+  const totalWeeklyPlan = days.reduce(
+    (sum, d) => sum + (dailyMap[d.date] ?? d.targetUnits ?? defaultDailyTarget),
+    0
+  );
+
+  const handleDayValueChange = (date: string, delta: number) => {
+    setDailyMap((prev) => {
+      const current = prev[date] ?? defaultDailyTarget;
+      const next = Math.max(0, Math.min(50, current + delta));
+      return { ...prev, [date]: next };
+    });
+  };
+
+  const handleDayValueDirect = (date: string, valStr: string) => {
+    const parsed = parseInt(valStr || "0", 10);
+    const next = isNaN(parsed) ? 0 : Math.max(0, Math.min(50, parsed));
+    setDailyMap((prev) => ({ ...prev, [date]: next }));
+  };
+
+  const applyPresetAll = (targetVal: number) => {
+    const nextMap: Record<string, number> = {};
+    days.forEach((d) => {
+      nextMap[d.date] = targetVal;
+    });
+    setDailyMap(nextMap);
+  };
+
+  const applyPresetWorkdays = (workdayTarget: number, weekendTarget: number) => {
+    const nextMap: Record<string, number> = {};
+    days.forEach((d) => {
+      const isWeekend =
+        d.dayName?.toLowerCase().includes("sab") ||
+        d.dayName?.toLowerCase().includes("min");
+      nextMap[d.date] = isWeekend ? weekendTarget : workdayTarget;
+    });
+    setDailyMap(nextMap);
+  };
+
+  const handleSaveWeeklyAll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = days.map((d) => ({
+      date: d.date,
+      targetUnits: dailyMap[d.date] ?? d.targetUnits ?? defaultDailyTarget,
+    }));
+
+    if (onSaveMultipleDayTargets) {
+      await onSaveMultipleDayTargets(payload);
+    } else {
+      await Promise.all(
+        payload.map((p) => onSaveDayTarget(p.date, p.targetUnits))
+      );
+    }
+  };
+
+  const handleSaveSingleDay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!specificDate) return;
+    await onSaveDayTarget(specificDate, Math.max(0, singleVal));
+  };
+
+  const handleSaveGlobal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = Math.max(0, parseInt(globalVal || "0", 10));
+    await onSaveGlobalTarget(parsed);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Settings2 size={18} className="text-[#e95623]" />
-            <h3 className="text-sm font-black">
-              {specificDate
-                ? `Atur Plan Periodic Service Harian (${specificDate})`
-                : "Atur Target Plan Periodic Service Default"}
-            </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-[#e95623]">
+              <Settings2 size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black tracking-tight">
+                {activeTab === "single"
+                  ? `Atur Plan Servis (${currentDayInfo?.dayName || specificDate})`
+                  : activeTab === "weekly"
+                  ? "Atur Plan Periodic Service Per Hari"
+                  : "Atur Target Default Global"}
+              </h3>
+              <p className="text-[11px] text-slate-400 font-medium">
+                {activeTab === "single"
+                  ? `${currentDayInfo?.dayDateFormatted || specificDate} • Default: ${defaultDailyTarget} Unit/Hari`
+                  : activeTab === "weekly"
+                  ? `Rencana target unit per hari (Default sistem: ${defaultDailyTarget} unit)`
+                  : "Target acuan otomatis untuk hari baru"}
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const parsed = Math.max(0, parseInt(val || "0", 10));
-            if (specificDate) {
-              await onSaveDayTarget(specificDate, parsed);
-            } else {
-              await onSaveGlobalTarget(parsed);
-            }
-          }}
-          className="p-6 space-y-4"
-        >
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Jumlah Unit Target Per Hari
-            </label>
-            <input
-              type="number"
-              min={0}
-              max={50}
-              required
-              value={val}
-              onChange={(e) => setVal(e.target.value)}
-              className="w-full px-4 py-2.5 text-lg font-mono font-black bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
-            />
-            <p className="text-[11px] text-slate-500 mt-1.5">
-              {specificDate
-                ? `Hanya mengubah target plan khusus tanggal ${specificDate}.`
-                : "Berlaku sebagai target plan harian standar untuk seluruh hari kerja."}
-            </p>
-          </div>
+        {/* Tab Navigation */}
+        <div className="px-6 pt-3 pb-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab("weekly")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "weekly"
+                ? "bg-[#e95623] text-white shadow-xs"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <Calendar size={13} />
+            <span>Target Per Hari (7 Hari)</span>
+          </button>
 
-          <div className="flex items-center justify-end gap-2">
+          {specificDate && (
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer"
+              onClick={() => setActiveTab("single")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "single"
+                  ? "bg-[#e95623] text-white shadow-xs"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+              }`}
             >
-              Batal
+              <Pencil size={13} />
+              <span>Khusus {currentDayInfo?.dayName || specificDate}</span>
             </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-5 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d44818] text-white cursor-pointer disabled:opacity-50"
-            >
-              {isSaving ? "Menyimpan..." : "Simpan Target"}
-            </button>
-          </div>
-        </form>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("global")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "global"
+                ? "bg-[#e95623] text-white shadow-xs"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <SlidersHorizontal size={13} />
+            <span>Target Default ({defaultDailyTarget} Unit)</span>
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6 overflow-y-auto space-y-4 flex-1">
+          {/* TAB 1: WEEKLY PER-DAY TARGETS */}
+          {activeTab === "weekly" && (
+            <form onSubmit={handleSaveWeeklyAll} className="space-y-4">
+              {/* Presets & Info */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-orange-50/60 border border-orange-200/80 rounded-2xl">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#e95623] shrink-0" />
+                  <span className="text-xs font-bold text-slate-800">
+                    Preset Cepat:
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => applyPresetAll(defaultDailyTarget)}
+                    className="px-2.5 py-1 text-[11px] font-bold bg-white border border-slate-200 hover:border-[#e95623] text-slate-700 rounded-lg cursor-pointer transition-all shadow-2xs"
+                  >
+                    Semua {defaultDailyTarget} Unit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPresetWorkdays(defaultDailyTarget, 0)}
+                    className="px-2.5 py-1 text-[11px] font-bold bg-white border border-slate-200 hover:border-[#e95623] text-slate-700 rounded-lg cursor-pointer transition-all shadow-2xs"
+                  >
+                    Sen-Jum: {defaultDailyTarget}, Sab-Min: 0
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      applyPresetWorkdays(
+                        defaultDailyTarget,
+                        Math.max(1, Math.floor(defaultDailyTarget / 2))
+                      )
+                    }
+                    className="px-2.5 py-1 text-[11px] font-bold bg-white border border-slate-200 hover:border-[#e95623] text-slate-700 rounded-lg cursor-pointer transition-all shadow-2xs"
+                  >
+                    Sen-Sab: {defaultDailyTarget}, Min: 0
+                  </button>
+                </div>
+              </div>
+
+              {/* Day-by-Day Table */}
+              <div className="space-y-2">
+                <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider px-1">
+                  Target Plan Per Hari (Minggu Berjalan)
+                </div>
+
+                <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+                  {days.map((day) => {
+                    const currentVal =
+                      dailyMap[day.date] ?? day.targetUnits ?? defaultDailyTarget;
+                    const isCustom = currentVal !== defaultDailyTarget;
+                    const isSelected = day.date === specificDate;
+
+                    return (
+                      <div
+                        key={day.date}
+                        className={`flex items-center justify-between px-4 py-2.5 transition-colors ${
+                          isSelected
+                            ? "bg-orange-50/70"
+                            : day.isToday
+                            ? "bg-slate-50/80"
+                            : "hover:bg-slate-50/50"
+                        }`}
+                      >
+                        {/* Day Label */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-2 h-2 rounded-full bg-[#e95623]" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-slate-900">
+                                {day.dayName}
+                              </span>
+                              {day.isToday && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-[#e95623] text-white uppercase">
+                                  Hari Ini
+                                </span>
+                              )}
+                              {isCustom ? (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                  Kustom
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-slate-100 text-slate-600">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-slate-500 font-medium">
+                              {day.dayDateFormatted}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Counter Controls */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                            <button
+                              type="button"
+                              onClick={() => handleDayValueChange(day.date, -1)}
+                              className="px-2.5 py-1.5 text-slate-600 hover:bg-slate-200 hover:text-slate-900 cursor-pointer font-bold transition-colors"
+                              title="Kurang 1 unit"
+                            >
+                              <Minus size={13} />
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              max={50}
+                              value={currentVal}
+                              onChange={(e) =>
+                                handleDayValueDirect(day.date, e.target.value)
+                              }
+                              className="w-12 text-center text-xs font-mono font-black bg-white py-1 focus:outline-hidden"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDayValueChange(day.date, 1)}
+                              className="px-2.5 py-1.5 text-slate-600 hover:bg-slate-200 hover:text-slate-900 cursor-pointer font-bold transition-colors"
+                              title="Tambah 1 unit"
+                            >
+                              <Plus size={13} />
+                            </button>
+                          </div>
+                          <span className="text-xs font-bold text-slate-500 w-8">
+                            Unit
+                          </span>
+
+                          {isCustom && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDailyMap((prev) => ({
+                                  ...prev,
+                                  [day.date]: defaultDailyTarget,
+                                }))
+                              }
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
+                              title="Kembalikan ke default"
+                            >
+                              <RotateCcw size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Weekly Total Banner */}
+              <div className="p-4 bg-slate-900 text-white rounded-2xl flex items-center justify-between shadow-xs">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Total Plan Minggu Ini
+                  </div>
+                  <div className="text-2xl font-black font-mono text-orange-400 mt-0.5">
+                    {totalWeeklyPlan}{" "}
+                    <span className="text-sm font-semibold text-slate-300">
+                      Unit Servis
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right text-[11px] text-slate-400">
+                  <span>Rata-rata: </span>
+                  <strong className="text-white font-mono">
+                    {(totalWeeklyPlan / Math.max(1, days.length)).toFixed(1)}{" "}
+                    unit/hari
+                  </strong>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d44818] text-white cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+                >
+                  {isSaving ? "Menyimpan..." : "Simpan Target Mingguan"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* TAB 2: SPECIFIC SINGLE DAY TARGET */}
+          {activeTab === "single" && specificDate && (
+            <form onSubmit={handleSaveSingleDay} className="space-y-4">
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-2xl">
+                <div className="text-xs font-black text-slate-900">
+                  {currentDayInfo?.dayName || "Hari"}, {currentDayInfo?.dayDateFormatted || specificDate}
+                </div>
+                <p className="text-[11px] text-slate-600 mt-0.5">
+                  Target default sistem adalah <strong>{defaultDailyTarget} Unit/Hari</strong>. Mengubah input ini hanya akan berlaku khusus untuk tanggal ini saja.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Jumlah Target Plan Unit Hari Ini
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                    <button
+                      type="button"
+                      onClick={() => setSingleVal((p) => Math.max(0, p - 1))}
+                      className="px-3.5 py-2 text-slate-700 hover:bg-slate-200 cursor-pointer font-bold"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      max={50}
+                      required
+                      value={singleVal}
+                      onChange={(e) =>
+                        setSingleVal(Math.max(0, parseInt(e.target.value || "0", 10)))
+                      }
+                      className="w-20 text-center text-lg font-mono font-black bg-white py-1.5 focus:outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSingleVal((p) => p + 1)}
+                      className="px-3.5 py-2 text-slate-700 hover:bg-slate-200 cursor-pointer font-bold"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  <span className="text-xs font-bold text-slate-600">
+                    Unit Servis
+                  </span>
+                </div>
+
+                {/* Quick Chips */}
+                <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-bold text-slate-500 mr-1">
+                    Cepat:
+                  </span>
+                  {[0, 1, 2, 3, 4, 5, 6, 8].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setSingleVal(n)}
+                      className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg border transition-all cursor-pointer ${
+                        singleVal === n
+                          ? "bg-[#e95623] text-white border-[#e95623]"
+                          : "bg-white text-slate-700 border-slate-200 hover:border-slate-400"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setSingleVal(defaultDailyTarget)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#e95623] hover:underline cursor-pointer"
+                >
+                  <RotateCcw size={12} />
+                  <span>Gunakan Default ({defaultDailyTarget} Unit)</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-5 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d44818] text-white cursor-pointer disabled:opacity-50 shadow-xs"
+                  >
+                    {isSaving ? "Menyimpan..." : "Simpan Target Tanggal Ini"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+
+          {/* TAB 3: GLOBAL DEFAULT TARGET */}
+          {activeTab === "global" && (
+            <form onSubmit={handleSaveGlobal} className="space-y-4">
+              <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl">
+                <div className="text-xs font-black text-sky-950">
+                  Target Standar / Default Global
+                </div>
+                <p className="text-[11px] text-sky-800 mt-1">
+                  Target ini digunakan otomatis untuk hari-hari kerja baru yang belum memiliki target kustom. Mengubah nilai ini <strong>tidak akan</strong> menimpa hari yang targetnya sudah Anda atur secara spesifik.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Target Standar Default Per Hari
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    required
+                    value={globalVal}
+                    onChange={(e) => setGlobalVal(e.target.value)}
+                    className="w-32 px-4 py-2.5 text-lg font-mono font-black bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#e95623]/40"
+                  />
+                  <span className="text-xs font-bold text-slate-600">
+                    Unit / Hari
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2 rounded-xl text-xs font-black bg-[#e95623] hover:bg-[#d44818] text-white cursor-pointer disabled:opacity-50 shadow-xs"
+                >
+                  {isSaving ? "Menyimpan..." : "Simpan Target Default"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

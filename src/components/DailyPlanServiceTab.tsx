@@ -51,6 +51,7 @@ interface DailyPlanServiceTabProps {
   onDeleteItem: (item: PeriodicInspectionItem) => void;
   onRefresh: () => Promise<void>;
   isMutating: boolean;
+  onEditTarget?: (date: string, currentTarget: number) => void;
 }
 
 function formatDateDmy(dateStr: string): string {
@@ -79,6 +80,7 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
   onDeleteItem,
   onRefresh,
   isMutating,
+  onEditTarget,
 }) => {
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -427,7 +429,20 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
                   </span>
                   <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600">
                     <span>{day.dayName}</span>
-                    <span>• Target Plan: <strong className="text-slate-900">{day.targetUnits} Unit</strong></span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>• Target Plan: <strong className="text-slate-900">{day.targetUnits} Unit</strong></span>
+                      {onEditTarget && (
+                        <button
+                          type="button"
+                          onClick={() => onEditTarget(day.date, day.targetUnits)}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold text-[#e95623] bg-orange-50 hover:bg-orange-100 border border-orange-200 inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                          title={`Ubah target plan untuk ${day.dayName}, ${day.date}`}
+                        >
+                          <Pencil size={10} />
+                          <span>Ubah Plan</span>
+                        </button>
+                      )}
+                    </span>
                     <span>• Terjadwal: <strong className="text-[#e95623]">{items.length} Unit</strong></span>
                     <button
                       type="button"
