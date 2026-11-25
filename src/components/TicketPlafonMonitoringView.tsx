@@ -26,7 +26,6 @@ import {
   TrendingDown,
   FileSpreadsheet,
   X,
-  Info,
 } from "lucide-react";
 import { User } from "../types/auth";
 import {
@@ -571,13 +570,6 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               {summary?.totalNonLokalAll ?? 295}
             </span>
           </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-slate-500 bg-blue-50/60 border border-blue-100 px-3 py-1.5 rounded-lg">
-          <Info className="w-4 h-4 text-blue-500 shrink-0" />
-          <span>
-            Filter: <b>Status Exist</b> & <b>POH Non Lokal</b>. Plafon reset otomatis 2 bulan setelah tiket digunakan.
-          </span>
         </div>
       </div>
 
