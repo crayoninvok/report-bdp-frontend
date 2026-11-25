@@ -456,7 +456,6 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
                         <th className="border border-slate-700 px-2 py-2 w-24">TYPE SERVICE</th>
                         <th className="border border-slate-700 px-1.5 py-2 w-16">DURATION</th>
                         <th className="border border-slate-700 px-2 py-2 w-28">WORK ORDER/MR</th>
-                        <th className="border border-slate-700 px-2 py-2 w-20">MR</th>
                         <th className="border border-slate-700 px-2 py-2 w-18">LOCATION</th>
                         <th className="border border-slate-700 px-2.5 py-2 min-w-36 text-left">
                           BACKLOG, MIDLIFE, REPAIR ACTIVITY
@@ -471,7 +470,7 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
                       {items.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={14}
+                            colSpan={13}
                             className="border border-slate-700 px-4 py-4 text-center text-slate-500 italic bg-white"
                           >
                             Belum ada unit terjadwal pada tanggal ini.
@@ -524,9 +523,6 @@ export const DailyPlanServiceTab: React.FC<DailyPlanServiceTabProps> = ({
                               <td className="border border-slate-700 px-2 py-1.5 font-mono text-[10px] leading-tight">
                                 <div>WO : {details.woNumber}</div>
                                 <div>MR : {details.mrNumber}</div>
-                              </td>
-                              <td className="border border-slate-700 px-2 py-1.5 text-center font-mono text-[10px]">
-                                {details.mrNumber}
                               </td>
                               <td className="border border-slate-700 px-2 py-1.5 text-center font-bold">
                                 {siteLabel}
