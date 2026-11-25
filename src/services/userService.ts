@@ -24,6 +24,7 @@ const DEFAULT_DEMO_USERS: User[] = [
     email: "dzaky.athariqf@bataramining.com",
     role: "SuperAdmin",
     jobSite: "HeadOffice",
+    department: "OPERATION",
     createdAt: "2026-01-01T08:00:00.000Z",
   },
   {
@@ -32,6 +33,7 @@ const DEFAULT_DEMO_USERS: User[] = [
     email: "priyanto@bataramining.com",
     role: "User",
     jobSite: "MuaraPahu",
+    department: "OPERATION",
     createdAt: "2026-01-02T08:00:00.000Z",
   },
   {
@@ -40,6 +42,7 @@ const DEFAULT_DEMO_USERS: User[] = [
     email: "a.oktayudhaperkasa@bataramining.com",
     role: "User",
     jobSite: "Senyiur",
+    department: "OPERATION",
     createdAt: "2026-01-03T08:00:00.000Z",
   },
 ];
@@ -83,6 +86,7 @@ export const userService = {
     password: string;
     jobSite: JobSite;
     role?: UserRole;
+    department?: string;
   }): Promise<User> {
     const resolvedRole: UserRole =
       payload.jobSite === "HeadOffice" ? "SuperAdmin" : payload.role || "User";
@@ -123,6 +127,7 @@ export const userService = {
       email: payload.email.trim().toLowerCase(),
       jobSite: payload.jobSite,
       role: resolvedRole,
+      department: payload.department,
       createdAt: new Date().toISOString(),
     };
 
@@ -141,6 +146,7 @@ export const userService = {
       password?: string;
       jobSite?: JobSite;
       role?: UserRole;
+      department?: string;
     }
   ): Promise<User> {
     const resolvedRole: UserRole | undefined =
@@ -186,6 +192,8 @@ export const userService = {
         (payload.jobSite === "HeadOffice"
           ? "SuperAdmin"
           : payload.role || currentUsers[index].role) as UserRole,
+      department:
+        payload.department !== undefined ? payload.department : currentUsers[index].department,
       updatedAt: new Date().toISOString(),
     };
 

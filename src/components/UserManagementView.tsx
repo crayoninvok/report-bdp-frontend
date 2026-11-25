@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { User, JobSite, UserRole } from "../types/auth";
+import { User, JobSite, UserRole, DEPARTMENTS } from "../types/auth";
 import { userService } from "../services/userService";
 import {
   Users,
@@ -20,6 +20,7 @@ import {
   EyeOff,
   Mail,
   User as UserIcon,
+  Briefcase,
 } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 
@@ -27,12 +28,41 @@ interface UserManagementViewProps {
   user: User;
 }
 
+const getDeptBadgeStyle = (dept?: string | null) => {
+  switch (dept?.toUpperCase()) {
+    case "PLANT":
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    case "OPERATION":
+    case "OPERATIONS":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "PRODUCTION & ENGINEERING":
+      return "bg-indigo-50 text-indigo-700 border-indigo-200";
+    case "HSE":
+      return "bg-teal-50 text-teal-700 border-teal-200";
+    case "HRGA":
+      return "bg-purple-50 text-purple-700 border-purple-200";
+    case "INFRASTRUCTURE":
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    case "ACCOUNTING":
+      return "bg-cyan-50 text-cyan-700 border-cyan-200";
+    case "FINANCE":
+      return "bg-rose-50 text-rose-700 border-rose-200";
+    case "PROCUREMENT":
+      return "bg-sky-50 text-sky-700 border-sky-200";
+    case "LOGISTIC":
+      return "bg-orange-50 text-[#e95623] border-orange-200";
+    default:
+      return "bg-slate-100 text-slate-700 border-slate-200";
+  }
+};
+
 export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: currentUser }) => {
   const { showSuccess, showError } = useNotification();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSite, setFilterSite] = useState<string>("ALL");
+  const [filterDepartment, setFilterDepartment] = useState<string>("ALL");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -45,6 +75,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
     password: "",
     jobSite: "MuaraPahu" as JobSite,
     role: "User" as UserRole,
+    department: "PLANT" as string,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,11 +108,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
     return users.filter((u) => {
       const matchesSearch =
         u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase());
+        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.department && u.department.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesSite = filterSite === "ALL" || u.jobSite === filterSite;
-      return matchesSearch && matchesSite;
+      const matchesDept =
+        filterDepartment === "ALL" ||
+        (filterDepartment === "OPERATION"
+          ? u.department === "OPERATION" || u.department === "OPERATIONS"
+          : u.department === filterDepartment);
+      return matchesSearch && matchesSite && matchesDept;
     });
-  }, [users, searchQuery, filterSite]);
+  }, [users, searchQuery, filterSite, filterDepartment]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -102,6 +139,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
       password: "",
       jobSite: "MuaraPahu",
       role: "User",
+      department: "PLANT",
     });
     setFormError(null);
     setShowPassword(false);
@@ -117,6 +155,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
       password: "", // Leave blank if not changing
       jobSite: targetUser.jobSite,
       role: targetUser.role,
+      department: targetUser.department || "PLANT",
     });
     setFormError(null);
     setShowPassword(false);
@@ -147,6 +186,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
           password: formData.password || undefined,
           jobSite: formData.jobSite,
           role: formData.jobSite === "HeadOffice" ? "SuperAdmin" : formData.role,
+          department: formData.department,
         });
         const msg = `Data pengguna ${formData.name} berhasil diperbarui.`;
         setSuccessMsg(msg);
@@ -158,6 +198,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
           password: formData.password,
           jobSite: formData.jobSite,
           role: formData.jobSite === "HeadOffice" ? "SuperAdmin" : formData.role,
+          department: formData.department,
         });
         const msg = `Pengguna baru ${formData.name} berhasil ditambahkan.`;
         setSuccessMsg(msg);
@@ -345,6 +386,22 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
                 Senyiur
               </button>
             </div>
+
+            {/* Department Filter Select */}
+            <div className="relative">
+              <select
+                value={filterDepartment}
+                onChange={(e) => setFilterDepartment(e.target.value)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-[#e95623]"
+              >
+                <option value="ALL">Semua Departemen</option>
+                {DEPARTMENTS.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <button
@@ -365,6 +422,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
               <tr className="bg-slate-100/75 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                 <th className="py-3.5 px-4">Pengguna</th>
                 <th className="py-3.5 px-4">Lokasi Job Site</th>
+                <th className="py-3.5 px-4">Departemen</th>
                 <th className="py-3.5 px-4">Role Sistem</th>
                 <th className="py-3.5 px-4 hidden md:table-cell">Wewenang Operasional</th>
                 <th className="py-3.5 px-4 text-right">Aksi</th>
@@ -373,7 +431,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
                       <RefreshCw size={16} className="animate-spin text-blue-600" />
                       <span>Memuat data pengguna...</span>
@@ -382,7 +440,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     Tidak ada pengguna yang sesuai dengan filter pencarian.
                   </td>
                 </tr>
@@ -433,6 +491,21 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
                               : "Site Senyiur"}
                           </span>
                         </span>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        {u.department ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${getDeptBadgeStyle(
+                              u.department
+                            )}`}
+                          >
+                            <Briefcase size={12} className="shrink-0" />
+                            <span>{u.department}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">-</span>
+                        )}
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -582,6 +655,26 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ user: cu
                   >
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Departemen
+                </label>
+                <div className="relative">
+                  <Briefcase size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <select
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {DEPARTMENTS.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
