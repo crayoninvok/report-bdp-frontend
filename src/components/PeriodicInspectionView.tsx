@@ -679,7 +679,11 @@ export const PeriodicInspectionView: React.FC<PeriodicInspectionViewProps> = ({
       setTargetModalMode("specific");
       setTargetSpecificDate(dateStr);
       const day = scheduleData?.days.find((d) => d.date === dateStr);
-      setTargetInputNumber(day?.targetUnits || scheduleData?.defaultDailyTarget || 9);
+      setTargetInputNumber(
+        day?.targetUnits !== undefined && day?.targetUnits !== null
+          ? day.targetUnits
+          : scheduleData?.defaultDailyTarget || 9
+      );
       setTargetLeadInspector(day?.leadInspector || "");
     } else {
       setTargetModalMode("global");
