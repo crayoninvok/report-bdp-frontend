@@ -31,12 +31,16 @@ import {
   PM_STATUS_COLORS,
   SegmentedSwitch,
 } from "./plantDashboardShared";
+import { PlantParetoProblemSection } from "./PlantParetoProblemSection";
 
 interface PlantDashboardPmSectionProps {
   pm: PlantDashboardData["pm"];
   pmPeriod: PlantPmPeriodMode;
   pmRange: PlantDashboardData["filters"]["pmRange"];
   onChangePmPeriod: (period: PlantPmPeriodMode) => void;
+  breakdownPareto?: PlantDashboardData["breakdownPareto"];
+  site?: string;
+  onNavigateToBreakdown?: (filterComponent?: string) => void;
 }
 
 function getComplianceBarColor(pct: number, hasPlan: boolean): string {
@@ -136,6 +140,9 @@ export const PlantDashboardPmSection: React.FC<PlantDashboardPmSectionProps> = (
   pmPeriod,
   pmRange,
   onChangePmPeriod,
+  breakdownPareto,
+  site,
+  onNavigateToBreakdown,
 }) => {
   const { pi, ps } = pm;
 
@@ -878,6 +885,13 @@ export const PlantDashboardPmSection: React.FC<PlantDashboardPmSectionProps> = (
           )}
         </PlantChartCard>
       </div>
+
+      {/* Sub-Section 2D: Pareto Problem Repair & Maintenance (Papan Catur) */}
+      <PlantParetoProblemSection
+        pareto={breakdownPareto}
+        site={site}
+        onNavigateToBreakdown={onNavigateToBreakdown}
+      />
     </section>
   );
 };

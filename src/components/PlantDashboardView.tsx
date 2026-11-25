@@ -210,6 +210,8 @@ export const PlantDashboardView: React.FC<PlantDashboardViewProps> = () => {
             pmPeriod={pmPeriod}
             pmRange={data.filters.pmRange}
             onChangePmPeriod={setPmPeriod}
+            breakdownPareto={data.breakdownPareto}
+            site={site}
           />
         </div>
       )}

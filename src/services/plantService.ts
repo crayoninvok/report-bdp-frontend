@@ -1297,6 +1297,37 @@ export interface PlantDashboardData {
       kpiItems: PeriodicInspectionItem[];
     };
   };
+  breakdownPareto?: PlantBreakdownParetoData;
+}
+
+export interface PlantBreakdownParetoItem {
+  component: string;
+  rank: number;
+  durationHours: number;
+  frequency: number;
+  percentageHours: number;
+  percentageFreq: number;
+  isHighestDowntime?: boolean;
+  isMostFrequent?: boolean;
+  wos?: string[];
+}
+
+export interface PlantBreakdownParetoData {
+  totalHours: number;
+  totalFrequency: number;
+  byHours: PlantBreakdownParetoItem[];
+  byFrequency: PlantBreakdownParetoItem[];
+  records?: Array<{
+    id: string;
+    unitCode: string;
+    woNumber?: string | null;
+    component?: string | null;
+    durationHours: number;
+    date: string;
+    status: string;
+    breakdownDescription: string;
+    jobSite: string;
+  }>;
 }
 
 export interface PlantDashboardResponse {
