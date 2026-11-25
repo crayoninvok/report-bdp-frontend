@@ -21,6 +21,8 @@ import {
   Upload,
   RefreshCw,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { PlantDashboardData } from "../services/plantService";
 
@@ -702,9 +704,10 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
   const [activeEditingCategory, setActiveEditingCategory] = useState<string>("prime-mover");
   const [imageUrlInput, setImageUrlInput] = useState<string>("");
 
-  // Papan Catur status filter
+  // Papan Catur status filter & open/close toggle
   const [chessboardStatusFilter, setChessboardStatusFilter] = useState<string>("ALL");
   const [chessboardSearch, setChessboardSearch] = useState<string>("");
+  const [isChessboardOpen, setIsChessboardOpen] = useState<boolean>(false);
 
   // Load custom images from localStorage on client mount
   useEffect(() => {
@@ -1180,7 +1183,11 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
               <div
                 key={cat.id}
                 onClick={() => {
-                  setSelectedCategoryId(isSelected ? null : cat.id);
+                  const nextSelected = isSelected ? null : cat.id;
+                  setSelectedCategoryId(nextSelected);
+                  if (nextSelected) {
+                    setIsChessboardOpen(true);
+                  }
                 }}
                 className={`group relative bg-white rounded-2xl border p-4 flex flex-col justify-between cursor-pointer transition-all duration-200 select-none ${
                   isSelected
@@ -1268,18 +1275,28 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
           ========================================================================= */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-200 text-[#e95623] flex items-center justify-center shrink-0">
+          <div
+            onClick={() => setIsChessboardOpen((prev) => !prev)}
+            className="flex items-center gap-2.5 cursor-pointer group select-none"
+            title="Klik untuk membuka / menutup Papan Catur"
+          >
+            <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-200 text-[#e95623] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Layers size={18} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight group-hover:text-[#e95623] transition-colors">
                   Papan Catur Status Armada (Fleet Matrix)
                 </h3>
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                   {filteredChessboardUnits.length} Unit
                 </span>
+                {!isChessboardOpen && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Klik untuk Buka
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500">
                 Papan posisi kesiapan fisik, alokasi kerja, dan status pemeliharaan unit per kategori
@@ -1287,46 +1304,66 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
             </div>
           </div>
 
-          {/* Quick Status Pill Filters & Search */}
+          {/* Quick Status Pill Filters, Search & Toggle Button */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
-              {(["ALL", "RFU", "BREAKDOWN", "IN_WORKSHOP"] as const).map((st) => (
-                <button
-                  key={st}
-                  type="button"
-                  onClick={() => setChessboardStatusFilter(st)}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                    chessboardStatusFilter === st
-                      ? "bg-white text-slate-900 shadow-2xs font-black"
-                      : "hover:text-slate-900"
-                  }`}
-                >
-                  {st === "ALL"
-                    ? "Semua"
-                    : st === "RFU"
-                    ? "RFU"
-                    : st === "BREAKDOWN"
-                    ? "Breakdown"
-                    : "In Workshop"}
-                </button>
-              ))}
-            </div>
+            {isChessboardOpen && (
+              <>
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
+                  {(["ALL", "RFU", "BREAKDOWN", "IN_WORKSHOP"] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setChessboardStatusFilter(st)}
+                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                        chessboardStatusFilter === st
+                          ? "bg-white text-slate-900 shadow-2xs font-black"
+                          : "hover:text-slate-900"
+                      }`}
+                    >
+                      {st === "ALL"
+                        ? "Semua"
+                        : st === "RFU"
+                        ? "RFU"
+                        : st === "BREAKDOWN"
+                        ? "Breakdown"
+                        : "In Workshop"}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="relative min-w-40">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari unit / lokasi..."
-                value={chessboardSearch}
-                onChange={(e) => setChessboardSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
-              />
-            </div>
+                <div className="relative min-w-40">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari unit / lokasi..."
+                    value={chessboardSearch}
+                    onChange={(e) => setChessboardSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Toggle Open/Close Button */}
+            <button
+              type="button"
+              onClick={() => setIsChessboardOpen((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                isChessboardOpen
+                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                  : "bg-[#e95623] hover:bg-[#d44819] text-white border-[#e95623] shadow-xs"
+              }`}
+            >
+              <span>{isChessboardOpen ? "Tutup Papan Catur" : "Buka Papan Catur"}</span>
+              {isChessboardOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            </button>
           </div>
         </div>
 
-        {/* Units Chess Grid */}
-        {filteredChessboardUnits.length === 0 ? (
+        {/* Units Chess Grid (Rendered only when open) */}
+        {isChessboardOpen && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {filteredChessboardUnits.length === 0 ? (
           <div className="py-12 text-center text-xs space-y-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
             <div className="font-bold text-slate-600">
               {selectedCategoryId
@@ -1404,6 +1441,8 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                 </div>
               );
             })}
+          </div>
+        )}
           </div>
         )}
       </div>
