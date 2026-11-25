@@ -57,6 +57,54 @@ export interface TicketPlafonResponse {
   message?: string;
 }
 
+export interface MonthlyTicketTrend {
+  month: string;
+  monthLabel: string;
+  ticketCount: number;
+  totalCost: number;
+  manpowerCount: number;
+  senyiurCost: number;
+  pahuCost: number;
+  hoCost: number;
+  senyiurTickets: number;
+  pahuTickets: number;
+  hoTickets: number;
+  cutiCount: number;
+  dinasCount: number;
+  onsiteCount: number;
+}
+
+export interface TopManpowerTicket {
+  employeeId: string;
+  fullName: string;
+  jobPosition: string;
+  organization: string;
+  site: string;
+  ticketCount: number;
+  totalCost: number;
+}
+
+export interface TicketAnalyticsSummary {
+  periodLabel: string;
+  totalTicketsYtd: number;
+  totalCostYtd: number;
+  totalUniqueManpowerYtd: number;
+  averageCostPerTicket: number;
+  averageTicketsPerManpower: number;
+}
+
+export interface TicketAnalyticsData {
+  summaryYtd: TicketAnalyticsSummary;
+  monthlyTrends: MonthlyTicketTrend[];
+  topManpower: TopManpowerTicket[];
+}
+
+export interface TicketAnalyticsResponse {
+  success: boolean;
+  data: TicketAnalyticsData;
+  message?: string;
+}
+
 export async function getTicketPlafonList(params?: {
   site?: string;
   search?: string;
@@ -70,6 +118,21 @@ export async function getTicketPlafonList(params?: {
   const res = await fetch(`${API_BASE_URL}/ticket-plafon?${query.toString()}`);
   if (!res.ok) {
     throw new Error(`Gagal memuat data Ticket Plafon: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function getTicketAnalytics(params?: {
+  site?: string;
+  startDate?: string;
+}): Promise<TicketAnalyticsResponse> {
+  const query = new URLSearchParams();
+  if (params?.site) query.append("site", params.site);
+  if (params?.startDate) query.append("startDate", params.startDate);
+
+  const res = await fetch(`${API_BASE_URL}/ticket-plafon/analytics?${query.toString()}`);
+  if (!res.ok) {
+    throw new Error(`Gagal memuat data analytics tiket: ${res.statusText}`);
   }
   return res.json();
 }

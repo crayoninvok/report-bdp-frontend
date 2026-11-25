@@ -24,15 +24,39 @@ import {
   Building2,
   MapPin,
   TrendingDown,
+  TrendingUp,
+  BarChart3,
+  Users2,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Award,
   FileSpreadsheet,
   X,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  BarChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Cell,
+} from "recharts";
 import { User } from "../types/auth";
 import {
   TicketPlafonItem,
   TicketPlafonSummary,
   TicketUsageHistoryItem,
+  MonthlyTicketTrend,
+  TopManpowerTicket,
+  TicketAnalyticsData,
   getTicketPlafonList,
+  getTicketAnalytics,
   recordTicketUsage,
   getTicketHistory,
   updatePlafonConfig,
@@ -66,6 +90,12 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
   const [isRecordModalOpen, setIsRecordModalOpen] = useState<boolean>(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
+
+  // Analytics Chart States
+  const [analyticsData, setAnalyticsData] = useState<TicketAnalyticsData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState<boolean>(true);
+  const [chartViewMode, setChartViewMode] = useState<"trend_nominal" | "trend_tickets" | "top_manpower">("trend_nominal");
+  const [isChartCollapsed, setIsChartCollapsed] = useState<boolean>(false);
 
   // Form states for Record Ticket
   const [ticketForm, setTicketForm] = useState({
@@ -126,8 +156,24 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
     }
   };
 
+  // Fetch Ticket Analytics
+  const fetchAnalytics = async () => {
+    try {
+      setLoadingAnalytics(true);
+      const res = await getTicketAnalytics({ site: activeSiteTab });
+      if (res.success) {
+        setAnalyticsData(res.data);
+      }
+    } catch (err: any) {
+      console.error("Gagal memuat analytics tiket:", err);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchAnalytics();
   }, [activeSiteTab]);
 
   // Handle Search Debounced / Trigger
@@ -471,7 +517,10 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
 
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => fetchData(true)}
+              onClick={() => {
+                fetchData(true);
+                fetchAnalytics();
+              }}
               disabled={refreshing}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 text-xs font-semibold backdrop-blur-sm transition-all"
             >
@@ -681,6 +730,451 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
             </div>
           </div>
         </div>
+      </div>
+
+      {/* SECTION: GRAFIK PEMBELIAN TIKET BERDASARKAN MANPOWER YTD (April - Sekarang) */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+        {/* Header Bar */}
+        <div className="p-4 md:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <BarChart3 className="w-3.5 h-3.5" />
+                Tren Pembelian Tiket & Manpower (YTD)
+              </span>
+              <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                Periode: April 2026 - Sekarang
+              </span>
+            </div>
+            <h2 className="text-base md:text-lg font-bold text-slate-900">
+              Grafik Pembelian Tiket Berdasarkan Manpower
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Analisis historis biaya dan frekuensi tiket penerbangan per bulan serta daftar manpower pengguna tiket terbanyak • Filter aktif:{" "}
+              <span className="font-semibold text-blue-600">
+                {activeSiteTab === "ALL" ? "Seluruh Jobsite" : activeSiteTab}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* View Mode Toggle Buttons */}
+            <div className="flex items-center p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setChartViewMode("trend_nominal")}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  chartViewMode === "trend_nominal"
+                    ? "bg-white text-blue-700 shadow-xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                <span>Nominal & Manpower</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartViewMode("trend_tickets")}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  chartViewMode === "trend_tickets"
+                    ? "bg-white text-purple-700 shadow-xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Plane className="w-3.5 h-3.5 text-purple-600" />
+                <span>Volume Tiket</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartViewMode("top_manpower")}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  chartViewMode === "top_manpower"
+                    ? "bg-white text-amber-700 shadow-xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Award className="w-3.5 h-3.5 text-amber-600" />
+                <span>Top 10 Manpower</span>
+              </button>
+            </div>
+
+            {/* Collapse / Expand Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsChartCollapsed(!isChartCollapsed)}
+              title={isChartCollapsed ? "Buka Grafik" : "Tutup Grafik"}
+              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 transition-colors"
+            >
+              {isChartCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Content */}
+        {!isChartCollapsed && (
+          <div className="p-4 md:p-5 space-y-5">
+            {/* 4 Mini Metric Badges inside Chart Section */}
+            {analyticsData?.summaryYtd && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100">
+                  <div className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                    Total Tiket YTD
+                  </div>
+                  <div className="text-lg md:text-xl font-black text-slate-900 mt-1">
+                    {analyticsData.summaryYtd.totalTicketsYtd.toLocaleString("id-ID")}
+                    <span className="text-xs font-semibold text-slate-500 ml-1">Tiket</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    Transaksi Apr - Nov 2026
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-100">
+                  <div className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">
+                    Total Biaya Tiket YTD
+                  </div>
+                  <div className="text-lg md:text-xl font-black text-slate-900 mt-1">
+                    {formatRupiah(analyticsData.summaryYtd.totalCostYtd)}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    Akumulasi biaya penerbangan
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                  <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
+                    Manpower Aktif Tiket
+                  </div>
+                  <div className="text-lg md:text-xl font-black text-slate-900 mt-1">
+                    {analyticsData.summaryYtd.totalUniqueManpowerYtd}
+                    <span className="text-xs font-semibold text-slate-500 ml-1">Karyawan</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    Rata-rata {analyticsData.summaryYtd.averageTicketsPerManpower}x tiket / org
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-100">
+                  <div className="text-[11px] font-bold text-purple-800 uppercase tracking-wider">
+                    Rata-rata Biaya / Tiket
+                  </div>
+                  <div className="text-lg md:text-xl font-black text-slate-900 mt-1">
+                    {formatRupiah(analyticsData.summaryYtd.averageCostPerTicket)}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    Per satu nomor tiket penerbangan
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Chart Area */}
+            {loadingAnalytics ? (
+              <div className="flex flex-col items-center justify-center p-12 gap-2 text-slate-400">
+                <div className="w-7 h-7 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-semibold">Memuat Grafik Pembelian Tiket...</span>
+              </div>
+            ) : !analyticsData || analyticsData.monthlyTrends.length === 0 ? (
+              <div className="p-10 text-center text-slate-400 text-xs">
+                Tidak ada data riwayat tiket untuk filter ini.
+              </div>
+            ) : chartViewMode === "trend_nominal" ? (
+              /* VIEW 1: Nominal Biaya (Bar) + Jumlah Manpower & Tiket (Line) */
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm bg-blue-600 inline-block" />
+                      <span className="font-semibold text-slate-700">Total Biaya Tiket (Rp)</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      <span className="font-semibold text-slate-700">Manpower Aktif (Karyawan)</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-0.5 bg-purple-500 inline-block border-t border-purple-500 border-dashed" />
+                      <span className="font-semibold text-slate-700">Jumlah Tiket</span>
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-400">Kiri: Nominal Rupiah • Kanan: Manpower & Tiket</span>
+                </div>
+                <div className="w-full h-80">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ComposedChart data={analyticsData.monthlyTrends} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="monthLabel" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+                      <YAxis
+                        yAxisId="cost"
+                        orientation="left"
+                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => `Rp ${(v / 1e6).toFixed(0)} jt`}
+                      />
+                      <YAxis
+                        yAxisId="count"
+                        orientation="right"
+                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => `${v}`}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            const item = payload[0].payload as MonthlyTicketTrend;
+                            return (
+                              <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs backdrop-blur-sm space-y-1.5 min-w-[210px]">
+                                <div className="font-extrabold text-blue-300 pb-1 border-b border-slate-700/80 flex items-center justify-between">
+                                  <span>{item.monthLabel || label}</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">YTD 2026</span>
+                                </div>
+                                <div className="space-y-1 pt-0.5">
+                                  <div className="flex items-center justify-between gap-3 text-slate-200">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-xs bg-blue-500 inline-block" />
+                                      Total Biaya:
+                                    </span>
+                                    <span className="font-mono font-bold text-amber-300">{formatRupiah(item.totalCost)}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3 text-slate-200">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-xs bg-emerald-500 inline-block" />
+                                      Manpower Aktif:
+                                    </span>
+                                    <span className="font-bold text-emerald-400">{item.manpowerCount} Karyawan</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3 text-slate-200">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-xs bg-purple-500 inline-block" />
+                                      Total Tiket:
+                                    </span>
+                                    <span className="font-bold text-purple-300">{item.ticketCount} Tiket</span>
+                                  </div>
+                                  <div className="pt-1.5 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
+                                    <span>Cuti: {item.cutiCount}</span>
+                                    <span>Dinas: {item.dinasCount}</span>
+                                    <span>On Site: {item.onsiteCount}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar yAxisId="cost" dataKey="totalCost" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={44} name="Total Biaya (Rp)" />
+                      <Line
+                        yAxisId="count"
+                        type="monotone"
+                        dataKey="manpowerCount"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: "#10b981", stroke: "#ffffff", strokeWidth: 2 }}
+                        activeDot={{ r: 6 }}
+                        name="Manpower Aktif (Orang)"
+                      />
+                      <Line
+                        yAxisId="count"
+                        type="monotone"
+                        dataKey="ticketCount"
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        dot={{ r: 3, fill: "#8b5cf6" }}
+                        name="Jumlah Tiket"
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : chartViewMode === "trend_tickets" ? (
+              /* VIEW 2: Volume Tiket Berdasarkan Kategori (Cuti / Dinas / On Site) */
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm bg-blue-600 inline-block" />
+                      <span className="font-semibold text-slate-700">Tiket Cuti Rooster</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm bg-purple-600 inline-block" />
+                      <span className="font-semibold text-slate-700">Perjalanan Dinas</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />
+                      <span className="font-semibold text-slate-700">On Site</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-1.5 rounded-full bg-amber-500 inline-block" />
+                      <span className="font-semibold text-slate-700">Manpower Aktif</span>
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-400">Komposisi Volume Tiket Bulanan Berdasarkan Keperluan</span>
+                </div>
+                <div className="w-full h-80">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ComposedChart data={analyticsData.monthlyTrends} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="monthLabel" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+                      <YAxis
+                        yAxisId="tickets"
+                        orientation="left"
+                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => `${v} tkt`}
+                      />
+                      <YAxis
+                        yAxisId="manpower"
+                        orientation="right"
+                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => `${v} org`}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            const item = payload[0].payload as MonthlyTicketTrend;
+                            return (
+                              <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs backdrop-blur-sm space-y-1.5 min-w-[210px]">
+                                <div className="font-extrabold text-blue-300 pb-1 border-b border-slate-700/80 flex items-center justify-between">
+                                  <span>{item.monthLabel || label}</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">Kategori Tiket</span>
+                                </div>
+                                <div className="space-y-1 pt-0.5">
+                                  <div className="flex items-center justify-between gap-3 text-slate-200">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-xs bg-blue-500 inline-block" />
+                                      Cuti Rooster:
+                                    </span>
+                                    <span className="font-bold text-blue-300">{item.cutiCount} Tiket</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3 text-slate-200">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-xs bg-purple-500 inline-block" />
+                                      Perjalanan Dinas:
+                                    </span>
+                                    <span className="font-bold text-purple-300">{item.dinasCount} Tiket</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3 text-slate-200">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-xs bg-emerald-500 inline-block" />
+                                      On Site:
+                                    </span>
+                                    <span className="font-bold text-emerald-300">{item.onsiteCount} Tiket</span>
+                                  </div>
+                                  <div className="pt-1.5 border-t border-slate-800 text-[10px] text-amber-300 flex items-center justify-between">
+                                    <span>Manpower Aktif:</span>
+                                    <span className="font-bold">{item.manpowerCount} Karyawan</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar yAxisId="tickets" dataKey="cutiCount" stackId="t" fill="#3b82f6" maxBarSize={44} name="Cuti Rooster" />
+                      <Bar yAxisId="tickets" dataKey="dinasCount" stackId="t" fill="#8b5cf6" maxBarSize={44} name="Perjalanan Dinas" />
+                      <Bar yAxisId="tickets" dataKey="onsiteCount" stackId="t" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={44} name="On Site" />
+                      <Line
+                        yAxisId="manpower"
+                        type="monotone"
+                        dataKey="manpowerCount"
+                        stroke="#f59e0b"
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: "#f59e0b", stroke: "#ffffff", strokeWidth: 2 }}
+                        activeDot={{ r: 6 }}
+                        name="Manpower Aktif"
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              /* VIEW 3: Top 10 Manpower dengan Pembelian Tiket Tertinggi YTD */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+                  <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-amber-500" />
+                    Peringkat 10 Karyawan dengan Akumulasi Tiket Tertinggi (April - Sekarang)
+                  </span>
+                  <span className="text-[11px] text-slate-400">Total Pembelian Tiket & Nominal Terbesar</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {analyticsData.topManpower.map((emp, idx) => {
+                    const maxCost = analyticsData.topManpower[0]?.totalCost || 1;
+                    const pct = Math.min(100, Math.round((emp.totalCost / maxCost) * 100));
+
+                    return (
+                      <div
+                        key={emp.employeeId}
+                        className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-xs transition-all bg-slate-50/40 flex items-center justify-between gap-3 group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${
+                              idx === 0
+                                ? "bg-amber-400 text-amber-950 shadow-xs"
+                                : idx === 1
+                                ? "bg-slate-300 text-slate-800"
+                                : idx === 2
+                                ? "bg-amber-700 text-amber-100"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors text-xs truncate">
+                              {emp.fullName}
+                            </div>
+                            <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5">
+                              <span>NIK: {emp.employeeId}</span>
+                              <span>•</span>
+                              <span className="truncate">{emp.jobPosition}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span
+                                className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                  emp.site === "Senyiur"
+                                    ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                    : emp.site === "Muara Pahu"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-purple-50 text-purple-700 border border-purple-200"
+                                }`}
+                              >
+                                {emp.site}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-600 bg-slate-200/70 px-1.5 py-0.2 rounded">
+                                {emp.ticketCount}x tiket
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <div className="font-mono font-extrabold text-blue-700 text-xs">
+                            {formatRupiah(emp.totalCost)}
+                          </div>
+                          <div className="w-20 bg-slate-200 rounded-full h-1.5 mt-1 ml-auto overflow-hidden">
+                            <div className="bg-blue-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            {pct}% dari peringkat 1
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Filter & Search Bar */}
