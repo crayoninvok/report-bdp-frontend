@@ -704,10 +704,10 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
   const [activeEditingCategory, setActiveEditingCategory] = useState<string>("prime-mover");
   const [imageUrlInput, setImageUrlInput] = useState<string>("");
 
-  // Papan Catur status filter & open/close toggle
+  // Papan Catur status filter & show all toggle
   const [chessboardStatusFilter, setChessboardStatusFilter] = useState<string>("ALL");
   const [chessboardSearch, setChessboardSearch] = useState<string>("");
-  const [isChessboardOpen, setIsChessboardOpen] = useState<boolean>(false);
+  const [isShowAllUnits, setIsShowAllUnits] = useState<boolean>(false);
 
   // Load custom images from localStorage on client mount
   useEffect(() => {
@@ -775,6 +775,14 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
       return true;
     });
   }, [selectedCategoryId, chessboardStatusFilter, chessboardSearch]);
+
+  const INITIAL_UNITS_LIMIT = 14;
+  const hasMoreUnits = filteredChessboardUnits.length > INITIAL_UNITS_LIMIT;
+  const displayedChessboardUnits = useMemo(() => {
+    return isShowAllUnits
+      ? filteredChessboardUnits
+      : filteredChessboardUnits.slice(0, INITIAL_UNITS_LIMIT);
+  }, [filteredChessboardUnits, isShowAllUnits]);
 
   const activeCategoryObj = useMemo(() => {
     return DEFAULT_CATEGORIES.find((c) => c.id === selectedCategoryId) || null;
@@ -1185,9 +1193,7 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
                 onClick={() => {
                   const nextSelected = isSelected ? null : cat.id;
                   setSelectedCategoryId(nextSelected);
-                  if (nextSelected) {
-                    setIsChessboardOpen(true);
-                  }
+                  setIsShowAllUnits(false);
                 }}
                 className={`group relative bg-white rounded-2xl border p-4 flex flex-col justify-between cursor-pointer transition-all duration-200 select-none ${
                   isSelected
@@ -1275,27 +1281,29 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
           ========================================================================= */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div
-            onClick={() => setIsChessboardOpen((prev) => !prev)}
-            className="flex items-center gap-2.5 cursor-pointer group select-none"
-            title="Klik untuk membuka / menutup Papan Catur"
-          >
-            <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-200 text-[#e95623] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-200 text-[#e95623] flex items-center justify-center shrink-0">
               <Layers size={18} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-slate-900 tracking-tight group-hover:text-[#e95623] transition-colors">
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
                   Papan Catur Status Armada (Fleet Matrix)
                 </h3>
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                  {filteredChessboardUnits.length} Unit
+                  {hasMoreUnits && !isShowAllUnits
+                    ? `14 dari ${filteredChessboardUnits.length} Unit`
+                    : `${filteredChessboardUnits.length} Unit`}
                 </span>
-                {!isChessboardOpen && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Klik untuk Buka
-                  </span>
+                {hasMoreUnits && (
+                  <button
+                    type="button"
+                    onClick={() => setIsShowAllUnits((prev) => !prev)}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-50 hover:bg-orange-100 text-[#e95623] border border-orange-200/80 transition-colors cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <span>{isShowAllUnits ? "Tampilkan 14 Unit" : `Lihat Semua (${filteredChessboardUnits.length})`}</span>
+                    {isShowAllUnits ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </button>
                 )}
               </div>
               <p className="text-xs text-slate-500">
@@ -1304,66 +1312,46 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
             </div>
           </div>
 
-          {/* Quick Status Pill Filters, Search & Toggle Button */}
+          {/* Quick Status Pill Filters & Search */}
           <div className="flex flex-wrap items-center gap-2">
-            {isChessboardOpen && (
-              <>
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
-                  {(["ALL", "RFU", "BREAKDOWN", "IN_WORKSHOP"] as const).map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() => setChessboardStatusFilter(st)}
-                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                        chessboardStatusFilter === st
-                          ? "bg-white text-slate-900 shadow-2xs font-black"
-                          : "hover:text-slate-900"
-                      }`}
-                    >
-                      {st === "ALL"
-                        ? "Semua"
-                        : st === "RFU"
-                        ? "RFU"
-                        : st === "BREAKDOWN"
-                        ? "Breakdown"
-                        : "In Workshop"}
-                    </button>
-                  ))}
-                </div>
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
+              {(["ALL", "RFU", "BREAKDOWN", "IN_WORKSHOP"] as const).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setChessboardStatusFilter(st)}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    chessboardStatusFilter === st
+                      ? "bg-white text-slate-900 shadow-2xs font-black"
+                      : "hover:text-slate-900"
+                  }`}
+                >
+                  {st === "ALL"
+                    ? "Semua"
+                    : st === "RFU"
+                    ? "RFU"
+                    : st === "BREAKDOWN"
+                    ? "Breakdown"
+                    : "In Workshop"}
+                </button>
+              ))}
+            </div>
 
-                <div className="relative min-w-40">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Cari unit / lokasi..."
-                    value={chessboardSearch}
-                    onChange={(e) => setChessboardSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Toggle Open/Close Button */}
-            <button
-              type="button"
-              onClick={() => setIsChessboardOpen((prev) => !prev)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                isChessboardOpen
-                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
-                  : "bg-[#e95623] hover:bg-[#d44819] text-white border-[#e95623] shadow-xs"
-              }`}
-            >
-              <span>{isChessboardOpen ? "Tutup Papan Catur" : "Buka Papan Catur"}</span>
-              {isChessboardOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-            </button>
+            <div className="relative min-w-40">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari unit / lokasi..."
+                value={chessboardSearch}
+                onChange={(e) => setChessboardSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#e95623]"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Units Chess Grid (Rendered only when open) */}
-        {isChessboardOpen && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            {filteredChessboardUnits.length === 0 ? (
+        {/* Units Chess Grid */}
+        {filteredChessboardUnits.length === 0 ? (
           <div className="py-12 text-center text-xs space-y-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
             <div className="font-bold text-slate-600">
               {selectedCategoryId
@@ -1377,72 +1365,95 @@ export const PlantFleetReliabilitySection: React.FC<PlantFleetReliabilitySection
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2.5">
-            {filteredChessboardUnits.map((u) => {
-              const isRfu = u.status === "RFU";
-              const isBd = u.status === "BREAKDOWN";
-              const isWorkshop = u.status === "IN_WORKSHOP";
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2.5">
+              {displayedChessboardUnits.map((u) => {
+                const isRfu = u.status === "RFU";
+                const isBd = u.status === "BREAKDOWN";
+                const isWorkshop = u.status === "IN_WORKSHOP";
 
-              return (
-                <div
-                  key={u.id}
-                  className={`rounded-xl border p-2.5 flex flex-col justify-between transition-all hover:shadow-xs ${
-                    isRfu
-                      ? "bg-emerald-50/40 border-emerald-200/80 hover:border-emerald-300"
-                      : isBd
-                      ? "bg-rose-50/60 border-rose-200/90 hover:border-rose-300"
-                      : isWorkshop
-                      ? "bg-amber-50/50 border-amber-200/80 hover:border-amber-300"
-                      : "bg-slate-50 border-slate-200"
-                  }`}
+                return (
+                  <div
+                    key={u.id}
+                    className={`rounded-xl border p-2.5 flex flex-col justify-between transition-all hover:shadow-xs ${
+                      isRfu
+                        ? "bg-emerald-50/40 border-emerald-200/80 hover:border-emerald-300"
+                        : isBd
+                        ? "bg-rose-50/60 border-rose-200/90 hover:border-rose-300"
+                        : isWorkshop
+                        ? "bg-amber-50/50 border-amber-200/80 hover:border-amber-300"
+                        : "bg-slate-50 border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-black uppercase text-slate-500">
+                        {u.categoryName}
+                      </span>
+                      <span
+                        className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                          isRfu
+                            ? "bg-emerald-600 text-white"
+                            : isBd
+                            ? "bg-rose-600 text-white"
+                            : isWorkshop
+                            ? "bg-amber-600 text-white"
+                            : "bg-slate-600 text-white"
+                        }`}
+                      >
+                        {isRfu ? "RFU" : isBd ? "BD" : isWorkshop ? "WS" : "PS"}
+                      </span>
+                    </div>
+
+                    <div className="my-1.5">
+                      <div className="text-xs font-black text-slate-900 tracking-tight">
+                        {u.code}
+                      </div>
+                      <div className="text-[10px] text-slate-500 truncate" title={u.model}>
+                        {u.model}
+                      </div>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
+                      <span className="truncate max-w-22.5" title={u.location}>
+                        {u.location}
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {u.hm.toLocaleString("id-ID")}h
+                      </span>
+                    </div>
+
+                    {u.issueDescription && (
+                      <div className="mt-1 text-[9px] font-semibold text-rose-700 line-clamp-1" title={u.issueDescription}>
+                        &bull; {u.issueDescription}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Toggle Bar for expanding / collapsing full units */}
+            {hasMoreUnits && (
+              <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100">
+                <span className="text-xs text-slate-500 font-medium">
+                  {isShowAllUnits
+                    ? `Menampilkan seluruh ${filteredChessboardUnits.length} unit armada`
+                    : `Menampilkan 14 unit pertama dari total ${filteredChessboardUnits.length} unit`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsShowAllUnits((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer bg-slate-100 hover:bg-orange-50 hover:text-[#e95623] hover:border-[#e95623]/30 text-slate-700 border border-slate-200 shadow-2xs"
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-black uppercase text-slate-500">
-                      {u.categoryName}
-                    </span>
-                    <span
-                      className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
-                        isRfu
-                          ? "bg-emerald-600 text-white"
-                          : isBd
-                          ? "bg-rose-600 text-white"
-                          : isWorkshop
-                          ? "bg-amber-600 text-white"
-                          : "bg-slate-600 text-white"
-                      }`}
-                    >
-                      {isRfu ? "RFU" : isBd ? "BD" : isWorkshop ? "WS" : "PS"}
-                    </span>
-                  </div>
-
-                  <div className="my-1.5">
-                    <div className="text-xs font-black text-slate-900 tracking-tight">
-                      {u.code}
-                    </div>
-                    <div className="text-[10px] text-slate-500 truncate" title={u.model}>
-                      {u.model}
-                    </div>
-                  </div>
-
-                  <div className="pt-1.5 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
-                    <span className="truncate max-w-22.5" title={u.location}>
-                      {u.location}
-                    </span>
-                    <span className="font-bold text-slate-700">
-                      {u.hm.toLocaleString("id-ID")}h
-                    </span>
-                  </div>
-
-                  {u.issueDescription && (
-                    <div className="mt-1 text-[9px] font-semibold text-rose-700 line-clamp-1" title={u.issueDescription}>
-                      &bull; {u.issueDescription}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  <span>
+                    {isShowAllUnits
+                      ? "Tampilkan Lebih Sedikit (14 Unit)"
+                      : `Lihat Semua ${filteredChessboardUnits.length} Unit Armada`}
+                  </span>
+                  {isShowAllUnits ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
