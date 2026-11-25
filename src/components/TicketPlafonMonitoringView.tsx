@@ -69,7 +69,8 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
     departureDate: new Date().toISOString().split("T")[0],
     returnDate: "",
     ticketCost: 1500000,
-    notes: "Cuti Roster",
+    notes: "Cuti Rooster",
+    additionalNotes: "",
   });
   const [isSubmittingTicket, setIsSubmittingTicket] = useState<boolean>(false);
 
@@ -214,7 +215,8 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       departureDate: new Date().toISOString().split("T")[0],
       returnDate: "",
       ticketCost: 1500000,
-      notes: "Cuti Roster",
+      notes: "Cuti Rooster",
+      additionalNotes: "",
     });
     setIsRecordModalOpen(true);
   };
@@ -226,6 +228,10 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
 
     try {
       setIsSubmittingTicket(true);
+      const combinedNotes = ticketForm.additionalNotes.trim()
+        ? `${ticketForm.notes} (${ticketForm.additionalNotes.trim()})`
+        : ticketForm.notes;
+
       const res = await recordTicketUsage({
         employeeId: selectedEmployee.employeeId,
         ticketNumber: ticketForm.ticketNumber,
@@ -234,7 +240,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
         departureDate: ticketForm.departureDate,
         returnDate: ticketForm.returnDate || undefined,
         ticketCost: Number(ticketForm.ticketCost),
-        notes: ticketForm.notes,
+        notes: combinedNotes,
       });
 
       if (res.success) {
@@ -1087,16 +1093,33 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Keperluan / Catatan Dropdown */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Keperluan / Catatan
+                  Keperluan / Catatan *
+                </label>
+                <select
+                  required
+                  value={ticketForm.notes}
+                  onChange={(e) => setTicketForm({ ...ticketForm, notes: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                >
+                  <option value="Cuti Rooster">Cuti Rooster</option>
+                  <option value="On Site">On Site</option>
+                  <option value="Perjalanan Dinas">Perjalanan Dinas</option>
+                </select>
+              </div>
+
+              {/* Keterangan Tambahan (Opsional) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Keterangan Tambahan (Opsional)
                 </label>
                 <input
                   type="text"
-                  value={ticketForm.notes}
-                  onChange={(e) => setTicketForm({ ...ticketForm, notes: e.target.value })}
-                  placeholder="Contoh: Cuti Roster Periode Nov 2026, Dinas HO, dsb"
+                  value={ticketForm.additionalNotes}
+                  onChange={(e) => setTicketForm({ ...ticketForm, additionalNotes: e.target.value })}
+                  placeholder="Contoh: Roster Periode Nov 2026, Rapat HO, dsb"
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
