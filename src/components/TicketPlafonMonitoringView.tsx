@@ -215,7 +215,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
     }
   };
 
-  // Calculate 2-month auto reset date preview
+  // Calculate role-based auto reset date preview (48 / 65 / 90 days)
   const previewNextResetDate = useMemo(() => {
     const targetDateStr =
       ticketForm.notes === "Perjalanan Dinas" &&
@@ -228,9 +228,10 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
     const dep = new Date(targetDateStr);
     if (isNaN(dep.getTime())) return "-";
     const reset = new Date(dep);
-    reset.setDate(reset.getDate() + 65);
+    const cycleDays = selectedEmployee?.resetCycleDays || 65;
+    reset.setDate(reset.getDate() + cycleDays);
     return formatDate(reset.toISOString());
-  }, [ticketForm.departureDate, ticketForm.returnDate, ticketForm.notes, ticketForm.dinasBookingType]);
+  }, [ticketForm.departureDate, ticketForm.returnDate, ticketForm.notes, ticketForm.dinasBookingType, selectedEmployee]);
 
   // Open Record Modal
   const handleOpenRecordModal = (emp: TicketPlafonItem) => {
@@ -386,7 +387,8 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       "Sisa Plafon (Rp)",
       "Persentase Terpakai (%)",
       "Tiket Terakhir",
-      "Jadwal Reset Otomatis (65 Hari)",
+      "Jadwal Reset Otomatis",
+      "Siklus Reset",
       "Sisa Hari Menuju Reset",
     ];
 
@@ -404,6 +406,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       d.plafonAmount > 0 ? ((d.usedAmount / d.plafonAmount) * 100).toFixed(1) : 0,
       `"${formatDate(d.lastDepartureDate)}"`,
       `"${formatDate(d.nextResetDate)}"`,
+      `"${(d.resetCycleDays || 65)} Hari"`,
       d.daysUntilReset !== null ? d.daysUntilReset : "-",
     ]);
 
@@ -458,9 +461,11 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               Ticket Plafon Controlling
             </h1>
             <p className="text-blue-100/80 text-sm mt-1 max-w-2xl leading-relaxed">
-              Monitoring plafon tiket penerbangan karyawan Non-Lokal (Senyiur & Muara Pahu). Default plafon{" "}
-              <span className="font-semibold text-amber-300">Rp 5.000.000,00</span> per orang dengan siklus reset otomatis{" "}
-              <span className="font-semibold text-emerald-300">65 hari</span> dari tanggal tiket keberangkatan.
+              Monitoring plafon tiket penerbangan karyawan Non-Lokal (Senyiur, Muara Pahu & HO). Default plafon{" "}
+              <span className="font-semibold text-amber-300">Rp 5.000.000,00</span> per orang dengan siklus reset otomatis berbasis jabatan:{" "}
+              <span className="font-semibold text-purple-300">48 Hari</span> (PM & Deputy PJO),{" "}
+              <span className="font-semibold text-amber-300">90 Hari</span> (Driver DT, Mekanik, Welder, Elektrik, Admin), dan{" "}
+              <span className="font-semibold text-emerald-300">65 Hari</span> (Staff/Spv/Lainnya).
             </p>
           </div>
 
@@ -657,11 +662,11 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
           </div>
         </div>
 
-        {/* Card 5: Auto-Reset 65 Hari */}
+        {/* Card 5: Siklus Reset Jabatan */}
         <div className="bg-linear-to-br from-purple-50 to-indigo-50/50 rounded-2xl p-5 border border-purple-200/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
-              Siklus Reset 65 Hari
+              Siklus Reset Jabatan
             </span>
             <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
               <RotateCcw className="w-4 h-4" />
@@ -669,10 +674,10 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
           </div>
           <div className="mt-3">
             <div className="text-base font-black text-purple-900">
-              Otomatis 65 Hari
+              48 / 65 / 90 Hari
             </div>
             <div className="text-[11px] text-purple-700 mt-1 font-medium">
-              Dari tiket keberangkatan (2 Bulan)
+              PM (48h) • DT/Mek/Adm (90h) • Lainnya (65h)
             </div>
           </div>
         </div>
@@ -775,7 +780,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   <th className="py-3 px-4 text-right">Terpakai</th>
                   <th className="py-3 px-4 text-right">Sisa Saldo</th>
                   <th className="py-3 px-4 text-center">Tiket Terakhir</th>
-                  <th className="py-3 px-4 text-center">Siklus Reset (65 Hari)</th>
+                  <th className="py-3 px-4 text-center">Siklus Reset</th>
                   <th className="py-3 px-4 text-center">Aksi</th>
                 </tr>
               </thead>
@@ -935,32 +940,45 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                         )}
                       </td>
 
-                      {/* 2 Months Reset Cycle */}
+                      {/* Role-based Reset Cycle */}
                       <td className="py-3 px-4 text-center">
-                        {emp.nextResetDate ? (
-                          <div className="flex flex-col items-center gap-1">
-                            <span className="font-semibold text-slate-800 text-[11px]">
-                              {formatDate(emp.nextResetDate)}
-                            </span>
-                            {emp.isResetEligible ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                <RotateCcw className="w-2.5 h-2.5" />
-                                Siap / Ter-reset
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                <Clock className="w-2.5 h-2.5" />
-                                {emp.daysUntilReset !== null && emp.daysUntilReset >= 0
-                                  ? `${emp.daysUntilReset} hari lagi`
-                                  : "Siklus aktif"}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">
-                            Plafon Aktif
+                        <div className="flex flex-col items-center gap-1">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                              emp.resetCycleDays === 48
+                                ? "bg-purple-100 text-purple-800 border-purple-300"
+                                : emp.resetCycleDays === 90
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : "bg-blue-100 text-blue-800 border-blue-300"
+                            }`}
+                          >
+                            {emp.resetCycleDays || 65} Hari
                           </span>
-                        )}
+                          {emp.nextResetDate ? (
+                            <>
+                              <span className="font-semibold text-slate-800 text-[11px]">
+                                {formatDate(emp.nextResetDate)}
+                              </span>
+                              {emp.isResetEligible ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <RotateCcw className="w-2.5 h-2.5" />
+                                  Siap / Ter-reset
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {emp.daysUntilReset !== null && emp.daysUntilReset >= 0
+                                    ? `${emp.daysUntilReset} hari lagi`
+                                    : "Siklus aktif"}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-slate-400 italic text-[10px]">
+                              Plafon Aktif
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Actions */}
@@ -1443,11 +1461,11 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 space-y-1.5 text-xs">
                 <div className="font-bold text-purple-900 flex items-center gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5 text-purple-700" />
-                  Siklus Reset Otomatis (65 Hari):
+                  Siklus Reset Otomatis ({selectedEmployee.resetCycleDays || 65} Hari):
                 </div>
                 <div className="text-purple-800 text-[11px] leading-relaxed">
                   Plafon akan otomatis direset kembali ke Rp {(selectedEmployee.plafonAmount || 5000000).toLocaleString("id-ID")} pada tanggal{" "}
-                  <span className="font-extrabold underline">{previewNextResetDate}</span> (65 hari dari tanggal tiket).
+                  <span className="font-extrabold underline">{previewNextResetDate}</span> ({selectedEmployee.resetCycleDays || 65} hari dari tanggal tiket).
                 </div>
                 <div className="text-[11px] text-slate-600 pt-1 border-t border-purple-200/60 flex items-center justify-between">
                   <span>Estimasi Sisa Plafon Setelah Transaksi:</span>

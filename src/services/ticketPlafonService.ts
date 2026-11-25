@@ -19,6 +19,7 @@ export interface TicketPlafonItem {
   isResetEligible: boolean;
   ticketCount: number;
   notes: string | null;
+  resetCycleDays?: number;
   plafonId: string | null;
 }
 
