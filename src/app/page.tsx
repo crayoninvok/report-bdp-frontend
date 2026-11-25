@@ -36,6 +36,7 @@ import { ProfitCenterView } from "../components/ProfitCenterView";
 import { MasterManpowerView } from "../components/MasterManpowerView";
 import { HRDashboardView } from "../components/HRDashboardView";
 import { ATRDashboardView } from "../components/ATRDashboardView";
+import TicketPlafonMonitoringView from "../components/TicketPlafonMonitoringView";
 import { SheDashboardView } from "../components/SheDashboardView";
 import { HazardReportView } from "../components/HazardReportView";
 import { HazardReportFormPage } from "../components/HazardReportFormPage";
@@ -685,12 +686,7 @@ export default function Home() {
               onNavigateToHRDashboard={() => setActiveMenu("hr-dashboard")}
             />
           ) : activeMenu === "ticket-plafon-controlling" ? (
-            <UnderDevelopmentView
-              user={currentUser}
-              moduleName="Ticket Plafon Controlling"
-              moduleCategory="Human Resource & Development"
-              onBackToDashboard={() => setActiveMenu("hr-dashboard")}
-            />
+            <TicketPlafonMonitoringView user={currentUser} />
           ) : activeMenu === "master-manpower" ? (
             <MasterManpowerView user={currentUser} />
           ) : activeMenu === "she-dashboard" ? (
