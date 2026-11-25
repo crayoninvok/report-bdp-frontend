@@ -53,7 +53,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
   const [error, setError] = useState<string | null>(null);
 
   // Filters & Tabs
-  const [activeSiteTab, setActiveSiteTab] = useState<"Senyiur" | "Muara Pahu" | "ALL">("Senyiur");
+  const [activeSiteTab, setActiveSiteTab] = useState<"Senyiur" | "Muara Pahu" | "Head Office Jakarta" | "ALL">("Senyiur");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("ALL");
   const [plafonStatusFilter, setPlafonStatusFilter] = useState<string>("ALL");
@@ -527,6 +527,27 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               }`}
             >
               {summary?.totalMuaraPahu ?? 109}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveSiteTab("Head Office Jakarta")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              activeSiteTab === "Head Office Jakarta"
+                ? "bg-white text-purple-700 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5 text-purple-600" />
+            Head Office Jakarta
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                activeSiteTab === "Head Office Jakarta"
+                  ? "bg-purple-100 text-purple-700"
+                  : "bg-slate-200 text-slate-600"
+              }`}
+            >
+              {summary?.totalHoJakarta ?? 27}
             </span>
           </button>
 

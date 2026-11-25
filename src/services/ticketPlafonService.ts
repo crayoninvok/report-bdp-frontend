@@ -27,6 +27,7 @@ export interface TicketPlafonSummary {
   totalNonLokalAll: number;
   totalSenyiur: number;
   totalMuaraPahu: number;
+  totalHoJakarta?: number;
   totalPlafonAllocated: number;
   totalPlafonUsed: number;
   totalPlafonRemaining: number;
