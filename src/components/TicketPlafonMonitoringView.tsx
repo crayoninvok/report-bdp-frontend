@@ -447,7 +447,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       )}
 
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 p-6 md:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 via-indigo-950 to-blue-900 p-6 md:p-8 text-white shadow-xl">
         <div className="absolute right-0 top-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -666,7 +666,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
         </div>
 
         {/* Card 5: Auto-Reset 2 Bulan */}
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50/50 rounded-2xl p-5 border border-purple-200/80 shadow-sm flex flex-col justify-between">
+        <div className="bg-linear-to-br from-purple-50 to-indigo-50/50 rounded-2xl p-5 border border-purple-200/80 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
               Siklus Reset 2 Bulan
@@ -697,7 +697,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari NIK, Nama Karyawan, atau Jabatan..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50/50"
             />
           </form>
 
@@ -807,7 +807,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                       {/* Employee Info */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm">
+                          <div className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm">
                             {emp.fullName.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -1126,7 +1126,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-5 text-white flex items-center justify-between">
+            <div className="bg-linear-to-r from-blue-700 to-indigo-800 p-5 text-white flex items-center justify-between">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-wider text-blue-200 flex items-center gap-1.5">
                   <Plane className="w-3.5 h-3.5" />
@@ -1184,7 +1184,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                           : ticketForm.destination,
                     });
                   }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
                 >
                   <option value="Cuti Rooster">Cuti Rooster (Tiket Pulang Cuti)</option>
                   <option value="On Site">On Site (Tiket Keberangkatan ke Site)</option>
@@ -1253,7 +1253,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     required
                     value={ticketForm.departureDate}
                     onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">
                     Tiket keberangkatan personel kembali bertugas ke jobsite.
@@ -1275,7 +1275,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     required
                     value={ticketForm.departureDate}
                     onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">
                     Tiket kepulangan personel dari jobsite ke domisili untuk jadwal cuti rooster.
@@ -1293,7 +1293,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                       required
                       value={ticketForm.departureDate}
                       onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div>
@@ -1305,7 +1305,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                       required
                       value={ticketForm.returnDate}
                       onChange={(e) => setTicketForm({ ...ticketForm, returnDate: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
@@ -1325,7 +1325,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     required
                     value={ticketForm.departureDate}
                     onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">
                     Pemesanan tiket keberangkatan dinas terlebih dahulu. Tiket pulang dapat dipesan menyusul.
@@ -1347,7 +1347,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     required
                     value={ticketForm.departureDate}
                     onChange={(e) => setTicketForm({ ...ticketForm, departureDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">
                     Pemesanan tiket kepulangan dari dinas setelah tiket keberangkatan sebelumnya.
@@ -1368,7 +1368,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     value={ticketForm.ticketNumber}
                     onChange={(e) => setTicketForm({ ...ticketForm, ticketNumber: e.target.value })}
                     placeholder="Contoh: TJ8921 / 126-23490182"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -1380,7 +1380,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   <select
                     value={ticketForm.airline}
                     onChange={(e) => setTicketForm({ ...ticketForm, airline: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="Batik Air">Batik Air</option>
                     <option value="Garuda Indonesia">Garuda Indonesia</option>
@@ -1405,7 +1405,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   value={ticketForm.destination}
                   onChange={(e) => setTicketForm({ ...ticketForm, destination: e.target.value })}
                   placeholder="Contoh: BPN - CGK (Balikpapan - Jakarta)"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
@@ -1425,7 +1425,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     step={1000}
                     value={ticketForm.ticketCost}
                     onChange={(e) => setTicketForm({ ...ticketForm, ticketCost: Number(e.target.value) })}
-                    className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
@@ -1443,7 +1443,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   value={ticketForm.additionalNotes}
                   onChange={(e) => setTicketForm({ ...ticketForm, additionalNotes: e.target.value })}
                   placeholder="Contoh: Roster Periode Nov 2026, Meeting Koordinasi HO, dsb"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
@@ -1533,9 +1533,9 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
                   {historyList.map((item, idx) => (
-                    <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-slate-100 last:border-b-0">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[11px]">
@@ -1630,7 +1630,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     step={100000}
                     value={editPlafonAmount}
                     onChange={(e) => setEditPlafonAmount(Number(e.target.value))}
-                    className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
@@ -1647,7 +1647,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   value={editPlafonNotes}
                   onChange={(e) => setEditPlafonNotes(e.target.value)}
                   placeholder="Alasan perubahan plafon (misal: penyesuaian level manajemen atau dinas khusus)..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
