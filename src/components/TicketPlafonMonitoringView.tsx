@@ -86,7 +86,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
 
   // Form states for Edit Plafon
-  const [editPlafonAmount, setEditPlafonAmount] = useState<number>(5000000);
+  const [editPlafonAmount, setEditPlafonAmount] = useState<number>(5500000);
   const [editPlafonNotes, setEditPlafonNotes] = useState<string>("");
   const [isSubmittingConfig, setIsSubmittingConfig] = useState<boolean>(false);
 
@@ -462,7 +462,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
             </h1>
             <p className="text-blue-100/80 text-sm mt-1 max-w-2xl leading-relaxed">
               Monitoring plafon tiket penerbangan karyawan Non-Lokal (Senyiur, Muara Pahu & HO). Default plafon{" "}
-              <span className="font-semibold text-amber-300">Rp 5.000.000,00</span> per orang dengan siklus reset otomatis berbasis jabatan:{" "}
+              <span className="font-semibold text-amber-300">Rp 5.500.000,00</span> per orang dengan siklus reset otomatis berbasis jabatan:{" "}
               <span className="font-semibold text-purple-300">48 Hari</span> (PM & Deputy PJO),{" "}
               <span className="font-semibold text-amber-300">90 Hari</span> (Driver DT, Mekanik, Welder, Elektrik, Admin), dan{" "}
               <span className="font-semibold text-emerald-300">65 Hari</span> (Staff/Spv/Lainnya).
@@ -617,7 +617,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               {summary ? formatRupiah(summary.totalPlafonAllocated) : "-"}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">
-              Default: Rp 5.000.000 / org
+              Default: Rp 5.500.000 / org
             </div>
           </div>
         </div>
@@ -725,7 +725,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                 className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
                 <option value="ALL">Semua Status Plafon</option>
-                <option value="FULL">Plafon Utuh (Rp 5.000.000)</option>
+                <option value="FULL">Plafon Utuh (Rp 5.500.000)</option>
                 <option value="PARTIAL">Sebagian Terpakai</option>
                 <option value="EMPTY">Plafon Habis</option>
                 <option value="CYCLE_ACTIVE">Sedang Berjalan (Ada Tiket)</option>
@@ -1464,7 +1464,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   Siklus Reset Otomatis ({selectedEmployee.resetCycleDays || 65} Hari):
                 </div>
                 <div className="text-purple-800 text-[11px] leading-relaxed">
-                  Plafon akan otomatis direset kembali ke Rp {(selectedEmployee.plafonAmount || 5000000).toLocaleString("id-ID")} pada tanggal{" "}
+                  Plafon akan otomatis direset kembali ke Rp {(selectedEmployee.plafonAmount || 5500000).toLocaleString("id-ID")} pada tanggal{" "}
                   <span className="font-extrabold underline">{previewNextResetDate}</span> ({selectedEmployee.resetCycleDays || 65} hari dari tanggal tiket).
                 </div>
                 <div className="text-[11px] text-slate-600 pt-1 border-t border-purple-200/60 flex items-center justify-between">
@@ -1646,7 +1646,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                   />
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
-                  Default standar: Rp 5.000.000,00
+                  Default standar: Rp 5.500.000,00
                 </div>
               </div>
 
