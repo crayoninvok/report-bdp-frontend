@@ -13,7 +13,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
+  ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Plus,
   History,
   Settings2,
@@ -54,6 +57,10 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("ALL");
   const [plafonStatusFilter, setPlafonStatusFilter] = useState<string>("ALL");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(25);
 
   // Modals
   const [selectedEmployee, setSelectedEmployee] = useState<TicketPlafonItem | null>(null);
@@ -169,6 +176,19 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       return true;
     });
   }, [data, searchQuery, departmentFilter, plafonStatusFilter]);
+
+  // Reset to page 1 whenever filters or rowsPerPage change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeSiteTab, searchQuery, departmentFilter, plafonStatusFilter, rowsPerPage]);
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
+  const paginatedData = useMemo(() => {
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, startIndex, endIndex]);
 
   // Currency Formatter
   const formatRupiah = (val: number) => {
@@ -702,7 +722,8 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
@@ -719,7 +740,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredData.map((emp, idx) => {
+                {paginatedData.map((emp, idx) => {
                   const usedPercent =
                     emp.plafonAmount > 0
                       ? Math.min(100, Math.round((emp.usedAmount / emp.plafonAmount) * 100))
@@ -732,7 +753,7 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                     >
                       {/* No */}
                       <td className="py-3 px-4 text-center font-medium text-slate-400">
-                        {idx + 1}
+                        {startIndex + idx + 1}
                       </td>
 
                       {/* Employee Info */}
@@ -942,7 +963,114 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* Pagination Controls */}
+          {filteredData.length > 0 && (
+            <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              {/* Left: Row selector & Summary */}
+              <div className="flex items-center gap-3 text-slate-600">
+                <div className="flex items-center gap-1.5">
+                  <span>Tampilkan:</span>
+                  <select
+                    value={rowsPerPage}
+                    onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                    className="px-2 py-1 rounded-lg border border-slate-300 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={filteredData.length}>Semua ({filteredData.length})</option>
+                  </select>
+                  <span>per halaman</span>
+                </div>
+                <span className="text-slate-300">|</span>
+                <div>
+                  Menampilkan <span className="font-bold text-slate-800">{startIndex + 1}</span> -{" "}
+                  <span className="font-bold text-slate-800">{endIndex}</span> dari{" "}
+                  <span className="font-bold text-slate-800">{filteredData.length}</span> karyawan
+                </div>
+              </div>
+
+              {/* Right: Page navigation buttons */}
+              <div className="flex items-center gap-1">
+                {/* First Page */}
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  title="Halaman Pertama"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors"
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Previous Page */}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  title="Halaman Sebelumnya"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - currentPage) <= 1
+                      );
+                    })
+                    .map((page, index, array) => {
+                      const prev = array[index - 1];
+                      const showEllipsis = prev && page - prev > 1;
+
+                      return (
+                        <React.Fragment key={page}>
+                          {showEllipsis && (
+                            <span className="px-1 text-slate-400 font-bold select-none">...</span>
+                          )}
+                          <button
+                            onClick={() => setCurrentPage(page)}
+                            className={`min-w-7 h-7 px-2 rounded-lg text-xs font-bold transition-all ${
+                              currentPage === page
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
+                </div>
+
+                {/* Next Page */}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  title="Halaman Berikutnya"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Last Page */}
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  title="Halaman Terakhir"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 transition-colors"
+                >
+                  <ChevronsRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
       </div>
 
       {/* MODAL 1: CATAT PENGGUNAAN TIKET */}
