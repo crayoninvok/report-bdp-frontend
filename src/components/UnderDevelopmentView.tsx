@@ -20,6 +20,7 @@ import {
   Settings,
   UserCheck,
   CalendarCheck,
+  Ticket,
 } from "lucide-react";
 
 interface UnderDevelopmentViewProps {
@@ -47,6 +48,9 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
     moduleName.toLowerCase().includes("inspection") ||
     moduleName.toLowerCase().includes("mechanic");
   const isMechanicsActivity = moduleName.toLowerCase().includes("mechanic");
+  const isTicketPlafon =
+    moduleName.toLowerCase().includes("ticket") ||
+    moduleName.toLowerCase().includes("plafon");
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -54,7 +58,9 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-slate-900 shadow-xs relative overflow-hidden">
         {/* Decorative background outline */}
         <div className="absolute -right-8 -bottom-10 opacity-40 pointer-events-none text-slate-100">
-          {isHRD ? (
+          {isTicketPlafon ? (
+            <Ticket size={240} />
+          ) : isHRD ? (
             <Users size={240} />
           ) : isPlantMaintenance ? (
             <Wrench size={240} />
@@ -95,6 +101,8 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
                 Kembali ke{" "}
                 {moduleCategory === "Plant & Maintenance"
                   ? "Dashboard Plant"
+                  : moduleCategory === "Human Resource & Development"
+                  ? "Dashboard HRD"
                   : "Dashboard Cost"}
               </span>
             </button>
@@ -114,6 +122,24 @@ export const UnderDevelopmentView: React.FC<UnderDevelopmentViewProps> = ({
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               Area konten halaman ini dikosongkan sementara. Fitur pelaporan aktivitas harian mekanik, tracking jam kerja, dan rincian servis perbaikan armada akan diintegrasikan di sini.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+            <Clock size={13} className="text-[#e95623]" />
+            <span>Status: Under Development</span>
+          </div>
+        </div>
+      ) : isTicketPlafon ? (
+        <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-xs">
+          <div className="h-16 w-16 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shadow-xs">
+            <Ticket size={32} />
+          </div>
+          <div className="space-y-1.5 max-w-md">
+            <h3 className="text-base font-bold text-slate-800">
+              Modul Ticket Plafon Controlling Sedang Dikembangkan
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Area konten halaman ini dikosongkan sementara. Fitur monitoring kuota plafon tiket perjalanan/cuti roster karyawan, persetujuan reimbursement tiket, dan pencatatan tiket site akan diintegrasikan di sini.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">

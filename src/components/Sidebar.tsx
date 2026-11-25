@@ -34,6 +34,7 @@ import {
   ClipboardList,
   Eye,
   Construction,
+  Ticket,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -192,6 +193,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "atr-dashboard",
           label: "ATR Dashboard",
           icon: CalendarCheck,
+        },
+        {
+          id: "ticket-plafon-controlling",
+          label: "Ticket Plafon Controlling",
+          icon: Ticket,
         },
         {
           id: "master-manpower",

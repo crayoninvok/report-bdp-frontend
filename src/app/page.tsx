@@ -348,6 +348,8 @@ export default function Home() {
                       ? "Human Resource & Development • Dashboard"
                       : activeMenu === "atr-dashboard"
                       ? "Human Resource & Development • ATR Dashboard"
+                      : activeMenu === "ticket-plafon-controlling"
+                      ? "Human Resource & Development • Ticket Plafon Controlling"
                       : activeMenu === "master-manpower"
                       ? "Human Resource & Development • Master Manpower Data"
                       : activeMenu === "she-dashboard"
@@ -681,6 +683,13 @@ export default function Home() {
               user={currentUser}
               onNavigateToMasterManpower={() => setActiveMenu("master-manpower")}
               onNavigateToHRDashboard={() => setActiveMenu("hr-dashboard")}
+            />
+          ) : activeMenu === "ticket-plafon-controlling" ? (
+            <UnderDevelopmentView
+              user={currentUser}
+              moduleName="Ticket Plafon Controlling"
+              moduleCategory="Human Resource & Development"
+              onBackToDashboard={() => setActiveMenu("hr-dashboard")}
             />
           ) : activeMenu === "master-manpower" ? (
             <MasterManpowerView user={currentUser} />
