@@ -65,6 +65,8 @@ import {
   resetPlafonManual,
   updateTicketUsageHistory,
   deleteTicketUsageHistory,
+  refundTicketUsageHistory,
+  cancelRefundTicketUsageHistory,
 } from "../services/ticketPlafonService";
 
 // Email yang diizinkan untuk mengedit data tiket dan konfigurasi
@@ -112,6 +114,18 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
     notes: "",
   });
   const [isSubmittingEditTicket, setIsSubmittingEditTicket] = useState<boolean>(false);
+
+  // Refund Modal State
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState<boolean>(false);
+  const [refundingTicket, setRefundingTicket] = useState<TicketUsageHistoryItem | null>(null);
+  const [refundForm, setRefundForm] = useState({
+    refundType: "FULL" as "FULL" | "PARTIAL",
+    refundAmount: 0,
+    refundDate: new Date().toISOString().split("T")[0],
+    reason: "Pembatalan Tiket / Cuti Ditunda",
+    notes: "",
+  });
+  const [isSubmittingRefund, setIsSubmittingRefund] = useState<boolean>(false);
 
   // Permission Check: Hanya email tertentu yang berhak mengedit data tiket
   const canEditTicket = useMemo(() => {
@@ -505,6 +519,113 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
       }
     } catch (err: any) {
       showToast(err.message || "Gagal menghapus tiket.", "error");
+    }
+  };
+
+  // Open Refund Modal
+  const handleOpenRefundModal = (item: TicketUsageHistoryItem) => {
+    setRefundingTicket(item);
+    setRefundForm({
+      refundType: "FULL",
+      refundAmount: item.ticketCost,
+      refundDate: new Date().toISOString().split("T")[0],
+      reason: "Pembatalan Tiket / Cuti Ditunda",
+      notes: "",
+    });
+    setIsRefundModalOpen(true);
+  };
+
+  // Submit Refund
+  const handleSubmitRefund = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!refundingTicket || !selectedEmployee) return;
+
+    const nominalRefund =
+      refundForm.refundType === "FULL"
+        ? refundingTicket.ticketCost
+        : Number(refundForm.refundAmount);
+
+    if (nominalRefund <= 0 || nominalRefund > refundingTicket.ticketCost) {
+      showToast(
+        `Nominal refund tidak valid. Harus antara Rp 1 s/d ${formatRupiah(refundingTicket.ticketCost)}.`,
+        "error"
+      );
+      return;
+    }
+
+    const confirmRefund = window.confirm(
+      `Konfirmasi Refund Tiket:\n\n` +
+      `Karyawan: ${selectedEmployee.fullName} (${selectedEmployee.employeeId})\n` +
+      `No. Tiket: ${refundingTicket.ticketNumber || "-"}\n` +
+      `Maskapai: ${refundingTicket.airline || "-"}\n` +
+      `Biaya Tiket Awal: ${formatRupiah(refundingTicket.ticketCost)}\n` +
+      `Jenis Refund: ${refundForm.refundType === "FULL" ? "Refund Penuh (100%)" : "Refund Sebagian (Potongan Admin)"}\n` +
+      `Dana Kembali ke Plafon: ${formatRupiah(nominalRefund)}\n` +
+      `Tanggal Refund: ${refundForm.refundDate}\n` +
+      `Alasan: ${refundForm.reason}\n\n` +
+      `Apakah Anda yakin ingin memproses refund tiket ini? Saldo plafon karyawan akan otomatis bertambah kembali sebesar ${formatRupiah(nominalRefund)}.`
+    );
+    if (!confirmRefund) return;
+
+    try {
+      setIsSubmittingRefund(true);
+      const res = await refundTicketUsageHistory(refundingTicket.id, {
+        refundType: refundForm.refundType,
+        refundAmount: nominalRefund,
+        refundDate: refundForm.refundDate,
+        reason: refundForm.reason,
+        notes: refundForm.notes,
+        userEmail: user?.email,
+      });
+
+      if (res.success) {
+        showToast(
+          res.message || "Refund tiket berhasil diproses dan dana telah kembali ke plafon!",
+          "success"
+        );
+        setIsRefundModalOpen(false);
+        // Refresh riwayat tiket modal
+        const histRes = await getTicketHistory(selectedEmployee.employeeId);
+        if (histRes.success) {
+          setHistoryList(histRes.data.history);
+        }
+        // Refresh data utama dan analitik
+        fetchData(true);
+        fetchAnalytics();
+      }
+    } catch (err: any) {
+      showToast(err.message || "Gagal memproses refund tiket.", "error");
+    } finally {
+      setIsSubmittingRefund(false);
+    }
+  };
+
+  // Cancel Refund (Restore status to Used)
+  const handleCancelRefund = async (item: TicketUsageHistoryItem) => {
+    if (!selectedEmployee) return;
+
+    const confirmCancel = window.confirm(
+      `Konfirmasi Pembatalan Status Refund:\n\n` +
+      `Karyawan: ${selectedEmployee.fullName} (${selectedEmployee.employeeId})\n` +
+      `No. Tiket: ${item.ticketNumber || "-"}\n\n` +
+      `Status tiket akan dikembalikan menjadi 'Used' dan biaya tiket akan kembali memotong saldo plafon karyawan.\n\n` +
+      `Apakah Anda yakin ingin membatalkan status refund tiket ini?`
+    );
+    if (!confirmCancel) return;
+
+    try {
+      const res = await cancelRefundTicketUsageHistory(item.id, user?.email);
+      if (res.success) {
+        showToast("Status refund berhasil dibatalkan dan saldo plafon disinkronisasi!", "success");
+        const histRes = await getTicketHistory(selectedEmployee.employeeId);
+        if (histRes.success) {
+          setHistoryList(histRes.data.history);
+        }
+        fetchData(true);
+        fetchAnalytics();
+      }
+    } catch (err: any) {
+      showToast(err.message || "Gagal membatalkan status refund.", "error");
     }
   };
 
@@ -2225,15 +2346,60 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
 
                       <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 shrink-0">
                         <div className="text-right">
-                          <div className="font-mono font-black text-slate-900 text-sm">
+                          <div
+                            className={`font-mono font-black text-sm ${
+                              item.status === "Refunded"
+                                ? "line-through text-slate-400"
+                                : item.status === "Partial Refund"
+                                ? "text-cyan-700"
+                                : "text-slate-900"
+                            }`}
+                          >
                             {formatRupiah(item.ticketCost)}
                           </div>
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            {item.status}
-                          </span>
+                          <div className="flex items-center justify-end gap-1 mt-0.5">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                item.status === "Refunded"
+                                  ? "bg-purple-100 text-purple-800 border border-purple-200"
+                                  : item.status === "Partial Refund"
+                                  ? "bg-cyan-100 text-cyan-800 border border-cyan-200"
+                                  : "bg-emerald-100 text-emerald-800"
+                              }`}
+                            >
+                              {item.status}
+                            </span>
+                          </div>
+                          {item.status === "Refunded" && (
+                            <span className="text-[10px] text-purple-700 font-bold block mt-0.5">
+                              (Dana kembali ke plafon)
+                            </span>
+                          )}
                         </div>
                         {canEditTicket && (
                           <div className="flex items-center gap-1.5 pt-1">
+                            {/* Tombol Refund / Batal Refund */}
+                            {item.status !== "Refunded" ? (
+                              <button
+                                onClick={() => handleOpenRefundModal(item)}
+                                title="Refund Tiket (Kembalikan Dana ke Plafon)"
+                                className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 active:scale-95 transition-all text-[11px] font-bold flex items-center gap-1 border border-emerald-200 shadow-2xs"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                                <span>Refund</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleCancelRefund(item)}
+                                title="Batalkan status refund (Kembali memotong plafon)"
+                                className="px-2 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 active:scale-95 transition-all text-[10px] font-semibold flex items-center gap-1 border border-purple-200"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                                <span>Batal Refund</span>
+                              </button>
+                            )}
+
+                            {/* Tombol Edit */}
                             <button
                               onClick={() => handleOpenEditTicketModal(item)}
                               title="Edit Data Tiket"
@@ -2242,6 +2408,8 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                               <Pencil className="w-3 h-3" />
                               <span>Edit</span>
                             </button>
+
+                            {/* Tombol Hapus */}
                             <button
                               onClick={() => handleDeleteTicket(item)}
                               title="Hapus Tiket"
@@ -2515,6 +2683,226 @@ export default function TicketPlafonMonitoringView({ user }: TicketPlafonMonitor
                 >
                   {isSubmittingEditTicket && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   {isSubmittingEditTicket ? "Menyimpan..." : "Simpan Perubahan Tiket"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL 5: REFUND TIKET */}
+      {isRefundModalOpen && refundingTicket && selectedEmployee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-linear-to-r from-emerald-600 to-teal-700 p-5 text-white flex items-center justify-between">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-200 flex items-center gap-1.5">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Form Refund Tiket
+                </div>
+                <h3 className="text-lg font-bold mt-0.5">{selectedEmployee.fullName}</h3>
+                <div className="text-xs text-emerald-100/90 font-mono">
+                  NIK: {selectedEmployee.employeeId} • No. Tiket: {refundingTicket.ticketNumber || "-"}
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRefundModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmitRefund} className="p-5 space-y-4">
+              {/* Ringkasan Tiket */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
+                <div className="font-bold text-slate-800 flex items-center justify-between">
+                  <span>{refundingTicket.airline || "Maskapai"} • {refundingTicket.destination || "-"}</span>
+                  <span className="font-mono text-blue-700 font-extrabold">{refundingTicket.ticketNumber || "-"}</span>
+                </div>
+                <div className="text-slate-500 text-[11px] flex items-center justify-between">
+                  <span>Tanggal Berangkat: <b>{formatDate(refundingTicket.departureDate)}</b></span>
+                  <span>Biaya Asli: <b className="font-mono text-slate-900">{formatRupiah(refundingTicket.ticketCost)}</b></span>
+                </div>
+              </div>
+
+              {/* Tipe Refund */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Jenis Pengembalian (Refund) *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRefundForm({
+                        ...refundForm,
+                        refundType: "FULL",
+                        refundAmount: refundingTicket.ticketCost,
+                      })
+                    }
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      refundForm.refundType === "FULL"
+                        ? "border-emerald-500 bg-emerald-50/70 text-emerald-900 ring-2 ring-emerald-500/20"
+                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${refundForm.refundType === "FULL" ? "bg-emerald-600" : "bg-slate-300"}`} />
+                      Refund Penuh (100%)
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Kembali Rp {refundingTicket.ticketCost.toLocaleString("id-ID")}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRefundForm({
+                        ...refundForm,
+                        refundType: "PARTIAL",
+                        refundAmount: Math.max(0, refundingTicket.ticketCost - 200000),
+                      })
+                    }
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      refundForm.refundType === "PARTIAL"
+                        ? "border-emerald-500 bg-emerald-50/70 text-emerald-900 ring-2 ring-emerald-500/20"
+                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${refundForm.refundType === "PARTIAL" ? "bg-emerald-600" : "bg-slate-300"}`} />
+                      Refund Sebagian
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Potongan biaya admin maskapai
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Nominal Refund Yang Kembali ke Plafon */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nominal Dana Yang Kembali ke Plafon (Rp) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                    Rp
+                  </span>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    max={refundingTicket.ticketCost}
+                    step={1000}
+                    disabled={refundForm.refundType === "FULL"}
+                    value={refundForm.refundType === "FULL" ? refundingTicket.ticketCost : refundForm.refundAmount}
+                    onChange={(e) =>
+                      setRefundForm({
+                        ...refundForm,
+                        refundAmount: Number(e.target.value),
+                      })
+                    }
+                    className={`w-full pl-10 pr-3 py-2 rounded-xl border text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
+                      refundForm.refundType === "FULL"
+                        ? "bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed"
+                        : "bg-white border-slate-200 text-slate-900"
+                    }`}
+                  />
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Format: {formatRupiah(refundForm.refundType === "FULL" ? refundingTicket.ticketCost : Number(refundForm.refundAmount) || 0)}
+                </div>
+              </div>
+
+              {/* Tanggal Refund & Alasan */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Tanggal Refund *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={refundForm.refundDate}
+                    onChange={(e) => setRefundForm({ ...refundForm, refundDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Alasan Refund *
+                  </label>
+                  <select
+                    value={refundForm.reason}
+                    onChange={(e) => setRefundForm({ ...refundForm, reason: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    <option value="Pembatalan Tiket / Cuti Ditunda">Pembatalan Tiket / Cuti Ditunda</option>
+                    <option value="Reschedule Maskapai / Ganti Jadwal">Reschedule Maskapai / Ganti Jadwal</option>
+                    <option value="Dinas Kantor Selesai Lebih Awal">Dinas Kantor Selesai Lebih Awal</option>
+                    <option value="Force Majeure / Sakit">Force Majeure / Sakit</option>
+                    <option value="Salah Pemesanan Rute / Tanggal">Salah Pemesanan Rute / Tanggal</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Catatan Tambahan */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Catatan Tambahan (Opsional)
+                </label>
+                <input
+                  type="text"
+                  value={refundForm.notes}
+                  onChange={(e) => setRefundForm({ ...refundForm, notes: e.target.value })}
+                  placeholder="Contoh: Kode Pengajuan Refund Maskapai, No Rekening Pengembalian, dsb"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              {/* Info Box Simulasi Plafon */}
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1.5 text-xs text-emerald-950">
+                <div className="font-bold flex items-center gap-1.5 text-emerald-900">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Simulasi Pengembalian Dana ke Plafon:
+                </div>
+                <div className="text-[11px] leading-relaxed text-emerald-800">
+                  Dana sebesar{" "}
+                  <b className="font-mono text-emerald-950 font-extrabold underline">
+                    {formatRupiah(refundForm.refundType === "FULL" ? refundingTicket.ticketCost : Number(refundForm.refundAmount) || 0)}
+                  </b>{" "}
+                  akan langsung ditambahkan kembali ke saldo plafon karyawan{" "}
+                  <b className="text-emerald-950">{selectedEmployee.fullName}</b>.
+                </div>
+                {refundForm.refundType === "PARTIAL" && (
+                  <div className="text-[10px] text-amber-800 pt-1 border-t border-emerald-200/60">
+                    Sisa biaya tiket sebesar{" "}
+                    <b>{formatRupiah(Math.max(0, refundingTicket.ticketCost - Number(refundForm.refundAmount)))}</b> tetap terpotong dari plafon sebagai biaya admin maskapai.
+                  </div>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRefundModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingRefund}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-md transition-all flex items-center gap-2"
+                >
+                  {isSubmittingRefund && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  {isSubmittingRefund ? "Memproses Refund..." : "Konfirmasi & Proses Refund"}
                 </button>
               </div>
             </form>

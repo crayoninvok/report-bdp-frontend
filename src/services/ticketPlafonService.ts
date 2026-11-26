@@ -238,3 +238,42 @@ export async function deleteTicketUsageHistory(
   }
   return res.json();
 }
+
+export async function refundTicketUsageHistory(
+  id: string,
+  payload: {
+    refundType: "FULL" | "PARTIAL";
+    refundAmount: number;
+    refundDate?: string;
+    reason: string;
+    notes?: string;
+    userEmail?: string;
+  }
+): Promise<{ success: boolean; message: string; data: any }> {
+  const res = await fetch(`${API_BASE_URL}/ticket-plafon/ticket/${encodeURIComponent(id)}/refund`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Gagal memproses refund tiket: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function cancelRefundTicketUsageHistory(
+  id: string,
+  userEmail?: string
+): Promise<{ success: boolean; message: string; data: any }> {
+  const res = await fetch(`${API_BASE_URL}/ticket-plafon/ticket/${encodeURIComponent(id)}/cancel-refund`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userEmail }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Gagal membatalkan refund: ${res.statusText}`);
+  }
+  return res.json();
+}
